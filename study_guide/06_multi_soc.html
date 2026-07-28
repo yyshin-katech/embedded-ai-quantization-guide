@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>4. 멀티 SoC 확장 (TIDL / QNN / DRP-AI)</title><style>
+:root{--bg:#0f1115;--card:#171a21;--line:#2a2f3a;--tx:#e6e8ec;--dim:#9aa3b2;--acc:#5aa9ff;--ok:#3ecf8e;--warn:#f0b429;--bad:#ff6b6b;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:-apple-system,"Pretendard","Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;font-size:16px}
+a{color:var(--acc);text-decoration:none}a:hover{text-decoration:underline}
+.bar{position:sticky;top:0;background:rgba(15,17,21,.96);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);z-index:20}
+.bar-in{max-width:1000px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:14px}
+.bar b{font-size:.9rem;white-space:nowrap}
+.track{flex:1;height:8px;background:#252a34;border-radius:99px;overflow:hidden;min-width:80px}
+.fill{height:100%;width:0;background:linear-gradient(90deg,var(--acc),var(--ok));transition:width .3s}
+.pct{font-size:.82rem;color:var(--dim);min-width:96px;text-align:right;white-space:nowrap}
+.stagenav{border-bottom:1px solid var(--line);background:#12151b}
+.stagenav-in{max-width:1000px;margin:0 auto;padding:8px 20px;display:flex;flex-wrap:wrap;gap:6px}
+.stagenav a{font-size:.76rem;padding:3px 9px;border-radius:99px;background:#1e222b;color:var(--dim)}
+.stagenav a.cur{background:var(--acc);color:#08111f;font-weight:600}
+.wrap{max-width:1000px;margin:0 auto;padding:34px 24px 120px}
+h1{font-size:1.9rem;margin:0 0 20px;letter-spacing:-.02em;border-bottom:2px solid var(--acc);padding-bottom:16px}
+h2{font-size:1.35rem;margin:48px 0 14px;padding-left:12px;border-left:4px solid var(--acc);scroll-margin-top:110px}
+h3{font-size:1.08rem;margin:26px 0 10px;color:var(--acc);scroll-margin-top:110px}
+h4{font-size:1rem;margin:20px 0 8px;color:var(--tx)}
+p,li{color:var(--tx)}
+ul,ol{padding-left:22px}li{margin:6px 0}
+li.task{list-style:none;margin-left:-22px}
+li.task label{cursor:pointer;display:flex;gap:9px;align-items:flex-start}
+li.task input{margin-top:6px;width:16px;height:16px;accent-color:var(--acc);cursor:pointer;flex-shrink:0}
+li.task input:checked ~ *{color:var(--dim)}
+code{background:#20242e;color:#ffd479;padding:2px 6px;border-radius:4px;font-family:"SFMono-Regular",Consolas,monospace;font-size:.86em}
+pre{background:#0b0d11;border:1px solid var(--line);border-radius:8px;padding:15px;overflow-x:auto;font-size:.85rem;line-height:1.55}
+pre code{background:none;color:#c8d3e0;padding:0}
+.tablewrap{overflow-x:auto;margin:16px 0}
+table{width:100%;border-collapse:collapse;font-size:.9rem}
+th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}
+th{background:#1e222b;color:var(--acc);font-weight:600}
+blockquote{margin:16px 0;padding:14px 18px;border-radius:8px;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--acc)}
+blockquote.tip{border-left-color:var(--ok)}
+blockquote.warn{border-left-color:var(--warn)}
+blockquote.bad{border-left-color:var(--bad)}
+hr{border:none;border-top:1px solid var(--line);margin:32px 0}
+.toc{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 18px;margin:8px 0 28px}
+.toc summary{cursor:pointer;color:var(--acc);font-weight:600;font-size:.92rem}
+.toc ul{margin:10px 0 2px;padding-left:18px}
+.toc li{margin:3px 0;font-size:.9rem}
+.toc .l3{padding-left:16px;font-size:.85rem}
+.pager{display:flex;justify-content:space-between;gap:12px;margin:16px 0 0}
+.pager a{flex:1;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 16px;font-size:.9rem}
+.pager a.next{text-align:right}
+.pager .lbl{display:block;font-size:.72rem;color:var(--dim)}
+footer{margin-top:60px;padding-top:18px;border-top:1px solid var(--line);color:var(--dim);font-size:.82rem}
+@media print{body{background:#fff;color:#000}.bar,.stagenav,.pager{display:none}.card,blockquote{background:#f7f7f7;border:1px solid #ccc}pre{background:#f4f4f4}pre code,code{color:#000}h2,h3{color:#000}a{color:#000}th{background:#eee;color:#000}}
+</style></head><body>
+<div class="bar"><div class="bar-in"><b>4. 멀티 SoC 확장 (TIDL / QNN / DRP-AI)</b>
+<div class="track"><div class="fill" id="fill"></div></div>
+<span class="pct" id="pct">0 / 0</span></div></div>
+<div class="stagenav"><div class="stagenav-in"><a class="" href="README.html">홈</a><a class="" href="01_environment_setup.html">0. 환경준비</a><a class="" href="02_deployment_ladder.html">0.5 사다리</a><a class="" href="03_quantization_theory.html">1. 양자화이론</a><a class="" href="04_transformer_quantization.html">2. Transformer</a><a class="" href="05_tensorrt.html">3. TensorRT</a><a class="cur" href="06_multi_soc.html">4. 멀티SoC</a><a class="" href="07_infrastructure.html">5. 인프라화</a><a class="" href="08_capstone.html">캡스톤</a><a class="" href="09_roadmap.html">12주 로드맵</a><a class="" href="10_pitfalls.html">함정 5</a></div></div>
+<div class="wrap"><details class="toc" open><summary>목차</summary><ul><li><a href="#0-이-단계에서-무엇을왜-하는가">0) 이 단계에서 무엇을·왜 하는가</a></li><li><a href="#1-학습-목표-완료-체크리스트">1) 학습 목표 &amp;amp; 완료 체크리스트</a></li><li><a href="#2-배경-이론-개념-세-백엔드를-한-장으로">2) 배경 이론 / 개념 — 세 백엔드를 한 장으로</a></li><li class="l3"><a href="#2-1-벤더별-지원-op-경향-비교표-개념-지도">2-1. 벤더별 지원 op 경향 비교표 (개념 지도)</a></li><li><a href="#3-환경도구-준비-공통-입력-만들기">3) 환경·도구 준비 — 공통 입력 만들기</a></li><li><a href="#4-단계별-실습">4) 단계별 실습</a></li><li class="l3"><a href="#4-a-ti-tidl-edgeai-tidl-tools-x86-host-emulation">4-A. TI TIDL — edgeai-tidl-tools (x86 host emulation)</a></li><li class="l3"><a href="#4-b-qualcomm-qnn-onnxruntime-qnn-ep">4-B. Qualcomm QNN — onnxruntime QNN EP</a></li><li class="l3"><a href="#4-c-renesas-drp-ai-rzv_drp-ai_tvm">4-C. Renesas DRP-AI — rzv_drp-ai_tvm</a></li><li><a href="#5-예시-결과-해석-fallback-비율부터-확인-정량-지표">5) 예시 / 결과 해석 — &quot;fallback 비율부터 확인&quot; (정량 지표)</a></li><li><a href="#6-흔한-오류와-해결-troubleshooting">6) 흔한 오류와 해결 (Troubleshooting)</a></li><li><a href="#7-산출물-deliverables">7) 산출물 (Deliverables)</a></li><li><a href="#8-참고-사이트-참고문헌">8) 참고 사이트 &amp;amp; 참고문헌</a></li><li class="l3"><a href="#공식-문서-도구">공식 문서 / 도구</a></li><li class="l3"><a href="#논문-양자화-이론-복습용">논문 (양자화 이론 복습용)</a></li><li><a href="#9-다음-단계">9) 다음 단계</a></li></ul></details><div class="pager"><a class="prev" href="05_tensorrt.html"><span class="lbl">← 이전</span>3. TensorRT</a><a class="next" href="07_infrastructure.html"><span class="lbl">다음 →</span>5. 인프라화</a></div><h1>4. 멀티 SoC 확장 (TIDL / QNN / DRP-AI)</h1>
+<blockquote class="callout"><strong>원본 가이드 매핑</strong>: "4단계 — 멀티 SoC 확장 (3~4주)" · 같은 ONNX 하나를 여러 벤더 백엔드에 밀어넣는 multi-target deployment pipeline. <strong>예상 소요</strong>: 3~4주 (툴체인 3개 × 설치·컴파일·로그 해석) <strong>선행 조건</strong>: <a href="05_tensorrt.html">3단계 TensorRT</a> 완료. INT8 PTQ/QDQ ONNX 개념 숙지. Docker 사용 가능한 Ubuntu 22.04 + RTX GPU 데스크톱. <strong>실행 환경 원칙</strong>: 세 툴체인 모두 <strong>컴파일·에뮬레이션은 x86_64(이 데스크톱)에서 가능</strong>하고, <strong>실제 타겟 실행만 보드가 필요</strong>하다. 보드 없이도 "컴파일이 되는가 / 얼마나 offload되는가"까지 전부 검증할 수 있다. <strong>정본 버전 스택(이 커리큘럼 공통)</strong>: CUDA 12.8 / onnxruntime-gpu 1.28.0 / TensorRT 10.16.x LTS. <strong>단, 이 단계의 세 벤더 툴은 각자 자체 런타임/버전을 쓴다</strong> — TIDL은 TI가 포크한 onnxruntime, QNN EP는 QAIRT 번들, DRP-AI는 자체 TVM 빌드. 정본 스택은 "2·3단계에서 ONNX를 만든 데스크톱 환경"의 기준이고, 여기서는 그 ONNX를 각 벤더 툴에 넘긴다.</blockquote>
+<hr>
+<h2 id="0-이-단계에서-무엇을왜-하는가">0) 이 단계에서 무엇을·왜 하는가</h2>
+<p>3단계까지는 NVIDIA 한 벤더의 스택(TensorRT)만 다뤘다. 실무의 임베디드 AI 채용 공고(JD)에 거의 항상 나오는 문구가 <strong>"multi-target deployment pipeline"</strong> 이다. 하나의 학습된 모델을 TI, Qualcomm, Renesas 등 서로 다른 SoC에 배포할 수 있어야 한다는 뜻이다.</p>
+<p>이 단계의 목표는 <strong>"같은 ONNX 하나"</strong> 를 세 개의 벤더 백엔드(TI TIDL, Qualcomm QNN, Renesas DRP-AI)에 각각 밀어넣어 보고, <strong>툴체인이 달라도 문제의 구조는 동일하다</strong>는 것을 몸으로 익히는 것이다.</p>
+<blockquote class="callout tip">💡 <strong>핵심 통찰 (이 단계 전체를 관통하는 한 문장)</strong> ONNX 표준 op → <strong>벤더가 지원하는 부분집합</strong> → 그중 <strong>INT8로 가능한 부분집합</strong> → 나머지는 <strong>CPU fallback</strong> → <strong>fallback을 최소화하는 것이 성능 최적화의 전부</strong>다. 벤더가 셋이든 다섯이든 이 사다리는 똑같다. 툴 이름과 로그 형식만 다르다.</blockquote>
+<p><strong>왜 FP32 그대로는 안 되는가 (직관).</strong> 데스크톱 GPU는 FP32/FP16 연산기가 넘쳐서 양자화가 "선택"이지만, 엣지 SoC의 가속기(NPU/DSP/MAC 어레이)는 <strong>전력·면적을 아끼려고 정수 연산기만</strong> 박아 둔 경우가 많다. 그래서 FP32 텐서를 주면 가속기가 받을 자료형이 아예 없다 → 컴파일러가 그 노드를 CPU로 돌리거나(fallback), 아예 매핑 거부(에러)를 한다. 즉 <strong>양자화는 "정확도 튜닝"이기 이전에 "이 하드웨어에서 돌리기 위한 입장권"</strong> 이다.</p>
+<p>세 백엔드 모두 공통적으로:</p>
+<ol><li>FP32 ONNX를 그대로 못 돌린다. 가속기(NPU/DSP)는 대부분 <strong>INT8 전용</strong>이다 → 양자화가 선행되어야 한다.</li><li>ONNX op의 <strong>부분집합만</strong> 하드웨어 가속한다 → 나머지는 ARM Cortex-A CPU로 떨어진다(fallback/delegation).</li><li><strong>fallback이 많으면</strong> subgraph가 잘게 쪼개지고, 가속기↔CPU 데이터 이동 오버헤드로 <strong>성능이 붕괴</strong>한다.</li></ol>
+<p><strong>왜 subgraph 쪼개짐이 그렇게 나쁜가 (직관).</strong> 가속기와 CPU는 물리적으로 다른 메모리 영역을 본다. 그래프가 <code>[가속]→[CPU]→[가속]→[CPU]</code> 로 4토막 나면, 매 경계마다 텐서를 가속기 메모리에서 CPU 메모리로(또는 반대로) <strong>복사하고, 자료형을 변환(dequant/quant)하고, 두 엔진을 번갈아 깨워야</strong> 한다. 이 왕복 비용이 실제 연산보다 커지는 순간이 흔하다. 이건 3단계 TensorRT의 "layer 사이 reformatting/CPU 왕복"과 <strong>정확히 같은 병목</strong>이다 — 벤더만 바뀌었을 뿐.</p>
+<p>그래서 이 단계에서 진짜 배워야 할 기술은 "컴파일 명령어"가 아니라 <strong>"컴파일 로그에서 어떤 레이어가 가속되고 어떤 게 CPU로 떨어졌는지 읽는 법"</strong> 이다. 명령어는 리포에서 복사하면 되지만, 로그 해석은 사람이 해야 한다.</p>
+<hr>
+<h2 id="1-학습-목표-완료-체크리스트">1) 학습 목표 &amp; 완료 체크리스트</h2>
+<ul><li class="task"><label><input type="checkbox" data-k="0f09eaace0"> 2단계에서 export/정리한 INT8 QDQ ONNX(또는 FP32 ONNX + 캘리브레이션 세트)를 입력으로 준비한다. → <a href="04_transformer_quantization.html">2단계 ONNX export 함정</a> 참조</label></li><li class="task"><label><input type="checkbox" data-k="e9a2102ce6"> <strong>TI TIDL</strong>: <code>edgeai-tidl-tools</code>를 Docker로 셋업하고, x86 host emulation으로 컴파일 + 추론까지 돌린다.</label></li><li class="task"><label><input type="checkbox" data-k="9e491f1fe6"> TIDL 컴파일 로그에서 <strong>"Offloaded Nodes / Total Nodes"와 subgraph 개수</strong>를 읽고, fallback 비율을 계산한다.</label></li><li class="task"><label><input type="checkbox" data-k="65e27c5cbc"> TIDL 컴파일 옵션(<code>tensor_bits</code>, <code>accuracy_level</code>, <code>calibration_frames/iterations</code>, <code>mixed_precision_factor</code>, <code>*_16bit_names_list</code>, <code>deny_list</code>, <code>debug_level</code>)의 <strong>의미를 각각 설명</strong>할 수 있다.</label></li><li class="task"><label><input type="checkbox" data-k="19d278c8a0"> <strong>Qualcomm QNN</strong>: <code>onnxruntime</code>의 QNN EP 유틸(<code>qnn_preprocess_model</code> + <code>get_qnn_qdq_config</code> + <code>quantize</code>)로 QDQ 모델을 만든다.</label></li><li class="task"><label><input type="checkbox" data-k="ff845cecf8"> QNN EP provider_options(<code>backend_path</code>, <code>htp_performance_mode</code>, <code>htp_graph_finalization_optimization_mode</code>)와 context binary 캐시, <code>disable_cpu_ep_fallback</code>의 역할을 이해한다.</label></li><li class="task"><label><input type="checkbox" data-k="41df1fcb7f"> QNN EP 세션을 만들거나(가능 시), 보드가 없으면 <strong>Qualcomm AI Hub</strong>(<code>qai_hub</code>)로 실기기 프로파일을 대체한다.</label></li><li class="task"><label><input type="checkbox" data-k="73065832b8"> <strong>Renesas DRP-AI</strong>: <code>rzv_drp-ai_tvm</code>으로 <code>compile_onnx_model_quant.py</code>를 실행해 INT8 컴파일을 시도한다(RZ/V2H·V2N은 <code>--mera2</code>).</label></li><li class="task"><label><input type="checkbox" data-k="1b76bae755"> DRP-AI 캘리브레이션 <strong>전처리(mean/std)를 학습과 정확히 일치</strong>시켰는지 코드로 검증한다(실무 최다 실수).</label></li><li class="task"><label><input type="checkbox" data-k="9fc1429c4a"> 세 백엔드 각각의 <strong>INT8 요구사항·미지원 op·fallback 로그 위치</strong>를 비교표로 정리한다(산출물).</label></li><li class="task"><label><input type="checkbox" data-k="f7128e64fb"> "fallback 비율부터 확인"을 <strong>정량 지표(offload%, subgraph 수)</strong> 로 계산해 백엔드 우선순위를 정한다.</label></li></ul>
+<hr>
+<h2 id="2-배경-이론-개념-세-백엔드를-한-장으로">2) 배경 이론 / 개념 — 세 백엔드를 한 장으로</h2>
+<p>세 툴체인은 이름·CLI·로그가 다르지만 아래 표처럼 <strong>같은 자리에 같은 개념</strong>이 있다. 이 표를 먼저 머리에 넣고 각 절을 읽으면 훨씬 빠르다.</p>
+<div class="tablewrap"><table><thead><tr><th>개념</th><th>TI TIDL</th><th>Qualcomm QNN</th><th>Renesas DRP-AI</th></tr></thead><tbody><tr><td>가속기</td><td>C7x-MMA (DSP+MMA)</td><td>Hexagon <strong>HTP</strong> (NPU)</td><td><strong>DRP-AI3</strong> MAC 어레이</td></tr><tr><td>양자화 요구</td><td>8/16-bit/mixed 지원</td><td>HTP는 <strong>양자화 모델 권장</strong>(fp16도 가능)</td><td>DRP-AI3 MAC은 <strong>INT8 연산만</strong></td></tr><tr><td>컴파일러 진입점</td><td><code>edgeai-tidl-tools</code> (ONNX-RT/TFLite-RT/DLR delegate)</td><td><code>onnxruntime</code> <strong>QNN EP</strong> (QAIRT)</td><td><code>rzv_drp-ai_tvm</code> (<strong>TVM 기반</strong>, EdgeCortix MERA)</td></tr><tr><td>런타임 정체</td><td>TI 포크 onnxruntime의 <code>TIDLCompilationProvider</code>/<code>TIDLExecutionProvider</code></td><td>표준 onnxruntime의 <code>QNNExecutionProvider</code></td><td>TVM <code>graph_executor</code> + DRP-AI 런타임</td></tr><tr><td>지원 op 범위</td><td>TIDL 지원 op 목록</td><td>ONNX op <strong>부분집합</strong>(Loop/If·동적 shape 미지원)</td><td>feed-forward 전용(RNN/LSTM/GRU 불가)</td></tr><tr><td>미지원 op 처리</td><td>ARM Cortex-A로 fallback</td><td>CPU EP로 fallback</td><td><strong>CPU(TVM) 위임</strong></td></tr><tr><td>fallback 신호</td><td>subgraph 개수 ↑, Offloaded Nodes ↓</td><td>콘솔 CPU 노드 경고 / <code>disable_cpu_ep_fallback</code> 로드 에러</td><td>CPU 위임 노드 ↑ → 느려짐</td></tr><tr><td>x86에서 되는 것</td><td>Docker로 컴파일 + <strong>host emulation 추론</strong></td><td><strong>양자화 유틸(x86_64 전용)</strong> + 컴파일</td><td>컴파일(quantize + translate)</td></tr><tr><td>보드 필요한 것</td><td>타겟 실측 latency</td><td>실기기 추론(또는 AI Hub 대체)</td><td>타겟 실행</td></tr></tbody></table></div>
+<blockquote class="callout warn">⚠️ <strong>주의 — 양자화 도구가 x86 전용인 경우가 많다</strong> QNN 양자화 유틸은 "onnx 패키지 ARM64 설치 문제로 <strong>x86_64에서만 지원</strong>"된다고 명시돼 있다. TIDL/DRP-AI도 컴파일은 x86 호스트에서 한다. 즉 <strong>이 단계의 대부분은 보드 없이 데스크톱에서 진행</strong>하고, 마지막 실측만 보드로 넘긴다.</blockquote>
+<h3 id="2-1-벤더별-지원-op-경향-비교표-개념-지도">2-1. 벤더별 지원 op 경향 비교표 (개념 지도)</h3>
+<p>정확한 지원 op는 각 벤더 문서가 정본이지만(버전마다 바뀐다), <strong>"무엇이 잘 되고 무엇이 잘 깨지는가"의 경향</strong>은 세 벤더가 놀랄 만큼 비슷하다. 이 경향을 알고 있으면 2단계 export 단계에서 미리 지뢰를 피할 수 있다.</p>
+<div class="tablewrap"><table><thead><tr><th>op 계열</th><th>일반적 지원도</th><th>TIDL</th><th>QNN(HTP)</th><th>DRP-AI3</th><th>실무 메모</th></tr></thead><tbody><tr><td>Conv / DepthwiseConv / Gemm/MatMul</td><td>★★★ 핵심 가속 대상</td><td>가속</td><td>가속</td><td>가속</td><td>이게 가속기의 존재 이유. 여기서 fallback 나면 뭔가 잘못됨</td></tr><tr><td>BatchNorm / Relu / Clip / Add</td><td>★★★</td><td>대개 Conv에 fuse</td><td>가속</td><td>가속</td><td>fuse되면 로그에서 개별 노드로 안 보일 수 있음</td></tr><tr><td>MaxPool / AvgPool / GlobalAvgPool</td><td>★★☆</td><td>대개 가속</td><td>가속</td><td>대개 가속</td><td>특정 kernel/stride 조합이 파티션을 끊는 경우가 있어 <code>deny_list</code> 후보 1순위</td></tr><tr><td>Resize / Upsample</td><td>★★☆ 모드 의존</td><td>모드/스케일 제약</td><td>모드 제약</td><td>제약</td><td><code>nearest</code> vs <code>linear</code>, align_corners에 민감</td></tr><tr><td>Softmax / LayerNorm / GELU</td><td>★★☆ 위치 의존</td><td>지원 확대 중</td><td>지원 확대 중</td><td>제한적</td><td>Transformer의 단골 fallback 지점 → <a href="04_transformer_quantization.html">4단계 Transformer 양자화</a></td></tr><tr><td>Transpose / Reshape / Concat / Slice</td><td>★★☆</td><td>shape 연산은 종종 CPU</td><td>종종 CPU</td><td>종종 CPU</td><td>"shape 마사지" op가 가속 구간을 토막 내는 주범</td></tr><tr><td><strong>Loop / If / Scan (control flow)</strong></td><td>✗ 광범위 미지원</td><td>fallback</td><td><strong>미지원(명시)</strong></td><td>미지원(feed-forward만)</td><td>export에서 반드시 제거</td></tr><tr><td><strong>RNN / LSTM / GRU</strong></td><td>✗</td><td>제한/미지원</td><td>제한</td><td><strong>미지원(명시)</strong></td><td>순환 구조는 이 세 백엔드 대상 아님</td></tr><tr><td>동적 shape (dynamic axes)</td><td>✗ 대체로 고정 필요</td><td>고정 필요</td><td><strong>미지원(명시)</strong></td><td>고정 필요</td><td>export 시 batch=1 고정 권장</td></tr></tbody></table></div>
+<blockquote class="callout warn">💡 <strong>팁 — 위 표의 "★★☆" 이하 행이 곧 fallback 후보 목록이다.</strong> 2단계에서 ONNX를 export할 때 이 행들(특히 control flow·동적 shape·shape 마사지 op)을 미리 정리해 두면, 세 벤더 어디에 넣어도 subgraph가 덜 쪼개진다. "어느 벤더든 좋아하는 그래프"는 <strong>Conv/MatMul 위주의, batch 고정, control flow 없는 feed-forward</strong> 다.</blockquote>
+<hr>
+<h2 id="3-환경도구-준비-공통-입력-만들기">3) 환경·도구 준비 — 공통 입력 만들기</h2>
+<p>세 백엔드의 공통 입력은 <strong>① ONNX 모델 ② 캘리브레이션 이미지 폴더</strong>다. 먼저 이걸 고정해 두면 세 툴에 그대로 재사용할 수 있다.</p>
+<pre><code class="lang-bash"># 작업 루트 (이 데스크톱 홈 하위, 경로는 각자 환경에 맞게)
+export WORK=$HOME/multi_soc &amp;&amp; mkdir -p $WORK &amp;&amp; cd $WORK
+
+# 2단계 산출물에서 가져오거나, 검증용으로 표준 분류 모델을 받는다.
+#   - INT8 QDQ ONNX가 이미 있으면 그걸 쓰고,
+#   - 없으면 FP32 ONNX + 캘리브레이션 이미지로 각 툴에서 PTQ를 돌린다.
+mkdir -p $WORK/model $WORK/calib
+# 예: resnet18-v1-7.onnx 를 $WORK/model/ 에 둔다 (2단계에서 export한 모델로 대체 가능)
+# calib/ 에는 대표 분포를 담은 수십 장(20~100장)을 넣는다. 클래스 분포를 고르게.</code></pre>
+<p>세 툴 모두 캘리브레이션 이미지를 학습과 동일하게 전처리해서 넣어야 하므로, <strong>전처리 파라미터(mean/std/resize/색공간)를 한 파일에 못박아 두고 세 툴에 재사용</strong>하는 것을 강력히 권한다. 아래를 <code>$WORK/preprocess.py</code>로 저장해 두고 세 절에서 import한다.</p>
+<pre><code class="lang-python"># $WORK/preprocess.py — 세 백엔드가 공유하는 단일 전처리 정의 (학습과 반드시 일치)
+import numpy as np
+from PIL import Image
+
+# 학습에 쓴 값과 &quot;바이트 단위로&quot; 동일해야 한다. 여기가 어긋나면 정확도가 조용히 무너진다.
+MEAN = np.array([0.485, 0.456, 0.406], dtype=np.float32)  # ImageNet 표준(예시). 네 학습값으로 교체!
+STD  = np.array([0.229, 0.224, 0.225], dtype=np.float32)
+SIZE = 224  # 입력 해상도. 모델 입력 shape과 일치시킬 것
+
+def load_chw(path: str) -&gt; np.ndarray:
+    &quot;&quot;&quot;이미지 1장 → (3,224,224) float32, NCHW용. resize/normalize를 학습과 동일하게.&quot;&quot;&quot;
+    img = Image.open(path).convert(&quot;RGB&quot;).resize((SIZE, SIZE))  # 색공간 RGB 고정
+    x = np.asarray(img, dtype=np.float32) / 255.0               # [0,1] 스케일
+    x = (x - MEAN) / STD                                        # 채널별 정규화
+    return np.transpose(x, (2, 0, 1)).copy()                    # HWC → CHW</code></pre>
+<blockquote class="callout tip">💡 <strong>팁 — 캘리브레이션 세트는 "학습 분포의 축소판"</strong> 세 툴 모두 PTQ 캘리브레이션에 수십 장이면 충분하다(DRP-AI 기본 흐름도 "few dozen sample images", TIDL 기본 <code>calibration_frames</code>도 20). 하지만 <strong>전처리(resize/normalize/mean-std)가 학습과 어긋나면 정확도가 조용히 무너진다.</strong> 특히 DRP-AI에서 가장 자주 터진다(6절 참조). 위처럼 전처리를 <strong>한 곳에 정의</strong>해 세 툴이 공유하면 이 실수를 구조적으로 막는다.</blockquote>
+<p>각 백엔드별 설치는 해당 절에서 다룬다. 셋 다 <strong>Docker 또는 전용 SDK</strong>를 쓰므로, 호스트 Python 환경을 오염시키지 않도록 각각 격리하는 것을 권장한다.</p>
+<blockquote class="callout bad">🔴 <strong>함정 — 세 벤더의 onnxruntime을 한 venv에 섞지 마라</strong> TIDL은 <code>onnxruntime</code>을 <strong>TI 포크</strong>(TIDLCompilationProvider/TIDLExecutionProvider 포함)로 덮어쓴다. QNN EP는 표준 <code>onnxruntime</code>(+QAIRT)을 쓴다. 3단계에서 쓴 <code>onnxruntime-gpu 1.28.0</code>도 또 다른 빌드다. <strong>이 셋을 같은 venv에 pip install하면 서로 덮어써서 "provider를 못 찾음" 에러가 난다.</strong> 반드시 <code>TIDL(Docker)</code> / <code>.qnn</code> venv / <code>.drpai</code> 를 분리하라.</blockquote>
+<hr>
+<h2 id="4-단계별-실습">4) 단계별 실습</h2>
+<h3 id="4-a-ti-tidl-edgeai-tidl-tools-x86-host-emulation">4-A. TI TIDL — <code>edgeai-tidl-tools</code> (x86 host emulation)</h3>
+<p>TI의 Jacinto/AM 계열(TDA4VM, J721E, J721S2, J784S4, AM62A 등)에 배포할 때 쓰는 스택이다. C7x-MMA 가속기용 아티팩트를 만들고, <strong>x86에서 host emulation으로 추론까지 검증</strong>할 수 있는 게 강점이다. "보드 없이 offload 비율을 본다"는 이 단계의 핵심 검증을 가장 깔끔하게 해 준다.</p>
+<h4 id="설치-docker-권장">설치 (Docker 권장)</h4>
+<pre><code class="lang-bash">cd $WORK
+# (2026-07 기준) 최신 태그: 11_02_17_00 (SDK 11.2.0/11.1 호환 패치),
+#   최신 stable: 11_02_16_00 (SDK 11.2.1, ONNX Runtime 1.23). 타겟 SDK 버전에 맞는 태그를 고른다.
+git clone https://github.com/TexasInstruments/edgeai-tidl-tools.git
+cd edgeai-tidl-tools
+git checkout 11_02_16_00   # docs/sdk_version_compatibility_table.md 에서 보드 SDK에 맞는 태그 확인 후 지정
+
+# 호스트 의존성 (Ubuntu 22.04)
+sudo apt-get install -y libyaml-cpp-dev libglib2.0-dev python3-setuptools
+
+# 방법 1) 스크립트 셋업 — SOC를 지정해야 한다 (예: AM62A, J721S2, J721E, J784S4)
+export SOC=am62a
+source ./setup.sh                      # 툴/모델/의존성 다운로드 (TI 포크 onnxruntime_tidl 설치 포함)
+# (설치 세부는 리포 최신 README 기준으로 재확인. 아래 Docker 방법이 재현성이 더 좋다.)
+
+# 방법 2) Docker — 의존성 자동 처리 (권장)
+#   scripts/docker/ 의 지침을 따른다.
+ls scripts/docker/                     # Dockerfile / build/run 스크립트 위치 확인</code></pre>
+<blockquote class="callout warn">⚠️ <strong>확인 필요</strong>: 릴리스마다 셋업 스크립트 위치가 바뀐다(<code>setup.sh</code>, <code>scripts/setup/</code>, <code>setup_env.sh &lt;SOC&gt;</code> 등). <code>11_02_04_00</code> 이후로 리포 구조가 크게 재편되었다. <code>11_02_16_00</code> 기준으로 위 흐름을 확인했으나, <strong>다른 태그를 쓰면 그 태그의 <code>README.md</code>를 그대로 따를 것.</strong> SOC 환경변수는 소문자(<code>am62a</code>)/대문자(<code>AM62A</code>) 표기가 릴리스별로 다를 수 있으니 README 예시에 맞춘다. (출처: <a href="https://github.com/TexasInstruments/edgeai-tidl-tools">edgeai-tidl-tools README</a>)</blockquote>
+<blockquote class="callout tip">💡 <strong>팁 — 왜 표준 pip onnxruntime로는 안 되는가</strong> TIDL 컴파일은 TI가 포크한 onnxruntime(<code>onnxruntime_tidl</code>)이 제공하는 <strong><code>TIDLCompilationProvider</code>(임포트/컴파일용)</strong> 와 <strong><code>TIDLExecutionProvider</code>(가속 추론용)</strong> 를 쓴다. PyPI 표준 onnxruntime에는 이 provider가 없다. <code>setup.sh</code>/Docker가 이 포크를 설치해 주므로, <strong>TIDL 작업은 반드시 이 환경 안에서</strong> 한다.</blockquote>
+<h4 id="컴파일-host-emulation-추론">컴파일 + host emulation 추론</h4>
+<p>TIDL 컴파일은 "ONNX Runtime에 <strong>TIDL delegate/EP를 붙여</strong> 캘리브레이션+파티셔닝하는" 방식이다. 리포의 예제 스크립트를 그대로 쓰는 것이 가장 안전하다.</p>
+<pre><code class="lang-bash">cd $WORK/edgeai-tidl-tools/examples/osrt_python/ort   # (태그에 따라 examples/ 하위 경로 상이)
+# 컴파일(캘리브레이션 + 아티팩트 생성) → 이어서 추론(host emulation)
+python3 onnxrt_ep.py -c    # compile: 캘리브레이션 후 model-artifacts/ 생성
+python3 onnxrt_ep.py       # infer:   생성된 아티팩트로 x86 emulation 추론
+#   -c 는 &quot;compile&quot; 모드. 빼면 이미 생성된 아티팩트로 추론만 한다.
+#   TIDL_TOOLS_PATH / SOC 환경변수가 설정돼 있어야 예제가 툴을 찾는다.</code></pre>
+<p>핵심은 예제 안의 <strong>컴파일 옵션 딕셔너리</strong>다. 여기서 8/16-bit, 캘리브레이션, deny_list(강제 CPU), 디버그 레벨을 제어한다. 아래는 <code>model_compilation.md</code>(2026-07 확인) 기준으로 <strong>각 키의 의미를 주석으로 못박은</strong> 완결 버전이다.</p>
+<pre><code class="lang-python"># TIDL 컴파일 옵션 (delegate/compile options). 키 이름은 model_compilation.md 기준(2026-07 확인).
+compile_options = {
+    &quot;tidl_tools_path&quot;: os.environ[&quot;TIDL_TOOLS_PATH&quot;],  # TIDL 툴 설치 경로(필수). setup.sh가 export
+    &quot;artifacts_folder&quot;: &quot;./model-artifacts&quot;,           # 산출물 폴더(필수, 비어 있어야 함)
+
+    # ── 정밀도 ─────────────────────────────────────────────
+    &quot;tensor_bits&quot;: 8,          # 8/16/32. 32는 float이라 &quot;타겟 실행 불가&quot;(host emul 검증용). 8-bit 우선!
+    &quot;accuracy_level&quot;: 1,       # 0/1/2/9, 기본 1. 클수록 정확도 우선(=캘리브레이션 더 많이/느리게).
+                               #   0 = 가장 빠른 컴파일(간이 캘리브레이션, 정확도 손실 감수)
+                               #   1 = 기본. calibration_frames/iterations 가 여기서 적용됨
+                               #   2/9 = 더 정밀(고급 캘리브레이션). 정확도 갭이 클 때만.
+
+    # ── 캘리브레이션 (accuracy_level=1일 때 적용) ─────────────
+    &quot;advanced_options:calibration_frames&quot;: 25,      # 캘리브레이션에 쓸 이미지 수 (기본 20). ↑ 정확도/컴파일시간
+    &quot;advanced_options:calibration_iterations&quot;: 50,  # 캘리브레이션 반복 (기본 50). ↑ 정확도/컴파일시간
+
+    # ── 혼합 정밀도 (8-bit로 정확도 갭이 크면 자동 승격) ──────────
+    #   value = (mixed precision 허용 latency) / (8-bit inference latency)
+    #   예: 1.2 → &quot;8-bit 대비 1.2배 느려지는 것까지 허용&quot;하며, 그 예산 안에서 정확도가 가장 좋아지는
+    #       레이어들을 자동으로 16-bit로 올린다. -1이면 자동 혼합 비활성.
+    &quot;advanced_options:mixed_precision_factor&quot;: -1,
+    # 특정 레이어만 수동으로 16-bit로 올릴 때(자동 대신 손으로 지정):
+    # &quot;advanced_options:output_feature_16bit_names_list&quot;: &quot;conv1,layer4.1.conv2&quot;,  # 이 노드들의 &quot;출력 텐서&quot;를 16bit
+    # &quot;advanced_options:params_16bit_names_list&quot;: &quot;layer4.1.conv2&quot;,                # 이 노드들의 &quot;가중치&quot;를 16bit
+
+    # ── fallback 제어 &amp; 디버그 ───────────────────────────────
+    &quot;deny_list:layer_type&quot;: &quot;&quot;,   # 이 op 타입을 강제로 ARM(CPU)로. 예: &quot;MaxPool&quot;. (allow_list와 동시 사용 불가)
+    # &quot;deny_list:layer_name&quot;: &quot;resnetv15_pool1_fwd&quot;,   # 이름으로 특정 노드만 CPU 고정
+    &quot;debug_level&quot;: 1,             # 0=끔, 1=파티셔닝/subgraph 로그+레이어 사이클, 2=상세,
+                                  #   3=고정소수점 레이어 트레이스 덤프, 4=고정+부동 트레이스, 5=상세+트레이스
+}</code></pre>
+<p>각 옵션을 <strong>언제 만지는지</strong> 한눈에:</p>
+<div class="tablewrap"><table><thead><tr><th>옵션</th><th>언제 만지나</th><th>방향</th></tr></thead><tbody><tr><td><code>tensor_bits</code></td><td>항상 먼저 8로</td><td>8 실패 시에만 16</td></tr><tr><td><code>accuracy_level</code></td><td>8-bit 정확도가 아쉬울 때</td><td>1→2로 올림(느려짐 감수)</td></tr><tr><td><code>calibration_frames/iterations</code></td><td>정확도가 캘리브레이션 부족처럼 보일 때</td><td>↑ (예: 20→50, 50→100)</td></tr><tr><td><code>mixed_precision_factor</code></td><td>일부 레이어만 정밀도 문제일 때</td><td>1.1~1.3부터</td></tr><tr><td><code>*_16bit_names_list</code></td><td>문제 레이어를 이미 특정했을 때</td><td>그 레이어만 지정</td></tr><tr><td><code>deny_list</code></td><td>특정 op가 파티션을 계속 끊을 때</td><td>그 op를 CPU로 격리(경계 정리)</td></tr><tr><td><code>debug_level</code></td><td>로그가 부족할 때</td><td>1로 시작, 필요 시 3 이상</td></tr></tbody></table></div>
+<blockquote class="callout tip">💡 <strong>팁 — 8-bit 우선, 갭 보이면 상향</strong> 먼저 <code>tensor_bits=8</code>로 전체를 돌리고, 정확도 갭이 큰 레이어만 <code>output_feature_16bit_names_list</code>/<code>params_16bit_names_list</code>로 16-bit 승격하거나 <code>mixed_precision_factor</code>로 자동 혼합한다. 처음부터 16-bit로 가면 속도 이점을 통째로 버리는 것. <strong>순서: 8-bit 전체 → (갭) 자동 혼합(factor) → (특정 레이어 확정 시) 수동 16bit 리스트.</strong></blockquote>
+<h4 id="ptq가-실패할-때-qat-또는-pre-quantized로-우회">PTQ가 실패할 때 — QAT 또는 pre-quantized로 우회</h4>
+<p>TIDL의 내부 PTQ 캘리브레이션이 정확도를 못 맞추면 두 갈래다:</p>
+<ol><li><strong>QAT</strong>(2단계에서 학습): 학습 시점에 양자화를 반영해 재학습. 근본 해결이지만 학습 파이프라인이 필요.</li><li><strong>Pre-quantized 입력</strong>: 이미 <strong>QDQ 노드가 박힌 ONNX</strong>(또는 pre-quantized TFLite)를 넣어 <strong>TIDL 자체 캘리브레이션을 우회</strong>한다. TIDL은 QDQ의 scale/zero-point를 그대로 받아들인다. 2단계에서 만든 QDQ ONNX가 있으면 이 경로가 가장 빠르다.</li></ol>
+<blockquote class="callout tip">💡 <strong>직관 — 왜 pre-quantized가 통하나</strong> TIDL 내부 PTQ는 "스스로 scale을 추정"하는 과정이다. 이미 QDQ 노드가 박혀 있으면 scale/zero-point가 <strong>그래프에 명시</strong>돼 있으므로 TIDL은 추정을 건너뛰고 그 값을 신뢰한다. 즉 <strong>양자화 파라미터의 주도권을 네가 쥔다</strong> → 2·3단계에서 검증한 양자화를 그대로 이식.</blockquote>
+<h4 id="fallbackoffload-로그-읽기-이-절의-핵심">fallback/offload 로그 읽기 (이 절의 핵심)</h4>
+<p>컴파일이 끝나면 콘솔과 아티팩트에 <strong>어떤 노드가 C7x로 offload되고 어떤 게 ARM으로 fallback됐는지</strong>가 나온다. <code>debug_level=1</code>이면 "parsing summary table"(C7x로 offload된 노드 수 vs CPU에서 오픈소스 런타임으로 돌 노드 수)이 출력된다.</p>
+<pre><code class="lang-text"># 컴파일 로그 말미 예시 (실제 값은 모델마다 다름)
+Final number of subgraphs created are : 3, - Offloaded Nodes - 196, Total Nodes - 236</code></pre>
+<p>이 한 줄을 <strong>토큰별로</strong> 읽는다:</p>
+<ul><li><strong><code>Total Nodes - 236</code></strong> = 이 ONNX 그래프의 전체 노드 수(파티셔닝 대상). 분모.</li><li><strong><code>Offloaded Nodes - 196</code></strong> = C7x-MMA로 간 노드 수. → offload 비율 = 196/236 ≈ <strong>83%</strong>. 나머지 40개(236−196)는 ARM Cortex-A로 fallback.</li><li><strong><code>Final number of subgraphs created are : 3</code></strong> = 그래프가 <strong>3토막</strong>으로 파티셔닝됐다는 뜻. <strong>이 숫자가 커질수록 나쁘다.</strong> 3이면 "가속 구간 사이에 CPU 구간이 끼어들어 그래프가 3조각" 났다는 뜻 → 매 경계에서 C7x↔ARM 데이터 이동 오버헤드가 (최소) 2번 발생.</li><li>이상적 목표: <strong><code>Offloaded ≈ Total</code>(비율 100%에 근접) 이면서 <code>subgraphs = 1</code>.</strong> 둘 다 봐야 한다 — offload 90%여도 subgraph가 8개면 데이터 왕복으로 느리다.</li></ul>
+<p>아티팩트 폴더에 남는 파일(로그로 안 보이는 세부는 여기서 확인):</p>
+<ul><li><code>tempDir/runtimes_visualization.svg</code> — 모델이 가속기와 CPU로 <strong>어떻게 분할됐는지</strong> 그림. <strong>파티션이 어디서 끊겼는지 눈으로 찾는 가장 빠른 방법.</strong> 브라우저로 열어 "빨간(CPU)/파란(TIDL)" 경계 노드를 본다.</li><li><code>tempDir/*.layer_info.txt</code> — TIDL 레이어 ↔ 원본 모델 레이어 매핑(어느 원본 레이어가 어느 TIDL 레이어가 됐는지).</li><li><code>tempDir/*.html</code> — 레이어 단위 상세 뷰어(사이클/정밀도 등).</li><li><code>allowedNode.txt</code> — 가속 허용된 노드 목록. <strong>이 파일이 생성되지 않으면</strong> 파티셔닝 자체가 실패했거나 미지원 op가 과다하다는 강한 신호(6절 참조).</li><li><code>*_net.bin</code> / <code>*_io_1.bin</code> — 실제 타겟에 올릴 컴파일된 네트워크/IO 바이너리.</li></ul>
+<blockquote class="callout bad">🔴 <strong>함정 — subgraph가 잘게 쪼개지면 성능이 붕괴한다</strong> offload 비율이 높아도 subgraph가 5~10개로 쪼개지면, TensorRT의 "레이어 사이 CPU 왕복"과 똑같은 병목이 생긴다. <strong>"Offloaded % 높음 + subgraph 개수 낮음"</strong> 이 목표다. 특정 op 하나가 파티션을 계속 쪼갠다면, <code>runtimes_visualization.svg</code>에서 그 경계 op를 찾아 <code>deny_list</code>로 아예 ARM에 고정하거나(경계를 한 군데로 몰아 정리), 모델 그래프를 수정해 제거/치환한다. <strong>역설적으로, 문제 op를 CPU로 "더 확실히" 보내면 subgraph 수가 줄어 전체는 빨라질 수 있다.</strong></blockquote>
+<hr>
+<h3 id="4-b-qualcomm-qnn-onnxruntime-qnn-ep">4-B. Qualcomm QNN — <code>onnxruntime</code> QNN EP</h3>
+<p>Qualcomm Snapdragon/Dragonwing 계열의 Hexagon <strong>HTP</strong>(NPU)에 배포한다. ONNX Runtime의 <strong>QNN Execution Provider</strong>를 쓰면 양자화·컴파일·추론을 파이썬 하나로 묶을 수 있다. QNN EP는 내부적으로 Qualcomm AI Runtime(<strong>QAIRT</strong>, 구 QNN SDK)을 감싼다.</p>
+<h4 id="설치">설치</h4>
+<pre><code class="lang-bash">cd $WORK
+python3 -m venv .qnn &amp;&amp; source .qnn/bin/activate
+# onnxruntime-qnn: QNN(QAIRT) EP 패키지. (2026-07 기준) 양자화 유틸은 x86_64에서만 동작.
+#   HTP 실기기 실행 자체는 Qualcomm 디바이스(예: Windows on Snapdragon ARM64)에서 이뤄지지만,
+#   &quot;양자화 + QDQ 생성&quot;은 이 x86 데스크톱에서 한다.
+pip install onnxruntime-qnn</code></pre>
+<blockquote class="callout warn">⚠️ <strong>확인 필요</strong>: <code>onnxruntime-qnn</code> 배포 채널은 플랫폼에 따라 다르다. 공식 문서는 "pip install onnxruntime-qnn"이 <strong>Windows ARM64(Qualcomm NPU)</strong> 대상이라고 명시한다. x86 리눅스에서는 <strong>양자화 유틸만</strong> 사용하고(그건 x86에서 동작), 실기기 HTP 실행/프로파일은 아래 AI Hub로 대체하는 구성이 현실적이다. (출처: <a href="https://onnxruntime.ai/docs/execution-providers/QNN-ExecutionProvider.html">ONNX Runtime QNN EP 문서</a>)</blockquote>
+<h4 id="양자화-x86에서-htp는-양자화-모델을-선호">양자화 (x86에서) — HTP는 양자화 모델을 선호</h4>
+<p>HTP 백엔드는 FP32를 (fp16 fallback 없이는) 효율적으로 못 돌린다. 정수 가속을 받으려면 8/16-bit로 먼저 양자화한다. QNN EP 전용 유틸이 "QNN이 좋아하는 형태의 QDQ"를 만들어 준다. 아래는 세 함수(<code>qnn_preprocess_model</code> → <code>get_qnn_qdq_config</code> → <code>quantize</code>)를 <strong>끝까지 이어붙인 완결 코드</strong>다.</p>
+<pre><code class="lang-python"># qnn_quantize.py  — x86_64에서 실행 (양자화 유틸은 x86 전용)
+import os, glob
+import numpy as np
+import onnxruntime
+from onnxruntime.quantization import QuantType, quantize
+from onnxruntime.quantization.calibrate import CalibrationDataReader
+from onnxruntime.quantization.execution_providers.qnn import (
+    get_qnn_qdq_config,
+    qnn_preprocess_model,
+)
+import sys; sys.path.insert(0, os.environ.get(&quot;WORK&quot;, &quot;.&quot;))
+from preprocess import load_chw   # 3절에서 만든 공유 전처리 (학습과 동일)
+
+input_model_path  = &quot;model/resnet18-v1-7.onnx&quot;
+preproc_model_path = &quot;model/model.preproc.onnx&quot;
+output_model_path  = &quot;model/model.qdq.onnx&quot;
+
+# ── CalibrationDataReader: calib/ 이미지를 &quot;모델 입력 이름&quot;에 맞춰 하나씩 공급 ──
+class DataReader(CalibrationDataReader):
+    def __init__(self, model_path, calib_dir=&quot;calib&quot;):
+        sess = onnxruntime.InferenceSession(model_path, providers=[&quot;CPUExecutionProvider&quot;])
+        self.input_name = sess.get_inputs()[0].name           # 모델의 실제 입력 텐서 이름
+        self.files = sorted(glob.glob(os.path.join(calib_dir, &quot;*&quot;)))
+        self.i = 0
+    def get_next(self):
+        if self.i &gt;= len(self.files):
+            return None                                        # 끝나면 None → 캘리브레이션 종료
+        x = load_chw(self.files[self.i])[None, ...].astype(np.float32)  # (1,3,224,224)
+        self.i += 1
+        return {self.input_name: x}
+    def rewind(self):
+        self.i = 0
+
+# 1) 전처리: QNN이 다루기 쉬운 형태로 그래프 정리(불필요 노드 제거/폴딩). 바뀌었는지 bool 반환.
+model_changed = qnn_preprocess_model(input_model_path, preproc_model_path)
+model_to_quantize = preproc_model_path if model_changed else input_model_path
+
+# 2) QNN용 QDQ 설정 생성. HTP 권장 조합: 활성값 uint16 + 가중치 uint8.
+my_data_reader = DataReader(model_to_quantize)
+qnn_config = get_qnn_qdq_config(
+    model_to_quantize,
+    my_data_reader,
+    activation_type=QuantType.QUInt16,  # HTP: 16-bit 활성값 (uint16). 순수 8bit면 QUInt8
+    weight_type=QuantType.QUInt8,       # HTP: 8-bit 가중치 (uint8)
+)
+
+# 3) 양자화 실행 → QDQ ONNX 저장
+quantize(model_to_quantize, output_model_path, qnn_config)
+print(&quot;saved&quot;, output_model_path)</code></pre>
+<blockquote class="callout tip">💡 <strong>팁 — 8-bit부터, 갭 보이면 활성값을 16-bit로</strong> TIDL과 동일 전략. 순수 8/8(uint8/uint8)로 먼저 시도하고, 정확도가 부족하면 활성값을 <code>QUInt16</code>으로 올린다(위 예처럼 uint16 act + uint8 weight가 HTP의 흔한 스윗스팟). QNN op는 대개 <strong>uint8/uint16</strong> 자료형을 지원하므로 이 두 조합이 표준이다.</blockquote>
+<blockquote class="callout tip">💡 <strong>팁 — <code>qnn_preprocess_model</code>을 건너뛰지 마라</strong> 이 전처리는 그래프를 QNN이 좋아하는 형태로 정리(예: 폴딩, 특정 패턴 치환)해서 <strong>양자화·파티셔닝 품질을 올린다.</strong> <code>model_changed</code>가 <code>True</code>면 반드시 정리된 모델을 다음 단계에 넘겨야 한다(위 코드의 삼항 연산이 그 역할).</blockquote>
+<h4 id="추론-세션-qnn-ep-context-binary">추론 세션 (QNN EP) + context binary</h4>
+<p>Qualcomm 디바이스에서 실행하는 코드다. <code>disable_cpu_ep_fallback</code>을 켜면 <strong>CPU로 떨어지는 순간 에러</strong>가 나므로, fallback 발생 여부를 즉시 잡아낼 수 있다.</p>
+<pre><code class="lang-python"># qnn_infer.py  — Qualcomm 디바이스(HTP)에서 실행
+import onnxruntime
+
+options = onnxruntime.SessionOptions()
+# CPU fallback을 금지 → 미지원 op가 있으면 로드시 에러로 알려준다 (fallback 탐지용)
+options.add_session_config_entry(&quot;session.disable_cpu_ep_fallback&quot;, &quot;1&quot;)
+
+# context binary(사전 컴파일된 그래프 캐시) 생성 → 다음 실행부터 초기화(HTP finalize) 시간 단축
+options.add_session_config_entry(&quot;ep.context_enable&quot;, &quot;1&quot;)      # 컨텍스트 덤프 켜기
+options.add_session_config_entry(&quot;ep.context_embed_mode&quot;, &quot;1&quot;)  # 1=바이너리를 onnx 안에 임베드, 0=별도 파일
+options.add_session_config_entry(&quot;ep.context_file_path&quot;, &quot;./model_ctx.onnx&quot;)  # 미지정 시 &lt;model&gt;_ctx.onnx
+
+session = onnxruntime.InferenceSession(
+    &quot;model/model.qdq.onnx&quot;,
+    sess_options=options,
+    providers=[&quot;QNNExecutionProvider&quot;],
+    provider_options=[{
+        &quot;backend_path&quot;: &quot;libQnnHtp.so&quot;,   # HTP(NPU). CPU 테스트는 &quot;libQnnCpu.so&quot;, GPU는 &quot;libQnnGpu.so&quot;
+                                          #   (Windows면 QnnHtp.dll / QnnCpu.dll)
+        &quot;htp_performance_mode&quot;: &quot;burst&quot;,  # burst/balanced/default/high_performance/
+                                          #   power_saver/sustained_high_performance
+        &quot;htp_graph_finalization_optimization_mode&quot;: &quot;3&quot;,  # 0(기본)~3. 클수록 최적화↑(finalize 준비시간↑)
+        # &quot;soc_model&quot;: &quot;&lt;SoC 번호&gt;&quot;,         # 타겟 SoC 지정(문자열). AOT 컴파일 시 유용
+        # &quot;htp_arch&quot;: &quot;&lt;아키텍처 번호&gt;&quot;,       # HTP 아키텍처 버전
+        # &quot;vtcm_mb&quot;: &quot;8&quot;,                     # VTCM 크기(MB, 문자열)
+        # &quot;enable_htp_fp16_precision&quot;: &quot;1&quot;,  # (기본 1) FP 연산을 fp16으로. 양자화 안 된 부분 가속
+        # &quot;offload_graph_io_quantization&quot;: &quot;1&quot;, # (기본 1) 그래프 입출력 quant/dequant도 HTP로
+        # &quot;device_id&quot;: &quot;0&quot;,                  # 디바이스 식별자(기본 &quot;0&quot;)
+    }],
+)</code></pre>
+<p>각 provider option을 <strong>언제 쓰나</strong>:</p>
+<div class="tablewrap"><table><thead><tr><th>옵션</th><th>역할</th><th>실무 기본값</th></tr></thead><tbody><tr><td><code>backend_path</code></td><td>어느 Qualcomm 백엔드로 갈지(HTP/CPU/GPU)</td><td><code>libQnnHtp.so</code> (실기기), 검증은 <code>libQnnCpu.so</code></td></tr><tr><td><code>htp_performance_mode</code></td><td>클럭/전력 정책</td><td>벤치는 <code>burst</code>, 상시는 <code>sustained_high_performance</code></td></tr><tr><td><code>htp_graph_finalization_optimization_mode</code></td><td>그래프 finalize 최적화 강도</td><td>배포용은 <code>3</code>(준비 오래, 실행 빠름)</td></tr><tr><td><code>enable_htp_fp16_precision</code></td><td>비양자화 FP를 fp16로</td><td>기본 1 유지</td></tr><tr><td><code>offload_graph_io_quantization</code></td><td>입출력 quant도 가속기에서</td><td>기본 1 유지</td></tr></tbody></table></div>
+<blockquote class="callout warn">⚠️ <strong>주의 — QNN EP가 지원하는 op는 ONNX의 부분집합</strong> 공식 문서가 명시: <strong><code>Loop</code>, <code>If</code>(control flow)는 미지원이고, 동적 shape(dynamic shapes)도 미지원.</strong> 제어흐름/동적 shape이 들어간 그래프는 그 지점에서 막힌다 → 2단계에서 batch를 고정하고 이런 op가 안 나오도록 export하는 게 최선(참고: <a href="04_transformer_quantization.html">2단계 ONNX export 함정</a>). 미지원 op는 <code>disable_cpu_ep_fallback</code>을 안 켰다면 조용히 CPU로 떨어진다.</blockquote>
+<blockquote class="callout tip">💡 <strong>팁 — <code>disable_cpu_ep_fallback=1</code>은 "fallback 탐지 스위치"다</strong> 평소엔 미지원 op가 조용히 CPU로 새서 느려져도 알아채기 어렵다. 이 스위치를 켜면 <strong>CPU로 갈 노드가 하나라도 있으면 세션 로드가 즉시 실패</strong>하므로, "완전 HTP 실행이 되는가"를 이분법으로 확인할 수 있다. 개발 중엔 켜서 fallback 지점을 강제로 드러내고, 정 안 되는 op만 골라 다시 끄고 CPU 허용한다.</blockquote>
+<blockquote class="callout bad">🔴 <strong>함정 — context binary는 SoC/디바이스 종속</strong> HTP context binary는 <strong>아키텍처 종속이라 다른 디바이스로 이식 불가.</strong> SoC가 바뀌면 다시 생성해야 한다(그래서 <code>soc_model</code>/<code>htp_arch</code>로 타겟을 명시하는 옵션이 있다). 캐시를 커밋해두고 재사용할 때 SoC가 같은지 반드시 확인. 다른 SoC의 캐시를 재사용하면 로드 실패하거나(운 나쁘면) 조용히 잘못 동작한다.</blockquote>
+<h4 id="보드가-없으면-qualcomm-ai-hub로-실기기-프로파일-대체">보드가 없으면 — Qualcomm AI Hub로 실기기 프로파일 대체</h4>
+<p>이 데스크톱에는 HTP가 없다. 실기기 latency/정확도가 필요하면 <strong><a href="https://aihub.qualcomm.com/">Qualcomm AI Hub</a></strong> 에 모델을 올려 <strong>클라우드의 실제 Snapdragon 디바이스</strong>에서 컴파일·프로파일·추론을 돌린다. <code>qai_hub</code> 파이썬 클라이언트로 3종 잡을 던지는 구조다.</p>
+<pre><code class="lang-python"># qai_hub_profile.py  — 이 x86 데스크톱에서 실행. 클라우드의 실기기로 컴파일/프로파일/추론.
+import qai_hub as hub
+import numpy as np
+
+# 0) 사전: `qai-hub configure --api_token &lt;토큰&gt;` 으로 계정 연결. `qai-hub list-devices`로 기기 확인.
+device = hub.Device(&quot;Snapdragon 8 Elite QRD&quot;)   # list-devices 결과 중 하나로 교체
+
+# 1) 컴파일 잡: ONNX(또는 QDQ ONNX) → 타겟 런타임 바이너리 (하드웨어 인지 최적화 + 수치 검증)
+compile_job = hub.submit_compile_job(
+    model=&quot;model/model.qdq.onnx&quot;,
+    device=device,
+    options=&quot;--target_runtime qnn_context_binary&quot;,  # QNN context binary로 컴파일(ORT 호환 형태도 가능)
+)
+compiled_model = compile_job.get_target_model()
+
+# 2) 프로파일 잡: &quot;실제 기기&quot;에서 레이어별 timing·컴퓨트 유닛 사용률·로드/추론 시간 측정
+profile_job = hub.submit_profile_job(model=compiled_model, device=device)
+print(profile_job.download_profile())   # per-layer latency, NPU/CPU 분배 등
+
+# 3) 추론 잡: 입력 업로드 → 실기기 추론 → 출력 다운로드 (정확도 대조용)
+x = np.random.rand(1, 3, 224, 224).astype(np.float32)  # 실제로는 검증셋으로 교체
+infer_job = hub.submit_inference_job(model=compiled_model, device=device, inputs={&quot;image&quot;: [x]})
+outputs = infer_job.download_output_data()</code></pre>
+<blockquote class="callout tip">💡 <strong>팁 — 로컬 검증 → AI Hub 실측, 2단 구성이 표준</strong> QNN EP로 로컬에서 "양자화 + 그래프 로드(disable_cpu_ep_fallback로 fallback 0 확인)"까지 검증하고, <strong>latency/정확도 실측만 AI Hub</strong>로 넘긴다. AI Hub 프로파일 잡의 per-layer timing은 TIDL의 <code>runtimes_visualization.svg</code>와 같은 목적 — "어디서 시간이 새는가"를 본다. AI Hub는 미리 컴파일된 ONNX Runtime 모델(QNN 바이너리 임베드)도 프로파일할 수 있어, 위 <code>qnn_infer.py</code> 산출물과 자연스럽게 이어진다.</blockquote>
+<hr>
+<h3 id="4-c-renesas-drp-ai-rzv_drp-ai_tvm">4-C. Renesas DRP-AI — <code>rzv_drp-ai_tvm</code></h3>
+<p>Renesas RZ/V 계열(RZ/V2H, RZ/V2N에 DRP-AI3; RZ/V2L·V2M·V2MA는 구형 DRP-AI)에 배포한다. <strong>TVM 기반</strong> 컴파일러(<strong>EdgeCortix MERA</strong> 컴파일러 프레임워크로 구동)라 미지원 레이어는 TVM이 CPU로 위임한다. 리포는 최근 <strong>RUHMI(Robust Unified Heterogeneous Model Integration)</strong> 로도 브랜딩되지만, 폴더/스크립트 이름은 여전히 <code>rzv_drp-ai_tvm</code> · <code>compile_onnx_model_quant.py</code>다.</p>
+<h4 id="설치">설치</h4>
+<pre><code class="lang-bash">cd $WORK
+git clone https://github.com/renesas-rz/rzv_drp-ai_tvm.git
+cd rzv_drp-ai_tvm
+# 설치는 리포의 setup / installation 가이드를 따른다(TVM 빌드 + DRP-AI Translator + DRP-AI Quantizer 설치).
+# 아래 환경변수를 export 해야 컴파일 스크립트가 각 도구를 찾는다.
+export TVM_ROOT=$WORK/rzv_drp-ai_tvm            # TVM(=DRP-AI TVM) 루트
+export SDK=/opt/poky/&lt;ver&gt;/sysroots/...         # RZ/V Linux 패키지에서 생성한 Yocto SDK 경로
+export TRANSLATOR=/opt/drp-ai_translator_release # DRP-AI Translator 설치 경로
+export QUANTIZER=/opt/drp-ai_quantizer           # DRP-AI Quantizer 설치 경로</code></pre>
+<blockquote class="callout warn">⚠️ <strong>확인 필요</strong>: <code>SDK</code>/<code>TRANSLATOR</code>/<code>QUANTIZER</code>/<code>TVM_ROOT</code>의 <strong>실제 설치 경로</strong>는 사용자가 Renesas에서 받은 패키지 버전에 따라 다르다. 위는 튜토리얼의 변수명(<code>$SDK $TRANSLATOR $QUANTIZER $TVM_ROOT</code>)을 확인한 것이며, 경로 값은 각자 설치에 맞춰 넣어야 한다. (출처: <a href="https://github.com/renesas-rz/rzv_drp-ai_tvm/blob/main/tutorials/tutorial_RZV2H.md">rzv_drp-ai_tvm tutorial_RZV2H.md</a>)</blockquote>
+<h4 id="컴파일-양자화-translate-rzv2hv2n은-drp-ai-quantizer-필수">컴파일 (양자화 → translate) — RZ/V2H/V2N은 DRP-AI Quantizer 필수</h4>
+<p>DRP-AI3 MAC은 <strong>INT8 연산만</strong> 한다. 따라서 <strong>translation 전에 반드시 양자화</strong>해야 한다. <code>compile_onnx_model_quant.py</code>가 캘리브레이션 이미지로 PTQ INT8을 만든 뒤 translate까지 한 번에 처리한다.</p>
+<pre><code class="lang-bash">cd $WORK/rzv_drp-ai_tvm/tutorials
+
+# RZ/V2H 예시 (튜토리얼 명령을 그대로 확인함, 2026-07)
+python3 compile_onnx_model_quant.py \
+    ../model/resnet18-v1-7.onnx \              # (positional) 입력 ONNX 경로
+    -o resnet18_onnx \                          # 출력 디렉토리 이름
+    -t $SDK \                                   # Yocto SDK 경로
+    -d $TRANSLATOR \                            # DRP-AI Translator 경로
+    -c $QUANTIZER \                             # DRP-AI Quantizer 경로
+    -s 1,3,224,224 \                            # 입력 shape (N,C,H,W). 모델 입력과 일치
+    -n 10 \                                     # 캘리브레이션에 쓸 이미지 수 (예: 10장)
+    --images $WORK/calib \                      # 캘리브레이션 이미지 폴더 (학습과 동일 전처리로!)
+    --mera2                                     # RZ/V2H·V2N 새 흐름(MERA2). V2L/V2M/V2MA는 --mera1
+# 참고 인자:
+#   -p / --quantization_option &quot;&lt;opts&gt;&quot;  : DRP-AI Quantizer에 넘길 추가 옵션(단, 한 번만 지정 가능)
+# ONNX/ExIR 포맷은 V2H/V2N에서 기본이 MERA2, PyTorch(.pt)는 기본 MERA1.</code></pre>
+<p>각 인자 요약:</p>
+<div class="tablewrap"><table><thead><tr><th>인자</th><th>의미</th><th>비고</th></tr></thead><tbody><tr><td>(positional)</td><td>입력 모델 경로</td><td>ONNX</td></tr><tr><td><code>-o</code></td><td>출력 디렉토리</td><td>translate 산출물 + <code>preprocess/</code>(전처리 오브젝트) 생성</td></tr><tr><td><code>-t</code></td><td>Yocto SDK</td><td>RZ/V Linux 패키지에서 생성</td></tr><tr><td><code>-d</code></td><td>DRP-AI Translator</td><td>그래프→DRP-AI 매핑</td></tr><tr><td><code>-c</code></td><td>DRP-AI Quantizer</td><td>INT8 PTQ 수행(V2H/V2N 필수)</td></tr><tr><td><code>-s</code></td><td>입력 shape</td><td><code>1,3,224,224</code> 처럼 콤마 구분</td></tr><tr><td><code>-n</code></td><td>캘리브레이션 이미지 수</td><td>수십 장이면 충분</td></tr><tr><td><code>--images</code></td><td>캘리브레이션 폴더</td><td><strong>학습과 동일 전처리</strong></td></tr><tr><td><code>--mera2</code> / <code>--mera1</code></td><td>컴파일 프레임워크 선택</td><td>기기·포맷에 따라 기본값 상이</td></tr></tbody></table></div>
+<blockquote class="callout bad">🔴 <strong>함정 (실무 최다 실수) — 캘리브레이션 전처리를 학습과 정확히 일치시켜라</strong> <code>--images</code> 폴더의 이미지에 적용되는 <strong>mean/std/resize/색공간</strong>이 학습 때와 조금이라도 다르면, <strong>컴파일은 성공하는데 정확도만 조용히 붕괴</strong>한다(에러가 안 나서 더 위험). 튜토리얼 기본 ResNet 전처리는 mean <code>[0.485,0.456,0.406]</code>, std <code>[0.229,0.224,0.225]</code> 인데, <strong>이 값을 반드시 네 학습 파이프라인과 맞춰라.</strong> DRP-AI에서 나는 "정확도 이상"의 절반 이상이 이것이다.</blockquote>
+<p><strong>전처리 일치 검증 코드.</strong> 컴파일에 넣기 전에, 캘리브레이션 파이프라인이 뽑는 텐서가 학습 텐서와 같은지 수치로 확인한다. "눈으로 봤으니 맞겠지"가 이 함정의 시작이다.</p>
+<pre><code class="lang-python"># verify_preprocess.py — DRP-AI 캘리브레이션 전처리가 학습과 일치하는지 수치로 검증
+import numpy as np, sys, os
+sys.path.insert(0, os.environ.get(&quot;WORK&quot;, &quot;.&quot;))
+from preprocess import load_chw, MEAN, STD, SIZE   # 3절의 공유 전처리
+
+x = load_chw(&quot;calib/sample_0.jpg&quot;)   # 캘리브레이션이 실제로 뽑는 텐서
+print(&quot;shape        :&quot;, x.shape)                      # 기대: (3, 224, 224)
+print(&quot;dtype        :&quot;, x.dtype)                       # 기대: float32
+print(&quot;per-ch mean  :&quot;, x.reshape(3, -1).mean(1))      # 정규화 후라 대략 0 근처(입력 분포 따라 다름)
+print(&quot;per-ch std   :&quot;, x.reshape(3, -1).std(1))       # 대략 1 근처
+print(&quot;min/max      :&quot;, x.min(), x.max())              # 정규화 범위 확인(예: -2.1 ~ +2.6)
+
+# 학습 코드의 transform과 &quot;같은 이미지&quot;에 대해 동일 값이 나오는지 대조하는 게 핵심.
+# 예: torchvision 파이프라인이 있으면 그 출력과 np.allclose 로 비교.
+# assert np.allclose(x, train_transform(img).numpy(), atol=1e-4), &quot;전처리 불일치!&quot;</code></pre>
+<blockquote class="callout tip">💡 <strong>팁 — 색공간·정규화 순서가 은근한 함정</strong> <code>RGB vs BGR</code>, <code>/255 먼저 vs mean-std 먼저</code>, <code>resize 보간법(bilinear/nearest)</code>, <code>[0,1] vs [0,255] 스케일에서 정규화</code> — 이 조합 중 하나만 어긋나도 값이 통째로 틀어진다. <code>min/max</code>가 학습 때와 다른 범위면(예: 학습은 -2~+2인데 여기선 0~1) <strong>정규화가 빠진 것</strong>이다.</blockquote>
+<h4 id="drp-ai3-양자화-요구사항-구조-제약">DRP-AI3 양자화 요구사항 &amp; 구조 제약</h4>
+<ul><li><strong>INT8 전용</strong>: DRP-AI3 MAC은 INT8만 → 양자화 없이는 아예 매핑 불가.</li><li><strong>모든 노드 입력이 각자 initializer를 가질 것</strong>: DRP-AI3 양자화는 각 노드의 입력(weight/bias 등)이 <strong>자기 initializer</strong>를 갖도록 요구한다. 공유/동적으로 계산되는 입력 구조는 전처리로 풀어(상수 폴딩·복제) 각 입력이 개별 initializer를 갖게 만들어야 한다.</li><li><strong>feed-forward 전용</strong>: 루프·재귀 계열(<strong>RNN/LSTM/GRU</strong>)은 DRP-AI에 매핑 불가. 시계열/순환 구조는 이 백엔드 대상이 아니다.</li></ul>
+<blockquote class="callout tip">💡 <strong>직관 — "각 입력이 자기 initializer" 요구가 왜 있나</strong> DRP-AI Translator는 컴파일 시점에 각 연산의 가중치를 <strong>정적으로 배치</strong>해야 한다. 두 노드가 같은 텐서를 동적으로 공유하거나 런타임에 계산되는 입력을 쓰면, 정적 배치가 깨져 매핑이 실패한다. 그래서 export/전처리 단계에서 <strong>상수는 상수로 굳혀(fold)</strong> 두는 것이 안전하다.</blockquote>
+<h4 id="fallback-로그-읽기-mera1-vs-mera2">fallback 로그 읽기 (MERA1 vs MERA2)</h4>
+<p>DRP-AI TVM은 <strong>TVM 기반</strong>이라, DRP-AI가 못 맡는 op는 <strong>TVM이 CPU(Arm Cortex-A)로 위임</strong>한다. 컴파일 산출물/로그에서 <strong>DRP-AI로 간 연산 vs CPU로 위임된 연산</strong>의 비율을 본다. MERA1/MERA2는 관측 도구가 다르다:</p>
+<div class="tablewrap"><table><thead><tr><th>구분</th><th>MERA1</th><th>MERA2 (v2.7.0~)</th></tr></thead><tbody><tr><td>대상 기기</td><td>RZ/V2L, V2M, V2MA</td><td>RZ/V2H, V2N</td></tr><tr><td>그래프 최적화</td><td>기본</td><td>강화(YOLOv8 등 개선)</td></tr><tr><td>런타임 Python API</td><td>제한</td><td><strong>지원(V2H/V2N)</strong></td></tr><tr><td>IR 뷰어</td><td>없음</td><td><strong>있음(V2H/V2N)</strong> — 어느 노드가 DRP-AI/CPU로 갔는지 시각 확인</td></tr><tr><td>CPU 위임 관측</td><td>컴파일 로그의 위임 메시지</td><td>IR 뷰어 + 로그</td></tr></tbody></table></div>
+<blockquote class="callout warn">⚠️ <strong>확인 필요</strong>: DRP-AI TVM 컴파일 로그의 정확한 "CPU 위임 노드 목록" 출력 형식/파일명은 리포 버전(MERA1/MERA2)에 따라 다르다. <code>tutorials/</code> 및 <code>docs/About_mera.md</code>의 로그 예시로 재확인할 것. <strong>MERA2(V2H/V2N)라면 IR 뷰어</strong>로 파티션을 시각 확인하는 것이 가장 확실하다. 원칙은 TIDL과 동일: <strong>CPU 위임이 늘수록 느려진다.</strong> (출처: <a href="https://github.com/renesas-rz/rzv_drp-ai_tvm/blob/main/docs/About_mera.md">rzv_drp-ai_tvm docs/About_mera.md</a>)</blockquote>
+<blockquote class="callout tip">💡 <strong>팁 — 프로파일링 how-to가 리포에 있다</strong> <code>rzv_drp-ai_tvm/how-to/tips/profiling/</code> 에 레이어별 프로파일 방법이 있다. TIDL의 <code>debug_level</code>/HTML 뷰어, QNN의 AI Hub per-layer timing과 <strong>같은 목적</strong> — "가속기에 남은 비율"과 "느린 레이어"를 찾는다.</blockquote>
+<hr>
+<h2 id="5-예시-결과-해석-fallback-비율부터-확인-정량-지표">5) 예시 / 결과 해석 — "fallback 비율부터 확인" (정량 지표)</h2>
+<p>세 백엔드를 다 돌렸으면, 제일 먼저 볼 것은 정확도도 latency도 아니고 <strong>offload/fallback 비율</strong>이다. 벤더마다 이름이 다를 뿐 다음 두 숫자를 <strong>반드시 계산</strong>한다:</p>
+<ul><li><strong>offload 비율</strong> = <code>가속 노드 / 전체 노드</code> (목표 ≥ 90%, 이상적 100%)</li><li><strong>파티션 수(subgraph 수)</strong> = 그래프가 몇 토막 났는가 (목표 1, 나빠도 한 자릿수 초반)</li></ul>
+<p>아래처럼 정리한다(값은 예시).</p>
+<div class="tablewrap"><table><thead><tr><th>백엔드</th><th>정밀도</th><th>offload(가속) 노드</th><th>fallback(CPU) 노드</th><th>offload 비율</th><th>subgraph/파티션 수</th><th>판정</th></tr></thead><tbody><tr><td>TIDL (AM62A)</td><td>INT8</td><td>196 / 236</td><td>40</td><td><strong>83%</strong></td><td>3</td><td>양호 — subgraph 낮음</td></tr><tr><td>TIDL (재시도, deny_list 정리)</td><td>mixed</td><td>228 / 236</td><td>8</td><td><strong>97%</strong></td><td>1</td><td>우수 — 단일 subgraph</td></tr><tr><td>QNN (HTP)</td><td>uint16/uint8</td><td>(전부 QNN)</td><td>0 (<code>disable_cpu_ep_fallback=1</code>로 강제)</td><td><strong>100%</strong></td><td>1</td><td>우수 — CPU 0</td></tr><tr><td>DRP-AI (RZ/V2H)</td><td>INT8</td><td>대부분 DRP-AI</td><td>소수 CPU 위임</td><td>(IR 뷰어로 산출)</td><td>—</td><td>위임 op 확인 필요</td></tr></tbody></table></div>
+<p>해석 원칙 (순서대로):</p>
+<ol><li><strong>offload 비율이 낮은 / fallback 비율이 높은 백엔드부터 손본다.</strong> latency 튜닝보다 이게 먼저다. "80% 미만"이면 뭔가 구조적으로 안 맞는 것 — 우선 그 백엔드를 파고든다.</li><li><strong>subgraph/파티션 개수를 1에 가깝게.</strong> 개수가 크면 offload %가 높아도 데이터 이동으로 느리다. offload 97%인데 subgraph 8개보다, offload 90%에 subgraph 1개가 대개 더 빠르다.</li><li>특정 op 하나가 파티션을 계속 쪼개면 → 그 op를 (a) 그래프에서 제거/치환(2단계로 회귀), (b) <code>deny_list</code>로 CPU 고정(경계 정리), (c) 벤더 지원 버전으로 태그 업그레이드.</li><li><strong>정확도 갭</strong>은 그 다음. 8-bit로 부족하면 문제 레이어만 16-bit 승격(TIDL <code>*_16bit_names_list</code>/<code>mixed_precision_factor</code>, QNN 활성값 <code>QUInt16</code>). DRP-AI는 8-bit 고정이므로 정확도가 부족하면 QAT나 그래프 수정으로 간다.</li></ol>
+<blockquote class="callout tip">💡 <strong>팁 — 세 로그의 "같은 자리"를 본다</strong> TIDL은 <code>Offloaded Nodes / Total Nodes</code> + <code>Final number of subgraphs</code>, QNN은 <code>disable_cpu_ep_fallback</code>가 잡아주는 로드 에러/경고(또는 AI Hub per-layer), DRP-AI는 TVM의 CPU 위임 노드(MERA2는 IR 뷰어). <strong>이름만 다르고 읽는 목적은 하나: "얼마나 가속기에 남았는가."</strong> 이 두 숫자(offload%·subgraph 수)를 세 백엔드에 대해 채운 표가 곧 산출물이다.</blockquote>
+<hr>
+<h2 id="6-흔한-오류와-해결-troubleshooting">6) 흔한 오류와 해결 (Troubleshooting)</h2>
+<div class="tablewrap"><table><thead><tr><th>증상</th><th>원인</th><th>해결</th></tr></thead><tbody><tr><td>(공통) 컴파일은 되는데 정확도만 급락</td><td><strong>캘리브레이션 전처리(mean/std/resize/색공간)가 학습과 불일치</strong></td><td>전처리를 학습 파이프라인과 <strong>바이트 단위로</strong> 일치. <code>verify_preprocess.py</code>로 min/max·per-ch 통계 대조. DRP-AI 최다 원인.</td></tr><tr><td>(공통) provider를 못 찾음 / 심볼 에러</td><td>세 벤더 onnxruntime을 <strong>한 venv에 혼재</strong></td><td>TIDL(Docker)/<code>.qnn</code>/<code>.drpai</code> 환경 분리. 각 환경에서만 해당 툴 실행.</td></tr><tr><td>TIDL: subgraph가 5~10개로 쪼개짐</td><td>중간에 미지원/비효율 op가 파티션을 끊음</td><td><code>runtimes_visualization.svg</code>에서 경계 op 찾기 → <code>deny_list</code>로 CPU 고정 또는 그래프에서 제거.</td></tr><tr><td>TIDL: <code>allowedNode.txt</code> 미생성</td><td>파티셔닝 실패/미지원 op 과다</td><td><code>debug_level=1</code>(필요 시 2+)로 parsing summary 확인, 태그를 보드 SDK에 맞는 것으로 재선택.</td></tr><tr><td>TIDL: PTQ 정확도 미달</td><td>내부 캘리브레이션 한계</td><td><code>calibration_frames/iterations</code> ↑ 또는 <code>accuracy_level</code> ↑; 그래도 부족하면 QAT 재학습 또는 <strong>pre-quantized QDQ ONNX</strong> 입력으로 캘리브레이션 우회.</td></tr><tr><td>QNN: 모델 로드시 op 관련 에러</td><td><code>Loop</code>/<code>If</code>/<strong>동적 shape</strong> 등 QNN EP 미지원</td><td>제어흐름 제거 + batch 고정으로 export(2단계). 불가피하면 해당 부분만 CPU EP 허용(disable_cpu_ep_fallback 끔).</td></tr><tr><td>QNN: <code>quantize</code>/유틸이 ARM64에서 실패</td><td>양자화 유틸은 <strong>x86_64 전용</strong></td><td>양자화는 이 데스크톱(x86)에서, 실행은 디바이스/AI Hub에서.</td></tr><tr><td>QNN: 매 실행 초기화가 느림</td><td>HTP 그래프 finalize 반복</td><td><strong>context binary</strong> 생성(<code>ep.context_enable=1</code>)해 캐시. 단, SoC 바뀌면 재생성.</td></tr><tr><td>QNN: 다른 기기에서 context 캐시 로드 실패</td><td>context binary는 <strong>SoC/아키텍처 종속</strong></td><td>타겟 SoC에서 재생성. <code>soc_model</code>/<code>htp_arch</code>로 타겟 명시.</td></tr><tr><td>DRP-AI: translate 단계에서 매핑 실패</td><td>양자화 안 함 / RNN·LSTM·GRU 포함</td><td>INT8 양자화 선행(V2H/V2N <code>-c $QUANTIZER</code>). 순환 구조는 DRP-AI 대상 아님(feed-forward만).</td></tr><tr><td>DRP-AI: 양자화기 initializer 에러</td><td>노드 입력이 <strong>자기 initializer 미보유</strong></td><td>DRP-AI3 요구사항 — 각 노드 입력이 개별 initializer를 갖도록 그래프 전처리(상수 폴딩·복제).</td></tr><tr><td>DRP-AI: 추론이 예상보다 느림</td><td><strong>CPU(TVM) 위임</strong> 과다</td><td>MERA2 IR 뷰어/로그로 위임 노드 확인, 미지원 op를 지원 op로 치환/제거.</td></tr><tr><td>DRP-AI: <code>--mera2</code>인데 동작 이상</td><td>기기/포맷과 프레임워크 불일치</td><td>V2L/V2M/V2MA는 <code>--mera1</code>, V2H/V2N은 <code>--mera2</code>. PyTorch(.pt)는 기본 MERA1임에 유의.</td></tr></tbody></table></div>
+<hr>
+<h2 id="7-산출물-deliverables">7) 산출물 (Deliverables)</h2>
+<p>이 단계가 끝나면 다음이 남아야 한다:</p>
+<ul><li><code>preprocess.py</code> — 세 백엔드가 공유한 <strong>단일 전처리 정의</strong>(학습과 일치). <code>verify_preprocess.py</code> 검증 로그.</li><li><code>model/model.qdq.onnx</code> — QNN용 QDQ ONNX(및 TIDL/DRP-AI 입력으로 재사용한 모델).</li><li>TIDL <code>model-artifacts/</code> + <code>tempDir/runtimes_visualization.svg</code> + <code>allowedNode.txt</code> — 파티셔닝 시각화/허용 노드.</li><li>QNN <code>model_ctx.onnx</code> — HTP context binary 캐시(디바이스에서 생성 시). AI Hub 프로파일 리포트(보드 없을 때).</li><li>DRP-AI <code>resnet18_onnx/</code>(또는 지정한 <code>-o</code> 폴더) — translate 산출물 + <code>preprocess/</code> 오브젝트.</li><li><strong>백엔드 비교표(5절 형식)</strong> — 백엔드별 <strong>offload 비율 + subgraph 수</strong> + INT8 요구사항 + 미지원 op를 한 장으로 정리한 표. <strong>이 표가 JD의 'multi-target deployment pipeline' 결과물의 핵심.</strong></li><li>각 백엔드 컴파일 로그에서 <strong>fallback을 유발한 op 리스트</strong>와 그 처리(제거/치환/deny_list) 기록.</li></ul>
+<hr>
+<h2 id="8-참고-사이트-참고문헌">8) 참고 사이트 &amp; 참고문헌</h2>
+<h3 id="공식-문서-도구">공식 문서 / 도구</h3>
+<ul><li><a href="https://github.com/TexasInstruments/edgeai-tidl-tools">TI edgeai-tidl-tools (GitHub)</a> — TIDL 컴파일/추론 툴·예제. 태그: <code>11_02_16_00</code>(stable), <code>11_02_17_00</code>(2026-07 patch).</li><li><a href="https://github.com/TexasInstruments/edgeai-tidl-tools/releases">TI edgeai-tidl-tools Releases</a> — SDK 버전↔태그 매핑, 지원 플랫폼(J721E/J721S2/J784S4/J722S/AM62A).</li><li><a href="https://github.com/TexasInstruments/edgeai-tidl-tools/blob/master/docs/model_compilation.md">TI edgeai-tidl-tools model_compilation.md</a> — <code>tensor_bits</code>/<code>accuracy_level</code>/<code>calibration_*</code>/<code>mixed_precision_factor</code>/<code>*_16bit_names_list</code>/<code>deny_list</code> 옵션 정의.</li><li><a href="https://github.com/TexasInstruments/edgeai-tidl-tools/blob/master/docs/debugging.md">TI edgeai-tidl-tools debugging.md</a> — <code>debug_level</code>(0~5) 의미, parsing summary(offload vs CPU 노드), 레이어 트레이스 덤프.</li><li><a href="https://github.com/TexasInstruments/edgeai-tidl-tools/blob/master/docs/supported_ops_rts_versions.md">TI TIDL 지원 op 문서 (supported_ops_rts_versions.md)</a> — 가속 가능 op 목록.</li><li><a href="https://software-dl.ti.com/codegen/docs/tvm/tvm_tidl_users_guide/compiling.html">TI TVM User's Guide (Compiling Models)</a> — subgraph 파티셔닝/offload 로그 해석.</li><li><a href="https://onnxruntime.ai/docs/execution-providers/QNN-ExecutionProvider.html">ONNX Runtime QNN Execution Provider 문서</a> — <code>get_qnn_qdq_config</code>/<code>qnn_preprocess_model</code>/provider_options/context binary/미지원 op(Loop·If·동적 shape).</li><li><a href="https://github.com/onnxruntime/onnxruntime-qnn">onnxruntime-qnn (GitHub)</a> — QAIRT EP 패키지·문서.</li><li><a href="https://aihub.qualcomm.com/">Qualcomm AI Hub</a> — 클라우드 실기기 컴파일·프로파일(보드 없을 때 실측 대체).</li><li><a href="https://app.aihub.qualcomm.com/docs/">Qualcomm AI Hub 문서 (compile/profile 예제)</a> — <code>qai_hub</code> 컴파일/프로파일/추론 잡 API.</li><li><a href="https://github.com/renesas-rz/rzv_drp-ai_tvm">Renesas rzv_drp-ai_tvm (GitHub)</a> — DRP-AI TVM 컴파일러(RUHMI / EdgeCortix MERA 기반).</li><li><a href="https://github.com/renesas-rz/rzv_drp-ai_tvm/blob/main/tutorials/tutorial_RZV2H.md">rzv_drp-ai_tvm RZ/V2H 튜토리얼</a> — <code>compile_onnx_model_quant.py</code> 명령·전처리·환경변수.</li><li><a href="https://github.com/renesas-rz/rzv_drp-ai_tvm/blob/main/docs/About_mera.md">rzv_drp-ai_tvm About_mera.md</a> — MERA1/MERA2 차이(대상 기기·<code>--mera2</code>·IR 뷰어).</li><li><a href="https://www.renesas.com/en/document/mas/drp-ai-quantizer-v101-users-manual">DRP-AI Quantizer 사용자 매뉴얼</a> — INT8 양자화 요구사항.</li><li><a href="https://www.renesas.com/en/products/rz-v2h">Renesas RZ/V2H 제품 페이지</a> — DRP-AI3 사양.</li></ul>
+<h3 id="논문-양자화-이론-복습용">논문 (양자화 이론 복습용)</h3>
+<ul><li>Jacob et al. (2018), <em>Quantization and Training of Neural Networks for Integer-Arithmetic-Only Inference</em>, arXiv:1712.05877 — INT8 정수 추론의 원조(세 백엔드 모두의 전제).</li><li>Nagel et al. (2021), <em>A White Paper on Neural Network Quantization</em>, arXiv:2106.08295 — PTQ/QAT·per-channel·혼합정밀도 실무 백서.</li><li>Gholami et al. (2021), <em>A Survey of Quantization Methods for Efficient Neural Network Inference</em>, arXiv:2103.13630 — 양자화 전반 서베이.</li></ul>
+<hr>
+<h2 id="9-다음-단계">9) 다음 단계</h2>
+<ul><li>이전: <strong><a href="05_tensorrt.html">3단계 — TensorRT</a></strong> (단일 벤더 심화)</li><li>다음: <strong><a href="07_infrastructure.html">5단계 — 인프라화</a></strong> — 지금까지 손으로 돌린 multi-target 컴파일을 CI/파이프라인으로 자동화하고, 백엔드별 아티팩트·프로파일을 재현 가능하게 묶는다.</li></ul>
+<blockquote class="callout">✅ <strong>이 단계 한 줄 요약</strong>: 툴체인이 셋이어도 문제는 하나다. <strong>ONNX → 벤더 지원 부분집합 → INT8 가능 부분집합 → 나머지 CPU fallback</strong>, 그리고 <strong>fallback 최소화가 전부</strong>다. 세 백엔드에서 <code>offload 비율</code>과 <code>subgraph 수</code> 두 숫자를 뽑아 비교표를 채우면, 어떤 새 SoC가 와도 이 사다리를 그대로 적용하면 된다.</blockquote><div class="pager"><a class="prev" href="05_tensorrt.html"><span class="lbl">← 이전</span>3. TensorRT</a><a class="next" href="07_infrastructure.html"><span class="lbl">다음 →</span>5. 인프라화</a></div>
+<footer>임베디드 AI 양자화 학습 가이드 · 체크 상태는 브라우저에 저장됩니다(localStorage) · 인쇄/PDF: Ctrl/⌘+P</footer>
+</div>
+<script>var PAGE="06_multi_soc";
+(function(){
+  var KEY='embai:'+PAGE;
+  var boxes=document.querySelectorAll('input[type=checkbox][data-k]');
+  var fill=document.getElementById('fill'), pct=document.getElementById('pct');
+  var saved={};try{saved=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){}
+  function upd(){var d=0;boxes.forEach(function(b){if(b.checked)d++});
+    var p=boxes.length?Math.round(d/boxes.length*100):0;
+    if(fill)fill.style.width=p+'%';
+    if(pct)pct.textContent=boxes.length?(d+' / '+boxes.length+'  ('+p+'%)'):'체크리스트 없음';}
+  boxes.forEach(function(b){var k=b.getAttribute('data-k');
+    if(saved[k])b.checked=true;
+    b.addEventListener('change',function(){saved[k]=b.checked;
+      try{localStorage.setItem(KEY,JSON.stringify(saved))}catch(e){};upd();});});
+  upd();
+})();
+</script>
+</body></html>

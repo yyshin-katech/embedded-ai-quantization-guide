@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>0. 환경 준비 — 보드 없어도 80%는 가능합니다</title><style>
+:root{--bg:#0f1115;--card:#171a21;--line:#2a2f3a;--tx:#e6e8ec;--dim:#9aa3b2;--acc:#5aa9ff;--ok:#3ecf8e;--warn:#f0b429;--bad:#ff6b6b;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:-apple-system,"Pretendard","Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;font-size:16px}
+a{color:var(--acc);text-decoration:none}a:hover{text-decoration:underline}
+.bar{position:sticky;top:0;background:rgba(15,17,21,.96);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);z-index:20}
+.bar-in{max-width:1000px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:14px}
+.bar b{font-size:.9rem;white-space:nowrap}
+.track{flex:1;height:8px;background:#252a34;border-radius:99px;overflow:hidden;min-width:80px}
+.fill{height:100%;width:0;background:linear-gradient(90deg,var(--acc),var(--ok));transition:width .3s}
+.pct{font-size:.82rem;color:var(--dim);min-width:96px;text-align:right;white-space:nowrap}
+.stagenav{border-bottom:1px solid var(--line);background:#12151b}
+.stagenav-in{max-width:1000px;margin:0 auto;padding:8px 20px;display:flex;flex-wrap:wrap;gap:6px}
+.stagenav a{font-size:.76rem;padding:3px 9px;border-radius:99px;background:#1e222b;color:var(--dim)}
+.stagenav a.cur{background:var(--acc);color:#08111f;font-weight:600}
+.wrap{max-width:1000px;margin:0 auto;padding:34px 24px 120px}
+h1{font-size:1.9rem;margin:0 0 20px;letter-spacing:-.02em;border-bottom:2px solid var(--acc);padding-bottom:16px}
+h2{font-size:1.35rem;margin:48px 0 14px;padding-left:12px;border-left:4px solid var(--acc);scroll-margin-top:110px}
+h3{font-size:1.08rem;margin:26px 0 10px;color:var(--acc);scroll-margin-top:110px}
+h4{font-size:1rem;margin:20px 0 8px;color:var(--tx)}
+p,li{color:var(--tx)}
+ul,ol{padding-left:22px}li{margin:6px 0}
+li.task{list-style:none;margin-left:-22px}
+li.task label{cursor:pointer;display:flex;gap:9px;align-items:flex-start}
+li.task input{margin-top:6px;width:16px;height:16px;accent-color:var(--acc);cursor:pointer;flex-shrink:0}
+li.task input:checked ~ *{color:var(--dim)}
+code{background:#20242e;color:#ffd479;padding:2px 6px;border-radius:4px;font-family:"SFMono-Regular",Consolas,monospace;font-size:.86em}
+pre{background:#0b0d11;border:1px solid var(--line);border-radius:8px;padding:15px;overflow-x:auto;font-size:.85rem;line-height:1.55}
+pre code{background:none;color:#c8d3e0;padding:0}
+.tablewrap{overflow-x:auto;margin:16px 0}
+table{width:100%;border-collapse:collapse;font-size:.9rem}
+th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}
+th{background:#1e222b;color:var(--acc);font-weight:600}
+blockquote{margin:16px 0;padding:14px 18px;border-radius:8px;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--acc)}
+blockquote.tip{border-left-color:var(--ok)}
+blockquote.warn{border-left-color:var(--warn)}
+blockquote.bad{border-left-color:var(--bad)}
+hr{border:none;border-top:1px solid var(--line);margin:32px 0}
+.toc{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 18px;margin:8px 0 28px}
+.toc summary{cursor:pointer;color:var(--acc);font-weight:600;font-size:.92rem}
+.toc ul{margin:10px 0 2px;padding-left:18px}
+.toc li{margin:3px 0;font-size:.9rem}
+.toc .l3{padding-left:16px;font-size:.85rem}
+.pager{display:flex;justify-content:space-between;gap:12px;margin:16px 0 0}
+.pager a{flex:1;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 16px;font-size:.9rem}
+.pager a.next{text-align:right}
+.pager .lbl{display:block;font-size:.72rem;color:var(--dim)}
+footer{margin-top:60px;padding-top:18px;border-top:1px solid var(--line);color:var(--dim);font-size:.82rem}
+@media print{body{background:#fff;color:#000}.bar,.stagenav,.pager{display:none}.card,blockquote{background:#f7f7f7;border:1px solid #ccc}pre{background:#f4f4f4}pre code,code{color:#000}h2,h3{color:#000}a{color:#000}th{background:#eee;color:#000}}
+</style></head><body>
+<div class="bar"><div class="bar-in"><b>0. 환경 준비 — 보드 없어도 80%는 가능합니다</b>
+<div class="track"><div class="fill" id="fill"></div></div>
+<span class="pct" id="pct">0 / 0</span></div></div>
+<div class="stagenav"><div class="stagenav-in"><a class="" href="README.html">홈</a><a class="cur" href="01_environment_setup.html">0. 환경준비</a><a class="" href="02_deployment_ladder.html">0.5 사다리</a><a class="" href="03_quantization_theory.html">1. 양자화이론</a><a class="" href="04_transformer_quantization.html">2. Transformer</a><a class="" href="05_tensorrt.html">3. TensorRT</a><a class="" href="06_multi_soc.html">4. 멀티SoC</a><a class="" href="07_infrastructure.html">5. 인프라화</a><a class="" href="08_capstone.html">캡스톤</a><a class="" href="09_roadmap.html">12주 로드맵</a><a class="" href="10_pitfalls.html">함정 5</a></div></div>
+<div class="wrap"><details class="toc" open><summary>목차</summary><ul><li><a href="#0-이-단계에서-무엇을왜-하는가">0) 이 단계에서 무엇을·왜 하는가</a></li><li><a href="#1-학습-목표-완료-체크리스트">1) 학습 목표 &amp;amp; 완료 체크리스트</a></li><li><a href="#2-배경-이론-개념-버전-스택을-왜-신경-써야-하나">2) 배경 이론 / 개념 — 버전 스택을 왜 신경 써야 하나</a></li><li class="l3"><a href="#왜-굳이-cuda-12-라인으로-통일하나-직관">왜 굳이 &quot;CUDA 12 라인&quot;으로 통일하나 (직관)</a></li><li class="l3"><a href="#정본-버전-스택-이-스터디-전체-고정-변경-금지">정본 버전 스택 (이 스터디 전체 고정 — 변경 금지)</a></li><li><a href="#3-환경도구-준비">3) 환경·도구 준비</a></li><li class="l3"><a href="#3-1-nvidia-드라이버-설치-3가지-경로-비교">3-1. NVIDIA 드라이버 설치 (3가지 경로 비교)</a></li><li class="l3"><a href="#3-2-cuda-toolkit-설치-확인-deb-vs-runfile">3-2. CUDA Toolkit 설치 + 확인 (deb vs runfile)</a></li><li class="l3"><a href="#3-3-docker-engine-nvidia-container-toolkit">3-3. Docker Engine + NVIDIA Container Toolkit</a></li><li class="l3"><a href="#3-4-python-가상환경-프레임워크-경로-a-cuda-12-라인-통일">3-4. Python 가상환경 + 프레임워크 (경로 A: CUDA 12 라인 통일)</a></li><li class="l3"><a href="#3-5-wsl2-사용-시-주의점-해당-시">3-5. WSL2 사용 시 주의점 (해당 시)</a></li><li><a href="#4-단계별-실습">4) 단계별 실습</a></li><li class="l3"><a href="#경로-b-권장-ngc-컨테이너로-정합-스택-한-번에">경로 B (권장): NGC 컨테이너로 정합 스택 한 번에</a></li><li class="l3"><a href="#4-1-nuscenes-mini-데이터셋-다운로드">4-1. nuScenes mini 데이터셋 다운로드</a></li><li class="l3"><a href="#4-2-nuscenes-devkit-설치-로드-확인">4-2. nuscenes-devkit 설치 + 로드 확인</a></li><li class="l3"><a href="#4-3-벤더-sdk는-지금-설치하지-않습니다-4단계-예고">4-3. 벤더 SDK는 지금 설치하지 않습니다 (4단계 예고)</a></li><li><a href="#5-예시-결과-해석">5) 예시 / 결과 해석</a></li><li><a href="#6-흔한-오류와-해결-troubleshooting">6) 흔한 오류와 해결 (Troubleshooting)</a></li><li><a href="#7-산출물-deliverables">7) 산출물 (Deliverables)</a></li><li><a href="#8-참고-사이트-참고문헌">8) 참고 사이트 &amp;amp; 참고문헌</a></li><li class="l3"><a href="#공식-문서-도구">공식 문서 / 도구</a></li><li class="l3"><a href="#논문">논문</a></li><li><a href="#9-다음-단계">9) 다음 단계</a></li></ul></details><div class="pager"><a class="prev" href="README.html"><span class="lbl">← 이전</span>홈</a><a class="next" href="02_deployment_ladder.html"><span class="lbl">다음 →</span>0.5 사다리</a></div><h1>0. 환경 준비 — 보드 없어도 80%는 가능합니다</h1>
+<blockquote class="callout">원본 가이드 매핑: "0. 환경 준비 — 보드 없어도 80%는 가능합니다" 예상 소요: 반나절 ~ 하루 (드라이버 설치 + 재부팅 + 데이터셋 다운로드 대기 포함) 선행 조건: Ubuntu 22.04 LTS 데스크톱, NVIDIA RTX 계열 dGPU, 인터넷, sudo 권한</blockquote>
+<hr>
+<h2 id="0-이-단계에서-무엇을왜-하는가">0) 이 단계에서 무엇을·왜 하는가</h2>
+<p>임베디드 AI 배포(양자화 → 컴파일 → 정확도 검증 → latency 측정)에서 <strong>실제로 타깃 보드가 꼭 필요한 작업은 의외로 적습니다.</strong> 컴파일, INT8 캘리브레이션, 정확도 벤치마크 같은 "무거운 두뇌 노동"의 약 80%는 x86 PC(RTX GPU)에서 그대로 할 수 있습니다. 보드는 <strong>실제 하드웨어 latency·전력·DLA/NPU 오프로드</strong>를 측정하는 마지막 단계에서만 필수입니다.</p>
+<div class="tablewrap"><table><thead><tr><th>타깃</th><th>보드 없이 x86에서 가능한 것</th><th>보드가 필요한 것</th></tr></thead><tbody><tr><td><strong>NVIDIA Orin</strong></td><td>TensorRT 엔진 빌드, INT8 캘리브레이션 전 과정 (x86 dGPU에서 동일 워크플로)</td><td>DLA 오프로드, 실제 on-device latency/전력</td></tr><tr><td><strong>TI TIDL</strong></td><td>x86에서 모델 컴파일 + host emulation 추론, 정확도 벤치마크</td><td>실제 C7x/MMA 성능·latency</td></tr><tr><td><strong>Qualcomm QNN</strong></td><td>x86_64에서 QDQ 양자화 (<code>get_qnn_qdq_config</code>)</td><td>HTP(Hexagon) 실행 → <strong>Qualcomm AI Hub</strong> 클라우드 디바이스로 대체 가능</td></tr><tr><td><strong>Renesas DRP-AI</strong></td><td>DRP-AI TVM 컴파일, Interpreter mode로 양자화 ONNX 정확도 확인</td><td>실제 DRP-AI on-device 실행</td></tr></tbody></table></div>
+<blockquote class="callout tip">💡 팁: 그래서 이 스터디는 <strong>RTX GPU가 달린 Linux PC 1대 + Docker</strong>만 있으면 대부분 완주할 수 있습니다. Jetson Orin 보드가 있으면 실측까지 한 번에 완결됩니다. 없어도 3단계(TensorRT)까지는 x86에서 그대로 따라올 수 있습니다.</blockquote>
+<p>이 단계의 목표는 딱 하나입니다: <strong>"GPU가 컨테이너 안에서 보이고, PyTorch/ONNX Runtime/TensorRT가 돌고, nuScenes mini가 로드되는" 상태를 만드는 것.</strong> 이후 모든 단계가 이 기반 위에서 돌아갑니다.</p>
+<p><strong>이 문서를 끝냈을 때 손에 쥐게 되는 것</strong> (7절 산출물과 연결):</p>
+<ul><li>GPU를 인식하는 호스트 + 컨테이너</li><li>버전이 못 박힌 재현 가능한 Python 환경(<code>ENV.md</code>)</li><li>로드가 검증된 nuScenes mini</li></ul>
+<blockquote class="callout tip">💡 팁: 이 단계는 <strong>뒤 단계 전체의 재현성 기반</strong>입니다. 여기서 "대충 되는 것 같다"로 넘어가면 3단계(TensorRT INT8)에서 <code>CUDAExecutionProvider</code>가 조용히 CPU로 fallback해 벤치마크 숫자가 통째로 틀어집니다. 각 검증 스니펫의 <strong>예상 출력과 실제 출력을 눈으로 대조</strong>하고 넘어가세요.</blockquote>
+<hr>
+<h2 id="1-학습-목표-완료-체크리스트">1) 학습 목표 &amp; 완료 체크리스트</h2>
+<ul><li class="task"><label><input type="checkbox" data-k="ba9a919cf4"> NVIDIA 드라이버 설치 후 <code>nvidia-smi</code>가 GPU와 드라이버 버전 / 지원 CUDA 상한을 출력한다</label></li><li class="task"><label><input type="checkbox" data-k="c84a79c79a"> <code>nvidia-smi</code> 출력의 각 필드(Driver Version, CUDA Version, Persistence-M, Memory-Usage, GPU-Util, Processes)를 해석할 수 있다</label></li><li class="task"><label><input type="checkbox" data-k="78ff38d8e9"> CUDA Toolkit(또는 컨테이너 내 CUDA)이 준비되어 <code>nvcc --version</code>이 동작하고, <strong>드라이버가 보여주는 CUDA 상한과 <code>nvcc</code>의 Toolkit 버전 차이</strong>를 설명할 수 있다</label></li><li class="task"><label><input type="checkbox" data-k="82b3f8a900"> Docker Engine + NVIDIA Container Toolkit 설치 후 <code>docker run --gpus all ... nvidia-smi</code>가 컨테이너 안에서 GPU를 보여준다</label></li><li class="task"><label><input type="checkbox" data-k="13f5f3d14f"> Python 가상환경에 PyTorch(CUDA 12.8), ONNX, ONNX Runtime(GPU/CUDA 12), TensorRT 10.x LTS, polygraphy가 설치되고 import된다</label></li><li class="task"><label><input type="checkbox" data-k="c336edeba6"> <code>torch.cuda.is_available()</code> → <code>True</code>, ONNX Runtime의 provider 목록에 <code>CUDAExecutionProvider</code>가 보이고, <strong>실제로 CUDA로 세션이 만들어지는지</strong>까지 확인했다</label></li><li class="task"><label><input type="checkbox" data-k="45b62add2c"> nuScenes <strong>mini(v1.0-mini)</strong> 다운로드 + <code>nuscenes-devkit</code> 설치, <code>NuScenes(version=&#x27;v1.0-mini&#x27;, ...)</code> 로드 성공 (<code>scenes: 10 / samples: 404</code>)</label></li><li class="task"><label><input type="checkbox" data-k="0ddbc4795c"> 각 벤더 SDK(TIDL/QNN/DRP-AI)는 <strong>지금 설치하지 않고</strong> <a href="06_multi_soc.html">4단계</a>에서 다룬다는 것을 이해한다</label></li></ul>
+<hr>
+<h2 id="2-배경-이론-개념-버전-스택을-왜-신경-써야-하나">2) 배경 이론 / 개념 — 버전 스택을 왜 신경 써야 하나</h2>
+<p>임베디드 AI에서 가장 흔한 삽질은 코드 버그가 아니라 <strong>CUDA / cuDNN / 프레임워크 버전 불일치</strong>입니다. 핵심 규칙 3가지만 기억하세요.</p>
+<ol><li><strong>드라이버 ≥ CUDA 런타임.</strong> NVIDIA 드라이버는 자신보다 같거나 낮은 CUDA 런타임을 실행할 수 있습니다(minor-version forward compatibility). 그래서 드라이버는 넉넉히 최신으로, CUDA 런타임은 프레임워크가 요구하는 버전에 맞춥니다.</li><li><strong><code>nvidia-smi</code>의 "CUDA Version"은 드라이버가 지원하는 상한선</strong>이지, 실제 설치된 CUDA Toolkit 버전이 아닙니다. 실제 Toolkit 버전은 <code>nvcc --version</code>으로 확인합니다. (이 둘의 차이는 3-2절에서 실물로 대조합니다.)</li><li><strong>pip로 설치하는 PyTorch/ONNX Runtime/TensorRT wheel은 각자 자기 CUDA/cuDNN을 번들</strong>합니다. 문제는 이들이 <strong>서로 다른 CUDA major에 묶여 있으면</strong> 충돌한다는 점입니다.</li></ol>
+<h3 id="왜-굳이-cuda-12-라인으로-통일하나-직관">왜 굳이 "CUDA 12 라인"으로 통일하나 (직관)</h3>
+<p>CUDA는 <strong>major 버전(12 ↔ 13)이 다르면 런타임 <code>.so</code>가 호환되지 않습니다.</strong> 한 프로세스 안에 <code>libcudart.so.12</code>와 <code>libcudart.so.13</code>을 동시에 로드하면, 먼저 로드된 쪽이 이기고 나머지는 심볼 충돌·초기화 실패를 냅니다. 그런데 ONNX Runtime의 <code>CUDAExecutionProvider</code>는 초기화에 실패하면 <strong>예외를 던지지 않고 조용히 CPU로 내려앉습니다.</strong> 그래서 "돌긴 도는데 GPU를 안 쓰는" 최악의 디버깅 지옥이 열립니다. 이걸 원천 차단하려고, 이 가이드는 세 도구를 <strong>전부 CUDA 12 위에서만</strong> 고르게 맞춥니다.</p>
+<blockquote class="callout bad">🔴 함정 (2026-07 기준 매우 중요): 2026년 7월 현재 세 도구의 <strong>PyPI 기본</strong> CUDA 라인이 갈라져 있습니다. - PyTorch 최신 stable wheel: <code>cu128</code> = <strong>CUDA 12.8</strong> (이건 그대로 씀 — 우리 기준선) - <code>onnxruntime-gpu</code> PyPI <strong>기본</strong>: <strong>1.27.0부터 CUDA 13.0으로 변경됨</strong> → 그냥 <code>pip install onnxruntime-gpu</code> 하면 CUDA 13 wheel이 딸려와 CUDA 12 스택과 충돌 - TensorRT PyPI <strong>최신</strong> <code>11.1.x</code>: <strong>CUDA 13.x 기본</strong> / LTS <code>10.16.x</code>: <strong>CUDA 12.x</strong> (우리는 LTS 10.x를 주경로로) 이걸 아무 생각 없이 pip로 한 venv에 섞으면 CUDA 12/13이 충돌해 <code>CUDAExecutionProvider</code>가 조용히 CPU로 fallback하거나 <code>import tensorrt</code>가 <code>.so</code> 로드 실패로 깨집니다. <strong>그래서 이 가이드는 두 가지 안전한 경로를 제시합니다:</strong> - <strong>(A) CUDA 12 라인으로 버전을 명시 고정한 pip 설치</strong> — onnxruntime-gpu는 CUDA 12 전용 인덱스, TensorRT는 <code>tensorrt-cu12==10.16.x</code>로 못 박음. - <strong>(B) NGC 컨테이너(권장)</strong> — 한 이미지 안에 CUDA/cuDNN/TensorRT/ORT가 이미 정합하게 맞춰져 있음.</blockquote>
+<h3 id="정본-버전-스택-이-스터디-전체-고정-변경-금지">정본 버전 스택 (이 스터디 전체 고정 — 변경 금지)</h3>
+<div class="tablewrap"><table><thead><tr><th>구성요소</th><th>고정 버전</th><th>CUDA 라인</th><th>메모</th></tr></thead><tbody><tr><td>CUDA Toolkit</td><td><strong>12.8</strong></td><td>12</td><td>PyTorch <code>cu128</code> 기준선에 맞춤</td></tr><tr><td>PyTorch</td><td><code>torch ... +cu128</code></td><td>12.8</td><td><code>pytorch.org/get-started</code>에서 최신 명령 확인</td></tr><tr><td>onnxruntime-gpu</td><td><strong>1.28.0 (CUDA 12 wheel)</strong></td><td>12</td><td>PyPI 기본(13)이 아닌 <strong>CUDA 12 전용 인덱스</strong>로 설치</td></tr><tr><td>TensorRT</td><td><strong>10.16.x LTS</strong></td><td>12</td><td>10.x 주경로. 11.x는 참고만</td></tr><tr><td>ExecuTorch</td><td><strong>1.3.x</strong></td><td>12(호스트 빌드 시)</td><td>이 단계에선 설치 안 함 — 온디바이스 단계에서 다룸</td></tr><tr><td>polygraphy</td><td>최신</td><td>-</td><td>TensorRT 검증/디버깅 CLI</td></tr></tbody></table></div>
+<blockquote class="callout tip">💡 팁: <strong>ExecuTorch 1.3.x</strong>는 PyTorch edge 런타임으로, 이 스터디의 온디바이스/모바일 경로에서 등장합니다. 0단계(환경 준비)에서는 <strong>설치하지 않습니다.</strong> CUDA 스택과 무관한 별도 툴체인(보통 별도 venv)이라, 지금 섞으면 혼란만 커집니다. 여기서는 "정본 스택에 1.3.x로 고정되어 있다"는 사실만 기억하세요.</blockquote>
+<hr>
+<h2 id="3-환경도구-준비">3) 환경·도구 준비</h2>
+<p>아래는 <strong>베어메탈(호스트)에 직접 설치</strong>하는 경로입니다. 컨테이너만 쓸 계획이면 3-1(드라이버) → 3-3(Docker+Toolkit)까지만 하고 3-2·3-4는 건너뛰어 4절의 "경로 B(NGC 컨테이너)"로 가도 됩니다.</p>
+<blockquote class="callout warn">🖥️ WSL2 사용자 먼저 읽기: Windows의 WSL2 Ubuntu에서 진행한다면 <strong>3-1(드라이버 설치)과 3-2(호스트 CUDA 드라이버)는 건너뜁니다.</strong> 드라이버는 Windows 쪽에만 설치하고, WSL 안에는 CUDA "Toolkit"만 깔면 됩니다. 자세한 주의점은 <a href="#3-5-wsl2-사용-시-주의점-해당-시">3-5</a>를 먼저 보세요.</blockquote>
+<h3 id="3-1-nvidia-드라이버-설치-3가지-경로-비교">3-1. NVIDIA 드라이버 설치 (3가지 경로 비교)</h3>
+<p>드라이버 설치는 크게 세 갈래입니다. <strong>대부분은 경로 ①로 충분</strong>하고, 특정 버전이 필요하면 ②(APT 버전 고정) 또는 ③(PPA), 배포판 패키지가 막힌 특수 상황에서만 ④(.run)를 씁니다.</p>
+<div class="tablewrap"><table><thead><tr><th>경로</th><th>명령 요지</th><th>장점</th><th>단점/주의</th></tr></thead><tbody><tr><td><strong>① <code>ubuntu-drivers</code></strong> (권장)</td><td><code>sudo ubuntu-drivers autoinstall</code> 또는 <code>sudo ubuntu-drivers install</code></td><td>커널 헤더/DKMS/Secure Boot 서명까지 APT가 관리, 재부팅 후 커널 업데이트에도 자동 재빌드</td><td>배포판 저장소가 제공하는 브랜치까지만</td></tr><tr><td><strong>② APT 버전 고정</strong></td><td><code>sudo apt-get install -y nvidia-driver-&lt;번호&gt;</code></td><td>①의 장점을 유지하며 <strong>특정 브랜치 고정</strong></td><td>존재하는 브랜치 번호를 <code>ubuntu-drivers devices</code>로 먼저 확인해야</td></tr><tr><td><strong>③ graphics-drivers PPA</strong></td><td><code>sudo add-apt-repository ppa:graphics-drivers/ppa</code> 후 APT 설치</td><td>배포판보다 <strong>최신/베타</strong> 브랜치</td><td>안정성 낮을 수 있음, 시스템 불안정 리스크</td></tr><tr><td><strong>④ <code>.run</code> 러너파일</strong></td><td>NVIDIA 사이트 <code>.run</code> 직접 실행</td><td>최신·특정 빌드 강제</td><td><strong>APT가 관리하지 않음</strong> → 커널 업데이트마다 수동 재설치, nouveau 수동 blacklist 필요, 유지보수 최악</td></tr></tbody></table></div>
+<blockquote class="callout tip">💡 팁: <code>autoinstall</code>과 <code>install</code>은 22.04에서 사실상 동일하게 "recommended 브랜치 자동 설치"입니다. 다만 <strong>Ubuntu 26.04부터 <code>autoinstall</code>이 폐기(deprecated)</strong> 예정이라 앞으로를 생각하면 <code>install</code>을 습관화하는 편이 좋습니다. 22.04에서는 둘 다 동작합니다.</blockquote>
+<p><strong>경로 ① (권장) — <code>ubuntu-drivers</code></strong></p>
+<pre><code class="lang-bash"># 1) 시스템 최신화 + 빌드 도구 (DKMS 커널 모듈 빌드에 필요)
+sudo apt-get update &amp;&amp; sudo apt-get upgrade -y
+sudo apt-get install -y build-essential dkms
+
+# 2) 이 PC에 권장되는 드라이버 확인 (recommended 라벨 확인)
+ubuntu-drivers devices
+#   출력 예: nvidia-driver-570 - distro non-free recommended
+
+# 3) 권장 드라이버 자동 설치
+sudo ubuntu-drivers install
+#   (26.04부터는 install만 표준. 22.04는 autoinstall도 가능)
+
+# 4) 재부팅 (커널 모듈 로드에 필수)
+sudo reboot</code></pre>
+<p><strong>경로 ② — 특정 버전 APT 고정</strong> (예: 문제 브랜치를 피하거나 CUDA 12.8 검증 조합에 맞출 때)</p>
+<pre><code class="lang-bash"># ubuntu-drivers devices 로 존재하는 번호를 확인한 뒤:
+sudo apt-get install -y nvidia-driver-570   # 번호는 devices 출력에 맞출 것
+sudo reboot</code></pre>
+<p><strong>경로 ③ — graphics-drivers PPA</strong> (배포판 저장소에 없는 최신 브랜치가 필요할 때만)</p>
+<pre><code class="lang-bash">sudo add-apt-repository ppa:graphics-drivers/ppa
+sudo apt-get update
+ubuntu-drivers devices          # PPA가 추가한 최신 브랜치가 목록에 나타남
+sudo apt-get install -y nvidia-driver-&lt;번호&gt;
+sudo reboot</code></pre>
+<blockquote class="callout warn">⚠️ 주의: <code>-open</code> 접미사가 붙은 패키지(open kernel module)와 proprietary 버전이 함께 보일 수 있습니다. RTX 데스크톱에서 문제가 생기면 proprietary(비 <code>-open</code>) 브랜치로 되돌리세요. 두 변형을 섞어 깔지 말 것.</blockquote>
+<p>재부팅 후 검증합니다.</p>
+<pre><code class="lang-bash">nvidia-smi</code></pre>
+<p>예상 출력(값은 환경마다 다름 — 필드 해석은 바로 아래 3-1-a):</p>
+<pre><code class="lang-text">+-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 5xx.xx.xx    Driver Version: 5xx.xx.xx    CUDA Version: 12.8                  |
+|-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |
+|=========================================+========================+======================|
+|   0  NVIDIA GeForce RTX 4090        Off  | 00000000:01:00.0  On   |                  N/A |
+|  0%   38C    P8              22W / 450W  |    412MiB / 24564MiB   |      0%      Default |
++-----------------------------------------+------------------------+----------------------+
+|                                                                                         |
+| Processes:                                                                              |
+|  GPU   GI   CI        PID   Type   Process name                             GPU Memory  |
+|=========================================================================================|
+|    0   N/A  N/A      1523      G   /usr/lib/xorg/Xorg                            180MiB  |
++-----------------------------------------------------------------------------------------+</code></pre>
+<h4 id="3-1-a-nvidia-smi-출력-필드별-해석">3-1-a. <code>nvidia-smi</code> 출력 필드별 해석</h4>
+<p>이 표를 눈으로 읽을 수 있어야 이후 모든 트러블슈팅이 쉬워집니다.</p>
+<div class="tablewrap"><table><thead><tr><th>필드</th><th>의미</th><th>자주 헷갈리는 점</th></tr></thead><tbody><tr><td><strong>NVIDIA-SMI</strong> / <strong>Driver Version</strong></td><td>설치된 드라이버 버전</td><td>이게 실제로 깔린 커널 드라이버 버전</td></tr><tr><td><strong>CUDA Version</strong> (헤더 우측)</td><td><strong>이 드라이버가 지원하는 CUDA 런타임 상한</strong></td><td>⚠️ 설치된 Toolkit 버전이 아님! <code>nvcc --version</code>과 다를 수 있고 다른 게 정상. 드라이버가 12.8까지 지원해도 실제 Toolkit은 12.8이 아닐 수 있음</td></tr><tr><td><strong>Persistence-M</strong></td><td>Persistence Mode (Off/On)</td><td>Off면 유휴 시 드라이버 언로드로 첫 커널 실행이 수백 ms 느려질 수 있음. 벤치마크 전 <code>sudo nvidia-smi -pm 1</code>로 On 권장</td></tr><tr><td><strong>Bus-Id</strong></td><td>PCI 버스 주소 (<code>0000:01:00.0</code>)</td><td>멀티 GPU에서 <code>CUDA_VISIBLE_DEVICES</code>로 특정 GPU 지정 시 대조</td></tr><tr><td><strong>Disp.A</strong></td><td>이 GPU가 디스플레이 출력 중인지(On/Off)</td><td>On이면 그 GPU 메모리 일부를 데스크톱이 씀</td></tr><tr><td><strong>Fan / Temp / Perf / Pwr:Usage/Cap</strong></td><td>팬%/온도℃/P-State/전력(현재/최대)</td><td>P8=저전력 유휴, P0=최대 성능. 벤치마크 중 P0인지 확인</td></tr><tr><td><strong>Memory-Usage</strong></td><td>사용/총 VRAM (<code>412MiB / 24564MiB</code>)</td><td>총량이 모델+배치가 들어갈지 판단 기준. RTX 4090=24GB</td></tr><tr><td><strong>GPU-Util</strong></td><td>최근 샘플 구간의 GPU 코어 점유율%</td><td>0%인데 학습이 도는 것 같으면 CPU fallback 의심</td></tr><tr><td><strong>Compute M.</strong></td><td>Compute Mode (Default/Exclusive 등)</td><td>보통 Default</td></tr><tr><td><strong>Processes</strong></td><td>GPU를 점유 중인 PID/이름/메모리</td><td>여기 내 파이썬 PID가 보이면 진짜 GPU를 쓰는 것. <code>Xorg</code>만 있으면 유휴</td></tr></tbody></table></div>
+<blockquote class="callout bad">🔴 함정: "<code>nvidia-smi</code>가 CUDA 12.8이라는데 왜 PyTorch가 12.8을 요구해?"는 <strong>잘못된 질문</strong>입니다. 헤더의 CUDA Version은 드라이버 상한일 뿐, 프레임워크는 자기 번들 CUDA를 씁니다. 드라이버 상한 ≥ 프레임워크 CUDA면 됩니다(예: 드라이버 상한 12.8 ≥ torch cu128의 12.8, OK).</blockquote>
+<h4 id="3-1-b-드라이버-설치-실패-복구-secure-boot-nouveau-재부팅-후-실패">3-1-b. 드라이버 설치 실패 복구 (Secure Boot / nouveau / 재부팅 후 실패)</h4>
+<p>재부팅했는데 <code>nvidia-smi</code>가 안 뜨는 3대 원인과 복구법입니다.</p>
+<p><strong>증상 A: <code>nvidia-smi</code>가 "command not found" 또는 "NVIDIA-SMI has failed because it couldn't communicate with the NVIDIA driver"</strong></p>
+<pre><code class="lang-bash"># 1) 커널 모듈이 빌드/로드됐는지
+sudo dkms status                 # nvidia/5xx: installed 가 보여야 함
+lsmod | grep nvidia              # nvidia, nvidia_uvm 등이 로드돼야 함
+
+# 2) 로드가 안 됐으면 로그 확인
+sudo dmesg | grep -i -E &quot;nvidia|nouveau&quot;
+
+# 3) 부팅 시 nouveau(오픈소스 기본 드라이버)가 nvidia를 밀어냈는지
+lsmod | grep nouveau             # 출력이 있으면 nouveau가 살아있는 것 = 문제</code></pre>
+<p><strong>증상 B: Secure Boot가 서명 안 된 nvidia 모듈을 차단</strong> — <code>dmesg</code>에 <code>nvidia: module verification failed</code> 또는 부팅 후 커널 모듈이 로드 안 됨.</p>
+<pre><code class="lang-bash"># Secure Boot 상태 확인
+mokutil --sb-state             # &quot;SecureBoot enabled&quot; 이면 서명 필요
+
+# 해결 1 (권장): DKMS/APT가 만든 MOK 키를 등록
+#   ubuntu-drivers/apt 설치 중 &quot;Configuring Secure Boot&quot; 화면에서 비밀번호를 설정했다면,
+#   재부팅 시 파란 MOK Management 화면 → Enroll MOK → 그 비밀번호 입력으로 등록.
+#   수동으로 키를 등록하려면:
+sudo mokutil --import /var/lib/shim-signed/mok/MOK.der
+#   → 비밀번호 설정 후 재부팅 → 파란 화면에서 Enroll MOK → 방금 비밀번호 입력
+
+# 해결 2 (간단하지만 보안 낮춤): BIOS/UEFI에서 Secure Boot를 임시 비활성화 후 재부팅</code></pre>
+<p><strong>증상 C: nouveau가 아직 살아있어 nvidia가 로드 실패</strong> — <code>.run</code> 설치나 일부 수동 설치에서 발생. APT/<code>ubuntu-drivers</code> 경로는 보통 자동 처리되지만, 수동으로 해야 할 때:</p>
+<pre><code class="lang-bash"># 1) nouveau blacklist 파일 작성
+sudo tee /etc/modprobe.d/blacklist-nouveau.conf &gt; /dev/null &lt;&lt;&#x27;EOF&#x27;
+blacklist nouveau
+options nouveau modeset=0
+EOF
+
+# 2) initramfs 재생성 후 재부팅
+sudo update-initramfs -u -k all
+sudo reboot
+
+# 3) 재부팅 후 nouveau가 죽었는지 확인 (출력 없으면 성공)
+lsmod | grep nouveau</code></pre>
+<blockquote class="callout warn">⚠️ 주의: <code>.run</code> 러너파일(경로 ④)로 깔았다면 <strong>커널을 업데이트할 때마다 nvidia 모듈이 깨져</strong> <code>nvidia-smi</code>가 다시 실패합니다. 이때는 <code>.run</code>을 다시 실행하거나(<code>sudo sh NVIDIA-Linux-*.run</code>), 아예 <code>.run</code> 드라이버를 제거(<code>sudo nvidia-uninstall</code>)하고 경로 ①(APT)로 재설치하는 게 장기적으로 편합니다.</blockquote>
+<h3 id="3-2-cuda-toolkit-설치-확인-deb-vs-runfile">3-2. CUDA Toolkit 설치 + 확인 (deb vs runfile)</h3>
+<p>호스트에서 직접 컴파일(<code>nvcc</code>)까지 하거나 일부 소스 빌드가 필요하면 CUDA Toolkit이 필요합니다. <strong>컨테이너(경로 B)만 쓸 거면 이 절 전체를 건너뛰어도 됩니다</strong> — NGC 이미지 안에 Toolkit이 들어 있습니다.</p>
+<p>설치 방식은 두 갈래이며, 이 스터디는 <strong>deb(network)</strong> 를 권장합니다.</p>
+<div class="tablewrap"><table><thead><tr><th>방식</th><th>특징</th><th>언제</th></tr></thead><tbody><tr><td><strong>deb (network)</strong> (권장)</td><td>APT 저장소 등록 후 <code>apt install</code>. 의존성/업데이트를 APT가 관리</td><td>대부분의 경우. 버전 고정이 쉬움</td></tr><tr><td><strong>deb (local)</strong></td><td>큰 <code>.deb</code> 로컬 리포를 받아 설치. 인터넷 제한 환경에 적합</td><td>오프라인/에어갭</td></tr><tr><td><strong>runfile</strong></td><td>단일 <code>.run</code> 실행. <strong>드라이버까지 같이 깔려는 경향</strong> → 이미 있는 드라이버와 충돌 주의</td><td>특수 상황. 설치 시 드라이버 항목 체크 해제 권장</td></tr></tbody></table></div>
+<blockquote class="callout warn">⚠️ 주의: <code>.run</code> runfile로 Toolkit을 깔 때 화면에서 <strong>Driver 항목을 반드시 체크 해제</strong>하세요. 3-1에서 APT로 깐 드라이버를 runfile이 덮어써 버전이 어긋나면 위의 "증상 A"가 재발합니다.</blockquote>
+<p><strong>deb(network) 설치 — CUDA 12.8 라인 고정</strong> (정본 스택)</p>
+<pre><code class="lang-bash"># NVIDIA CUDA APT 저장소 키링 설치 (Ubuntu 22.04 / x86_64)
+#   최신 keyring 파일명/URL은 https://developer.nvidia.com/cuda-downloads 에서
+#   Linux &gt; x86_64 &gt; Ubuntu &gt; 22.04 &gt; deb(network) 를 골라 재확인.
+wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
+sudo dpkg -i cuda-keyring_1.1-1_all.deb
+sudo apt-get update
+
+# CUDA 12.8 Toolkit만 고정 설치 (드라이버는 3-1에서 이미 설치했으므로 toolkit만)
+sudo apt-get install -y cuda-toolkit-12-8
+#   🔴 &#x27;sudo apt-get install -y cuda&#x27; 는 항상 최신(13.x)을 끌어와
+#      PyTorch cu128(12.8)과 CUDA major가 어긋납니다. 반드시 &#x27;cuda-toolkit-12-8&#x27;로 고정.
+#   💡 &#x27;cuda-toolkit-12-8&#x27;은 드라이버 메타패키지를 끌어오지 않아 3-1의 드라이버를 건드리지 않음.</code></pre>
+<p>PATH / LD_LIBRARY_PATH 등록 후 확인합니다. CUDA 12.8을 깔면 실제 경로는 <code>/usr/local/cuda-12.8</code>이고, <code>/usr/local/cuda</code>는 보통 그쪽을 가리키는 심볼릭 링크입니다.</p>
+<pre><code class="lang-bash"># ~/.bashrc 에 추가 (심볼릭 링크 /usr/local/cuda 를 쓰면 버전 올려도 그대로 유효)
+echo &#x27;export PATH=/usr/local/cuda/bin:$PATH&#x27; &gt;&gt; ~/.bashrc
+echo &#x27;export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH&#x27; &gt;&gt; ~/.bashrc
+source ~/.bashrc
+
+# 심볼릭 링크가 12.8을 가리키는지 확인
+ls -l /usr/local/cuda            # -&gt; /usr/local/cuda-12.8 이어야 함
+
+nvcc --version</code></pre>
+<p><code>nvcc --version</code> 예상 출력:</p>
+<pre><code class="lang-text">nvcc: NVIDIA (R) Cuda compiler driver
+Copyright (c) 2005-2025 NVIDIA Corporation
+Built on ...
+Cuda compilation tools, release 12.8, V12.8.xx
+Build cuda_12.8.r12.8/compiler.xxxxxxxx_0</code></pre>
+<blockquote class="callout tip">💡 팁 (<code>nvcc</code> 버전 vs 런타임 버전의 차이 — 실물 대조): - <code>nvidia-smi</code> 헤더 CUDA Version = <strong>드라이버가 지원하는 상한</strong> (예: 12.8까지 OK) - <code>nvcc --version</code> release = <strong>호스트에 설치된 CUDA Toolkit(컴파일러) 버전</strong> (예: 12.8) - <code>python -c &quot;import torch; print(torch.version.cuda)&quot;</code> = <strong>PyTorch wheel이 번들한 런타임 CUDA</strong> (예: 12.8) 이 셋은 <strong>서로 달라도 됩니다.</strong> 규칙은 단 하나: <em>드라이버 상한 ≥ (nvcc 및 각 프레임워크의 CUDA)</em>. 예컨대 드라이버 상한 12.8, nvcc 12.8, torch cu128(12.8)이면 완벽 정합입니다. 만약 드라이버 상한이 12.6인데 torch가 cu128(12.8)이라면 12.8 런타임 심볼을 못 찾아 깨질 수 있으니 드라이버를 올리세요.</blockquote>
+<blockquote class="callout warn">⚠️ 확인 필요: 2026-07 기준 CUDA APT 저장소의 <strong>최신</strong> 라인은 13.x(예: 13.3)로 확인됩니다. 이 스터디는 정본 스택대로 <strong>12.8 라인(<code>cuda-toolkit-12-8</code>)</strong> 을 고정합니다. CUDA 13.x는 신규 빌드에서 구형 아키텍처(Maxwell/Pascal/Volta) 타깃을 제외하므로, 구형 GPU 사용자는 <a href="https://developer.nvidia.com/cuda-downloads">CUDA Downloads</a>에서 GPU 호환성을 반드시 확인하세요.</blockquote>
+<h3 id="3-3-docker-engine-nvidia-container-toolkit">3-3. Docker Engine + NVIDIA Container Toolkit</h3>
+<p>먼저 Docker Engine을 공식 저장소로 설치합니다.</p>
+<pre><code class="lang-bash"># 1) Docker 공식 GPG 키 + 저장소 등록
+sudo apt-get update
+sudo apt-get install -y ca-certificates curl gnupg
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | \
+  sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+sudo chmod a+r /etc/apt/keyrings/docker.gpg
+echo \
+  &quot;deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
+  https://download.docker.com/linux/ubuntu $(. /etc/os-release &amp;&amp; echo $VERSION_CODENAME) stable&quot; | \
+  sudo tee /etc/apt/sources.list.d/docker.list &gt; /dev/null
+
+# 2) Docker Engine 설치
+sudo apt-get update
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+# 3) sudo 없이 docker 쓰기 (재로그인 필요)
+sudo usermod -aG docker $USER
+newgrp docker   # 또는 로그아웃/로그인
+
+# 4) 설치 확인
+docker run --rm hello-world</code></pre>
+<p>이제 NVIDIA Container Toolkit을 설치해 컨테이너가 GPU를 볼 수 있게 합니다. (아래는 <a href="https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html">공식 install-guide</a> 기준)</p>
+<pre><code class="lang-bash"># 1) NVIDIA Container Toolkit 저장소 등록 (stable/deb)
+curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | \
+  sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
+  &amp;&amp; curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
+    sed &#x27;s#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g&#x27; | \
+    sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+
+# 2) 설치
+sudo apt-get update
+sudo apt-get install -y nvidia-container-toolkit
+
+# 3) Docker 런타임에 nvidia 등록 + 재시작
+#    이 명령이 /etc/docker/daemon.json 에 &quot;nvidia&quot; 런타임을 추가한다.
+sudo nvidia-ctk runtime configure --runtime=docker
+sudo systemctl restart docker</code></pre>
+<p><code>nvidia-ctk runtime configure</code>가 실제로 무엇을 하는지 확인해 두면 디버깅이 쉽습니다.</p>
+<pre><code class="lang-bash"># daemon.json 에 nvidia 런타임이 등록됐는지 확인
+cat /etc/docker/daemon.json
+#   예상: {&quot;runtimes&quot;:{&quot;nvidia&quot;:{&quot;path&quot;:&quot;nvidia-container-runtime&quot;,&quot;runtimeArgs&quot;:[]}}}</code></pre>
+<p><strong>컨테이너에서 GPU가 보이는지 검증</strong>합니다 — 이 단계 전체에서 가장 중요한 확인입니다.</p>
+<pre><code class="lang-bash"># CUDA 12.8 base 이미지로 컨테이너 안에서 nvidia-smi 실행
+docker run --rm --gpus all nvidia/cuda:12.8.0-base-ubuntu22.04 nvidia-smi</code></pre>
+<p>호스트에서 봤던 것과 동일한 GPU 표가 컨테이너 안에서 뜨면 성공입니다. (<code>--gpus all</code> 대신 특정 GPU만 노출하려면 <code>--gpus &#x27;&quot;device=0&quot;&#x27;</code>.)</p>
+<blockquote class="callout bad">🔴 함정: <code>--gpus all</code>에서 <code>could not select device driver &quot;&quot; with capabilities: [[gpu]]</code> 오류가 나면 3번(런타임 등록)이 안 된 것입니다. <code>sudo nvidia-ctk runtime configure --runtime=docker &amp;&amp; sudo systemctl restart docker</code>를 다시 실행하세요.</blockquote>
+<h4 id="rootless-docker-주의점">rootless Docker 주의점</h4>
+<p><code>sudo</code> 없이 돌리는 <strong>rootless Docker</strong>(Docker를 사용자 권한으로 실행)에서는 런타임 설정 위치와 cgroup 처리가 다릅니다.</p>
+<pre><code class="lang-bash"># 1) rootless는 사용자 daemon.json 을 대상으로 configure
+nvidia-ctk runtime configure --runtime=docker --config=$HOME/.config/docker/daemon.json
+
+# 2) rootless에서는 cgroup 제어를 끄지 않으면 초기화 실패가 잦다
+sudo nvidia-ctk config --set nvidia-container-cli.no-cgroups --in-place
+
+# 3) 사용자 데몬 재시작
+systemctl --user restart docker</code></pre>
+<blockquote class="callout warn">⚠️ 주의: rootless에서 <code>nvidia-smi</code>가 컨테이너 안에서 실패하면 대개 위 2번(<code>no-cgroups</code>) 누락입니다. Podman을 쓴다면 런타임 대신 <strong>CDI</strong>(<code>sudo nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml</code>) 방식이 표준입니다. ⚠️ 확인 필요: 공식 install-guide 예시 기준 NVIDIA Container Toolkit 최신 버전 표기는 문서마다 갱신됩니다. 버전 고정이 필요하면 install-guide의 <code>NVIDIA_CONTAINER_TOOLKIT_VERSION</code> 방식을 참고하고, <code>nvidia/cuda:&lt;tag&gt;</code> 태그는 <a href="https://hub.docker.com/r/nvidia/cuda">Docker Hub nvidia/cuda</a>에 실재하는 태그로 맞추세요.</blockquote>
+<h3 id="3-4-python-가상환경-프레임워크-경로-a-cuda-12-라인-통일">3-4. Python 가상환경 + 프레임워크 (경로 A: CUDA 12 라인 통일)</h3>
+<blockquote class="callout bad">🔴 함정: 아래는 <strong>CUDA 12 라인으로 버전을 명시 고정한</strong> pip 경로입니다. 핵심은 onnxruntime-gpu를 <strong>PyPI 기본(CUDA 13)이 아니라 CUDA 12 전용 인덱스</strong>에서 받고, TensorRT를 <strong><code>tensorrt-cu12==10.16.x</code>(CUDA 12 명시 패키지)</strong> 로 못 박는 것입니다. 최신 CUDA 13 라인을 섞고 싶으면 4절 "경로 B(NGC 컨테이너)"가 훨씬 안전합니다.</blockquote>
+<h4 id="venv-vs-conda-어느-걸-쓰나">venv vs conda — 어느 걸 쓰나</h4>
+<div class="tablewrap"><table><thead><tr><th>기준</th><th><code>venv</code> (권장 기본)</th><th><code>conda</code>/<code>mamba</code></th></tr></thead><tbody><tr><td>설치</td><td>OS python + pip만</td><td>Miniforge/Miniconda 별도</td></tr><tr><td>CUDA 런타임</td><td><strong>wheel이 번들</strong> (torch/ort/trt가 각자 가져옴)</td><td>conda가 <code>cudatoolkit</code>을 따로 제공할 수도</td></tr><tr><td>재현성</td><td><code>requirements.txt</code> + 정확한 버전 핀</td><td><code>environment.yml</code></td></tr><tr><td>이 스터디 권장</td><td>✅ 가볍고 wheel 스택과 궁합 좋음</td><td>비 CUDA 네이티브 의존성(예: 특정 geo/pcl)이 많을 때</td></tr></tbody></table></div>
+<blockquote class="callout tip">💡 팁: 이 스터디의 스택은 <strong>wheel이 CUDA를 번들</strong>하므로 conda의 <code>cudatoolkit</code>이 필요 없습니다. 오히려 conda <code>cudatoolkit</code>과 wheel 번들 CUDA가 겹쳐 혼란을 줄 수 있어, 특별한 이유가 없으면 <code>venv</code>를 권장합니다.</blockquote>
+<pre><code class="lang-bash"># 1) venv 생성 (Ubuntu 22.04 기본 python은 3.10)
+sudo apt-get install -y python3.10-venv
+python3 -m venv ~/emb-ai
+source ~/emb-ai/bin/activate
+python -m pip install --upgrade pip
+
+# 2) PyTorch (CUDA 12.8 wheel). 최신 명령은 https://pytorch.org/get-started/locally/ 에서 확인
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
+
+# 3) ONNX
+pip install onnx
+
+# 4) ONNX Runtime GPU — CUDA 12 전용 인덱스에서 1.28.0 고정
+#    ⚠️ 그냥 &#x27;pip install onnxruntime-gpu&#x27; 하면 1.27+부터 PyPI 기본이 CUDA 13 wheel!
+#    아래 CUDA-12 전용 Azure DevOps 피드에서 받아야 CUDA 12 스택과 정합.
+pip install onnxruntime-gpu==1.28.0 \
+  --index-url https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-12/pypi/simple/
+
+# 5) TensorRT — CUDA 12 명시 패키지로 10.16.x LTS 고정
+#    &#x27;tensorrt-cu12&#x27;는 CUDA 12용 메타패키지(런타임 라이브러리 포함).
+pip install &quot;tensorrt-cu12==10.16.1.11&quot;
+
+# 6) polygraphy (TensorRT 디버깅/검증 CLI)
+pip install polygraphy</code></pre>
+<blockquote class="callout tip">💡 팁: <code>onnxruntime-gpu</code>를 위 CUDA-12 인덱스에서 못 받는 상황(사내 프록시 등)이면, 임시로 <strong>컨테이너(경로 B)</strong> 로 전환하는 게 가장 빠릅니다. <code>--index-url</code>(우선 인덱스 전환)과 <code>--extra-index-url</code>(보조 인덱스 추가)은 동작이 다릅니다 — 위처럼 <strong><code>--index-url</code>로 CUDA-12 피드를 우선</strong>시켜야 PyPI의 CUDA-13 기본 wheel이 끼어들지 않습니다.</blockquote>
+<blockquote class="callout bad">🔴 함정: <code>tensorrt</code>(접미사 없는 메타패키지)는 시점에 따라 CUDA 13 라인(11.x)을 끌어올 수 있습니다. <strong>CUDA 12 스택에서는 반드시 <code>tensorrt-cu12</code></strong> 를 쓰세요. 그래도 <code>.so</code> 로드가 안 되면 <a href="https://developer.nvidia.com/tensorrt">TensorRT 다운로드</a>에서 CUDA 12용 tar를 받아 <code>LD_LIBRARY_PATH</code>에 수동 등록하는 편이 확실합니다.</blockquote>
+<p><strong>설치 검증</strong> — 아래 스크립트가 전부 통과해야 합니다.</p>
+<pre><code class="lang-python"># verify_env.py — 스택 정합성 한 번에 점검
+import torch, onnx
+import onnxruntime as ort
+
+print(&quot;== PyTorch ==&quot;)
+print(&quot;torch:&quot;, torch.__version__, &quot;| CUDA available:&quot;, torch.cuda.is_available())
+print(&quot;torch CUDA build:&quot;, torch.version.cuda)           # 12.8 이어야 함
+if torch.cuda.is_available():
+    print(&quot;GPU:&quot;, torch.cuda.get_device_name(0))
+
+print(&quot;== ONNX / ONNX Runtime ==&quot;)
+print(&quot;onnx:&quot;, onnx.__version__)
+print(&quot;onnxruntime:&quot;, ort.__version__)                   # 1.28.0
+print(&quot;ORT providers:&quot;, ort.get_available_providers())   # CUDAExecutionProvider 있어야 함
+
+print(&quot;== TensorRT ==&quot;)
+import tensorrt as trt
+print(&quot;TensorRT:&quot;, trt.__version__)                      # 10.16.1.11
+
+# 세 도구의 CUDA 라인이 12로 정합인지 눈으로 확인
+assert torch.version.cuda.startswith(&quot;12&quot;), &quot;torch가 CUDA 12 빌드가 아님&quot;
+assert &quot;CUDAExecutionProvider&quot; in ort.get_available_providers(), &quot;ORT에 CUDA EP 없음&quot;
+print(&quot;\nOK: CUDA 12 스택 정합&quot;)</code></pre>
+<pre><code class="lang-bash">python verify_env.py</code></pre>
+<p>예상 출력(값은 GPU/마이너 버전에 따라 다름):</p>
+<pre><code class="lang-text">== PyTorch ==
+torch: 2.x.x+cu128 | CUDA available: True
+torch CUDA build: 12.8
+GPU: NVIDIA GeForce RTX 4090
+== ONNX / ONNX Runtime ==
+onnx: 1.x.x
+onnxruntime: 1.28.0
+ORT providers: [&#x27;TensorrtExecutionProvider&#x27;, &#x27;CUDAExecutionProvider&#x27;, &#x27;CPUExecutionProvider&#x27;]
+== TensorRT ==
+TensorRT: 10.16.1.11
+
+OK: CUDA 12 스택 정합</code></pre>
+<p><code>get_available_providers()</code>에 <code>CUDAExecutionProvider</code>가 <strong>있다는 것만으로는 부족</strong>합니다 — 실제로 그 provider로 세션이 만들어지는지까지 확인해야 조용한 CPU fallback을 잡습니다.</p>
+<pre><code class="lang-python"># verify_cuda_ep.py — CUDAExecutionProvider가 &#x27;실제로&#x27; 잡히는지 확인
+import numpy as np
+import onnx
+from onnx import helper, TensorProto
+import onnxruntime as ort
+
+# 1) 아주 작은 ONNX 모델(항등 Add) 하나를 메모리에 생성
+X = helper.make_tensor_value_info(&quot;X&quot;, TensorProto.FLOAT, [1, 4])
+Y = helper.make_tensor_value_info(&quot;Y&quot;, TensorProto.FLOAT, [1, 4])
+node = helper.make_node(&quot;Identity&quot;, [&quot;X&quot;], [&quot;Y&quot;])
+graph = helper.make_graph([node], &quot;id&quot;, [X], [Y])
+model = helper.make_model(graph, opset_imports=[helper.make_opsetid(&quot;&quot;, 20)])
+onnx.save(model, &quot;tiny.onnx&quot;)
+
+# 2) CUDA를 &#x27;요구&#x27;해서 세션 생성 (CPU로 조용히 안 내려가게 provider를 명시)
+sess = ort.InferenceSession(
+    &quot;tiny.onnx&quot;,
+    providers=[&quot;CUDAExecutionProvider&quot;, &quot;CPUExecutionProvider&quot;],
+)
+print(&quot;실제 활성 providers:&quot;, sess.get_providers())     # 첫 항목이 CUDA여야 함
+
+out = sess.run(None, {&quot;X&quot;: np.ones((1, 4), dtype=np.float32)})
+print(&quot;추론 결과:&quot;, out[0])
+assert sess.get_providers()[0] == &quot;CUDAExecutionProvider&quot;, \
+    &quot;CUDA로 세션이 안 잡힘 → CPU fallback (CUDA/cuDNN major 불일치 의심)&quot;
+print(&quot;OK: CUDAExecutionProvider 실제 활성&quot;)</code></pre>
+<pre><code class="lang-bash">python verify_cuda_ep.py</code></pre>
+<p>예상 출력:</p>
+<pre><code class="lang-text">실제 활성 providers: [&#x27;CUDAExecutionProvider&#x27;, &#x27;CPUExecutionProvider&#x27;]
+추론 결과: [[1. 1. 1. 1.]]
+OK: CUDAExecutionProvider 실제 활성</code></pre>
+<blockquote class="callout warn">⚠️ 주의: <code>sess.get_providers()</code>의 <strong>첫 항목이 CPU</strong>로 나오면, provider 목록엔 CUDA가 있어도 런타임 초기화에 실패해 CPU로 내려간 것입니다. 최근 ONNX Runtime은 이때 경고 로그를 남기기도 합니다. 원인은 대개 (1) ONNX Runtime의 CUDA/cuDNN major가 시스템과 불일치, (2) <code>LD_LIBRARY_PATH</code>에 CUDA 12 lib가 안 잡힘. 경로 A에서 안 풀리면 경로 B(NGC)로 전환이 가장 빠릅니다.</blockquote>
+<blockquote class="callout warn">⚠️ 확인 필요: <code>tensorrt-cu12==10.16.1.11</code>은 2026-07 기준 PyPI에 존재하는 10.x LTS(CUDA 12) 릴리스로 확인했습니다. pip에서 못 찾으면 <a href="https://pypi.org/project/tensorrt/">TensorRT PyPI</a> 또는 <a href="https://developer.nvidia.com/tensorrt">TensorRT 다운로드</a>에서 CUDA 12 대응 tar/deb를 직접 받으세요.</blockquote>
+<h3 id="3-5-wsl2-사용-시-주의점-해당-시">3-5. WSL2 사용 시 주의점 (해당 시)</h3>
+<p>Windows + WSL2 Ubuntu 22.04에서 이 스터디를 진행할 수도 있습니다. 핵심 규칙 하나만 지키면 됩니다.</p>
+<blockquote class="callout bad">🔴 함정 (WSL2에서 가장 흔한 파괴적 실수): <strong>WSL 안에 리눅스용 NVIDIA GPU 드라이버를 절대 설치하지 마세요.</strong> WSL2에서 GPU는 Windows 호스트 드라이버가 담당하고, WSL 안에는 <code>/usr/lib/wsl/lib/</code>에 <code>libcuda.so.1</code>·<code>libnvidia-ml.so.1</code>·<code>nvidia-smi</code> 같은 <strong>얇은 shim</strong>이 자동 마운트되어 Windows 드라이버로 호출을 넘깁니다. 여기에 리눅스 드라이버를 깔면 이 shim을 덮어써 GPU 패스스루가 통째로 깨집니다.</blockquote>
+<ul><li><strong>설치할 것</strong>: Windows에 최신 NVIDIA 드라이버(게임/스튜디오 드라이버 = WSL 지원 포함) + (WSL 안에는) <strong>CUDA Toolkit만</strong>. 이때도 <code>cuda-toolkit-12-8</code>처럼 <strong>드라이버를 안 끌어오는 패키지</strong>를 쓰세요(<code>cuda</code> 메타패키지 금지).</li><li><strong><code>nvidia-smi</code></strong>: WSL 안에서 실행되는 것은 <code>/usr/lib/wsl/lib/nvidia-smi</code>이며, 표시되는 Driver Version은 <strong>Windows 드라이버 버전</strong>입니다.</li><li><strong>3-1(리눅스 드라이버)·3-1-b(nouveau/Secure Boot)</strong> 는 WSL2에선 <strong>건너뜁니다.</strong></li><li><strong>Docker</strong>: Windows의 Docker Desktop(WSL2 백엔드) 또는 WSL 내부 Docker Engine + Container Toolkit 모두 GPU 패스스루가 됩니다. 검증은 동일하게 <code>docker run --rm --gpus all nvidia/cuda:12.8.0-base-ubuntu22.04 nvidia-smi</code>.</li></ul>
+<blockquote class="callout tip">💡 팁: WSL 안에서 <code>nvidia-smi</code>가 "Unable to determine the device handle" 등으로 실패하면, 대개 Windows 드라이버가 오래됐거나(WSL 지원 이전 버전) <code>wsl --update</code>로 WSL 커널을 갱신하지 않은 경우입니다. 자세한 규칙은 <a href="https://docs.nvidia.com/cuda/wsl-user-guide/index.html">CUDA on WSL User Guide</a> 참고.</blockquote>
+<hr>
+<h2 id="4-단계별-실습">4) 단계별 실습</h2>
+<h3 id="경로-b-권장-ngc-컨테이너로-정합-스택-한-번에">경로 B (권장): NGC 컨테이너로 정합 스택 한 번에</h3>
+<p>버전 충돌을 원천 차단하는 가장 확실한 방법입니다. NVIDIA NGC의 PyTorch/TensorRT 컨테이너에는 CUDA·cuDNN·TensorRT·ONNX Runtime이 <strong>정합하게 맞춰진 상태</strong>로 들어 있습니다. 호스트에는 드라이버 + Docker + Container Toolkit(3-1, 3-3)만 있으면 됩니다.</p>
+<pre><code class="lang-bash"># 1) NGC PyTorch 컨테이너 pull (TensorRT 포함). 태그는 YY.MM 형식.
+#    최신/호환 태그는 https://catalog.ngc.nvidia.com/orgs/nvidia/containers/pytorch 에서 확인
+docker pull nvcr.io/nvidia/pytorch:26.06-py3
+
+# 2) 작업 디렉토리와 데이터셋을 마운트해 컨테이너 진입
+docker run --gpus all -it --rm \
+  --shm-size=8g \
+  -v $HOME/emb-ai-work:/workspace \
+  -v /data/sets/nuscenes:/data/sets/nuscenes \
+  nvcr.io/nvidia/pytorch:26.06-py3</code></pre>
+<p>컨테이너 안에서 검증합니다.</p>
+<pre><code class="lang-bash"># (컨테이너 내부)
+nvidia-smi
+python -c &quot;import torch, tensorrt; print(torch.__version__, torch.cuda.is_available(), tensorrt.__version__)&quot;
+python -c &quot;import onnxruntime as ort; print(ort.get_available_providers())&quot;
+pip install polygraphy nuscenes-devkit   # 컨테이너에 없으면 추가</code></pre>
+<blockquote class="callout tip">💡 팁: NGC 태그(예: <code>26.06-py3</code>)마다 번들된 CUDA/TensorRT 조합이 정해져 있습니다. 어떤 TensorRT/CUDA가 들어있는지는 해당 태그의 <a href="https://docs.nvidia.com/deeplearning/frameworks/pytorch-release-notes/">PyTorch Container Release Notes</a>에서 확인하세요. 이 방식이면 2절의 CUDA 12/13 충돌 문제를 신경 쓸 필요가 없습니다. 다만 <strong>정본 스택(TensorRT 10.16.x LTS)과 태그의 번들 TensorRT가 다를 수 있으니</strong>, 3단계에서 특정 TensorRT 버전이 필요하면 그 버전을 담은 태그를 고르거나 경로 A로 버전을 못 박으세요.</blockquote>
+<blockquote class="callout warn">⚠️ 확인 필요: NGC PyTorch 태그 <code>26.06-py3</code>은 형식 예시입니다. 실제 존재하는 최신 태그는 위 NGC 카탈로그에서 확인 후 사용하세요.</blockquote>
+<h3 id="4-1-nuscenes-mini-데이터셋-다운로드">4-1. nuScenes mini 데이터셋 다운로드</h3>
+<p>이 스터디의 예제 모델(BEV 인식 등)은 nuScenes를 씁니다. 전체(수백 GB) 대신 <strong>mini(v1.0-mini, 10 scenes / 404 samples)</strong> 만 받으면 정확도 검증 파이프라인을 돌리기에 충분합니다.</p>
+<pre><code class="lang-bash"># 1) 데이터 디렉토리 생성 (devkit 관례: /data/sets/nuscenes)
+sudo mkdir -p /data/sets/nuscenes
+sudo chown -R $USER:$USER /data/sets/nuscenes
+cd /data/sets/nuscenes
+
+# 2) mini 아카이브 다운로드 후 해제
+#    ※ 다운로드에는 nuScenes 계정 로그인/약관 동의가 필요할 수 있음(아래 주의 참고)
+wget https://www.nuscenes.org/data/v1.0-mini.tgz
+tar -xf v1.0-mini.tgz     # samples/  sweeps/  maps/  v1.0-mini/  생성</code></pre>
+<p><strong>압축 해제 후 디렉토리 구조</strong> — 아래처럼 4개 폴더가 나와야 정상입니다.</p>
+<pre><code class="lang-text">/data/sets/nuscenes/
+├── samples/        # 키프레임 센서 데이터 (CAM_FRONT, LIDAR_TOP, RADAR_* ...)
+│   ├── CAM_FRONT/
+│   ├── LIDAR_TOP/
+│   └── ...
+├── sweeps/         # 키프레임 사이 중간 프레임 (annotation 없음)
+│   └── ...
+├── maps/           # 맵: 래스터 .png + 벡터 .json
+└── v1.0-mini/      # 메타데이터 JSON 테이블들 (아래)
+    ├── scene.json          # 10개 scene
+    ├── sample.json         # 404개 sample(키프레임)
+    ├── sample_data.json    # 센서별 파일 경로
+    ├── sample_annotation.json
+    ├── calibrated_sensor.json
+    ├── ego_pose.json
+    ├── category.json / attribute.json / instance.json / sensor.json ...
+    └── ...</code></pre>
+<ul><li><strong>samples vs sweeps</strong>: <code>samples</code>는 어노테이션이 붙은 <strong>키프레임</strong>, <code>sweeps</code>는 그 사이 <strong>중간 프레임</strong>(어노테이션 없음). devkit이 동작하려면 최소한 메타데이터(<code>v1.0-mini/</code>)와 <code>samples/</code>가 있어야 하고, <code>sweeps</code>는 선택입니다.</li><li><strong>maps</strong>: 맵 폴더(래스터 <code>.png</code> + 벡터 <code>.json</code>). BEV 시각화에 사용됩니다.</li></ul>
+<blockquote class="callout warn">⚠️ 주의: nuScenes 다운로드는 <a href="https://www.nuscenes.org/nuscenes#download">nuscenes.org</a>에서 <strong>계정 생성 + Terms of Use 동의</strong> 후에만 가능한 경우가 많습니다. <code>wget</code>가 HTML 로그인 페이지를 받아오면(파일 크기가 몇 KB로 작으면 이 경우), 브라우저로 로그인해 <code>v1.0-mini.tgz</code>를 받은 뒤 이 디렉토리에 옮기세요. ⚠️ 확인 필요: <code>v1.0-mini.tgz</code>의 정확한 파일 크기는 공식 페이지에서 재확인하세요(대략 수 GB 규모). 다운로드 링크 형식 <code>https://www.nuscenes.org/data/v1.0-mini.tgz</code>는 devkit 문서/튜토리얼에서 참조되는 형태입니다.</blockquote>
+<h3 id="4-2-nuscenes-devkit-설치-로드-확인">4-2. nuscenes-devkit 설치 + 로드 확인</h3>
+<pre><code class="lang-bash"># venv/컨테이너 안에서
+pip install nuscenes-devkit</code></pre>
+<pre><code class="lang-python"># load_nuscenes.py — mini 로드가 되는지만 확인
+from nuscenes.nuscenes import NuScenes
+
+nusc = NuScenes(version=&#x27;v1.0-mini&#x27;,
+                dataroot=&#x27;/data/sets/nuscenes&#x27;,
+                verbose=True)
+
+print(&quot;scenes:&quot;, len(nusc.scene))      # 10 이어야 함
+print(&quot;samples:&quot;, len(nusc.sample))    # 404 이어야 함
+first = nusc.sample[0]
+print(&quot;첫 sample 토큰:&quot;, first[&#x27;token&#x27;])
+print(&quot;센서 채널 예:&quot;, list(first[&#x27;data&#x27;].keys())[:5])  # CAM_FRONT, LIDAR_TOP ...</code></pre>
+<pre><code class="lang-bash">python load_nuscenes.py</code></pre>
+<p>예상 출력:</p>
+<pre><code class="lang-text">======
+Loading NuScenes tables for version v1.0-mini...
+Loading nuScenes-lidarseg... skipped
+23 category, 8 attribute, ...
+Done loading in X.XXX seconds.
+======
+scenes: 10
+samples: 404
+첫 sample 토큰: e93e98b63d3b40209056d129dc53ceee
+센서 채널 예: [&#x27;RADAR_FRONT&#x27;, &#x27;RADAR_FRONT_LEFT&#x27;, &#x27;CAM_FRONT&#x27;, &#x27;LIDAR_TOP&#x27;, ...]</code></pre>
+<p>여기까지 통과하면 <strong>0단계 완료</strong>입니다. <code>scenes: 10 / samples: 404</code>가 뜨면 데이터셋 배치가 올바른 것입니다.</p>
+<p><strong>흔한 로드 오류 3가지 (증상 → 원인 → 해결)</strong> — 자세한 표는 6절에도 있습니다:</p>
+<ul><li><code>AssertionError: Database version not found: /data/sets/nuscenes/v1.0-mini</code> → <code>dataroot</code>가 틀렸거나 <code>v1.0-mini/</code>가 해제 안 됨. <code>dataroot</code>는 <strong><code>v1.0-mini/</code>의 상위 폴더</strong>여야 합니다(즉 <code>/data/sets/nuscenes</code>, 끝에 <code>/v1.0-mini</code> 붙이지 말 것).</li><li><code>FileNotFoundError: .../samples/CAM_FRONT/....jpg</code> → 메타데이터는 있는데 <code>samples/</code>(또는 이미지)가 없음. mini 아카이브가 완전히 풀렸는지 확인.</li><li><code>json.decoder.JSONDecodeError</code> → <code>.tgz</code>가 손상됐거나 절반만 받음(HTML 로그인 페이지를 받은 경우 포함). 다시 받아 <code>tar -xf</code>.</li></ul>
+<h3 id="4-3-벤더-sdk는-지금-설치하지-않습니다-4단계-예고">4-3. 벤더 SDK는 지금 설치하지 않습니다 (4단계 예고)</h3>
+<p>TI TIDL(<code>edgeai-tidl-tools</code>), Qualcomm QNN(ONNX Runtime QNN EP / AI Engine Direct SDK), Renesas DRP-AI TVM은 <strong>각 SoC 전용 설치·환경변수·버전 매칭</strong>이 필요해 지금 깔면 CUDA 스택과 섞여 혼란만 줍니다.</p>
+<blockquote class="callout tip">💡 팁: 이들은 <a href="06_multi_soc.html">4단계 — 멀티 SoC</a>에서 <strong>타깃별 격리된 Docker 이미지</strong>로 각각 설치합니다. 지금은 "존재한다"는 것만 알고 넘어가세요. Qualcomm의 경우 실기 없이도 <a href="https://aihub.qualcomm.com/">Qualcomm AI Hub</a>의 클라우드 디바이스로 HTP 실행을 대체할 수 있다는 점만 기억하면 됩니다.</blockquote>
+<hr>
+<h2 id="5-예시-결과-해석">5) 예시 / 결과 해석</h2>
+<p><strong>설치 경로 선택 요약</strong> — 자신의 상황에 맞는 경로를 고르세요.</p>
+<div class="tablewrap"><table><thead><tr><th>상황</th><th>권장 경로</th><th>이유</th></tr></thead><tbody><tr><td>버전 충돌로 시간 낭비하기 싫다</td><td><strong>경로 B (NGC 컨테이너)</strong></td><td>CUDA/cuDNN/TensorRT/ORT가 이미 정합</td></tr><tr><td>호스트에서 자유롭게 실험/디버깅하고 싶다</td><td>경로 A (pip, CUDA 12 통일)</td><td>IDE·프로파일러 붙이기 쉬움</td></tr><tr><td>정본 스택(TensorRT 10.16.x LTS)을 정확히 고정해야 한다</td><td>경로 A</td><td>버전을 pip로 못 박음</td></tr><tr><td>최신 TensorRT 11.x / ORT CUDA 13 기능이 필요</td><td>경로 B (CUDA 13 태그)</td><td>pip로 CUDA 13 혼합은 깨지기 쉬움</td></tr></tbody></table></div>
+<p><strong>검증 신호 해석</strong></p>
+<div class="tablewrap"><table><thead><tr><th>확인 명령</th><th>정상 신호</th><th>비정상 → 의심 지점</th></tr></thead><tbody><tr><td><code>nvidia-smi</code> (호스트)</td><td>GPU 표 + 드라이버/CUDA 상한</td><td>드라이버 미로딩 → 재부팅/Secure Boot/nouveau</td></tr><tr><td><code>nvcc --version</code></td><td><code>release 12.8</code></td><td>다른 버전 → PATH가 다른 CUDA를 가리킴</td></tr><tr><td><code>docker run --gpus all ... nvidia-smi</code></td><td>컨테이너 안에서 동일 표</td><td>Container Toolkit 미설정 → <code>nvidia-ctk runtime configure</code></td></tr><tr><td><code>torch.cuda.is_available()</code></td><td><code>True</code></td><td><code>False</code> → torch가 CPU wheel / 드라이버 상한 부족</td></tr><tr><td><code>ort.get_available_providers()</code></td><td><code>CUDAExecutionProvider</code> 포함</td><td>없으면 ORT가 CUDA 13 wheel일 가능성(인덱스 확인)</td></tr><tr><td><code>sess.get_providers()[0]</code></td><td><code>CUDAExecutionProvider</code></td><td>CPU면 조용한 fallback → CUDA/cuDNN 불일치</td></tr><tr><td><code>load_nuscenes.py</code></td><td><code>scenes: 10 / samples: 404</code></td><td>경로/압축해제 문제</td></tr></tbody></table></div>
+<p><strong>2026-07 기준 확인한 버전 스냅샷</strong> (참고용 — 실제 설치 시점에 재확인):</p>
+<div class="tablewrap"><table><thead><tr><th>구성요소</th><th>정본 스택(이 스터디 고정)</th><th>2026-07 PyPI/APT 최신</th><th>비고</th></tr></thead><tbody><tr><td>CUDA Toolkit</td><td><strong>12.8</strong> (고정)</td><td>13.x (APT 최신)</td><td>신규 빌드는 12.8 라인 유지 권장</td></tr><tr><td>PyTorch wheel index</td><td><code>cu128</code> = CUDA 12.8</td><td><code>cu128</code></td><td><code>pytorch.org/get-started</code> 확인</td></tr><tr><td>onnxruntime-gpu</td><td><strong>1.28.0 (CUDA 12 wheel)</strong></td><td>1.28.0 (PyPI 기본은 CUDA 13)</td><td>1.27부터 PyPI 기본 CUDA=13 → CUDA-12 인덱스로 설치</td></tr><tr><td>TensorRT</td><td><strong>10.16.x LTS (<code>tensorrt-cu12</code>)</strong></td><td>11.1.x (CUDA 13 기본)</td><td>10.x 주경로, 11.x는 참고</td></tr><tr><td>ExecuTorch</td><td><strong>1.3.x</strong></td><td>-</td><td>0단계에선 미설치</td></tr><tr><td>NVIDIA Container Toolkit</td><td>최신 stable</td><td>-</td><td>install-guide 기준</td></tr></tbody></table></div>
+<hr>
+<h2 id="6-흔한-오류와-해결-troubleshooting">6) 흔한 오류와 해결 (Troubleshooting)</h2>
+<p>증상 → 원인 → 해결 순서로 정리했습니다. 실제로 마주치는 <strong>에러 문구 그대로</strong>를 기준으로 찾으세요.</p>
+<div class="tablewrap"><table><thead><tr><th>증상(실제 문구)</th><th>원인</th><th>해결</th></tr></thead><tbody><tr><td>재부팅 후 <code>NVIDIA-SMI has failed because it couldn&#x27;t communicate with the NVIDIA driver</code></td><td>드라이버 모듈 미로딩 (Secure Boot 차단 / nouveau 잔존 / DKMS 빌드 실패)</td><td><code>mokutil --sb-state</code>로 Secure Boot 확인 → MOK 등록 또는 비활성화(3-1-b). `lsmod \</td></tr><tr><td><code>nvidia-smi: command not found</code></td><td>드라이버 미설치 또는 PATH 문제</td><td><code>ubuntu-drivers install</code> 재실행 후 재부팅</td></tr><tr><td><code>docker: Error response from daemon: could not select device driver &quot;&quot; with capabilities: [[gpu]]</code></td><td>NVIDIA Container Toolkit 런타임 미등록</td><td><code>sudo nvidia-ctk runtime configure --runtime=docker &amp;&amp; sudo systemctl restart docker</code></td></tr><tr><td>rootless docker에서 컨테이너 <code>nvidia-smi</code> 실패</td><td>cgroup 제어 미비활성</td><td><code>sudo nvidia-ctk config --set nvidia-container-cli.no-cgroups --in-place</code> 후 <code>systemctl --user restart docker</code></td></tr><tr><td><code>torch.cuda.is_available()</code> = <code>False</code>, <code>torch.version.cuda</code> = <code>None</code></td><td>CPU 전용 torch가 깔림</td><td><code>--index-url https://download.pytorch.org/whl/cu128</code>로 재설치</td></tr><tr><td><code>torch.cuda.is_available()</code> = <code>False</code>, <code>torch.version.cuda</code> = <code>12.8</code></td><td>드라이버 상한 &lt; 12.8, 또는 드라이버 미로딩</td><td>드라이버 업그레이드(3-1), <code>nvidia-smi</code> 먼저 통과시키기</td></tr><tr><td><code>ort.get_available_providers()</code>에 CUDA EP 없음</td><td>onnxruntime-gpu가 <strong>CUDA 13 wheel</strong>(PyPI 기본)로 깔림</td><td>CUDA-12 인덱스로 재설치: <code>pip install onnxruntime-gpu==1.28.0 --index-url .../onnxruntime-cuda-12/pypi/simple/</code></td></tr><tr><td>CUDA EP는 목록에 있는데 <code>sess.get_providers()[0]</code>이 CPU</td><td>런타임 초기화 실패(cuDNN major 불일치, lib 경로 문제)</td><td><code>LD_LIBRARY_PATH</code>에 CUDA 12 lib 확인, 안 되면 경로 B(NGC)로 전환</td></tr><tr><td><code>import tensorrt</code> 시 <code>ImportError: libnvinfer.so.10: cannot open shared object file</code></td><td>TensorRT wheel의 CUDA와 로컬 CUDA 불일치, 또는 lib 미탑재</td><td><code>tensorrt-cu12==10.16.1.11</code>(CUDA 12 명시)로 재설치, 또는 <a href="https://developer.nvidia.com/tensorrt">TensorRT 다운로드</a> tar를 <code>LD_LIBRARY_PATH</code>에 등록</td></tr><tr><td>NGC 컨테이너에서 DataLoader가 <code>Bus error</code>/<code>DataLoader worker ... killed</code></td><td>공유 메모리 부족</td><td><code>docker run</code>에 <code>--shm-size=8g</code> 추가</td></tr><tr><td><code>apt</code> 설치 중 <code>NO_PUBKEY</code>(NVIDIA 저장소)</td><td>GPG 키 미등록/만료</td><td>위 keyring 등록 단계 재실행(구 <code>apt-key</code> 대신 keyring 방식)</td></tr><tr><td><code>AssertionError: Database version not found: .../v1.0-mini</code></td><td><code>dataroot</code>가 틀리거나 <code>v1.0-mini/</code> 미해제</td><td><code>dataroot</code>는 <code>v1.0-mini/</code>의 <strong>상위</strong> 폴더(<code>/data/sets/nuscenes</code>). 끝에 <code>/v1.0-mini</code> 붙이지 말 것</td></tr><tr><td><code>NuScenes(...)</code>에서 <code>FileNotFoundError: .../samples/...</code></td><td>메타데이터는 있으나 <code>samples/</code> 미해제</td><td>mini <code>.tgz</code>가 완전히 풀렸는지, <code>samples/ sweeps/ maps/ v1.0-mini/</code> 4개가 있는지 확인</td></tr><tr><td><code>wget v1.0-mini.tgz</code>가 몇 KB HTML을 받음</td><td>로그인/약관 동의 필요</td><td>브라우저로 로그인 후 다운로드해 수동 배치</td></tr><tr><td>WSL2에서 <code>nvidia-smi</code>가 <code>Unable to determine the device handle for GPU</code></td><td>Windows 드라이버 구버전 또는 WSL 미갱신, 혹은 WSL에 리눅스 드라이버를 깔아 shim 손상</td><td>Windows 드라이버 최신화 + <code>wsl --update</code>. WSL 내부 리눅스 드라이버는 제거(3-5)</td></tr></tbody></table></div>
+<hr>
+<h2 id="7-산출물-deliverables">7) 산출물 (Deliverables)</h2>
+<p>이 단계가 끝나면 아래가 남아야 합니다.</p>
+<ul><li class="task"><label><input type="checkbox" data-k="53538d50c0"> <code>nvidia-smi</code> / 컨테이너 <code>nvidia-smi</code> 출력 캡처 (GPU 인식 증빙)</label></li><li class="task"><label><input type="checkbox" data-k="1dc1979112"> <code>verify_env.py</code> 실행 로그 — torch/ORT/TensorRT 버전 + <code>CUDAExecutionProvider</code> 확인</label></li><li class="task"><label><input type="checkbox" data-k="07c18e9345"> <code>verify_cuda_ep.py</code> 실행 로그 — <code>sess.get_providers()[0] == CUDAExecutionProvider</code> 확인(조용한 CPU fallback 없음 증빙)</label></li><li class="task"><label><input type="checkbox" data-k="5752672c88"> <code>/data/sets/nuscenes/</code> 에 배치된 nuScenes <strong>mini</strong> (폴더: <code>samples/ sweeps/ maps/ v1.0-mini/</code>)</label></li><li class="task"><label><input type="checkbox" data-k="5b03040661"> <code>load_nuscenes.py</code> 실행 로그 — <code>scenes: 10 / samples: 404</code></label></li><li class="task"><label><input type="checkbox" data-k="b2abcb0714"> 선택한 경로(A: pip CUDA 12 / B: NGC 컨테이너)와 사용한 <strong>정확한 버전</strong>을 적은 <code>ENV.md</code> 메모 (다음 단계 재현성용). 최소 항목: 드라이버 버전, <code>nvcc</code> 버전, torch/onnxruntime-gpu/tensorrt 버전, (컨테이너면) NGC 태그.</label></li></ul>
+<blockquote class="callout tip">💡 팁: <code>ENV.md</code>는 뒤 단계에서 "내 숫자가 왜 가이드와 다르지?"를 추적할 때 결정적입니다. 아래 명령으로 자동 수집해 붙여두면 편합니다. ``<code>bash {   echo &#x27;## ENV snapshot&#x27;; date   nvidia-smi --query-gpu=name,driver_version --format=csv,noheader   nvcc --version | grep release   python -c &quot;import torch,onnxruntime,tensorrt as t; print(&#x27;torch&#x27;,torch.__version__);\ print(&#x27;ort&#x27;,onnxruntime.__version__);print(&#x27;trt&#x27;,t.__version__)&quot; } &gt; ENV.md cat ENV.md </code>``</blockquote>
+<hr>
+<h2 id="8-참고-사이트-참고문헌">8) 참고 사이트 &amp; 참고문헌</h2>
+<h3 id="공식-문서-도구">공식 문서 / 도구</h3>
+<ul><li><a href="https://developer.nvidia.com/cuda-downloads">NVIDIA CUDA Downloads</a> — OS/아키텍처별 CUDA Toolkit 설치 명령 생성기(deb/runfile)</li><li><a href="https://docs.nvidia.com/cuda/cuda-installation-guide-linux/">CUDA Installation Guide for Linux</a> — 공식 Linux 설치 가이드</li><li><a href="https://docs.nvidia.com/cuda/wsl-user-guide/index.html">CUDA on WSL User Guide</a> — WSL2에서 리눅스 드라이버 금지 등 필수 규칙</li><li><a href="https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html">NVIDIA Container Toolkit — Install Guide</a> — apt 저장소/<code>nvidia-ctk</code>/rootless 설정</li><li><a href="https://docs.docker.com/engine/install/ubuntu/">Docker Engine 설치 (Ubuntu)</a> — Docker 공식 저장소 설치</li><li><a href="https://pytorch.org/get-started/locally/">PyTorch — Get Started Locally</a> — CUDA 버전별 pip 설치 명령(<code>cu128</code>)</li><li><a href="https://onnxruntime.ai/docs/install/">ONNX Runtime — Install</a> / <a href="https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html">CUDA Execution Provider</a> — CUDA 12/13 빌드 구분과 CUDA-12 전용 인덱스</li><li><a href="https://pypi.org/project/tensorrt/">TensorRT PyPI</a> / <a href="https://developer.nvidia.com/tensorrt">TensorRT 다운로드</a> — 버전·릴리스 노트(10.x LTS / <code>tensorrt-cu12</code>)</li><li><a href="https://github.com/NVIDIA/TensorRT/tree/main/tools/Polygraphy">Polygraphy (TensorRT tools)</a> — ONNX/TensorRT 검증·디버깅 CLI</li><li><a href="https://catalog.ngc.nvidia.com/orgs/nvidia/containers/pytorch">NGC PyTorch 컨테이너</a> / <a href="https://docs.nvidia.com/deeplearning/frameworks/pytorch-release-notes/">PyTorch Container Release Notes</a> — 정합 스택 컨테이너(권장 경로 B)와 번들 버전 확인</li><li><a href="https://www.nuscenes.org/nuscenes#download">nuScenes 다운로드</a> / <a href="https://github.com/nutonomy/nuscenes-devkit">nuscenes-devkit</a> — 데이터셋과 devkit</li><li><a href="https://aihub.qualcomm.com/">Qualcomm AI Hub</a> — 실기 없이 클라우드 디바이스로 HTP 실행(4단계 예고)</li></ul>
+<h3 id="논문">논문</h3>
+<ul><li>Caesar et al. (2020), <em>nuScenes: A Multimodal Dataset for Autonomous Driving</em>, arXiv:1903.11027 — 이 스터디 데이터셋의 원 논문</li></ul>
+<hr>
+<h2 id="9-다음-단계">9) 다음 단계</h2>
+<p>환경이 준비됐으면, 어떤 타깃/툴체인부터 어떤 순서로 오를지 "난이도 사다리"를 먼저 잡습니다.</p>
+<p>➡️ <a href="02_deployment_ladder.html">0.5단계 — 배포 난이도 사다리</a></p><div class="pager"><a class="prev" href="README.html"><span class="lbl">← 이전</span>홈</a><a class="next" href="02_deployment_ladder.html"><span class="lbl">다음 →</span>0.5 사다리</a></div>
+<footer>임베디드 AI 양자화 학습 가이드 · 체크 상태는 브라우저에 저장됩니다(localStorage) · 인쇄/PDF: Ctrl/⌘+P</footer>
+</div>
+<script>var PAGE="01_environment_setup";
+(function(){
+  var KEY='embai:'+PAGE;
+  var boxes=document.querySelectorAll('input[type=checkbox][data-k]');
+  var fill=document.getElementById('fill'), pct=document.getElementById('pct');
+  var saved={};try{saved=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){}
+  function upd(){var d=0;boxes.forEach(function(b){if(b.checked)d++});
+    var p=boxes.length?Math.round(d/boxes.length*100):0;
+    if(fill)fill.style.width=p+'%';
+    if(pct)pct.textContent=boxes.length?(d+' / '+boxes.length+'  ('+p+'%)'):'체크리스트 없음';}
+  boxes.forEach(function(b){var k=b.getAttribute('data-k');
+    if(saved[k])b.checked=true;
+    b.addEventListener('change',function(){saved[k]=b.checked;
+      try{localStorage.setItem(KEY,JSON.stringify(saved))}catch(e){};upd();});});
+  upd();
+})();
+</script>
+</body></html>

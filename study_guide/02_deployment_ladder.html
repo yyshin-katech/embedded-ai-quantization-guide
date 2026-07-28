@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>0.5. 쉬운 방법부터 — 배포 난이도 사다리</title><style>
+:root{--bg:#0f1115;--card:#171a21;--line:#2a2f3a;--tx:#e6e8ec;--dim:#9aa3b2;--acc:#5aa9ff;--ok:#3ecf8e;--warn:#f0b429;--bad:#ff6b6b;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:-apple-system,"Pretendard","Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;font-size:16px}
+a{color:var(--acc);text-decoration:none}a:hover{text-decoration:underline}
+.bar{position:sticky;top:0;background:rgba(15,17,21,.96);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);z-index:20}
+.bar-in{max-width:1000px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:14px}
+.bar b{font-size:.9rem;white-space:nowrap}
+.track{flex:1;height:8px;background:#252a34;border-radius:99px;overflow:hidden;min-width:80px}
+.fill{height:100%;width:0;background:linear-gradient(90deg,var(--acc),var(--ok));transition:width .3s}
+.pct{font-size:.82rem;color:var(--dim);min-width:96px;text-align:right;white-space:nowrap}
+.stagenav{border-bottom:1px solid var(--line);background:#12151b}
+.stagenav-in{max-width:1000px;margin:0 auto;padding:8px 20px;display:flex;flex-wrap:wrap;gap:6px}
+.stagenav a{font-size:.76rem;padding:3px 9px;border-radius:99px;background:#1e222b;color:var(--dim)}
+.stagenav a.cur{background:var(--acc);color:#08111f;font-weight:600}
+.wrap{max-width:1000px;margin:0 auto;padding:34px 24px 120px}
+h1{font-size:1.9rem;margin:0 0 20px;letter-spacing:-.02em;border-bottom:2px solid var(--acc);padding-bottom:16px}
+h2{font-size:1.35rem;margin:48px 0 14px;padding-left:12px;border-left:4px solid var(--acc);scroll-margin-top:110px}
+h3{font-size:1.08rem;margin:26px 0 10px;color:var(--acc);scroll-margin-top:110px}
+h4{font-size:1rem;margin:20px 0 8px;color:var(--tx)}
+p,li{color:var(--tx)}
+ul,ol{padding-left:22px}li{margin:6px 0}
+li.task{list-style:none;margin-left:-22px}
+li.task label{cursor:pointer;display:flex;gap:9px;align-items:flex-start}
+li.task input{margin-top:6px;width:16px;height:16px;accent-color:var(--acc);cursor:pointer;flex-shrink:0}
+li.task input:checked ~ *{color:var(--dim)}
+code{background:#20242e;color:#ffd479;padding:2px 6px;border-radius:4px;font-family:"SFMono-Regular",Consolas,monospace;font-size:.86em}
+pre{background:#0b0d11;border:1px solid var(--line);border-radius:8px;padding:15px;overflow-x:auto;font-size:.85rem;line-height:1.55}
+pre code{background:none;color:#c8d3e0;padding:0}
+.tablewrap{overflow-x:auto;margin:16px 0}
+table{width:100%;border-collapse:collapse;font-size:.9rem}
+th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}
+th{background:#1e222b;color:var(--acc);font-weight:600}
+blockquote{margin:16px 0;padding:14px 18px;border-radius:8px;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--acc)}
+blockquote.tip{border-left-color:var(--ok)}
+blockquote.warn{border-left-color:var(--warn)}
+blockquote.bad{border-left-color:var(--bad)}
+hr{border:none;border-top:1px solid var(--line);margin:32px 0}
+.toc{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 18px;margin:8px 0 28px}
+.toc summary{cursor:pointer;color:var(--acc);font-weight:600;font-size:.92rem}
+.toc ul{margin:10px 0 2px;padding-left:18px}
+.toc li{margin:3px 0;font-size:.9rem}
+.toc .l3{padding-left:16px;font-size:.85rem}
+.pager{display:flex;justify-content:space-between;gap:12px;margin:16px 0 0}
+.pager a{flex:1;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 16px;font-size:.9rem}
+.pager a.next{text-align:right}
+.pager .lbl{display:block;font-size:.72rem;color:var(--dim)}
+footer{margin-top:60px;padding-top:18px;border-top:1px solid var(--line);color:var(--dim);font-size:.82rem}
+@media print{body{background:#fff;color:#000}.bar,.stagenav,.pager{display:none}.card,blockquote{background:#f7f7f7;border:1px solid #ccc}pre{background:#f4f4f4}pre code,code{color:#000}h2,h3{color:#000}a{color:#000}th{background:#eee;color:#000}}
+</style></head><body>
+<div class="bar"><div class="bar-in"><b>0.5. 쉬운 방법부터 — 배포 난이도 사다리</b>
+<div class="track"><div class="fill" id="fill"></div></div>
+<span class="pct" id="pct">0 / 0</span></div></div>
+<div class="stagenav"><div class="stagenav-in"><a class="" href="README.html">홈</a><a class="" href="01_environment_setup.html">0. 환경준비</a><a class="cur" href="02_deployment_ladder.html">0.5 사다리</a><a class="" href="03_quantization_theory.html">1. 양자화이론</a><a class="" href="04_transformer_quantization.html">2. Transformer</a><a class="" href="05_tensorrt.html">3. TensorRT</a><a class="" href="06_multi_soc.html">4. 멀티SoC</a><a class="" href="07_infrastructure.html">5. 인프라화</a><a class="" href="08_capstone.html">캡스톤</a><a class="" href="09_roadmap.html">12주 로드맵</a><a class="" href="10_pitfalls.html">함정 5</a></div></div>
+<div class="wrap"><details class="toc" open><summary>목차</summary><ul><li><a href="#0-이-단계에서-무엇을왜-하는가">0) 이 단계에서 무엇을·왜 하는가</a></li><li><a href="#1-학습-목표-완료-체크리스트">1) 학습 목표 &amp;amp; 완료 체크리스트</a></li><li><a href="#2-배경-이론-개념-난이도-사다리-한눈에">2) 배경 이론 / 개념 — 난이도 사다리 한눈에</a></li><li><a href="#3-환경도구-준비">3) 환경·도구 준비</a></li><li><a href="#4-단계별-실습">4) 단계별 실습</a></li><li class="l3"><a href="#lv1-edge-impulse-노코드로우코드">Lv.1 — Edge Impulse (노코드/로우코드, ★☆☆☆☆)</a></li><li class="l3"><a href="#lv2-litert-구-tflite-ptq-3종-직접-켜기">Lv.2 — LiteRT (구 TFLite) + PTQ 3종 직접 켜기 (★★☆☆☆)</a></li><li class="l3"><a href="#lv3-onnx-runtime-ep-한-줄-교체">Lv.3 — ONNX Runtime: EP 한 줄 교체 (★★★☆☆)</a></li><li class="l3"><a href="#lv4-executorch-pytorch-네이티브">Lv.4 — ExecuTorch: PyTorch 네이티브 (★★★★☆)</a></li><li class="l3"><a href="#qualcomm-ai-hub-보드-없이-실단말-프로파일링">Qualcomm AI Hub — 보드 없이 실단말 프로파일링</a></li><li><a href="#5-예시-결과-해석">5) 예시 / 결과 해석</a></li><li><a href="#6-흔한-오류와-해결-troubleshooting">6) 흔한 오류와 해결 (Troubleshooting)</a></li><li><a href="#7-산출물-deliverables">7) 산출물 (Deliverables)</a></li><li><a href="#8-참고-사이트-참고문헌">8) 참고 사이트 &amp;amp; 참고문헌</a></li><li class="l3"><a href="#공식-문서-도구">공식 문서 / 도구</a></li><li class="l3"><a href="#논문">논문</a></li><li><a href="#9-다음-단계">9) 다음 단계</a></li></ul></details><div class="pager"><a class="prev" href="01_environment_setup.html"><span class="lbl">← 이전</span>0. 환경준비</a><a class="next" href="03_quantization_theory.html"><span class="lbl">다음 →</span>1. 양자화이론</a></div><h1>0.5. 쉬운 방법부터 — 배포 난이도 사다리</h1>
+<blockquote class="callout">원본 가이드 매핑: "0.5단계 — 쉬운 방법부터: 배포 난이도 사다리" 예상 소요: Lv.1~4 합쳐 2~3주 (레벨당 반나절~며칠) 선행 조건: <a href="01_environment_setup.html">0단계 환경 준비</a> 완료 (Ubuntu 22.04 + NVIDIA RTX GPU, Python/conda, Docker)</blockquote>
+<hr>
+<h2 id="0-이-단계에서-무엇을왜-하는가">0) 이 단계에서 무엇을·왜 하는가</h2>
+<p>본 로드맵의 목적지인 <strong>벤더 툴체인</strong>(TensorRT / TI TIDL / Qualcomm QNN / Renesas DRP-AI)은 임베디드 AI에서 <strong>가장 난이도가 높은 축</strong>에 속한다. 처음부터 여기에 뛰어들면 "빌드가 안 된다 / op가 안 올라간다 / 보드가 없다"에서 몇 주를 태우고 정작 <strong>"모델을 임베디드에 올린다"는 감각</strong>을 얻지 못한다.</p>
+<p>그래서 이 단계에서는 <strong>난이도 사다리(ladder)</strong> 를 오른다. 낮은 난이도의 툴로 <strong><code>변환 → 양자화 → 배포 → fallback(미지원 op 처리)</code></strong> 이라는 동일한 뼈대를 <strong>4번 반복</strong>한다. 반복할 때마다 추상화가 한 겹씩 벗겨지고, Lv.5(벤더 툴체인)에 도달할 즈음엔 파이프라인 전체가 손에 익는다.</p>
+<ul><li><strong>왜 사다리인가 (직관)</strong>: 각 레벨은 앞 레벨의 "확대판"이다. 같은 사진을 배율만 높여 보는 것과 같다. Lv.1(노코드)에서 <strong>한 번의 클릭 뒤에 숨어 있던</strong> <code>데이터→학습→INT8→배포</code>가, Lv.4에서는 <strong>한 줄씩 손으로</strong> 드러난다. 특히 ExecuTorch에서 겪는 <strong>"export가 깨지는 경험"</strong> 은 <a href="04_transformer_quantization.html">2단계 Transformer 양자화</a>의 예고편이고, ONNX Runtime의 <strong>EP 교체</strong>는 <a href="06_multi_soc.html">4단계 멀티 SoC</a>의 미니어처다. 이 두 연결을 각 레벨에서 의식적으로 확인하는 것이 이 단계의 진짜 목표다.</li><li><strong>왜 지금인가 (Why now)</strong>: 이론(<a href="03_quantization_theory.html">1단계</a>)에 들어가기 전에 "완주 경험"을 만들어 두면, 이후 이론·최적화가 추상론이 아니라 <strong>내가 이미 돌려본 것의 원리</strong>로 읽힌다. 예를 들어 <a href="03_quantization_theory.html">1단계</a>에서 배울 <code>scale</code>·<code>zero_point</code> 공식은, Lv.2에서 이미 <code>inp[&quot;quantization&quot;]</code>로 만져 본 그 숫자다. <strong>먼저 손으로 만지고 나중에 원리를 붙이는</strong> 순서가 이 로드맵의 설계 의도다.</li></ul>
+<blockquote class="callout tip">💡 팁: <strong>TensorRT/ONNX 경험자는 Lv.3부터</strong> 시작해도 된다. 완전 초심자는 Lv.1부터 순서대로. 단, "완주 경험"이 목적이므로 최소 한 레벨은 <strong>끝까지(런타임 실행·수치 측정까지)</strong> 통과할 것 — 중간에 멈추면 감각이 남지 않는다.</blockquote>
+<hr>
+<h2 id="1-학습-목표-완료-체크리스트">1) 학습 목표 &amp; 완료 체크리스트</h2>
+<ul><li class="task"><label><input type="checkbox" data-k="d4a4628f59"> <strong>Lv.1 Edge Impulse</strong>: 웹 Studio에서 프로젝트 생성 → 데이터 수집 → Impulse 설계 → 학습 → INT8 TFLite 자동 양자화 → 배포까지 원클릭 완주. BYOM(ONNX 업로드) 경로로 내 모델도 올려본다.</label></li><li class="task"><label><input type="checkbox" data-k="c6d361aa3a"> <strong>Lv.2 LiteRT(구 TFLite)</strong>: <code>TFLiteConverter</code>로 <strong>PTQ 3종</strong>(dynamic range / float16 / full INT8)을 <strong>직접</strong> 켜고 크기·정확도·속도를 표로 비교. <code>representative_dataset</code>을 손으로 작성한다. 인터프리터로 추론.</label></li><li class="task"><label><input type="checkbox" data-k="396ea88c4e"> <strong>Lv.3 ONNX Runtime</strong>: PyTorch → ONNX export 후 <strong>EP 한 줄 교체</strong>(CPU → CUDA → TensorRT)로 latency를 측정. <strong>워밍업 + 반복측정 + p50/p95</strong> 벤치 하네스를 작성하고 <code>provider_options</code>를 설정한다.</label></li><li class="task"><label><input type="checkbox" data-k="ebede441ea"> <strong>Lv.4 ExecuTorch</strong>: <code>torch.export</code> → <code>to_edge_transform_and_lower</code>(XNNPACK) → <code>to_executorch()</code> → <code>.pte</code> 실행 최소 예제를 <strong>단계별 산출물과 함께</strong> 통과. 미지원 op에서 export가 깨지는 실제 에러를 관찰.</label></li><li class="task"><label><input type="checkbox" data-k="1dd46ddfa7"> <strong>Qualcomm AI Hub</strong>: <code>qai-hub</code>로 모델을 업로드해 <strong>클라우드의 실제 단말</strong>에서 컴파일(<code>submit_compile_job</code>) → 프로파일(<code>submit_profile_job</code>) → 결과 조회까지 lifecycle을 돈다(보드 없이 QNN 감각 체험).</label></li><li class="task"><label><input type="checkbox" data-k="b380451f8d"> 4번의 반복에서 공통 뼈대(<code>변환→양자화→배포→fallback</code>)를 스스로 서술할 수 있다.</label></li></ul>
+<hr>
+<h2 id="2-배경-이론-개념-난이도-사다리-한눈에">2) 배경 이론 / 개념 — 난이도 사다리 한눈에</h2>
+<p>각 레벨은 "추상화 수준"과 "직접 만지는 범위"가 다르다. 위로 갈수록 자동화가 걷히고 벤더 네이티브에 가까워진다.</p>
+<div class="tablewrap"><table><thead><tr><th>Lv</th><th>도구</th><th>난이도</th><th>입력</th><th>핵심 학습 포인트</th><th>보드 필요?</th><th>검증 버전 (2026-07 기준)</th></tr></thead><tbody><tr><td>1</td><td><strong>Edge Impulse</strong></td><td>★☆☆☆☆</td><td>데이터 or 모델(BYOM)</td><td>노코드로 전 과정 자동화, INT8 자동 양자화, QNN/Hexagon 배포</td><td>배포 시 (RPi/Arduino/폰), 학습은 클라우드</td><td><code>edge-impulse-cli</code> 최신</td></tr><tr><td>2</td><td><strong>LiteRT</strong> (구 TFLite)</td><td>★★☆☆☆</td><td>Keras/TF</td><td>PTQ 3종을 <strong>직접</strong> 켠다(<code>representative_dataset</code>), 인터프리터 추론</td><td>RPi 있으면 좋음(PC로도 가능)</td><td><code>ai-edge-litert</code> 최신</td></tr><tr><td>3</td><td><strong>ONNX Runtime</strong></td><td>★★★☆☆</td><td>PyTorch/TF→ONNX</td><td><strong>EP 교체 한 줄</strong>로 백엔드 스위칭(CPU/CUDA/TensorRT/QNN)</td><td>불필요(RTX PC)</td><td><code>onnxruntime-gpu</code> 1.28.0 (CUDA 12 wheel)</td></tr><tr><td>4</td><td><strong>ExecuTorch</strong></td><td>★★★★☆</td><td>PyTorch</td><td><code>torch.export</code> 직행, 미지원 op에서 export 붕괴 체험</td><td>불필요(PC)~선택(폰/MCU)</td><td><code>executorch</code> 1.3.x</td></tr><tr><td>5</td><td><strong>벤더 툴체인</strong></td><td>★★★★★</td><td>벤더별 상이</td><td>최대 성능·최대 난이도 = <strong>본 가이드 <a href="03_quantization_theory.html">1~5단계</a></strong></td><td>대부분 필요</td><td>(각 단계 문서 참조)</td></tr></tbody></table></div>
+<blockquote class="callout tip">💡 팁: <strong>공통 뼈대</strong>를 매 레벨에서 의식적으로 찾아라 — <code>① 원본 모델 → ② (변환) 배포 포맷 → ③ (양자화) INT8 → ④ (배포) 런타임에서 실행 → ⑤ (fallback) 미지원 연산 처리</code>. Lv.1은 ①~⑤를 전부 숨기고, Lv.4는 대부분 드러낸다. 아래는 레벨별로 각 단계가 "어디에 있는지"를 매핑한 것이다.</blockquote>
+<div class="tablewrap"><table><thead><tr><th>뼈대 단계</th><th>Lv.1 Edge Impulse</th><th>Lv.2 LiteRT</th><th>Lv.3 ONNX Runtime</th><th>Lv.4 ExecuTorch</th></tr></thead><tbody><tr><td>② 변환</td><td>Studio가 자동</td><td><code>TFLiteConverter</code></td><td><code>torch.onnx.export</code></td><td><code>torch.export</code> + <code>to_edge_*</code></td></tr><tr><td>③ 양자화</td><td><code>Quantized(int8)</code> 클릭</td><td><code>optimizations</code>/<code>representative_dataset</code></td><td>(EP 옵션 <code>trt_int8_enable</code>)</td><td>PT2E(<code>prepare/convert_pt2e</code>)</td></tr><tr><td>④ 배포/실행</td><td>펌웨어/라이브러리</td><td><code>Interpreter</code>/<code>CompiledModel</code></td><td><code>InferenceSession</code></td><td><code>.pte</code> + <code>Runtime</code></td></tr><tr><td>⑤ fallback</td><td>Studio가 처리</td><td>(해당 op를 float로)</td><td><code>providers</code> 우선순위 리스트</td><td>partitioner 미할당 → CPU</td></tr></tbody></table></div>
+<blockquote class="callout warn">⚠️ 주의: <strong>양자화·NPU 최적화의 최종 성능은 벤더 네이티브(Lv.5)가 앞선다.</strong> 사다리는 "감각과 속도"를 얻는 훈련이지, 프로덕션 최적해가 아니다. 예컨대 Lv.3의 TensorRT EP는 편의성(한 줄 교체)을 위해 세밀한 커널 튜닝·레이어 융합 제어를 포기한다 — 그 제어권을 되찾는 것이 <a href="05_tensorrt.html">3단계 TensorRT</a>다.</blockquote>
+<hr>
+<h2 id="3-환경도구-준비">3) 환경·도구 준비</h2>
+<p><a href="01_environment_setup.html">0단계</a>에서 만든 conda 환경을 재사용한다. 레벨별로 <strong>가상환경을 분리</strong>하면 의존성 충돌(특히 TF vs PyTorch, 그리고 onnxruntime CPU판 vs GPU판)을 피할 수 있다.</p>
+<pre><code class="lang-bash"># 레벨별 독립 conda 환경 (권장) — 이름은 자유
+conda create -y -n ladder-litert  python=3.11   # Lv.2 (LiteRT/TF)
+conda create -y -n ladder-onnx     python=3.11   # Lv.3 (ONNX Runtime)
+conda create -y -n ladder-et       python=3.11   # Lv.4 (ExecuTorch), qai-hub도 여기서</code></pre>
+<pre><code class="lang-bash"># Lv.1 Edge Impulse CLI — Node.js 20 LTS 필요 (v16+). npm 전역 설치
+#  (Ubuntu에 Node가 없다면 nvm 또는 nodesource로 20.x 설치 후)
+node -v                                 # v20.x 이상인지 확인
+npm install -g edge-impulse-cli         # edge-impulse-daemon/uploader/runner 등 포함 (2026-07 기준 최신)
+edge-impulse-daemon --version           # 설치 확인</code></pre>
+<blockquote class="callout tip">💡 팁: <code>npm install -g edge-impulse-cli</code>는 여러 실행파일을 한 번에 깐다 — <code>edge-impulse-daemon</code>(보드↔Studio 프록시), <code>edge-impulse-uploader</code>(데이터 업로드), <code>edge-impulse-runner</code>(배포 모델 로컬 실행), <code>edge-impulse-data-forwarder</code>(센서 스트리밍). 뒤 실습에서 daemon과 uploader를 쓴다.</blockquote>
+<pre><code class="lang-bash"># Lv.2 LiteRT (구 TensorFlow Lite. 2024년 개명) — 런타임 전용 경량 패키지
+conda activate ladder-litert
+pip install ai-edge-litert              # 인터프리터/런타임 (2026-07 기준 최신)
+pip install tensorflow                  # TFLiteConverter(변환기)는 TF 본체에 포함</code></pre>
+<pre><code class="lang-bash"># Lv.3 ONNX Runtime (GPU) — 이 스터디는 CUDA 12.8 스택에 맞춰 CUDA 12 대응 wheel 사용
+#   (2026-07 기준 onnxruntime-gpu 1.28.0. ORT 1.22+부터 GPU 휠은 CUDA 12만 릴리스되므로
+#    기본 wheel이 곧 CUDA 12 빌드다. CUDA 13 스택이라면 별도 인덱스가 필요 — 0단계 참조)
+conda activate ladder-onnx
+pip install torch torchvision           # PyTorch (CUDA 빌드는 pytorch.org 인덱스 사용)
+pip install onnx onnxruntime-gpu        # ONNX + GPU 런타임(CPU/CUDA/TensorRT EP 포함)
+python -c &quot;import onnxruntime as ort; print(ort.__version__); print(ort.get_available_providers())&quot;
+# 예상 출력:
+#   1.28.0
+#   [&#x27;TensorrtExecutionProvider&#x27;, &#x27;CUDAExecutionProvider&#x27;, &#x27;CPUExecutionProvider&#x27;]
+# ↑ 세 EP가 모두 보이면 OK. CUDA/TensorRT가 없으면 CPU판이 깔린 것 — 6)절 참조.</code></pre>
+<pre><code class="lang-bash"># Lv.4 ExecuTorch — PyTorch 네이티브 온디바이스 런타임 (v1.0 GA 2025-10)
+conda activate ladder-et
+pip install executorch                  # (2026-07 기준 1.3.x, XNNPACK 등 백엔드 포함)
+python -c &quot;import executorch; print(executorch.__version__)&quot;
+# 예상 출력: 1.3.x</code></pre>
+<pre><code class="lang-bash"># Qualcomm AI Hub — 클라우드 실단말 컴파일/프로파일링
+pip install &quot;qai-hub[torch]&quot;            # PyTorch 트레이싱/export 포함 설치
+# 가입 후 https://app.aihub.qualcomm.com 의 Account에서 API 토큰 발급받아:
+qai-hub configure --api_token &lt;YOUR_API_TOKEN&gt;
+python -c &quot;import qai_hub as hub; print(len(hub.get_devices()), &#x27;devices available&#x27;)&quot;
+# 예상 출력: (토큰이 유효하면) 예: &#x27;80 devices available&#x27;  ← 숫자는 시점에 따라 다름</code></pre>
+<blockquote class="callout warn">⚠️ 확인 필요: LiteRT의 신규 권장 추론 경로는 <code>CompiledModel</code> API이며(델리게이트를 손으로 다루지 않고 NPU 가속에 접근), 예전 <code>Interpreter</code> API는 "하위 호환용으로 유지"된다고 명시돼 있다(출처: <a href="https://developers.google.com/edge/litert/inference">LiteRT inference 문서</a>). 아래 Lv.2 실습은 학습용으로 익숙한 <strong><code>Interpreter</code> API</strong>를 먼저 보이고, <code>CompiledModel</code> 경로도 병기한다. 최신 프로덕션에서는 <code>CompiledModel</code>을 우선 검토할 것.</blockquote>
+<blockquote class="callout warn">⚠️ 확인 필요: <code>onnxruntime-gpu</code>의 <strong>TensorRT EP</strong>는 실행 시 시스템에 TensorRT/cuDNN이 맞는 버전으로 있어야 동작한다. 이 스터디의 정본은 <strong>TensorRT 10.16.x LTS</strong>(2026-03 릴리스, 이 버전에서 deprecated된 API는 2027-03까지 유지되는 LTS 라인)다. 버전 호환 매트릭스는 <a href="https://onnxruntime.ai/docs/execution-providers/TensorRT-ExecutionProvider.html">ONNX Runtime TensorRT EP 문서</a>에서 설치 시점 기준으로 재확인.</blockquote>
+<hr>
+<h2 id="4-단계별-실습">4) 단계별 실습</h2>
+<h3 id="lv1-edge-impulse-노코드로우코드">Lv.1 — Edge Impulse (노코드/로우코드, ★☆☆☆☆)</h3>
+<p><strong>흐름</strong>: 계정 → 프로젝트 → 데이터 → Impulse 설계 → 학습 → <strong>INT8 배포</strong>. 전 과정이 웹 UI(<a href="https://studio.edgeimpulse.com">studio.edgeimpulse.com</a>)에서 일어난다. 2025년 Qualcomm 인수 이후 <strong>Dragonwing + Hexagon NPU(QNN) 배포</strong>가 공식 지원된다.</p>
+<p>Lv.1의 목적은 "결과물"이 아니라 <strong>완주 감각</strong>이다. 여기서 자동으로 지나가는 각 화면이 Lv.2~4에서 손으로 재현할 대상이므로, <strong>화면 전환마다 "이건 뼈대의 어느 단계인가"를 메모</strong>하며 진행한다.</p>
+<h4 id="실행-흐름-데이터부터-int8-배포까지-화면-순서">(실행 흐름) 데이터부터 INT8 배포까지 — 화면 순서</h4>
+<ol><li><strong>계정·프로젝트 생성</strong>: <a href="https://studio.edgeimpulse.com">studio.edgeimpulse.com</a> 가입 → 좌상단 <strong>"Create new project"</strong> → 이름 입력. 프로젝트 대시보드가 열린다. (뼈대 ①: 원본 모델의 "빈 그릇"이 만들어진 상태)</li><li><strong>데이터 수집(Data acquisition)</strong>: 좌측 메뉴 <code>Data acquisition</code>. 두 경로 중 하나 —</li><ul><li><strong>웹 업로드</strong>: <code>Upload data</code> 버튼으로 파일(오디오 wav/이미지 등)을 끌어 놓기. 자동으로 train/test로 분할된다.</li><li><strong>CLI 스트리밍</strong>: 보드/PC를 Studio에 연결해 센서 데이터를 실시간 수집.</li></ul></ol>
+<pre><code class="lang-bash">     # 보드/PC를 Studio 프로젝트에 연결 (시리얼 장치 프록시)
+     edge-impulse-daemon
+     # 프롬프트에서: 계정 로그인 → 연결할 프로젝트 선택 → 디바이스 이름 지정
+     # 연결되면 Studio의 &#x27;Devices&#x27; 탭에 초록불로 나타난다.</code></pre>
+<pre><code class="lang-bash">     # (대안) 이미 있는 파일을 CLI로 일괄 업로드 — 라벨은 디렉토리명으로 자동 부여
+     edge-impulse-uploader --category training  data/train/yes/*.wav
+     edge-impulse-uploader --category testing   data/test/yes/*.wav</code></pre>
+<ol><li><strong>Impulse 설계(Create impulse)</strong>: 좌측 <code>Impulse design &gt; Create impulse</code>. 좌→우 파이프라인을 조립한다:</li></ol>
+<p>   <code>Input(시간창 크기·stride) → Processing block(전처리: 예 MFCC/Spectrogram/Image) → Learning block(분류/회귀 등) → Output(클래스)</code>. <code>Save Impulse</code> 클릭.</p>
+<ol><li><strong>특징 생성(Generate features)</strong>: Processing 블록 페이지에서 <code>Generate features</code> → 특징 공간 산점도가 그려진다(클래스가 잘 분리되면 학습이 쉽다는 신호).</li><li><strong>학습(Start training)</strong>: Learning 블록 페이지에서 epoch·learning rate·모델 아키텍처를 고르고 <strong><code>Start training</code></strong>. 학습은 <strong>클라우드 GPU</strong>에서 돌아 로컬 RTX가 필요 없다. 끝나면 <strong>혼동행렬 + 검증 정확도 + on-device 성능 추정(RAM/Flash/추론시간)</strong>이 표시된다. (뼈대 ①→ 학습 완료)</li><li><strong>INT8 배포(Deployment)</strong>: 좌측 <code>Deployment</code> 탭 → 타깃 선택.</li><ul><li><strong>라이브러리</strong>: <code>C++ library</code> / <code>Arduino library</code> / <code>WebAssembly</code> 등.</li><li><strong>보드 펌웨어</strong>: 지원 보드를 고르면 <strong>원클릭 빌드</strong>로 <code>.bin</code>/<code>.uf2</code> 펌웨어 생성.</li><li>화면 하단 <strong><code>Model optimizations</code>에서 <code>Quantized (int8)</code> 선택</strong> → 빌드 시 <strong>INT8 TFLite로 자동 PTQ</strong>되어 산출물에 포함된다. <code>Unoptimized (float32)</code>와 나란히 놓고 추정 RAM/추론시간을 비교해 보라(여기서 이미 "INT8이 작고 빠르다"가 숫자로 보인다 — 뼈대 ③).</li><li>Qualcomm 타깃(Dragonwing/Android)에서는 <strong>QNN 델리게이트</strong>로 Hexagon NPU에 라우팅(뼈대 ⑤가 자동으로 처리됨).</li></ul><li><strong>보드에서 실행</strong>: 생성한 펌웨어를 플래시하거나, 라이브러리를 프로젝트에 링크. 로컬에서 빠르게 확인하려면:</li></ol>
+<pre><code class="lang-bash">   # 배포된 모델을 PC/보드에서 즉시 실행 (별도 빌드 없이 감각 확인)
+   edge-impulse-runner</code></pre>
+<h4 id="예상-결과-소형-키워드-인식예-yesno-기준">(예상 결과) 소형 키워드 인식(예: "yes/no") 기준</h4>
+<div class="tablewrap"><table><thead><tr><th>항목</th><th>Unoptimized (float32)</th><th>Quantized (int8)</th></tr></thead><tbody><tr><td>모델 크기(Flash)</td><td>예: ~80 KB</td><td>예: ~22 KB (≈1/4)</td></tr><tr><td>예상 RAM</td><td>예: ~12 KB</td><td>예: ~8 KB</td></tr><tr><td>검증 정확도</td><td>예: 96.5%</td><td>예: 96.0% (미세 하락)</td></tr><tr><td>추론시간(Cortex-M 추정)</td><td>예: ~40 ms</td><td>예: ~12 ms</td></tr></tbody></table></div>
+<blockquote class="callout">수치는 예시다. Studio의 on-device 성능 추정치는 배포 타깃(Cortex-M4/M7/RPi/Dragonwing)에 따라 달라진다.</blockquote>
+<h4 id="byom-bring-your-own-model-내-onnx를-올리는-경로-상세">BYOM (Bring Your Own Model) — 내 ONNX를 올리는 경로 상세</h4>
+<p>이미 학습된 모델(예: <a href="#lv3--onnx-runtime-ep-한-줄-교체-">Lv.3</a>에서 만든 <code>resnet18.onnx</code>)이 있으면 Studio가 프로파일링·양자화·타깃 빌드를 대신 처리한다.</p>
+<ol><li>대시보드 우상단 또는 <code>Deployment &gt; Upload your model</code> 진입.</li><li><strong>모델 파일 업로드</strong>: 지원 포맷 <strong>SavedModel(.zip) · ONNX(.onnx) · TFLite/LiteRT(.tflite) · scikit-learn(.pkl)</strong>.</li><li><strong>입력/출력 스펙 지정</strong>: 입력 텐서 형상(예 <code>1,3,224,224</code>)과 스케일링(0–255 → 0–1 등), 출력 타입(분류/회귀)을 폼에서 지정. 여기서 형상이 틀리면 프로파일이 실패하니 export 때의 <code>input_names</code>/shape와 일치시킨다.</li><li><strong>프로파일 &amp; 양자화</strong>: 업로드하면 Studio가 대상 하드웨어별 추론시간·메모리를 추정하고, <code>int8</code> 옵션 선택 시 대신 양자화한다. <strong>Dragonwing에서는 양자화 모델이 Hexagon NPU로 가속</strong>된다.</li><li><strong>배포</strong>: 이후는 위 6~7단계와 동일(라이브러리/펌웨어).</li></ol>
+<blockquote class="callout tip">💡 팁: BYOM은 Lv.1과 Lv.3을 잇는 다리다. Lv.3에서 만든 <code>resnet18.onnx</code>를 그대로 올려 보면, "같은 모델이 노코드 파이프라인에서는 어떻게 취급되는지"를 대조할 수 있다. <strong>한 아티팩트, 두 경로</strong>를 경험하는 것이 사다리의 요령이다.</blockquote>
+<blockquote class="callout bad">🔴 함정: BYOM 업로드 시 <strong>전처리(정규화)를 모델 밖에서 하고 있었다면</strong> Studio 폼에 그 스케일링을 명시해야 결과가 맞는다. "정확도가 랜덤 수준"이면 대개 입력 스케일/채널 순서(NCHW vs NHWC) 불일치다.</blockquote>
+<hr>
+<h3 id="lv2-litert-구-tflite-ptq-3종-직접-켜기">Lv.2 — LiteRT (구 TFLite) + PTQ 3종 직접 켜기 (★★☆☆☆)</h3>
+<p>Lv.1이 한 번의 클릭 뒤에 숨긴 <strong>양자화</strong>를, 여기서는 <strong>세 가지 방식</strong>으로 직접 켜서 서로 비교한다. 2024년 TFLite가 <strong>LiteRT</strong>로 개명됐다. 변환기(<code>TFLiteConverter</code>)는 TF 본체에, 경량 런타임은 <code>ai-edge-litert</code>에 있다.</p>
+<p><strong>세 가지 PTQ의 직관 (왜 3종인가)</strong></p>
+<div class="tablewrap"><table><thead><tr><th>방식</th><th>무엇을 양자화하나</th><th>크기</th><th>대표 타깃</th><th>representative_dataset</th></tr></thead><tbody><tr><td><strong>Dynamic range</strong></td><td>가중치=INT8, <strong>activation은 float(런타임에 동적 양자화)</strong></td><td>~1/4</td><td>CPU (가장 간단)</td><td><strong>불필요</strong></td></tr><tr><td><strong>Float16</strong></td><td>가중치=FP16, activation=FP32(첫 추론 전 FP32로 업샘플)</td><td>~1/2</td><td><strong>GPU</strong></td><td>불필요</td></tr><tr><td><strong>Full INT8</strong></td><td>가중치·activation <strong>모두 INT8</strong>(정수만)</td><td>~1/4</td><td>MCU/NPU/DSP</td><td><strong>필요(캘리브레이션)</strong></td></tr></tbody></table></div>
+<ul><li><strong>Dynamic range</strong>가 가장 쉽다(플래그 하나). 그러나 activation이 여전히 float라 정수-only 하드웨어(MCU/NPU)에는 못 올린다.</li><li><strong>Float16</strong>은 정확도 손실이 거의 없고 GPU에서 유리하지만, INT8만큼 작지도 빠르지도 않다.</li><li><strong>Full INT8</strong>만이 진짜 "정수 전용" 모델이다 — 대신 activation 범위를 알아야 하므로 <strong><code>representative_dataset</code>(캘리브레이션)</strong> 이 필수다. 이 셋의 차이를 손으로 만든 표로 확인하는 것이 Lv.2의 핵심이며, 이론은 <a href="03_quantization_theory.html">1단계</a>에서 정밀하게 다룬다.</li></ul>
+<h4 id="a-모델-준비-ptq-3종-변환">(a) 모델 준비 + PTQ 3종 변환</h4>
+<p><code>representative_dataset</code>이 캘리브레이션의 축소판이다 — 실제 입력 분포에서 뽑은 소량 샘플로 activation의 min/max 범위를 추정한다.</p>
+<pre><code class="lang-python"># lv2_convert.py — Keras 모델 → FP32 / dynamic-range / float16 / full-INT8 .tflite (4종)
+import numpy as np
+import tensorflow as tf
+
+# 0) 예시 모델 (실제로는 학습된 모델을 로드). MNIST용 소형 CNN.
+model = tf.keras.Sequential([
+    tf.keras.layers.Input((28, 28, 1)),
+    tf.keras.layers.Conv2D(8, 3, activation=&quot;relu&quot;),
+    tf.keras.layers.MaxPooling2D(),
+    tf.keras.layers.Flatten(),
+    tf.keras.layers.Dense(10),
+])
+# (학습 생략: 데모용. 실제로는 model.fit(...)으로 학습된 가중치 사용)
+
+def save(name, tflite_bytes):
+    with open(name, &quot;wb&quot;) as f:
+        f.write(tflite_bytes)
+    print(f&quot;  {name:26s} {len(tflite_bytes)/1024:7.1f} KB&quot;)
+
+# 1) FP32 baseline
+conv = tf.lite.TFLiteConverter.from_keras_model(model)
+save(&quot;model_fp32.tflite&quot;, conv.convert())
+
+# 2) Dynamic range PTQ — 플래그 하나. representative_dataset 불필요.
+conv = tf.lite.TFLiteConverter.from_keras_model(model)
+conv.optimizations = [tf.lite.Optimize.DEFAULT]              # 가중치만 INT8, activation은 동적
+save(&quot;model_dynamic.tflite&quot;, conv.convert())
+
+# 3) Float16 PTQ — GPU 친화. representative_dataset 불필요.
+conv = tf.lite.TFLiteConverter.from_keras_model(model)
+conv.optimizations = [tf.lite.Optimize.DEFAULT]
+conv.target_spec.supported_types = [tf.float16]             # 가중치 FP16
+save(&quot;model_fp16.tflite&quot;, conv.convert())
+
+# 4) Full INT8 PTQ — representative_dataset로 activation 범위 캘리브레이션
+#    (학습/평가셋에서 뽑은 수백 샘플이면 충분)
+calib_images = np.random.rand(200, 28, 28, 1).astype(&quot;float32&quot;)  # 데모용 랜덤
+
+def representative_data_gen():
+    # 각 yield는 &#x27;모델 입력 하나&#x27;를 담은 리스트. 배치 1로 200개 흘려보낸다.
+    for img in tf.data.Dataset.from_tensor_slices(calib_images).batch(1).take(200):
+        yield [img]
+
+conv = tf.lite.TFLiteConverter.from_keras_model(model)
+conv.optimizations = [tf.lite.Optimize.DEFAULT]                       # 양자화 스위치 ON
+conv.representative_dataset = representative_data_gen                  # 캘리브레이션 데이터
+conv.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS_INT8]  # full-INT8 강제
+conv.inference_input_type = tf.int8                                   # 입출력도 정수로
+conv.inference_output_type = tf.int8
+save(&quot;model_int8.tflite&quot;, conv.convert())
+
+# 예상 출력 (크기는 모델에 따라 다름):
+#   model_fp32.tflite            ~13.0 KB
+#   model_dynamic.tflite          ~5.0 KB
+#   model_fp16.tflite             ~7.0 KB
+#   model_int8.tflite             ~4.0 KB</code></pre>
+<blockquote class="callout bad">🔴 함정: <code>representative_dataset</code>을 주지 않고 <code>optimizations=[DEFAULT]</code>만 켜면 그건 <strong>full INT8이 아니라 dynamic range</strong>다(activation은 여전히 float). MCU/NPU처럼 정수-only 하드웨어에 올리려면 반드시 <code>supported_ops=[...INT8]</code> + <code>representative_dataset</code> + <code>inference_input/output_type=tf.int8</code> 3종 세트가 필요하다. 이 차이가 임베디드 배포 실패의 단골 원인이다 — <a href="03_quantization_theory.html">1단계 양자화 이론</a>에서 정확히 다룬다.</blockquote>
+<blockquote class="callout bad">🔴 함정: <code>representative_data_gen</code>은 <strong><code>yield [img]</code>처럼 리스트</strong>로 내보내야 한다(모델 입력이 여러 개면 원소도 여러 개). <code>yield img</code>로 바로 텐서를 주면 <code>ValueError</code>가 난다. 또 dtype은 <code>float32</code>여야 한다(정수화는 변환기가 내부적으로 수행).</blockquote>
+<h4 id="b-추론-인터프리터-vs-compiledmodel">(b) 추론 — 인터프리터 vs CompiledModel</h4>
+<p><strong>(b-1) Interpreter API</strong> (학습용·하위 호환) — Raspberry Pi에서도 동일 코드가 돈다(<code>ai-edge-litert</code>는 ARM 휠 제공).</p>
+<pre><code class="lang-python"># lv2_infer.py — LiteRT 인터프리터로 추론 (PC/RPi 공통)
+import numpy as np
+from ai_edge_litert.interpreter import Interpreter   # (구 tf.lite.Interpreter 대체)
+
+def run(path, x):
+    itp = Interpreter(model_path=path)
+    itp.allocate_tensors()
+    inp = itp.get_input_details()[0]
+    out = itp.get_output_details()[0]
+
+    # INT8 모델이면 입력을 양자화 스케일로 정수화 (역양자화 공식의 역함수)
+    if inp[&quot;dtype&quot;] == np.int8:
+        scale, zp = inp[&quot;quantization&quot;]          # ← [1단계]에서 배울 scale/zero_point가 여기 있다
+        x = np.round(x / scale + zp).astype(np.int8)
+    itp.set_tensor(inp[&quot;index&quot;], x)
+    itp.invoke()
+    y = itp.get_tensor(out[&quot;index&quot;])
+    # 출력이 INT8이면 다시 float로 역양자화
+    if out[&quot;dtype&quot;] == np.int8:
+        oscale, ozp = out[&quot;quantization&quot;]
+        y = (y.astype(np.float32) - ozp) * oscale
+    return y
+
+sample = np.random.rand(1, 28, 28, 1).astype(&quot;float32&quot;)
+for m in [&quot;model_fp32.tflite&quot;, &quot;model_dynamic.tflite&quot;, &quot;model_fp16.tflite&quot;, &quot;model_int8.tflite&quot;]:
+    print(f&quot;{m:22s} -&gt; argmax={int(np.argmax(run(m, sample)))}&quot;)
+
+# 예상 출력 (argmax는 랜덤 가중치라 무의미하지만, 4종 모두 에러 없이 도는지가 관건):
+#   model_fp32.tflite      -&gt; argmax=7
+#   model_dynamic.tflite   -&gt; argmax=7
+#   model_fp16.tflite      -&gt; argmax=7
+#   model_int8.tflite      -&gt; argmax=7</code></pre>
+<p><strong>(b-2) CompiledModel API</strong> (신규 권장 경로) — 델리게이트를 손으로 다루지 않고 가속기(CPU/GPU/NPU)를 고른다.</p>
+<pre><code class="lang-python"># lv2_infer_compiled.py — LiteRT CompiledModel 경로 (신규 권장)
+import numpy as np
+from ai_edge_litert import interpreter as litert   # 패키지 최신 버전 기준
+
+# CompiledModel은 accelerator를 문자열로 고른다 (&#x27;cpu&#x27; / &#x27;gpu&#x27; / &#x27;npu&#x27; 등, 지원 시)
+cm = litert.CompiledModel(&quot;model_fp32.tflite&quot;, accelerator=&quot;cpu&quot;)
+inputs = [np.random.rand(1, 28, 28, 1).astype(&quot;float32&quot;)]
+outputs = cm.run(inputs)
+print(&quot;CompiledModel out shape:&quot;, outputs[0].shape)   # 예상: (1, 10)</code></pre>
+<blockquote class="callout warn">⚠️ 확인 필요: <code>CompiledModel</code>의 정확한 임포트 경로·생성자 인자(<code>accelerator</code> 키명 등)는 <code>ai-edge-litert</code> 버전에 따라 다르다. 설치한 버전의 <a href="https://developers.google.com/edge/litert/inference">LiteRT inference 문서</a>에서 시그니처를 재확인하고, 안 맞으면 학습용으로는 (b-1) <code>Interpreter</code>로 진행할 것.</blockquote>
+<h4 id="c-ptq-3종-비교-이-단계의-핵심-산출물">(c) PTQ 3종 비교 — 이 단계의 핵심 산출물</h4>
+<pre><code class="lang-bash"># 파일 크기 한눈에 비교 (INT8/dynamic은 ~1/4, fp16은 ~1/2로 줄어드는지)
+ls -lh model_fp32.tflite model_dynamic.tflite model_fp16.tflite model_int8.tflite</code></pre>
+<p>정확도(테스트셋 accuracy)와 추론 시간(<code>time.perf_counter()</code>로 워밍업 후 N회 평균)을 각각 측정해 아래 <a href="#5-예시--결과-해석">5)절 표</a>의 <strong>4행 표</strong>를 내 값으로 채운다. 측정 스니펫:</p>
+<pre><code class="lang-python"># lv2_bench.py — 워밍업 후 반복측정으로 추론시간 (모델 하나당)
+import time, numpy as np
+from ai_edge_litert.interpreter import Interpreter
+
+def latency_ms(path, n=200):
+    itp = Interpreter(model_path=path); itp.allocate_tensors()
+    inp = itp.get_input_details()[0]
+    x = np.zeros(inp[&quot;shape&quot;], dtype=inp[&quot;dtype&quot;])
+    for _ in range(20):                      # warm-up
+        itp.set_tensor(inp[&quot;index&quot;], x); itp.invoke()
+    ts = []
+    for _ in range(n):
+        t = time.perf_counter()
+        itp.set_tensor(inp[&quot;index&quot;], x); itp.invoke()
+        ts.append((time.perf_counter() - t) * 1000)
+    ts = np.array(ts)
+    return ts.mean(), np.percentile(ts, 50), np.percentile(ts, 95)
+
+for m in [&quot;model_fp32.tflite&quot;, &quot;model_dynamic.tflite&quot;, &quot;model_fp16.tflite&quot;, &quot;model_int8.tflite&quot;]:
+    avg, p50, p95 = latency_ms(m)
+    print(f&quot;{m:22s} avg={avg:.3f} p50={p50:.3f} p95={p95:.3f} ms&quot;)</code></pre>
+<blockquote class="callout tip">💡 팁: <strong>PC(x86)에서는 INT8이 반드시 빠르지 않다.</strong> 데스크톱 CPU는 float 처리가 매우 최적화돼 있어, INT8 이득은 오히려 <strong>ARM/MCU/NPU</strong>에서 두드러진다. 가능하면 이 벤치를 <strong>Raspberry Pi에서도</strong> 돌려 두 환경의 상대속도가 뒤집히는 것을 관찰하라 — 이것이 "타깃 하드웨어에서 측정하라"는 임베디드 철칙의 첫 체감이다.</blockquote>
+<hr>
+<h3 id="lv3-onnx-runtime-ep-한-줄-교체">Lv.3 — ONNX Runtime: EP 한 줄 교체 (★★★☆☆)</h3>
+<p><a href="06_multi_soc.html">4단계 멀티 SoC</a>의 미니어처. <strong>모델은 그대로 두고 Execution Provider(EP)만 바꿔</strong> 백엔드를 스위칭한다. Lv.2의 "PTQ 방식을 바꾼다"와 달리, 여기서는 "실행 엔진을 바꾼다" — 모델 파일은 하나(<code>resnet18.onnx</code>)로 고정이다.</p>
+<h4 id="a-pytorch-onnx-export">(a) PyTorch → ONNX export</h4>
+<pre><code class="lang-python"># lv3_export.py — torchvision 모델을 ONNX로 내보내기
+import torch, torchvision
+
+model = torchvision.models.resnet18(weights=&quot;IMAGENET1K_V1&quot;).eval()
+dummy = torch.randn(1, 3, 224, 224)
+torch.onnx.export(
+    model, dummy, &quot;resnet18.onnx&quot;,
+    input_names=[&quot;input&quot;], output_names=[&quot;logits&quot;],
+    dynamic_axes={&quot;input&quot;: {0: &quot;batch&quot;}, &quot;logits&quot;: {0: &quot;batch&quot;}},  # 배치 가변
+    opset_version=17,
+)
+print(&quot;saved resnet18.onnx&quot;)
+# (선택) 그래프 유효성 검사
+import onnx; onnx.checker.check_model(&quot;resnet18.onnx&quot;); print(&quot;onnx check: OK&quot;)
+# 예상 출력:
+#   saved resnet18.onnx
+#   onnx check: OK</code></pre>
+<h4 id="b-ep-벤치-하네스-워밍업-반복측정-p50p95-통계">(b) EP 벤치 하네스 — 워밍업 + 반복측정 + p50/p95 통계</h4>
+<p>Lv.3의 진짜 산출물은 "숫자 하나"가 아니라 <strong>믿을 수 있는 벤치 하네스</strong>다. 아래 하네스는 (1) 최초 엔진 빌드를 제외하는 <strong>워밍업</strong>, (2) 이상치에 강한 <strong>p50/p95 분위수</strong>, (3) EP별 <code>provider_options</code> 설정을 모두 담는다. 바뀌는 것은 <code>providers</code> 리스트뿐 — 이 "한 줄 교체"가 핵심이다.</p>
+<pre><code class="lang-python"># lv3_bench.py — CPU vs CUDA vs TensorRT EP를 워밍업+반복측정으로 비교
+import time, numpy as np, onnxruntime as ort
+
+MODEL = &quot;resnet18.onnx&quot;
+x = {&quot;input&quot;: np.random.rand(1, 3, 224, 224).astype(&quot;float32&quot;)}
+
+def bench(name, providers, warmup=15, iters=100):
+    so = ort.SessionOptions()
+    so.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
+    sess = ort.InferenceSession(MODEL, sess_options=so, providers=providers)
+    active = sess.get_providers()[0]                 # 실제로 최우선 배치된 EP
+    for _ in range(warmup):                          # TensorRT는 최초에 엔진 빌드로 매우 느림 → 반드시 제외
+        sess.run(None, x)
+    ts = []
+    for _ in range(iters):
+        t = time.perf_counter()
+        sess.run(None, x)
+        ts.append((time.perf_counter() - t) * 1000)
+    ts = np.array(ts)
+    print(f&quot;{name:9s} active={active:26s} &quot;
+          f&quot;p50={np.percentile(ts,50):6.2f}  p95={np.percentile(ts,95):6.2f}  &quot;
+          f&quot;avg={ts.mean():6.2f}  min={ts.min():6.2f} ms&quot;)
+
+# --- CPU ---
+bench(&quot;CPU&quot;, [&quot;CPUExecutionProvider&quot;])
+
+# --- CUDA (provider_options로 device 지정) ---
+bench(&quot;CUDA&quot;, [(&quot;CUDAExecutionProvider&quot;, {&quot;device_id&quot;: 0}),
+               &quot;CPUExecutionProvider&quot;])
+
+# --- TensorRT (FP16 + 엔진 캐시로 재빌드 회피). 미지원 노드는 CUDA→CPU로 fallback ---
+bench(&quot;TensorRT&quot;, [
+    (&quot;TensorrtExecutionProvider&quot;, {
+        &quot;device_id&quot;: 0,
+        &quot;trt_fp16_enable&quot;: True,          # FP16 커널 허용 (정확도 허용 범위면 큰 이득)
+        &quot;trt_engine_cache_enable&quot;: True,  # 빌드한 엔진을 디스크에 캐시
+        &quot;trt_engine_cache_path&quot;: &quot;./trt_cache&quot;,
+        &quot;trt_max_workspace_size&quot;: 2 * 1024**3,   # 2 GB
+        # &quot;trt_int8_enable&quot;: True,        # INT8까지 가려면 캘리브레이션 캐시 필요 (여기선 생략)
+    }),
+    (&quot;CUDAExecutionProvider&quot;, {&quot;device_id&quot;: 0}),  # TRT가 못 맡는 노드 fallback
+    &quot;CPUExecutionProvider&quot;,                         # 그래도 안 되면 CPU
+])
+
+# 예상 출력 (RTX 데스크톱, 값은 GPU/드라이버에 따라 다름):
+#   CPU       active=CPUExecutionProvider        p50= 28.40  p95= 33.10  avg= 29.02  min= 26.9 ms
+#   CUDA      active=CUDAExecutionProvider       p50=  2.90  p95=  3.40  avg=  3.01  min=  2.7 ms
+#   TensorRT  active=TensorrtExecutionProvider   p50=  1.45  p95=  1.80  avg=  1.52  min=  1.3 ms</code></pre>
+<blockquote class="callout tip">💡 팁: <code>providers</code>는 <strong>우선순위 리스트</strong>다. <code>[&quot;TensorrtExecutionProvider&quot;,&quot;CUDAExecutionProvider&quot;,&quot;CPUExecutionProvider&quot;]</code>처럼 주면 앞 EP가 못 맡는 노드를 뒤 EP가 <strong>fallback</strong>으로 처리한다 — 공통 뼈대의 ⑤(fallback)가 여기서 명시적으로 드러난다. 이 "안 되면 뒤로 넘긴다"는 발상이 <a href="06_multi_soc.html">4단계</a>에서 SoC별 델리게이트/파티셔너로 확장된다.</blockquote>
+<blockquote class="callout tip">💡 팁: <strong>왜 p95까지 보나.</strong> avg만 보면 어쩌다 튄 한 번의 지연이 묻힌다. 임베디드/서빙에서는 "최악에 가까운" p95/p99가 사용자 체감을 좌우하므로, 벤치는 처음부터 분위수로 보고하는 습관을 들인다.</blockquote>
+<blockquote class="callout warn">⚠️ 주의: <strong>TensorRT EP의 첫 세션은 엔진 빌드로 수 초~수십 초 걸린다</strong>(정상). <code>trt_engine_cache_enable=True</code> + <code>trt_engine_cache_path</code>를 주면 다음 실행부터 캐시를 재사용해 빨라진다. 입력 shape가 바뀌면 엔진을 다시 빌드하므로, 벤치는 shape를 고정하고 워밍업을 충분히 준다.</blockquote>
+<blockquote class="callout warn">⚠️ 주의: <strong>QNN EP</strong>(Qualcomm Hexagon)와 <strong>OpenVINO EP</strong>는 기본 <code>onnxruntime-gpu</code> 휠에 없다. QNN EP는 별도 패키지(예: <code>onnxruntime-qnn</code>)로 설치하며 보통 <strong>QNN SDK + ARM64 환경</strong>이 필요하다. RTX 데스크톱에서는 CPU/CUDA/TensorRT로 감각을 익히고, QNN은 아래 <strong>Qualcomm AI Hub</strong>로 대체 체험한다.</blockquote>
+<blockquote class="callout warn">⚠️ 확인 필요: QNN EP 설치 명령은 시점에 따라 달라진다. 2026-07 검색 기준 나이틀리 피드(<code>onnxruntime-qnn</code>)가 안내되나, 정식 채널/패키지명은 <a href="https://onnxruntime.ai/docs/install/">ONNX Runtime 설치 문서</a>와 <a href="https://onnxruntime.ai/docs/execution-providers/QNN-ExecutionProvider.html">QNN EP 문서</a>에서 설치 시점 기준 재확인 필요.</blockquote>
+<hr>
+<h3 id="lv4-executorch-pytorch-네이티브">Lv.4 — ExecuTorch: PyTorch 네이티브 (★★★★☆)</h3>
+<p>Meta의 온디바이스 런타임. <strong>v1.0 GA는 2025-10</strong>, 2026-07 기준 최신은 <strong>v1.3.x</strong>. 기본 런타임 풋프린트가 매우 작고(수십 KB급), 백엔드가 12개+(XNNPACK/QNN/CoreML/Ethos-U/Vulkan/OpenVINO 등). ONNX를 우회하고 <strong><code>torch.export</code>로 직행</strong>하는 것이 특징이다 — Lv.3처럼 중간 IR(ONNX) 파일을 만들지 않고 PyTorch 그래프를 곧장 <code>.pte</code>로 굳힌다.</p>
+<h4 id="a-export-로우어링-pte-단계별-산출물">(a) export → 로우어링 → .pte — 단계별 산출물</h4>
+<p>파이프라인은 3단계이고, <strong>각 단계가 서로 다른 객체를 산출</strong>한다. 이 "객체가 무엇으로 바뀌는가"를 이해하는 것이 Lv.4의 절반이다.</p>
+<div class="tablewrap"><table><thead><tr><th>단계</th><th>함수</th><th>산출물(타입)</th><th>무엇이 결정되나</th></tr></thead><tbody><tr><td>① 그래프 캡처</td><td><code>torch.export.export(model, inputs)</code></td><td><code>ExportedProgram</code></td><td>동적 shape·제어흐름이 <strong>여기서</strong> 확정. 미지원 op면 <strong>여기서 깨진다</strong></td></tr><tr><td>② Edge 변환+로우어링</td><td><code>to_edge_transform_and_lower(..., partitioner=[XnnpackPartitioner()])</code></td><td><code>EdgeProgramManager</code></td><td>어떤 노드를 XNNPACK로 넘기고 어떤 노드를 CPU에 남길지(파티셔닝=뼈대 ⑤)</td></tr><tr><td>③ 직렬화</td><td><code>.to_executorch()</code> → <code>.buffer</code></td><td><code>ExecutorchProgramManager</code> / bytes</td><td>최종 <code>.pte</code> 바이트. 파일로 쓰면 끝</td></tr></tbody></table></div>
+<pre><code class="lang-python"># lv4_export.py — PyTorch → ExecuTorch .pte (XNNPACK 백엔드), 단계별 산출물 관찰
+import torch
+import torchvision.models as models
+from torchvision.models.mobilenetv2 import MobileNet_V2_Weights
+from torch.export import export
+from executorch.backends.xnnpack.partition.xnnpack_partitioner import XnnpackPartitioner
+from executorch.exir import to_edge_transform_and_lower
+
+model = models.mobilenet_v2(weights=MobileNet_V2_Weights.DEFAULT).eval()
+sample_inputs = (torch.randn(1, 3, 224, 224),)
+
+# ① torch.export로 그래프 캡처 → ExportedProgram
+exported = export(model, sample_inputs)
+print(&quot;① ExportedProgram nodes:&quot;, len(list(exported.graph.nodes)))
+
+# ② Edge IR 변환 + XNNPACK로 로우어링 → EdgeProgramManager, 이어서 ③ .to_executorch()
+et_program = to_edge_transform_and_lower(
+    exported,
+    partitioner=[XnnpackPartitioner()],
+).to_executorch()
+
+# ③ .pte 직렬화 (buffer = 최종 바이트)
+with open(&quot;mobilenet_v2.pte&quot;, &quot;wb&quot;) as f:
+    f.write(et_program.buffer)
+
+import os
+print(&quot;③ mobilenet_v2.pte:&quot;, round(os.path.getsize(&quot;mobilenet_v2.pte&quot;)/1024/1024, 2), &quot;MB&quot;)
+# 예상 출력:
+#   ① ExportedProgram nodes: ~180   (모델·버전에 따라 다름)
+#   ③ mobilenet_v2.pte: ~13.9 MB    (FP32. INT8 PT2E를 걸면 ~1/4로 줄어듦)</code></pre>
+<blockquote class="callout tip">💡 팁 (산출물 크기의 의미): FP32 <code>.pte</code>는 원본 가중치를 거의 그대로 담아 ~14 MB다. 아래 (c)의 <strong>PT2E INT8</strong> 흐름을 얹으면 ~3.5 MB 수준으로 떨어진다 — 여기서 "양자화가 곧 파일 크기"라는 뼈대 ③이 눈에 보인다.</blockquote>
+<h4 id="b-pte-실행-python-런타임-바인딩">(b) .pte 실행 (Python 런타임 바인딩)</h4>
+<pre><code class="lang-python"># lv4_run.py — 저장한 .pte를 Python에서 로드·실행
+import torch
+from executorch.runtime import Runtime
+
+runtime = Runtime.get()
+program = runtime.load_program(&quot;mobilenet_v2.pte&quot;)
+method = program.load_method(&quot;forward&quot;)
+outputs = method.execute([torch.randn(1, 3, 224, 224)])
+print(&quot;output shape:&quot;, outputs[0].shape)   # 예상: torch.Size([1, 1000])</code></pre>
+<h4 id="c-선택-int8까지-pt2e-양자화-흐름">(c) (선택) INT8까지 — PT2E 양자화 흐름</h4>
+<p>XNNPACK은 CPU 백엔드이며 INT8을 지원한다. 여기까지 가려면 export <strong>전에</strong> PT2E(<code>prepare_pt2e</code>/<code>convert_pt2e</code>)로 그래프를 양자화한다. 개념 골격:</p>
+<pre><code class="lang-python"># lv4_quantize.py (골격) — PT2E INT8 후 XNNPACK 로우어링
+import torch
+from torch.export import export
+from torchao.quantization.pt2e.quantize_pt2e import prepare_pt2e, convert_pt2e
+from executorch.backends.xnnpack.quantizer.xnnpack_quantizer import (
+    XNNPACKQuantizer, get_symmetric_quantization_config)
+from executorch.backends.xnnpack.partition.xnnpack_partitioner import XnnpackPartitioner
+from executorch.exir import to_edge_transform_and_lower
+
+# 1) export_for_training 그래프 → quantizer 부착 → prepare
+captured = export(model, sample_inputs).module()
+quantizer = XNNPACKQuantizer().set_global(get_symmetric_quantization_config())
+prepared = prepare_pt2e(captured, quantizer)
+
+# 2) 캘리브레이션 (대표 입력 몇 배치 흘리기 — Lv.2 representative_dataset의 PyTorch판)
+for _ in range(50):
+    prepared(torch.randn(1, 3, 224, 224))
+
+# 3) convert → 다시 export → XNNPACK 로우어링 → .pte
+quantized = convert_pt2e(prepared)
+et_int8 = to_edge_transform_and_lower(
+    export(quantized, sample_inputs),
+    partitioner=[XnnpackPartitioner()],
+).to_executorch()
+open(&quot;mobilenet_v2_int8.pte&quot;, &quot;wb&quot;).write(et_int8.buffer)</code></pre>
+<blockquote class="callout warn">⚠️ 확인 필요: PT2E 양자화 API의 임포트 경로는 버전에 따라 이동해 왔다(<code>torch.ao...</code> ↔ <code>torchao...</code>). 설치한 버전의 <a href="https://docs.pytorch.org/executorch/stable/backends-xnnpack.html">ExecuTorch Quantization / XNNPACK 문서</a>에서 정확한 경로를 재확인할 것. (c)는 (a)/(b)를 먼저 통과한 뒤 도전하는 보너스다.</blockquote>
+<blockquote class="callout bad">🔴 함정 (핵심 학습 포인트): <strong><code>torch.export</code>가 미지원 연산/동적 제어흐름에서 깨진다.</strong> 이 "export가 깨지는 경험"이 Lv.4의 진짜 목적이며, <a href="04_transformer_quantization.html">2단계 Transformer 양자화</a>에서 만날 "그래프 캡처 실패 → 모델 리라이팅"의 예고편이다. 일부러 깨뜨려 보라:</blockquote>
+<pre><code class="lang-python"># lv4_break.py — data-dependent 제어흐름은 torch.export를 깨뜨린다
+import torch
+from torch.export import export
+
+class Dynamic(torch.nn.Module):
+    def forward(self, x):
+        if x.sum() &gt; 0:          # ← 입력 값에 따라 분기: 그래프로 굳힐 수 없음
+            return x * 2
+        return x - 1
+
+export(Dynamic(), (torch.randn(4),))
+# 예상 에러 (요지):
+#   torch._dynamo.exc.UserError: Could not guard on data-dependent expression ...
+#   (Dynamic control flow: `if x.sum() &gt; 0` depends on tensor values)
+# 해결 방향: torch.cond 로 분기를 명시적 op로 바꾸거나, 분기를 모델 밖으로 빼낸다.</code></pre>
+<blockquote class="callout">커스텀 CUDA op, 일부 동적 shape, <code>.item()</code>/<code>.tolist()</code> 같은 data-dependent 접근도 같은 계열의 실패를 낸다. <strong>에러 메시지에서 "data-dependent" 또는 "guard"를 발견하면 그게 신호</strong>다 — 이 패턴 인식이 <a href="04_transformer_quantization.html">2단계</a>의 사전 학습이다.</blockquote>
+<blockquote class="callout warn">⚠️ 확인 필요: <code>executorch.runtime.Runtime</code> Python 런타임 API는 버전에 따라 시그니처가 바뀔 수 있다. 실행부 예제는 설치한 버전의 <a href="https://docs.pytorch.org/executorch/stable/getting-started.html">ExecuTorch Getting Started</a> / <a href="https://docs.pytorch.org/executorch/stable/using-executorch-export.html">Export &amp; Lowering 문서</a>에서 재확인.</blockquote>
+<hr>
+<h3 id="qualcomm-ai-hub-보드-없이-실단말-프로파일링">Qualcomm AI Hub — 보드 없이 실단말 프로파일링</h3>
+<p>QNN 트랙의 <strong>"HTP(Hexagon) 실행은 보드가 필요하다"</strong> 는 장벽을, <strong>보드 구매 없이</strong> 상당 부분 대체한다. 모델을 업로드하면 <strong>클라우드에 있는 실제 단말</strong>(Galaxy, Dragonwing 등)에서 컴파일·프로파일링·정확도 검증을 돌려준다.</p>
+<p><strong>lifecycle (3잡 구조)</strong>: <code>submit_compile_job</code>(모델→타깃 바이너리) → <code>submit_profile_job</code>(실단말에서 latency/메모리 측정) → (선택) <code>submit_inference_job</code>(실단말에서 실제 출력 받아 정확도 검증). 각 잡은 비동기라 <code>.wait()</code>로 완료를 기다리고 결과를 조회한다.</p>
+<pre><code class="lang-python"># aihub_profile.py — 디바이스 선택 → 컴파일 → 실단말 프로파일 → 결과 조회 (풀 lifecycle)
+import torch, torchvision
+import qai_hub as hub
+
+# 0) 사용 가능한 실단말 목록 조회 → 원하는 디바이스 고르기
+for d in hub.get_devices():
+    print(d.name)                    # 예: &#x27;Samsung Galaxy S24 (Family)&#x27;, &#x27;QCS6490 (Proxy)&#x27; ...
+device = hub.Device(&quot;Samsung Galaxy S24 (Family)&quot;)
+
+# 1) 모델을 TorchScript로 트레이스 (또는 torch.export 산출물/ONNX도 가능)
+model = torchvision.models.mobilenet_v2(weights=&quot;IMAGENET1K_V1&quot;).eval()
+traced = torch.jit.trace(model, torch.rand(1, 3, 224, 224))
+
+# 2) 타깃 단말용으로 컴파일 (클라우드) — input_specs 키는 &#x27;모델 입력 이름&#x27;과 일치
+compile_job = hub.submit_compile_job(
+    model=traced,
+    input_specs=dict(image=(1, 3, 224, 224)),
+    device=device,
+)
+compile_job.wait()                                  # 컴파일 완료 대기
+target_model = compile_job.get_target_model()       # 컴파일 산출물(디바이스용 바이너리)
+
+# 3) 컴파일 결과를 실단말에서 프로파일링 → latency/메모리/NPU 사용 리포트
+profile_job = hub.submit_profile_job(model=target_model, device=device)
+profile_job.wait()
+print(&quot;profile dashboard:&quot;, profile_job.url)        # 웹에서 per-layer 타이밍/시각화 확인
+
+# 4) 프로파일 결과를 코드에서 조회 (추정 추론시간 등)
+prof = profile_job.download_profile()               # dict 형태의 상세 리포트
+est_us = prof[&quot;execution_summary&quot;][&quot;estimated_inference_time&quot;]  # 마이크로초
+print(f&quot;estimated inference: {est_us/1000:.2f} ms on {device.name}&quot;)
+
+# 예상 출력 (요지):
+#   Samsung Galaxy S24 (Family)
+#   ... (디바이스 목록) ...
+#   profile dashboard: https://app.aihub.qualcomm.com/jobs/xxxxxxxx/
+#   estimated inference: 1.83 ms on Samsung Galaxy S24 (Family)</code></pre>
+<blockquote class="callout tip">💡 팁: <strong>정확도까지 보고 싶으면</strong> <code>submit_inference_job(model=target_model, inputs={&quot;image&quot;: [...]}, device=device)</code>로 실단말 출력을 받아 PyTorch 기준 출력과 비교한다(<code>.download_output_data()</code>). 이것이 "양자화 후 실제 단말에서 정확도가 유지되는가"를 보드 없이 검증하는 방법이다.</blockquote>
+<blockquote class="callout tip">💡 팁: <code>hub.Device(&quot;...(Family)&quot;)</code>는 계열 중 가용 단말을 자동 배정하고, <code>hub.Device(attributes=&quot;qualcomm-snapdragon-8-elite&quot;)</code>처럼 속성으로도 고를 수 있다. <strong>Dragonwing 계열</strong>이 있으면 QNN/Hexagon 경로 latency를 보드 없이 근사 측정 가능 — Lv.3에서 못 만진 QNN EP의 대체 체험이다.</blockquote>
+<blockquote class="callout warn">⚠️ 확인 필요: 예제의 <code>input_specs</code> 키·<code>Device</code> 문자열·<code>download_profile()</code>의 결과 딕셔너리 키(<code>execution_summary</code>/<code>estimated_inference_time</code>)는 시점에 따라 달라질 수 있다. 실제 사용 시 <a href="https://app.aihub.qualcomm.com/docs/">AI Hub 문서</a>의 최신 시그니처로 맞추고(입력 이름과 일치해야 함), 무료 티어의 잡 수/큐 대기 시간은 시점에 따라 다르다.</blockquote>
+<hr>
+<h2 id="5-예시-결과-해석">5) 예시 / 결과 해석</h2>
+<p>각 레벨에서 아래 표를 <strong>직접 채우는 것</strong>이 산출물이다(수치는 예시 형태 — 실제 값은 여러분 환경에서 측정).</p>
+<p><strong>Lv.2 — PTQ 3종 비교 (LiteRT, MNIST 소형 CNN 기준)</strong></p>
+<div class="tablewrap"><table><thead><tr><th>항목</th><th>FP32</th><th>Dynamic range</th><th>Float16</th><th>Full INT8</th></tr></thead><tbody><tr><td>파일 크기</td><td>예: 13 KB</td><td>예: ~5 KB (≈1/4)</td><td>예: ~7 KB (≈1/2)</td><td>예: ~4 KB (≈1/4)</td></tr><tr><td>Top-1 정확도</td><td>예: 98.9%</td><td>예: 98.9%</td><td>예: 98.9%</td><td>예: 98.5%</td></tr><tr><td>추론시간(PC x86)</td><td>예: 0.30 ms</td><td>예: 0.28 ms</td><td>예: 0.31 ms</td><td>예: 0.29 ms</td></tr><tr><td>추론시간(RPi ARM)</td><td>예: 1.8 ms</td><td>예: 1.3 ms</td><td>예: 1.6 ms</td><td>예: 0.9 ms</td></tr><tr><td>정수-only HW 배포</td><td>✗</td><td>✗ (activation float)</td><td>✗</td><td>✓</td></tr></tbody></table></div>
+<p><strong>Lv.3 — EP별 latency (동일 ResNet-18, RTX PC, 워밍업 후 p50/p95)</strong></p>
+<div class="tablewrap"><table><thead><tr><th>Provider</th><th>p50</th><th>p95</th><th>비고</th></tr></thead><tbody><tr><td>CPUExecutionProvider</td><td>예: 28 ms</td><td>예: 33 ms</td><td>baseline</td></tr><tr><td>CUDAExecutionProvider</td><td>예: 2.9 ms</td><td>예: 3.4 ms</td><td>GPU 가속 (약 10배)</td></tr><tr><td>TensorrtExecutionProvider</td><td>예: 1.45 ms</td><td>예: 1.8 ms</td><td>최초 엔진 빌드 후 최속(warm-up·캐시 필수)</td></tr></tbody></table></div>
+<p><strong>해석 포인트</strong></p>
+<ul><li>Lv.2: <strong>"정수화로 용량↓, 대신 정확도 미세 손실"</strong>은 표 어디서나 보이지만, <strong>속도 이득은 하드웨어를 탄다</strong> — PC(x86)에선 차이가 작고 RPi(ARM)에서 벌어진다. 그리고 <strong>정수-only 하드웨어에 올릴 수 있는 건 Full INT8뿐</strong>이라는 마지막 행이 임베디드 관점의 핵심이다.</li><li>Lv.3: <strong>모델·코드 거의 그대로 두고 EP만 바꿔</strong> 성능이 수십 배 차이. 이 "한 줄 교체"가 <a href="06_multi_soc.html">4단계</a>에서 SoC별 EP/툴로 확장된다.</li><li>공통: TensorRT/AI Hub는 <strong>최초 컴파일이 느리고 이후 빠르다</strong> → 프로파일링은 반드시 warm-up 후, avg가 아니라 p50/p95로 측정.</li></ul>
+<hr>
+<h2 id="6-흔한-오류와-해결-troubleshooting">6) 흔한 오류와 해결 (Troubleshooting)</h2>
+<div class="tablewrap"><table><thead><tr><th>증상</th><th>원인</th><th>해결</th></tr></thead><tbody><tr><td><code>edge-impulse-daemon: command not found</code></td><td>전역 npm bin이 PATH에 없음 / Node 미설치</td><td><code>node -v</code>로 v16+ 확인, <code>npm install -g edge-impulse-cli</code> 재실행, <code>npm root -g</code>의 상위 <code>bin</code>을 PATH에 추가</td></tr><tr><td>BYOM 업로드 후 정확도가 랜덤 수준</td><td>입력 스케일/채널순서(NCHW↔NHWC) 불일치, 전처리 누락</td><td>업로드 폼에 정규화(0–255→0–1 등)와 입력 형상을 export 때와 동일하게 지정</td></tr><tr><td>Lv.2 "INT8인데 activation이 float"</td><td><code>representative_dataset</code> 없이 <code>Optimize.DEFAULT</code>만 켬 (=dynamic range)</td><td><code>supported_ops=[TFLITE_BUILTINS_INT8]</code> + <code>representative_dataset</code> + <code>inference_input/output_type=tf.int8</code> 3종 세트</td></tr><tr><td><code>representative_dataset</code>에서 <code>ValueError</code></td><td><code>yield img</code>로 텐서를 직접 반환 / dtype이 float32 아님</td><td><code>yield [img]</code>(리스트로 감싸기), 샘플 dtype <code>float32</code> 확인</td></tr><tr><td><code>ai_edge_litert</code> import 에러</td><td>TFLite 구 패키지와 혼동</td><td><code>pip install ai-edge-litert</code> (구 <code>tflite-runtime</code>/<code>tensorflow.lite</code> 아님). 개명 사실 유의</td></tr><tr><td>INT8 모델이 PC에서 안 빨라짐</td><td>x86 CPU는 float가 이미 최적화됨</td><td>정상. 속도 이득은 ARM/MCU/NPU에서 확인 — 같은 벤치를 RPi에서 재측정</td></tr><tr><td><code>ort.get_available_providers()</code>에 CUDA/TensorRT 없음</td><td><code>onnxruntime</code>(CPU판) 설치됨 / CUDA·TensorRT 런타임 불일치</td><td><code>pip uninstall onnxruntime onnxruntime-gpu</code> 후 <code>onnxruntime-gpu</code>만 재설치, CUDA 12.x·드라이버 확인</td></tr><tr><td>TensorRT EP 첫 실행이 매우 느림</td><td>최초 엔진 빌드(정상 동작)</td><td><code>trt_engine_cache_enable=True</code>+<code>trt_engine_cache_path</code>로 캐시, warm-up 반복 후 측정. shape 고정</td></tr><tr><td>TensorRT EP인데 <code>active</code>가 CUDA로 뜸</td><td>해당 노드를 TRT가 못 맡아 fallback</td><td>정상 동작(뼈대 ⑤). 로그에서 어떤 op가 빠졌는지 확인, 필요시 opset/모델 단순화</td></tr><tr><td>Lv.4 <code>torch.export</code> 예외(<code>data-dependent</code>/<code>guard</code>)</td><td>미지원 op·동적 제어흐름(<code>if x.sum()&gt;0</code>, <code>.item()</code> 등)</td><td><strong>의도된 학습 포인트</strong>. <code>torch.cond</code>로 분기 명시화, 분기를 모델 밖으로, 또는 partitioner에서 제외. <a href="04_transformer_quantization.html">2단계</a> 참조</td></tr><tr><td>Lv.4 PT2E 임포트 실패</td><td>API 경로 이동(<code>torch.ao</code>↔<code>torchao</code>)</td><td>설치 버전의 <a href="https://docs.pytorch.org/executorch/stable/backends-xnnpack.html">XNNPACK 백엔드 문서</a>에서 정확한 경로 확인</td></tr><tr><td><code>qai_hub</code> 401/인증 오류</td><td>API 토큰 미설정</td><td><code>qai-hub configure --api_token &lt;TOKEN&gt;</code> (토큰은 AI Hub 계정 페이지에서 발급)</td></tr><tr><td>AI Hub 컴파일/프로파일 잡이 오래 큐잉</td><td>무료 티어 큐 대기</td><td>정상. 잡은 비동기이므로 <code>.wait()</code>로 대기하거나 <code>job.url</code> 대시보드에서 상태 확인</td></tr></tbody></table></div>
+<hr>
+<h2 id="7-산출물-deliverables">7) 산출물 (Deliverables)</h2>
+<p>이 단계가 남겨야 할 것:</p>
+<ul><li class="task"><label><input type="checkbox" data-k="7bc437129e"> <code>study_guide/artifacts/lv2/</code> : <code>model_fp32.tflite</code>, <code>model_dynamic.tflite</code>, <code>model_fp16.tflite</code>, <code>model_int8.tflite</code>, <code>lv2_convert.py</code>, <code>lv2_infer.py</code>, <code>lv2_bench.py</code></label></li><li class="task"><label><input type="checkbox" data-k="36c71ec207"> <code>study_guide/artifacts/lv3/</code> : <code>resnet18.onnx</code>, <code>lv3_export.py</code>, <code>lv3_bench.py</code>, (엔진 캐시 <code>trt_cache/</code>)</label></li><li class="task"><label><input type="checkbox" data-k="78d73d752e"> <code>study_guide/artifacts/lv4/</code> : <code>mobilenet_v2.pte</code>, <code>lv4_export.py</code>, <code>lv4_run.py</code>, (선택 <code>lv4_quantize.py</code>/<code>mobilenet_v2_int8.pte</code>, <code>lv4_break.py</code>)</label></li><li class="task"><label><input type="checkbox" data-k="b9214499cd"> <strong>비교 노트 1장</strong> (<code>ladder_notes.md</code>): 위 <a href="#5-예시--결과-해석">5)절</a>의 표 2개(PTQ 3종, EP별 latency)를 <strong>내 측정값</strong>으로 채운 것 + "공통 뼈대(변환→양자화→배포→fallback)를 각 레벨에서 어디가 담당했는지"를 <a href="#2-배경-이론--개념--난이도-사다리-한눈에">2)절의 매핑 표</a>를 참고해 3~5줄로 서술.</label></li><li class="task"><label><input type="checkbox" data-k="5781c104cb"> (선택) Edge Impulse 프로젝트 링크, Qualcomm AI Hub profile job URL, 그리고 <strong>BYOM으로 <code>resnet18.onnx</code>를 올린 프로파일 결과</strong>(Lv.1↔Lv.3 다리).</label></li></ul>
+<hr>
+<h2 id="8-참고-사이트-참고문헌">8) 참고 사이트 &amp; 참고문헌</h2>
+<h3 id="공식-문서-도구">공식 문서 / 도구</h3>
+<ul><li><a href="https://docs.edgeimpulse.com/">Edge Impulse Documentation</a> — 노코드 학습·배포, BYOM, QNN 가속 (2025 Qualcomm 인수)</li><li><a href="https://studio.edgeimpulse.com">Edge Impulse Studio</a> — 프로젝트/데이터/Impulse/배포 웹 UI</li><li><a href="https://www.npmjs.com/package/edge-impulse-cli">edge-impulse-cli (npm)</a> — CLI/daemon/uploader/runner (2026-07 기준 최신)</li><li><a href="https://ai.google.dev/edge/litert">LiteRT (구 TFLite) 공식</a> · <a href="https://pypi.org/project/ai-edge-litert/">ai-edge-litert (PyPI)</a> — 런타임 (2026-07 기준 최신)</li><li><a href="https://developers.google.com/edge/litert/conversion/tensorflow/quantization/post_training_quant">LiteRT Post-training dynamic range quantization</a> — dynamic range(4x, activation float)</li><li><a href="https://developers.google.com/edge/litert/conversion/tensorflow/quantization/post_training_float16_quant">LiteRT Post-training float16 quantization</a> — float16(2x, GPU 타깃)</li><li><a href="https://ai.google.dev/edge/litert/conversion/tensorflow/quantization/post_training_quantization">LiteRT Post-training integer quantization</a> — full INT8 + <code>representative_dataset</code></li><li><a href="https://developers.google.com/edge/litert/inference">LiteRT inference (Interpreter / CompiledModel)</a> — 추론 API 두 경로</li><li><a href="https://www.tensorflow.org/lite/api_docs/python/tf/lite/TFLiteConverter">tf.lite.TFLiteConverter API</a> — 변환기 레퍼런스</li><li><a href="https://onnxruntime.ai/docs/install/">ONNX Runtime 설치</a> · <a href="https://onnxruntime.ai/docs/execution-providers/">Execution Providers</a> — EP 교체, <code>onnxruntime-gpu</code> 1.28.0(CUDA 12)</li><li><a href="https://onnxruntime.ai/docs/execution-providers/TensorRT-ExecutionProvider.html">ONNX Runtime TensorRT EP</a> — <code>provider_options</code>, 엔진 캐시, FP16/INT8 · <a href="https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html">CUDA EP</a> · <a href="https://onnxruntime.ai/docs/execution-providers/QNN-ExecutionProvider.html">QNN EP</a></li><li><a href="https://docs.nvidia.com/deeplearning/tensorrt/latest/getting-started/release-notes-10/10.16.0.html">TensorRT 10.16 Release Notes</a> — LTS 라인(2026-03), 정본 버전</li><li><a href="https://docs.pytorch.org/executorch/stable/getting-started.html">ExecuTorch Getting Started</a> · <a href="https://docs.pytorch.org/executorch/stable/using-executorch-export.html">Export &amp; Lowering</a> · <a href="https://docs.pytorch.org/executorch/stable/backends-xnnpack.html">XNNPACK Backend</a> — <code>torch.export</code>→<code>.pte</code>, PT2E 양자화</li><li><a href="https://github.com/pytorch/executorch/releases">ExecuTorch GitHub Releases</a> — v1.0 GA 2025-10, 최신 v1.3.x</li><li><a href="https://pytorch.org/blog/introducing-executorch-1-0/">Introducing ExecuTorch 1.0 (PyTorch blog)</a> — 백엔드 12개+, 풋프린트/멀티모달</li><li><a href="https://aihub.qualcomm.com/">Qualcomm AI Hub</a> · <a href="https://app.aihub.qualcomm.com/docs/">문서</a> · <a href="https://aihub.qualcomm.com/get-started">qai-hub Get Started</a> — 클라우드 실단말 프로파일링</li><li><a href="https://app.aihub.qualcomm.com/docs/hub/generated/qai_hub.submit_compile_job.html">qai_hub.submit_compile_job</a> · <a href="https://app.aihub.qualcomm.com/docs/hub/profile_examples.html">Profiling Models 예제</a> — compile/profile lifecycle</li></ul>
+<h3 id="논문">논문</h3>
+<ul><li>Jacob et al. (2018), <em>Quantization and Training of Neural Networks for Efficient Integer-Arithmetic-Only Inference</em>, arXiv:1712.05877 — TFLite INT8 PTQ의 이론적 배경</li><li>Gholami et al. (2021), <em>A Survey of Quantization Methods for Efficient Neural Network Inference</em>, arXiv:2103.13630 — 양자화 전반 서베이</li><li>Nachin et al. (2026), <em>ExecuTorch — A Unified PyTorch Solution to Run AI Models On-Device</em>, arXiv:<a href="https://arxiv.org/abs/2605.08195">2605.08195</a> — ExecuTorch 설계 백서 (2026-05 등록, 2026-07 접근 확인)</li></ul>
+<hr>
+<h2 id="9-다음-단계">9) 다음 단계</h2>
+<p>사다리로 "완주 감각"을 얻었다면, 이제 <strong>왜 정수화가 되는지·어디서 정확도가 새는지</strong>를 정면으로 배운다. Lv.2에서 손으로 만진 <code>scale</code>/<code>zero_point</code>, Lv.4에서 관찰한 "export 붕괴"가 다음 두 문서에서 원리로 이어진다.</p>
+<p>➡️ <strong><a href="03_quantization_theory.html">1단계 — 양자화 이론</a></strong> ⬅️ 이전: <strong><a href="01_environment_setup.html">0단계 — 환경 준비</a></strong></p><div class="pager"><a class="prev" href="01_environment_setup.html"><span class="lbl">← 이전</span>0. 환경준비</a><a class="next" href="03_quantization_theory.html"><span class="lbl">다음 →</span>1. 양자화이론</a></div>
+<footer>임베디드 AI 양자화 학습 가이드 · 체크 상태는 브라우저에 저장됩니다(localStorage) · 인쇄/PDF: Ctrl/⌘+P</footer>
+</div>
+<script>var PAGE="02_deployment_ladder";
+(function(){
+  var KEY='embai:'+PAGE;
+  var boxes=document.querySelectorAll('input[type=checkbox][data-k]');
+  var fill=document.getElementById('fill'), pct=document.getElementById('pct');
+  var saved={};try{saved=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){}
+  function upd(){var d=0;boxes.forEach(function(b){if(b.checked)d++});
+    var p=boxes.length?Math.round(d/boxes.length*100):0;
+    if(fill)fill.style.width=p+'%';
+    if(pct)pct.textContent=boxes.length?(d+' / '+boxes.length+'  ('+p+'%)'):'체크리스트 없음';}
+  boxes.forEach(function(b){var k=b.getAttribute('data-k');
+    if(saved[k])b.checked=true;
+    b.addEventListener('change',function(){saved[k]=b.checked;
+      try{localStorage.setItem(KEY,JSON.stringify(saved))}catch(e){};upd();});});
+  upd();
+})();
+</script>
+</body></html>

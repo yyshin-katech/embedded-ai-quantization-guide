@@ -1,0 +1,19 @@
+# 하네스 중간 산출물 (내부 작업물 — 공개 불필요)
+_workspace/
+*_prev/
+study_guide_prev/
+
+# Claude Code 로컬 설정 (머신 종속, 커밋 제외)
+.claude/settings.local.json
+
+# Python
+__pycache__/
+*.py[cod]
+
+# OS/에디터
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+.idea/
+.vscode/

@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>10. 실전 함정 5개 — 양자화가 조용히 무너지는 지점들</title><style>
+:root{--bg:#0f1115;--card:#171a21;--line:#2a2f3a;--tx:#e6e8ec;--dim:#9aa3b2;--acc:#5aa9ff;--ok:#3ecf8e;--warn:#f0b429;--bad:#ff6b6b;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:-apple-system,"Pretendard","Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;font-size:16px}
+a{color:var(--acc);text-decoration:none}a:hover{text-decoration:underline}
+.bar{position:sticky;top:0;background:rgba(15,17,21,.96);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);z-index:20}
+.bar-in{max-width:1000px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:14px}
+.bar b{font-size:.9rem;white-space:nowrap}
+.track{flex:1;height:8px;background:#252a34;border-radius:99px;overflow:hidden;min-width:80px}
+.fill{height:100%;width:0;background:linear-gradient(90deg,var(--acc),var(--ok));transition:width .3s}
+.pct{font-size:.82rem;color:var(--dim);min-width:96px;text-align:right;white-space:nowrap}
+.stagenav{border-bottom:1px solid var(--line);background:#12151b}
+.stagenav-in{max-width:1000px;margin:0 auto;padding:8px 20px;display:flex;flex-wrap:wrap;gap:6px}
+.stagenav a{font-size:.76rem;padding:3px 9px;border-radius:99px;background:#1e222b;color:var(--dim)}
+.stagenav a.cur{background:var(--acc);color:#08111f;font-weight:600}
+.wrap{max-width:1000px;margin:0 auto;padding:34px 24px 120px}
+h1{font-size:1.9rem;margin:0 0 20px;letter-spacing:-.02em;border-bottom:2px solid var(--acc);padding-bottom:16px}
+h2{font-size:1.35rem;margin:48px 0 14px;padding-left:12px;border-left:4px solid var(--acc);scroll-margin-top:110px}
+h3{font-size:1.08rem;margin:26px 0 10px;color:var(--acc);scroll-margin-top:110px}
+h4{font-size:1rem;margin:20px 0 8px;color:var(--tx)}
+p,li{color:var(--tx)}
+ul,ol{padding-left:22px}li{margin:6px 0}
+li.task{list-style:none;margin-left:-22px}
+li.task label{cursor:pointer;display:flex;gap:9px;align-items:flex-start}
+li.task input{margin-top:6px;width:16px;height:16px;accent-color:var(--acc);cursor:pointer;flex-shrink:0}
+li.task input:checked ~ *{color:var(--dim)}
+code{background:#20242e;color:#ffd479;padding:2px 6px;border-radius:4px;font-family:"SFMono-Regular",Consolas,monospace;font-size:.86em}
+pre{background:#0b0d11;border:1px solid var(--line);border-radius:8px;padding:15px;overflow-x:auto;font-size:.85rem;line-height:1.55}
+pre code{background:none;color:#c8d3e0;padding:0}
+.tablewrap{overflow-x:auto;margin:16px 0}
+table{width:100%;border-collapse:collapse;font-size:.9rem}
+th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}
+th{background:#1e222b;color:var(--acc);font-weight:600}
+blockquote{margin:16px 0;padding:14px 18px;border-radius:8px;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--acc)}
+blockquote.tip{border-left-color:var(--ok)}
+blockquote.warn{border-left-color:var(--warn)}
+blockquote.bad{border-left-color:var(--bad)}
+hr{border:none;border-top:1px solid var(--line);margin:32px 0}
+.toc{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 18px;margin:8px 0 28px}
+.toc summary{cursor:pointer;color:var(--acc);font-weight:600;font-size:.92rem}
+.toc ul{margin:10px 0 2px;padding-left:18px}
+.toc li{margin:3px 0;font-size:.9rem}
+.toc .l3{padding-left:16px;font-size:.85rem}
+.pager{display:flex;justify-content:space-between;gap:12px;margin:16px 0 0}
+.pager a{flex:1;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 16px;font-size:.9rem}
+.pager a.next{text-align:right}
+.pager .lbl{display:block;font-size:.72rem;color:var(--dim)}
+footer{margin-top:60px;padding-top:18px;border-top:1px solid var(--line);color:var(--dim);font-size:.82rem}
+@media print{body{background:#fff;color:#000}.bar,.stagenav,.pager{display:none}.card,blockquote{background:#f7f7f7;border:1px solid #ccc}pre{background:#f4f4f4}pre code,code{color:#000}h2,h3{color:#000}a{color:#000}th{background:#eee;color:#000}}
+</style></head><body>
+<div class="bar"><div class="bar-in"><b>10. 실전 함정 5개 — 양자화가 조용히 무너지는 지점들</b>
+<div class="track"><div class="fill" id="fill"></div></div>
+<span class="pct" id="pct">0 / 0</span></div></div>
+<div class="stagenav"><div class="stagenav-in"><a class="" href="README.html">홈</a><a class="" href="01_environment_setup.html">0. 환경준비</a><a class="" href="02_deployment_ladder.html">0.5 사다리</a><a class="" href="03_quantization_theory.html">1. 양자화이론</a><a class="" href="04_transformer_quantization.html">2. Transformer</a><a class="" href="05_tensorrt.html">3. TensorRT</a><a class="" href="06_multi_soc.html">4. 멀티SoC</a><a class="" href="07_infrastructure.html">5. 인프라화</a><a class="" href="08_capstone.html">캡스톤</a><a class="" href="09_roadmap.html">12주 로드맵</a><a class="cur" href="10_pitfalls.html">함정 5</a></div></div>
+<div class="wrap"><details class="toc" open><summary>목차</summary><ul><li><a href="#0-이-단계에서-무엇을왜-하는가">0) 이 단계에서 무엇을·왜 하는가</a></li><li><a href="#1-학습-목표-완료-체크리스트">1) 학습 목표 &amp;amp; 완료 체크리스트</a></li><li><a href="#함정-1-캘리브레이션-데이터가-전부다">함정 1 — 캘리브레이션 데이터가 전부다</a></li><li><a href="#함정-2-전처리-불일치-meanstd가-어긋난다">함정 2 — 전처리 불일치 (mean/std가 어긋난다)</a></li><li><a href="#함정-3-onnx-export-성공-칩에서-동작">함정 3 — &quot;ONNX export 성공&quot; ≠ &quot;칩에서 동작&quot;</a></li><li><a href="#함정-4-fallback-지옥-subgraph가-쪼개지면-fp32보다-느리다">함정 4 — fallback 지옥 (subgraph가 쪼개지면 FP32보다 느리다)</a></li><li><a href="#함정-5-c를-피하지-마라">함정 5 — C++를 피하지 마라</a></li><li><a href="#2-함정-요약표">2) 함정 요약표</a></li><li><a href="#실무-체크리스트-양자화-전후-반드시-확인">실무 체크리스트 (양자화 전/후 반드시 확인)</a></li><li class="l3"><a href="#양자화-전-pre-quantization">양자화 전 (Pre-quantization)</a></li><li class="l3"><a href="#양자화-후-post-quantization">양자화 후 (Post-quantization)</a></li><li><a href="#7-산출물deliverables">7) 산출물(Deliverables)</a></li><li><a href="#8-참고-사이트-참고문헌">8) 참고 사이트 &amp;amp; 참고문헌</a></li><li class="l3"><a href="#공식-문서-도구">공식 문서 / 도구</a></li><li class="l3"><a href="#논문">논문</a></li><li><a href="#9-다음-단계">9) 다음 단계</a></li></ul></details><div class="pager"><a class="prev" href="09_roadmap.html"><span class="lbl">← 이전</span>12주 로드맵</a><span></span></div><h1>10. 실전 함정 5개 — 양자화가 조용히 무너지는 지점들</h1>
+<blockquote class="callout">원본 가이드 매핑: "함정 5개" · 예상 소요: 반나절(정독) + 실습 시 하루 · 선행 조건: <a href="03_quantization_theory.html">03</a>~<a href="06_multi_soc.html">06</a> 개념 숙지 권장</blockquote>
+<p>이 문서는 앞선 단계들(<a href="01_environment_setup.html">01</a>~<a href="08_capstone.html">08</a>)과 <a href="09_roadmap.html">12주 로드맵</a>을 관통하는 <strong>5대 실패 패턴</strong>을 정리한다. 각 함정은 <strong>증상 → 원인(수치·메커니즘) → 예방 → 디버깅 절차 → 재현 코드</strong> 순으로, 재현·검증 가능한 코드와 함께 다룬다.</p>
+<blockquote class="callout tip">💡 팁: 이 다섯 개는 "지식 부족"이 아니라 "무심코"에서 온다. 다 알아도 매번 당한다. 그래서 마지막의 <a href="#실무-체크리스트-양자화-전후-반드시-확인">실무 체크리스트</a>를 프로젝트마다 복사해 쓰길 권한다.</blockquote>
+<blockquote class="callout warn">⚠️ 정본 버전 스택(2026-07 기준): <strong>CUDA 12.8 / onnxruntime-gpu 1.28.0 / TensorRT 10.16.x LTS / ExecuTorch 1.3.x</strong>. 아래 코드·명령은 이 조합 기준이다. TensorRT는 10.x부터 plugin이 <code>IPluginV3</code>로 통일됐고(함정 5), QNN EP는 dynamic shape·Loop/If를 지원하지 않는다(함정 3·4).</blockquote>
+<hr>
+<h2 id="0-이-단계에서-무엇을왜-하는가">0) 이 단계에서 무엇을·왜 하는가</h2>
+<p>양자화가 실패하는 방식은 대개 <strong>요란하지 않다.</strong> 컴파일도 되고, export도 "성공"이라 뜨고, 에러도 없다. 그런데 특정 상황(야간·터널·역광)에서만 정확도가 무너지거나, 가속기에 올렸는데 오히려 느려진다.</p>
+<p>이 문서의 목적은 그 "조용한 실패"들을 <strong>미리 이름 붙여</strong> 알아보게 하는 것이다. 이름이 있으면 디버깅이 빨라진다. 각 함정은 로드맵의 특정 주차·산출물과 직접 연결되므로, <a href="09_roadmap.html">09_roadmap.md</a>를 돌리다 막히면 해당 함정으로 바로 온다.</p>
+<p><strong>왜 "디버깅 절차"까지 적는가.</strong> 함정을 아는 것과 잡는 것은 다르다. "전처리가 문제일 수 있다"는 지식은 흔하지만, <strong>어떤 순서로 무엇을 실행해 그것을 증명하는지</strong>가 실력이다. 그래서 각 함정마다 "증상을 보면 → 이 명령을 이 순서로 → 이 출력이 나오면 확정"이라는 <strong>재현 가능한 절차</strong>를 붙였다. 이 절차 자체가 면접에서 "그 버그 어떻게 잡았어요?"에 대한 답이 된다.</p>
+<hr>
+<h2 id="1-학습-목표-완료-체크리스트">1) 학습 목표 &amp; 완료 체크리스트</h2>
+<ul><li class="task"><label><input type="checkbox" data-k="61a00569aa"> 5대 함정의 <strong>증상</strong>을 보고 원인을 추정할 수 있다.</label></li><li class="task"><label><input type="checkbox" data-k="fb680f6b68"> 캘리브레이션 대표성·전처리 일치를 <strong>코드로 검증</strong>할 수 있다.</label></li><li class="task"><label><input type="checkbox" data-k="295e46a933"> "export 성공"과 "칩 동작"을 구분하고, offload 비율을 근거로 fallback 여부를 판단할 수 있다.</label></li><li class="task"><label><input type="checkbox" data-k="66a57a5a77"> <code>polygraphy inspect capability</code>로 백엔드 미지원 op를 특정할 수 있다.</label></li><li class="task"><label><input type="checkbox" data-k="1083232a9b"> 양자화 전/후 체크리스트를 프로젝트에 적용할 수 있다.</label></li></ul>
+<hr>
+<h2 id="함정-1-캘리브레이션-데이터가-전부다">함정 1 — 캘리브레이션 데이터가 전부다</h2>
+<blockquote class="callout">관련 단계: <a href="03_quantization_theory.html">03_quantization_theory.md</a>(PTQ·calibration), <a href="09_roadmap.html">09_roadmap.md</a> 1~2주(<code>layer_sensitivity.csv</code>)</blockquote>
+<p><strong>증상</strong></p>
+<ul><li>검증셋 전체 정확도는 멀쩡한데, <strong>야간·터널·역광 등 특정 조건</strong>에서만 급락.</li><li>INT8이 FP32보다 특정 클래스/상황에서만 크게 나쁨.</li><li>캘리브 셋을 바꿔 재양자화하면 정확도가 눈에 띄게 출렁인다(=scale이 데이터에 과민).</li></ul>
+<p><strong>원인 (수치·메커니즘)</strong> Static PTQ는 <strong>캘리브레이션 데이터로 activation의 min/max(또는 분포)를 추정</strong>해 scale/zero-point를 정한다. INT8 대칭 양자화에서 <code>scale = max(|x|) / 127</code>이므로, 캘리브 셋이 관측한 <code>max(|x|)</code>가 곧 표현 가능한 상한이다. 캘리브 셋에 없는 밝기·대비·분포는 그 상한을 넘겨 <strong>clipping</strong>되고, 넘어간 값은 전부 <code>±127</code>로 뭉개진다.</p>
+<p>정량적으로: 실제 입력의 극단값 <code>x_true</code>가 캘리브 상한 <code>T</code>를 초과하면, 그 activation의 상대 오차는 대략 <code>(x_true − T) / x_true</code>까지 벌어진다. 예를 들어 캘리브가 <code>T=4.0</code>을 봤는데 야간 입력이 <code>x_true=6.2</code>를 만들면, 그 지점은 <code>(6.2−4.0)/6.2 ≈ 35%</code>가 통째로 잘려나간다. 이 오차가 레이어를 타고 누적되면 특정 조건에서만 정확도가 붕괴한다. 캘리브 셋이 곧 "양자화가 아는 세상의 전부"다.</p>
+<blockquote class="callout">벤더/문서 공통 권고: 캘리브 데이터는 배포 환경 분포를 대표해야 하며, 같은 도메인에서 뽑는 것이 좋다. 이미지 수가 많을수록(수백 장) INT8 정확도가 안정적이다. (<a href="https://onnxruntime.ai/docs/performance/model-optimizations/quantization.html">ONNX Runtime 양자화 문서</a>, NVIDIA INT8 가이드)</blockquote>
+<p><strong>예방</strong></p>
+<ul><li>캘리브 셋을 <strong>운영 데이터 분포로 층화 샘플링</strong>(주간/야간/터널/역광/우천 등 조건별 최소 표본 확보).</li><li>너무 적은 표본 금지. 이미지 분류 기준 수백 장, batch size 1은 피한다(정확도 저하·시간 증가 사례 다수).</li><li>캘리브 셋을 <strong>버전 관리</strong>하고, 어떤 조건이 몇 %인지 매니페스트로 남긴다.</li><li>entropy(KL) calibrator를 기본으로. 극단 outlier가 소수면 percentile clip(99.9%)로 상한을 살짝 낮춰 오히려 평균 오차를 줄인다.</li></ul>
+<p><strong>디버깅 절차</strong></p>
+<ol><li><strong>조건별로 정확도를 쪼갠다.</strong> "전체 76%"가 아니라 "주간 78% / 야간 61%"를 본다. 조건별로 쪼개지 않으면 이 함정은 절대 안 보인다.</li><li>급락 조건이 특정되면, 그 조건 입력의 activation range가 캘리브 range를 넘는지 <code>calib_coverage.py</code>로 정량 확인.</li><li>넘으면 → 캘리브 셋에 그 조건 표본을 추가하고 재양자화. 안 넘는데도 낮으면 → 함정 2(전처리) 또는 레이어 민감도(<a href="09_roadmap.html">09_roadmap.md</a> 1~2주 스윕)로 이동.</li></ol>
+<p><strong>재현 코드 — 캘리브 셋 대표성 정량 점검</strong></p>
+<p>캘리브 셋과 실제 검증셋의 activation 통계가 실제로 겹치는지 히스토그램/분위수로 비교한다. 겹치지 않으면 그 구간이 양자화 사각지대다. 아래는 <strong>레이어별로</strong> 커버리지를 판정하고, 초과 비율까지 숫자로 뽑도록 확장한 버전이다.</p>
+<pre><code class="lang-python"># calib_coverage.py
+# 목적: 캘리브 셋 activation 분포가 검증셋 분포를 실제로 커버하는지 레이어별로 정량 점검
+# 실행: python3 calib_coverage.py  (Ubuntu 22.04 + RTX, 정본: torch/torchvision, CUDA 12.8)
+import torch, numpy as np
+from torchvision import models
+
+model = models.resnet50(weights=&quot;IMAGENET1K_V2&quot;).cuda().eval()
+
+# 관심 레이어 여러 개를 훅으로 수집(첫 conv 뒤 + 중간 블록 + 후반 블록)
+acts = {}
+def hook(name):
+    def fn(_m, _i, out):
+        acts.setdefault(name, []).append(out.detach().float().flatten().cpu())
+    return fn
+model.layer1.register_forward_hook(hook(&quot;layer1&quot;))   # 초반
+model.layer2.register_forward_hook(hook(&quot;layer2&quot;))   # 중반
+model.layer4.register_forward_hook(hook(&quot;layer4&quot;))   # 후반
+
+@torch.no_grad()
+def collect(loader):
+    acts.clear()
+    for x in loader:                 # loader: 이미 &quot;학습과 동일한&quot; 전처리를 거친 텐서 배치 (함정 2 참고)
+        model(x.cuda())
+    return {k: torch.cat(v).numpy() for k, v in acts.items()}
+
+def summarize(a, tag):
+    qs = np.percentile(a, [0, 0.1, 1, 50, 99, 99.9, 100])
+    print(f&quot;[{tag}] min={qs[0]:.3f} p0.1={qs[1]:.3f} p1={qs[2]:.3f} &quot;
+          f&quot;med={qs[3]:.3f} p99={qs[4]:.3f} p99.9={qs[5]:.3f} max={qs[6]:.3f}&quot;)
+    return qs
+
+# calib_loader = 캘리브 셋, val_loader = 실제 검증셋(야간/터널 포함)
+calib = collect(calib_loader)
+val   = collect(val_loader)
+
+for layer in calib:
+    cs = summarize(calib[layer], f&quot;{layer}:calib&quot;)
+    vs = summarize(val[layer],   f&quot;{layer}:val&quot;)
+    # 커버리지 판정: 검증셋 값이 캘리브 [min,max]를 벗어나는 비율(clipping 후보)
+    lo, hi = cs[0], cs[6]
+    over = np.mean((val[layer] &lt; lo) | (val[layer] &gt; hi)) * 100
+    verdict = &quot;⚠️ 사각지대&quot; if over &gt; 0.5 else &quot;✅ 커버됨&quot;
+    print(f&quot;  → {layer}: 검증셋의 {over:.2f}% 가 캘리브 range 밖  {verdict}\n&quot;)</code></pre>
+<p>기대 출력(문제 있는 경우 예):</p>
+<pre><code>[layer1:calib] min=-0.512 ... p99.9=3.104 max=3.980
+[layer1:val]   min=-0.740 ... p99.9=4.510 max=6.210
+  → layer1: 검증셋의 1.83% 가 캘리브 range 밖  ⚠️ 사각지대
+
+[layer4:calib] min=-2.10 ... max=5.44
+[layer4:val]   min=-2.31 ... max=5.60
+  → layer4: 검증셋의 0.12% 가 캘리브 range 밖  ✅ 커버됨</code></pre>
+<p>→ <code>layer1</code>처럼 초반 레이어에서 초과 비율이 높으면, 그 조건(야간 등) 표본을 캘리브 셋에 넣고 재양자화한다.</p>
+<blockquote class="callout bad">🔴 함정: "검증셋 정확도 1개 숫자"만 보면 통과한다. <strong>조건별로 쪼갠 정확도</strong>(야간 acc, 역광 acc)를 따로 봐야 이 함정이 드러난다. <code>over &gt; 0.5%</code>는 경험칙 임계이니, 정확도 급락과 함께 보라.</blockquote>
+<hr>
+<h2 id="함정-2-전처리-불일치-meanstd가-어긋난다">함정 2 — 전처리 불일치 (mean/std가 어긋난다)</h2>
+<blockquote class="callout">관련 단계: <a href="03_quantization_theory.html">03_quantization_theory.md</a>, <a href="05_tensorrt.html">05_tensorrt.md</a>(calibrator 입력), <a href="09_roadmap.html">09_roadmap.md</a> 12주(전처리 단일 소스화)</blockquote>
+<p><strong>증상</strong></p>
+<ul><li>에러 하나 없이 <strong>정확도만 조용히 죽는다</strong>(예: top-1이 10~30%p 통째로 하락).</li><li>FP32는 괜찮은데 양자화 후 유독 나쁘거나, 반대로 학습/캘리브/추론 단계마다 결과가 미묘하게 다름.</li><li>"코드는 안 바꿨는데" 배포 환경으로 옮기니 정확도가 다르다(라이브러리 기본값 차이).</li></ul>
+<p><strong>원인 (수치·메커니즘)</strong> 학습 때 쓴 정규화(mean/std, resize 보간, BGR/RGB, <code>[0,1]</code> vs <code>[0,255]</code>, NCHW/NHWC)와 <strong>캘리브레이션·추론 때 전처리가 다르면</strong>, 모델이 보는 입력 분포 자체가 어긋난다. calibration은 어긋난 분포로 scale을 잡고, 추론은 또 다른 분포로 들어오니 양자화 오차가 증폭된다. 조용한 이유는 <strong>shape이 맞으면 어디서도 예외가 안 나기 때문</strong>이다.</p>
+<p>수치 감각: ImageNet 정규화에서 <code>mean=0.485, std=0.229</code>(R채널)를 빼먹고 <code>x/255</code>만 하면, 입력 평균이 0 근처가 아니라 0.5 근처로 통째로 shift된다. 첫 conv의 activation 분포가 옆으로 밀리고, 캘리브가 잡은 scale과 추론 분포가 어긋나 <strong>INT8에서 특히</strong> 오차가 커진다. FP32는 표현 범위가 넓어 이런 shift를 어느 정도 버티지만, INT8은 127단계뿐이라 못 버틴다 — 그래서 "FP32는 괜찮은데 INT8만 나쁨" 패턴이 나온다.</p>
+<p><strong>전처리 실수 카탈로그</strong> (shape은 맞아서 에러가 안 나는 것들)</p>
+<div class="tablewrap"><table><thead><tr><th>실수</th><th>무엇이 어긋나나</th><th>흔한 원인</th></tr></thead><tbody><tr><td><code>Resize(256)+CenterCrop(224)</code> vs <code>resize((224,224))</code></td><td>픽셀 내용 자체가 다름(가장자리 왜곡)</td><td>학습은 torchvision, 배포는 손구현</td></tr><tr><td>BGR vs RGB</td><td>채널 순서 반전</td><td>OpenCV(<code>cv2.imread</code>는 BGR) ↔ PIL(RGB)</td></tr><tr><td><code>[0,255]</code> vs <code>[0,1]</code> 스케일</td><td>입력 크기 255배 차이</td><td><code>ToTensor()</code> 유무, <code>/255.0</code> 누락</td></tr><tr><td>mean/std 누락 또는 다른 상수</td><td>분포 shift/스케일</td><td>다른 데이터셋 상수 복붙</td></tr><tr><td>보간법 bilinear vs nearest vs bicubic</td><td>리샘플 픽셀 미세차</td><td>resize 기본값이 라이브러리마다 다름</td></tr><tr><td>NCHW vs NHWC 레이아웃</td><td>채널축 위치</td><td>ONNX/TRT는 NCHW, 일부 SoC는 NHWC 선호</td></tr><tr><td><code>antialias</code> on/off</td><td>torchvision Resize 결과 달라짐</td><td>버전별 기본값 변경</td></tr><tr><td>uint8 → float 변환 시 반올림</td><td>미세 오차</td><td><code>astype</code> 순서, <code>/255</code> 위치</td></tr></tbody></table></div>
+<p><strong>예방</strong></p>
+<ul><li>전처리를 <strong>단일 함수/단일 소스</strong>로 만들어 학습·캘리브·추론이 <strong>똑같은 코드</strong>를 부른다.</li><li>mean/std, 보간법, 채널 순서, 스케일, 레이아웃을 상수로 고정하고 문서화(<code>design_rules.md</code>, <a href="09_roadmap.html">09_roadmap.md</a> 12주).</li><li>파이프라인 경계(PyTorch↔ONNX↔TRT/SoC)마다 <strong>동일 입력에 대한 출력 일치</strong>를 수치로 검증.</li><li>가능하면 정규화(mean/std)를 <strong>모델 그래프 안으로</strong> 넣어(입력단 <code>Sub</code>/<code>Div</code> 노드) 배포 전처리 실수 여지를 줄인다.</li></ul>
+<p><strong>디버깅 절차</strong></p>
+<ol><li><strong>바이트 비교부터.</strong> 같은 원본 이미지를 학습 전처리와 배포 전처리로 각각 통과시켜 <code>max_abs_diff</code>를 본다(<code>preprocess_parity.py</code>). <code>&gt; 1e-3</code>이면 여기서 끝 — 다른 건 볼 필요 없다.</li><li>어긋나면 카탈로그 표를 위에서부터 대조(resize 방식 → 채널 순서 → 스케일 → mean/std → 레이아웃).</li><li>바이트가 일치하는데도 정확도가 낮으면 → 함정 1(캘리브) 또는 함정 3(백엔드)로 이동.</li></ol>
+<p><strong>재현 코드 — 학습 vs 배포 전처리 바이트 비교</strong></p>
+<p>같은 원본 이미지를 "학습 전처리"와 "배포 전처리"로 각각 통과시켜 <strong>바이트 단위로</strong> 비교한다. 여기서 어긋나면 정확도는 반드시 샌다. 아래는 어느 채널/어느 위치에서 가장 크게 어긋나는지까지 짚도록 확장했다.</p>
+<pre><code class="lang-python"># preprocess_parity.py
+# 목적: 학습용 전처리와 배포/캘리브용 전처리가 완전히 동일한지 바이트 단위로 검증
+import numpy as np
+from PIL import Image
+import torchvision.transforms as T
+
+IMAGENET_MEAN = [0.485, 0.456, 0.406]
+IMAGENET_STD  = [0.229, 0.224, 0.225]
+
+# (A) 학습 파이프라인의 전처리 (torchvision) — 이것이 &quot;정답&quot;
+train_tf = T.Compose([
+    T.Resize(256, interpolation=T.InterpolationMode.BILINEAR),
+    T.CenterCrop(224),
+    T.ToTensor(),                                  # [0,1], RGB, CHW
+    T.Normalize(IMAGENET_MEAN, IMAGENET_STD),
+])
+
+# (B) 배포/캘리브 파이프라인이 &quot;직접 구현&quot;한 전처리 (여기서 실수 자주 발생)
+def deploy_preprocess(path):
+    img = Image.open(path).convert(&quot;RGB&quot;).resize((224, 224), Image.BILINEAR)  # ⚠️ Resize+CenterCrop 조합과 다름!
+    x = np.asarray(img).astype(np.float32) / 255.0
+    x = (x - np.array(IMAGENET_MEAN)) / np.array(IMAGENET_STD)
+    return np.transpose(x, (2, 0, 1))              # HWC -&gt; CHW
+
+a = train_tf(Image.open(&quot;sample.jpg&quot;).convert(&quot;RGB&quot;)).numpy()
+b = deploy_preprocess(&quot;sample.jpg&quot;)
+
+assert a.shape == b.shape, f&quot;레이아웃/shape 불일치 a={a.shape} b={b.shape}&quot;
+diff = np.abs(a - b)
+print(f&quot;shape={a.shape}  max_abs_diff={diff.max():.6f}  mean_abs_diff={diff.mean():.6f}&quot;)
+
+# 어느 채널이 가장 어긋나는지(채널 순서 실수 탐지에 유용)
+per_ch = diff.reshape(a.shape[0], -1).max(axis=1)
+print(&quot;per-channel max_abs_diff:&quot;, np.round(per_ch, 4))
+
+# 채널 순서 뒤바뀜(BGR/RGB) 의심: 채널을 뒤집으면 오차가 줄어드는가?
+b_flip = b[::-1].copy()
+if np.abs(a - b_flip).max() &lt; diff.max() * 0.5:
+    print(&quot;⚠️ 채널을 뒤집으니 오차 급감 → BGR/RGB 순서 실수 의심&quot;)
+
+if diff.max() &gt; 1e-3:
+    print(&quot;⚠️ 전처리 불일치! 배포 전처리가 학습과 다르다 → 정확도 조용히 하락&quot;)
+else:
+    print(&quot;✅ 전처리 일치&quot;)</code></pre>
+<p>기대 출력(위 예처럼 Resize/Crop이 다르면):</p>
+<pre><code>shape=(3, 224, 224)  max_abs_diff=0.417293  mean_abs_diff=0.061...
+per-channel max_abs_diff: [0.4173 0.3902 0.3661]
+⚠️ 전처리 불일치! 배포 전처리가 학습과 다르다 → 정확도 조용히 하락</code></pre>
+<blockquote class="callout tip">💡 팁: 위 예의 함정은 흔하다 — <code>Resize(256)+CenterCrop(224)</code> vs <code>resize((224,224))</code>는 <strong>다른 이미지</strong>를 만든다. shape은 같아서 아무 에러도 안 난다. per-channel diff가 세 채널 모두 비슷하게 크면 resize/스케일 문제, 특정 채널만 크면 채널별 mean/std 실수를 의심하라.</blockquote>
+<blockquote class="callout warn">⚠️ 주의: TensorRT INT8 calibrator에 넣는 배치도 <strong>추론과 똑같은 전처리</strong>여야 한다. calibrator만 다른 전처리를 쓰면 scale이 엉뚱하게 잡힌다(<a href="05_tensorrt.html">05_tensorrt.md</a>). calibration cache는 전처리에 종속이므로, 전처리를 고쳤으면 <strong>캐시를 지우고 재생성</strong>하라.</blockquote>
+<hr>
+<h2 id="함정-3-onnx-export-성공-칩에서-동작">함정 3 — "ONNX export 성공" ≠ "칩에서 동작"</h2>
+<blockquote class="callout">관련 단계: <a href="04_transformer_quantization.html">04_transformer_quantization.md</a>(<code>onnx_export_failures.md</code>), <a href="05_tensorrt.html">05_tensorrt.md</a>, <a href="06_multi_soc.html">06_multi_soc.md</a>, <a href="09_roadmap.html">09_roadmap.md</a> 3~5주</blockquote>
+<p><strong>증상</strong></p>
+<ul><li><code>torch.onnx.export</code>가 예외 없이 끝나고 <code>onnx.checker</code>도 통과. 그런데 TensorRT 엔진 빌드나 TIDL/QNN 컴파일에서 특정 op가 미지원/에러.</li><li>PC(ONNX Runtime CPU)에선 돌지만, 타깃 가속기에선 op가 빠지거나 결과가 다름.</li><li>QNN EP에서 "dynamic shape 미지원" 또는 "Loop/If unsupported"로 세션 생성 자체가 실패.</li></ul>
+<p><strong>원인 (메커니즘)</strong> ONNX export는 <strong>그래프를 표현</strong>했을 뿐이다. 각 백엔드(TensorRT / TIDL / QNN / DRP-AI)는 <strong>지원 op의 부분집합</strong>만 가진다. 미지원 op, 특정 opset, dynamic shape, control flow(Loop/If)는 백엔드마다 처리 방식이 다르다. 즉 export는 파이프라인의 <strong>시작</strong>이지 끝이 아니다.</p>
+<p>구체적으로 어긋나는 지점들:</p>
+<ul><li><strong>op 부분집합</strong>: TensorRT/TIDL/QNN 각각 지원 op 목록이 다르다. 커스텀 activation, 특이한 reduce, <code>NonZero</code>/<code>Scatter</code> 같은 데이터 의존 op가 잘 빠진다.</li><li><strong>opset 불일치</strong>: export한 opset을 백엔드 파서가 아직 지원 안 함(또는 그 op의 특정 opset 버전만 지원).</li><li><strong>dynamic shape</strong>: QNN EP는 dynamic shape 자체를 지원하지 않는다. TensorRT는 optimization profile을 명시해야 한다.</li><li><strong>control flow</strong>: QNN EP는 Loop/If를 지원하지 않는다 → 그 서브그래프가 통째로 CPU fallback되거나 세션이 실패.</li></ul>
+<blockquote class="callout">QNN EP는 ONNX op의 부분집합만 지원한다(예: Loop/If 미지원, dynamic shape 미지원). ONNX Runtime은 미지원 op를 CPU로 fallback시킨다. (<a href="https://onnxruntime.ai/docs/execution-providers/QNN-ExecutionProvider.html">ONNX Runtime QNN EP 문서</a>)</blockquote>
+<p><strong>예방</strong></p>
+<ul><li>export 직후 <strong>타깃 백엔드로 곧장 컴파일</strong>해 op 지원을 조기 검증(뒤로 미루지 말 것).</li><li>백엔드별 <strong>지원 op 목록</strong>을 미리 확인하고, 모델을 그 화이트리스트에 맞춰 설계.</li><li>opset·dynamic axes를 명시하고, 실패 op와 우회법을 <code>onnx_export_failures.md</code>에 남긴다.</li><li>dynamic shape가 필요 없으면 <strong>고정 shape로 export</strong>(QNN/TIDL 호환성↑).</li></ul>
+<p><strong>디버깅 절차 — 3-way 정합성 + op 인벤토리</strong></p>
+<p>핵심 전략: 같은 입력을 <strong>(1) PyTorch → (2) ONNX Runtime → (3) 타깃 백엔드</strong> 순으로 흘려, 어느 경계에서 수치가 어긋나는지 좁힌다. "2)는 통과, 3)에서 실패"면 원인은 export가 아니라 <strong>백엔드 op 지원</strong>이다.</p>
+<pre><code class="lang-bash"># ── 1) 구조/버전 검증 ─────────────────────────────────────────
+python3 -c &quot;import onnx; m=onnx.load(&#x27;model.onnx&#x27;); onnx.checker.check_model(m); \
+print(&#x27;opset:&#x27;, m.opset_import[0].version, &#x27;ok&#x27;)&quot;
+
+# ── 2) PyTorch vs ONNXRuntime 수치 비교 (Polygraphy) ─────────
+#    여기서 어긋나면 export 자체가 의심(PyTorch↔ONNX 변환 오류).
+polygraphy run model.onnx --onnxrt --pytorch --atol 1e-3 --rtol 1e-3
+
+# ── 3) 타깃 백엔드(TensorRT) 빌드 + ONNXRuntime과 3-way 비교 ──
+#    빌드 실패 로그에서 미지원 op / plugin 필요 op를 확인.
+polygraphy run model.onnx --trt --onnxrt --atol 1e-2 --rtol 1e-2</code></pre>
+<p>기대: 2)에서 통과, 3)에서 실패하면 원인은 export가 아니라 <strong>백엔드 op 지원</strong>이다. 다음으로 <strong>어떤 op가 미지원인지</strong>를 특정한다 — 두 가지 방법을 병행:</p>
+<pre><code class="lang-bash"># (a) Polygraphy로 TensorRT 지원 여부를 그래프 분할까지 해서 리포트
+#     미지원 op가 &quot;Operator | Count | Reason | Nodes&quot; 표로 나온다.
+polygraphy inspect capability --with-partitioning model.onnx</code></pre>
+<p>기대 출력(예):</p>
+<pre><code>Graph is not supported by TensorRT. Partitioning into supported/unsupported subgraphs.
+=== Unsupported Operators ===
+Operator     | Count | Reason                                             | Nodes
+-------------+-------+----------------------------------------------------+------------------
+GridSample   |   2   | No importer registered for op: GridSample          | [ [45,46] ]
+NonZero      |   1   | Data-dependent shape not supported                 | [ [88,89] ]</code></pre>
+<p>→ 이 표의 op가 <strong>plugin 대상 또는 우회 대상</strong>이다. (partitioning은 FunctionProto 내부 노드는 못 본다 — 그때는 <code>--with-partitioning</code> 없이 정적 리포트를 쓴다. <a href="https://github.com/NVIDIA/TensorRT/tree/main/tools/Polygraphy/examples/cli/inspect">Polygraphy inspect 예제</a>)</p>
+<pre><code class="lang-python"># (b) op_inventory.py — 모델이 쓰는 op를 세어 백엔드 화이트리스트와 대조
+import onnx, collections
+m = onnx.load(&quot;model.onnx&quot;)
+c = collections.Counter(n.op_type for n in m.graph.node)
+for op, cnt in c.most_common():
+    print(f&quot;{op:22s} x{cnt}&quot;)
+# → 이 목록을 TensorRT/TIDL/QNN 지원 op 문서와 대조. 없는 op가 fallback/plugin 대상.</code></pre>
+<p>기대 출력(예):</p>
+<pre><code>MatMul                 x48
+Add                    x37
+LayerNormalization     x25
+Softmax                x12
+GridSample             x2      ← 백엔드 미지원이면 여기가 범인
+NonZero                x1</code></pre>
+<p><strong>우회 결정 트리</strong> (미지원 op를 찾은 뒤):</p>
+<ol><li>그 op를 <strong>동등 표준 op로 분해</strong> 가능한가? (예: 커스텀 GELU → <code>Erf</code> 기반 표준 GELU) → 재export.</li><li>안 되면 <strong>모델 앞/뒤로 몰아</strong> 전·후처리로 빼낼 수 있나? → subgraph를 통짜로(함정 4 예방).</li><li>둘 다 안 되면 <strong>custom plugin</strong>(TensorRT <code>IPluginV3</code>, 함정 5) 또는 그 op만 FP16/CPU 유지.</li><li>모든 우회를 <code>onnx_export_failures.md</code>에 op·에러 원문·선택한 우회로와 함께 기록.</li></ol>
+<blockquote class="callout bad">🔴 함정: "checker 통과 = 끝"이라는 착각이 3~5주를 통째로 날린다. export 성공 후 <strong>가장 먼저</strong> 타깃 컴파일(<code>polygraphy inspect capability</code>)을 시도하라. 미지원 op를 3주차에 알면 우회할 시간이 있지만, 8주차에 알면 로드맵이 밀린다.</blockquote>
+<hr>
+<h2 id="함정-4-fallback-지옥-subgraph가-쪼개지면-fp32보다-느리다">함정 4 — fallback 지옥 (subgraph가 쪼개지면 FP32보다 느리다)</h2>
+<blockquote class="callout">관련 단계: <a href="06_multi_soc.html">06_multi_soc.md</a>(TIDL/QNN/DRP-AI), <a href="09_roadmap.html">09_roadmap.md</a> 9~11주(<code>four_target_matrix.md</code>)</blockquote>
+<p><strong>증상</strong></p>
+<ul><li>가속기(NPU/DSP)에 올렸는데 <strong>오히려 FP32 CPU보다 느리다.</strong></li><li>컴파일 로그에 subgraph가 수십 개로 쪼개짐(예: 20개). 가속기↔CPU를 왔다갔다.</li><li>profile을 보면 연산 시간보다 <strong>메모리 복사/동기화 시간</strong>이 더 크다.</li></ul>
+<p><strong>원인 (수치·메커니즘)</strong> 백엔드가 미지원 op를 만나면 그래프를 <strong>여러 subgraph로 분할</strong>하고, 미지원 부분을 CPU/ARM으로 fallback시킨다. 분할이 잦으면 가속기↔호스트 간 <strong>데이터 복사·동기화 오버헤드</strong>가 연산 이득을 잡아먹는다. op 하나가 그래프 중간에서 미지원이면, 앞뒤가 통째로 쪼개진다.</p>
+<p>왜 "중간의 op 하나"가 치명적인가: 그래프가 <code>[가속기 가능]→[미지원 op]→[가속기 가능]</code>이면, 미지원 op를 CPU에서 처리하려고 (1) 가속기→CPU 텐서 복사, (2) CPU 연산, (3) CPU→가속기 복사가 매 추론마다 일어난다. 이 왕복이 subgraph 경계마다 반복되면, 복사 대역폭이 병목이 되어 <strong>가속기의 연산 이득을 상쇄하고도 남는다.</strong> subgraph가 20개면 최대 그만큼의 왕복이 생긴다.</p>
+<blockquote class="callout">- ONNX Runtime은 <code>GetCapability</code>로 각 EP가 실행 가능한 subgraph를 질의해 그래프를 분할하고, 나머지는 CPU로 fallback한다. (<a href="https://onnxruntime.ai/docs/reference/high-level-design.html">ONNX Runtime 아키텍처</a>) - TIDL은 미지원 레이어를 ARM으로 떨어뜨리며(예: MaxPool을 ARM에 두면 그 지점에서 subgraph가 갈린다), <code>deny_list</code>로 특정 op의 오프로드를 강제 제외할 수 있다(ONNX는 op명 예: <code>&#x27;MaxPool, Add&#x27;</code>, TFLite는 레이어 코드 예: <code>&#x27;1, 2&#x27;</code>). (<a href="https://github.com/TexasInstruments/edgeai-tidl-tools">edgeai-tidl-tools</a>) - QNN EP는 <code>session.disable_cpu_ep_fallback=&quot;1&quot;</code>로 "전부 HTP에 올라가야만 성공"을 강제할 수 있다(안 올라가면 예외 → 미지원 지점 특정에 유용). (<a href="https://onnxruntime.ai/docs/execution-providers/QNN-ExecutionProvider.html">ONNX Runtime QNN EP</a>)</blockquote>
+<p><strong>예방</strong></p>
+<ul><li><strong>offload 비율(가속기에 올라간 연산/전체)부터 확인</strong>한다. 이것이 첫 번째 지표다.</li><li>subgraph 개수를 최소화하도록 미지원 op를 <strong>모델 앞/뒤로 몰거나 제거</strong>(전·후처리로 이동).</li><li>fallback op가 그래프 중앙에 있으면, 대체 op로 바꾸거나 custom 구현으로 가속기에 유지.</li><li>타깃별 지원 op를 보고 <strong>처음부터 화이트리스트 내에서</strong> 모델을 고른다(함정 3의 예방과 동일 뿌리).</li></ul>
+<p><strong>디버깅 절차 — offload/subgraph 정량 확인</strong></p>
+<ol><li><strong>먼저 offload 비율과 subgraph 개수를 센다.</strong> latency는 그 다음이다.</li><li>QNN: VERBOSE 로그에서 각 EP에 할당된 노드 수를 세거나, <code>disable_cpu_ep_fallback</code>로 "전부 HTP인지" 강제 확인.</li><li>TIDL: 컴파일 로그의 "Runtimes Graphviz"/subgraph 요약에서 C7x vs ARM 분할을 확인.</li><li>판정표(아래)로 "정상/경계/지옥"을 분류하고, 지옥이면 미지원 op 위치를 함정 3 절차로 특정해 앞뒤로 몬다.</li></ol>
+<pre><code class="lang-python"># qnn_partition_check.py — ONNX Runtime EP가 몇 개 노드를 fallback시키는지 확인
+# 세션 로그(VERBOSE)에 &quot;assigned to CPUExecutionProvider&quot; 노드가 fallback 대상.
+import onnxruntime as ort
+so = ort.SessionOptions()
+so.log_severity_level = 0                         # 0=VERBOSE: 파티션/할당 로그 출력
+
+# (선택) &quot;전부 HTP에 올라가야 성공&quot;을 강제 → 안 올라가면 예외로 미지원 지점 노출
+# so.add_session_config_entry(&quot;session.disable_cpu_ep_fallback&quot;, &quot;1&quot;)
+
+sess = ort.InferenceSession(
+    &quot;model.onnx&quot;, so,
+    providers=[&quot;QNNExecutionProvider&quot;, &quot;CPUExecutionProvider&quot;],  # QNN 우선, 나머지 CPU
+    provider_options=[{&quot;backend_path&quot;: &quot;libQnnHtp.so&quot;}, {}],      # HTP 백엔드
+)
+# 로그에서 세어라:
+#   - QNN에 할당된 노드 수 vs CPU에 할당된 노드 수  → offload 비율
+#   - 파티션(subgraph) 개수가 많을수록 fallback 지옥 신호
+print(&quot;providers in use:&quot;, sess.get_providers())</code></pre>
+<p>TIDL의 경우 컴파일 로그에서 subgraph 개수와 각 subgraph의 delegate(C7x vs ARM)를 확인한다.</p>
+<pre><code class="lang-bash"># TIDL 컴파일 로그에서 subgraph 분할/오프로드 요약 grep (예시)
+grep -Ei &quot;subgraph|deny|delegate|offload|Unsupported|ARM|C7x&quot; tidl_compile.log
+
+# 특정 op를 강제로 ARM에 떨어뜨려(deny) subgraph 분할 영향을 실험(ONNX op명)
+#   → 컴파일 옵션의 deny_list에 &#x27;MaxPool, Add&#x27; 지정 후 offload 비율 변화 관찰</code></pre>
+<p>판정 기준(경험칙):</p>
+<div class="tablewrap"><table><thead><tr><th>offload 비율</th><th>subgraph 개수</th><th>해석</th><th>조치</th></tr></thead><tbody><tr><td>&gt; 90%</td><td>1~3</td><td>정상. 가속기 이득 기대</td><td>그대로 진행</td></tr><tr><td>50~90%</td><td>4~10</td><td>경계. fallback op 위치 점검</td><td>중앙 미지원 op를 앞/뒤로 이동</td></tr><tr><td>&lt; 50%</td><td>&gt; 10</td><td>🔴 fallback 지옥. FP32보다 느릴 수 있음</td><td>모델 재설계/화이트리스트 재선정</td></tr></tbody></table></div>
+<blockquote class="callout bad">🔴 함정: latency만 보고 "느리네" 하고 끝내지 마라. <strong>먼저 offload 비율과 subgraph 개수</strong>를 보면 원인이 즉시 보인다. "가속기에 30%만 올라갔고 subgraph가 18개"라는 한 줄이, "느림"이라는 막연함을 즉시 진단으로 바꾼다.</blockquote>
+<hr>
+<h2 id="함정-5-c를-피하지-마라">함정 5 — C++를 피하지 마라</h2>
+<blockquote class="callout">관련 단계: <a href="05_tensorrt.html">05_tensorrt.md</a>(custom plugin), <a href="07_infrastructure.html">07_infrastructure.md</a>(런타임 통합), <a href="09_roadmap.html">09_roadmap.md</a> 6~8주</blockquote>
+<p><strong>증상</strong></p>
+<ul><li>Python으로 다 되는 줄 알았는데, 미지원 op custom plugin·런타임 통합·메모리 최적화 앞에서 막힌다.</li><li>채용 공고(JD)에 C/C++가 <strong>필수</strong>로 박혀 있는 이유를 실감하게 됨.</li><li>함정 3에서 "이 op는 plugin이 답"이라는 결론이 났는데, plugin이 전부 C++라 진도가 멈춘다.</li></ul>
+<p><strong>원인 (메커니즘)</strong> 프로덕션 임베디드 추론의 핵심 경로는 C++다. TensorRT custom plugin, 온디바이스 런타임 통합(TIDL-RT, QNN, DRP-AI 런타임 API), 제로카피/메모리 풀 최적화, 전·후처리 커널은 전부 C++/CUDA로 작성한다. Python은 프로토타이핑·오케스트레이션에 좋지만, 칩 위 실행은 C++가 지배한다.</p>
+<p>TensorRT 10.x 기준 구체적 벽: plugin API가 <code>IPluginV3</code>로 통일됐고(구 <code>IPluginV2</code> 계열은 폐기), plugin은 <code>IPluginV3OneCore</code> + <code>IPluginV3OneBuild</code> + <code>IPluginV3OneRuntime</code>을 다중상속하며, creator는 <code>IPluginCreatorV3One</code>을 구현해 plugin registry에 등록해야 한다. 연산 본체는 <code>enqueue</code>(CUDA 커널 호출)에 들어간다. 겁나 보이지만 <strong>실제로 손대는 건 <code>enqueue</code> 한 함수</strong>이고 나머지는 보일러플레이트다. (<a href="https://docs.nvidia.com/deeplearning/tensorrt/latest/inference-library/extending-custom-layers.html">TensorRT custom layers 문서</a>)</p>
+<p><strong>예방 / 대응</strong></p>
+<ul><li>Python 프로토타입과 <strong>병행해</strong> C++ 최소 예제를 일찍 붙여본다(미루면 마지막에 병목).</li><li>벤더/커뮤니티 plugin/런타임 <strong>템플릿을 복사</strong>하고 <code>enqueue</code>/forward만 교체하는 식으로 진입 장벽을 낮춘다.</li><li>빌드 체계(CMake)·디버깅(gdb/compute-sanitizer)·프로파일링(Nsight)을 <a href="05_tensorrt.html">05_tensorrt.md</a>/<a href="07_infrastructure.html">07_infrastructure.md</a> 기준으로 갖춘다.</li><li>IPluginV3의 보일러플레이트는 자동 생성이 아니므로, <strong>동작하는 예제 저장소에서 시작</strong>한다(빈 스켈레톤에서 시작 금지).</li></ul>
+<p><strong>디버깅 절차 — C++ plugin/런타임 통합 진입 체크리스트</strong></p>
+<p>아래를 <strong>위에서부터 순서대로</strong> 통과한다. 한 칸도 건너뛰지 말 것 — 대부분의 좌절은 "내 코드를 먼저 넣어서" 생긴다.</p>
+<ol><li><strong>환경/빌드</strong></li><ul><li class="task"><label><input type="checkbox" data-k="9eca9759de"> TensorRT 헤더/라이브러리 경로가 잡히고, <code>sample_*</code>(예: <code>sampleOnnxMNIST</code>)가 <strong>그대로 빌드·실행</strong>되는가?</label></li><li class="task"><label><input type="checkbox" data-k="ce344bf782"> CMake로 최소 실행 파일이 링크되는가(<code>-ltensorrt</code>/<code>-lnvinfer</code>, CUDA 링크)?</label></li></ul><li><strong>템플릿 검증(내 코드 넣기 전)</strong></li><ul><li class="task"><label><input type="checkbox" data-k="329f3466fb"> 커뮤니티/벤더 <strong>IPluginV3 예제</strong>(<a href="https://github.com/leimao/TensorRT-Custom-Plugin-Example">TensorRT-Custom-Plugin-Example</a> 등)가 그대로 빌드·등록·실행되는가?</label></li><li class="task"><label><input type="checkbox" data-k="c877bc0deb"> <code>REGISTER_TENSORRT_PLUGIN</code>(또는 registry 등록)으로 plugin이 로드되고, 엔진 빌드 시 인식되는가?</label></li></ul><li><strong>내 op 이식</strong></li><ul><li class="task"><label><input type="checkbox" data-k="a19ad87342"> 예제의 <code>enqueue</code>(CUDA 커널 호출부)만 내 연산으로 교체했는가(나머지 보일러플레이트 유지)?</label></li><li class="task"><label><input type="checkbox" data-k="5b8df3962b"> 입출력 dtype/shape 계약(<code>getOutputDataTypes</code>/<code>getOutputShapes</code>)이 내 op와 맞는가?</label></li></ul><li><strong>정합성/안전성</strong></li><ul><li class="task"><label><input type="checkbox" data-k="542464816e"> plugin 포함 엔진 출력이 reference(ONNX Runtime)와 허용 오차 내인가(<code>polygraphy run ... --trt --onnxrt</code>)?</label></li><li class="task"><label><input type="checkbox" data-k="5eada3702b"> <code>compute-sanitizer</code>로 메모리 오류/레이스가 없는가(<code>compute-sanitizer --tool memcheck ./my_app</code>)?</label></li></ul><li><strong>재현성</strong></li><ul><li class="task"><label><input type="checkbox" data-k="b55089795b"> 빌드가 CI에서 재현되는가(<a href="07_infrastructure.html">07_infrastructure.md</a>)?</label></li><li class="task"><label><input type="checkbox" data-k="f67a3015d8"> plugin 버전/네임스페이스가 문서화되어 다른 사람이 빌드할 수 있는가?</label></li></ul></ol>
+<p>빠른 안전성 점검(복붙):</p>
+<pre><code class="lang-bash"># CUDA 메모리 오류/레이스 탐지 — plugin이 조용히 틀린 값을 낼 때 1순위 도구
+compute-sanitizer --tool memcheck ./my_app     # out-of-bounds/leak
+compute-sanitizer --tool racecheck ./my_app    # shared memory race</code></pre>
+<blockquote class="callout tip">💡 팁: C++는 "전부 새로 배우기"가 아니라 "벤더 템플릿 위에서 <code>enqueue</code> 한 함수 고치기"부터다. 8주차에 딱 한 개의 op로 성공시키면 벽이 사라진다. IPluginV3의 다중상속 구조에 겁먹지 말고, <strong>동작하는 예제를 먼저 돌리고</strong> 그 위에서 연산만 갈아끼워라.</blockquote>
+<hr>
+<h2 id="2-함정-요약표">2) 함정 요약표</h2>
+<div class="tablewrap"><table><thead><tr><th>#</th><th>함정</th><th>한 줄 증상</th><th>첫 번째 확인</th><th>관련 문서</th></tr></thead><tbody><tr><td>1</td><td>캘리브 데이터가 전부</td><td>특정 조건(야간/역광)만 급락</td><td>조건별 분리 정확도 + <code>calib_coverage.py</code></td><td><a href="03_quantization_theory.html">03</a></td></tr><tr><td>2</td><td>전처리 불일치</td><td>에러 없이 정확도만 죽음</td><td><code>preprocess_parity.py</code> 바이트 비교</td><td><a href="03_quantization_theory.html">03</a>, <a href="05_tensorrt.html">05</a></td></tr><tr><td>3</td><td>export ≠ 칩 동작</td><td>컴파일/실행에서 op 미지원</td><td><code>polygraphy inspect capability</code></td><td><a href="04_transformer_quantization.html">04</a>, <a href="06_multi_soc.html">06</a></td></tr><tr><td>4</td><td>fallback 지옥</td><td>가속기인데 더 느림</td><td>offload 비율·subgraph 개수</td><td><a href="06_multi_soc.html">06</a></td></tr><tr><td>5</td><td>C++ 회피</td><td>plugin/런타임에서 막힘</td><td>벤더 IPluginV3 template 빌드 여부</td><td><a href="05_tensorrt.html">05</a>, <a href="07_infrastructure.html">07</a></td></tr></tbody></table></div>
+<hr>
+<h2 id="실무-체크리스트-양자화-전후-반드시-확인">실무 체크리스트 (양자화 전/후 반드시 확인)</h2>
+<p>프로젝트마다 아래를 복사해 채운다. <code>design_rules.md</code>(<a href="07_infrastructure.html">07_infrastructure.md</a>, <a href="09_roadmap.html">09_roadmap.md</a> 12주)에 그대로 편입 가능. 각 항목 옆의 <strong>근거</strong>는 "왜 이걸 확인하는가"이며, 대응하는 함정 번호를 붙였다.</p>
+<h3 id="양자화-전-pre-quantization">양자화 전 (Pre-quantization)</h3>
+<div class="tablewrap"><table><thead><tr><th>확인</th><th>근거(왜)</th><th>함정</th></tr></thead><tbody><tr><td>- [ ] FP32 <strong>baseline 정확도/지연</strong>을 측정·기록</td><td>baseline 없으면 "손실"을 정의할 수 없다. 모든 판정의 기준선.</td><td>전부</td></tr><tr><td>- [ ] 캘리브 셋이 운영 분포를 대표(조건별 표본, 수백 장, batch≠1)</td><td>캘리브가 안 본 분포는 clipping → 특정 조건 급락.</td><td>1</td></tr><tr><td>- [ ] 학습·캘리브·추론 전처리가 <strong>동일 코드/동일 상수</strong>(mean·std·보간·채널순서·레이아웃)</td><td>분포가 어긋나면 scale이 엉키고 INT8에서 정확도 샘. shape 맞아 에러 없음.</td><td>2</td></tr><tr><td>- [ ] calibration cache가 <strong>현재 전처리로</strong> 생성됨(전처리 바꿨으면 캐시 삭제)</td><td>캐시는 전처리에 종속. 옛 캐시 재사용 시 scale 불일치.</td><td>2</td></tr><tr><td>- [ ] 타깃 백엔드의 <strong>지원 op 목록</strong> 확인, 모델 op가 화이트리스트에 듦</td><td>미지원 op는 빌드 실패 또는 fallback. export 후가 아니라 설계 시 확인.</td><td>3·4</td></tr><tr><td>- [ ] 타깃 EP의 대칭성 요구를 앎(예: GPU/TRT는 symmetric activation+weight)</td><td>EP가 요구하는 양자화 스킴과 안 맞으면 재작업. (<a href="https://onnxruntime.ai/docs/performance/model-optimizations/quantization.html">ONNX Runtime 양자화</a>)</td><td>3</td></tr><tr><td>- [ ] dynamic shape 필요 여부 확정(QNN 등은 dynamic shape 미지원 → 고정 shape export)</td><td>dynamic shape가 세션 생성 자체를 막는 백엔드가 있음.</td><td>3</td></tr></tbody></table></div>
+<h3 id="양자화-후-post-quantization">양자화 후 (Post-quantization)</h3>
+<div class="tablewrap"><table><thead><tr><th>확인</th><th>근거(왜)</th><th>함정</th></tr></thead><tbody><tr><td>- [ ] INT8 정확도를 <strong>전체 + 조건별(야간/역광 등)로 분리</strong> 측정</td><td>전체 한 숫자는 조건별 급락을 숨긴다.</td><td>1</td></tr><tr><td>- [ ] 파이프라인 경계마다 수치 정합성 검증(PyTorch↔ONNX↔백엔드, Polygraphy)</td><td>어느 경계에서 어긋나는지 좁혀야 원인이 잡힘.</td><td>2·3</td></tr><tr><td>- [ ] export 후 <strong>즉시 타깃 컴파일</strong>로 op 지원 확인(<code>polygraphy inspect capability</code>, <code>onnx_export_failures.md</code>)</td><td>미지원 op를 일찍 알수록 우회 시간이 있다.</td><td>3</td></tr><tr><td>- [ ] <strong>offload 비율·subgraph 개수</strong>를 로그로 확인(가속기 이득이 실제로 나는가)</td><td>가속기에 올렸는데 fallback 지옥이면 FP32보다 느림.</td><td>4</td></tr><tr><td>- [ ] custom plugin/런타임 통합의 C++ 경로가 빌드·검증됨(compute-sanitizer 통과)</td><td>칩 위 실행은 C++. plugin이 조용히 틀린 값을 낼 수 있음.</td><td>5</td></tr><tr><td>- [ ] 위 결과가 <strong>회귀 하네스</strong>로 자동 재측정됨(<a href="09_roadmap.html">09_roadmap.md</a> 12주)</td><td>한 번 잡은 함정이 다음 커밋에서 되살아나는 걸 막는다.</td><td>전부</td></tr></tbody></table></div>
+<blockquote class="callout tip">💡 팁: 문제가 생기면 이 순서로 의심하라 — (1) 전처리 일치 → (2) 캘리브 대표성 → (3) op 지원/정합성 → (4) offload 비율. 대부분 상위 두 개에서 잡힌다. 이 순서는 "싸고 흔한 것부터"라서 평균 디버깅 시간이 가장 짧다.</blockquote>
+<hr>
+<h2 id="7-산출물deliverables">7) 산출물(Deliverables)</h2>
+<ul><li class="task"><label><input type="checkbox" data-k="a6cf43eaae"> <code>pitfall_checklist.md</code> — 위 체크리스트를 프로젝트에 맞춰 채운 사본.</label></li><li class="task"><label><input type="checkbox" data-k="34a3bfcedf"> (실습 시) <code>calib_coverage.py</code>, <code>preprocess_parity.py</code> 실행 결과 로그.</label></li><li class="task"><label><input type="checkbox" data-k="729c1c2980"> (실습 시) <code>polygraphy inspect capability --with-partitioning</code> 리포트(미지원 op 목록).</label></li><li class="task"><label><input type="checkbox" data-k="fe9f7cd6b0"> 발견한 실패 사례를 각 산출물 문서(<code>onnx_export_failures.md</code>, <code>four_target_matrix.md</code>)에 반영.</label></li></ul>
+<hr>
+<h2 id="8-참고-사이트-참고문헌">8) 참고 사이트 &amp; 참고문헌</h2>
+<h3 id="공식-문서-도구">공식 문서 / 도구</h3>
+<ul><li><a href="https://onnxruntime.ai/docs/performance/model-optimizations/quantization.html">ONNX Runtime 양자화</a> — static/dynamic PTQ, 대표성 있는 캘리브, EP별 대칭성 요구.</li><li><a href="https://onnxruntime.ai/docs/reference/high-level-design.html">ONNX Runtime 아키텍처(GetCapability/파티셔닝)</a> — subgraph 분할·CPU fallback 원리.</li><li><a href="https://onnxruntime.ai/docs/execution-providers/QNN-ExecutionProvider.html">ONNX Runtime QNN EP</a> — 지원 op 부분집합, dynamic shape/Loop·If 미지원, <code>disable_cpu_ep_fallback</code>.</li><li><a href="https://docs.nvidia.com/deeplearning/tensorrt/">NVIDIA TensorRT 문서</a> — INT8 calibration, custom plugin. (정본 10.16.x LTS)</li><li><a href="https://docs.nvidia.com/deeplearning/tensorrt/latest/inference-library/extending-custom-layers.html">TensorRT custom layers(IPluginV3)</a> — IPluginV3OneCore/Build/Runtime, IPluginCreatorV3One.</li><li><a href="https://github.com/NVIDIA/TensorRT/tree/main/tools/Polygraphy">Polygraphy</a> — 백엔드 간 수치 정합성 검증.</li><li><a href="https://github.com/NVIDIA/TensorRT/tree/main/tools/Polygraphy/examples/cli/inspect">Polygraphy inspect capability 예제</a> — ONNX를 TRT 지원/미지원 subgraph로 분할·리포트.</li><li><a href="https://github.com/leimao/TensorRT-Custom-Plugin-Example">TensorRT-Custom-Plugin-Example</a> — 자기완결형 IPluginV3 예제(함정 5 진입점).</li><li><a href="https://github.com/TexasInstruments/edgeai-tidl-tools">edgeai-tidl-tools</a> — TIDL 오프로드/<code>deny_list</code>, subgraph 디버깅.</li></ul>
+<h3 id="논문">논문</h3>
+<ul><li>Gholami et al. (2021), <em>A Survey of Quantization Methods for Efficient NN Inference</em>, arXiv:2103.13630</li><li>Nagel et al. (2021), <em>A White Paper on Neural Network Quantization</em>, arXiv:2106.08295</li><li>Jacob et al. (2018), <em>Quantization and Training of NN for Efficient Integer-Arithmetic-Only Inference</em>, arXiv:1712.05877</li><li>Xiao et al. (2022), <em>SmoothQuant</em>, arXiv:2211.10438</li></ul>
+<hr>
+<h2 id="9-다음-단계">9) 다음 단계</h2>
+<p>이 문서는 로드맵의 종점이자, 실무에서 계속 되돌아올 참조 문서다. 로드맵을 돌리다 막히면 이 5개 함정부터 대조하라.</p>
+<p>← 이전: <a href="09_roadmap.html">9. 12주 로드맵</a></p>
+<blockquote class="callout">전체 인덱스는 <a href="README.html">README.md</a> 참조(오케스트레이터 작성).</blockquote><div class="pager"><a class="prev" href="09_roadmap.html"><span class="lbl">← 이전</span>12주 로드맵</a><span></span></div>
+<footer>임베디드 AI 양자화 학습 가이드 · 체크 상태는 브라우저에 저장됩니다(localStorage) · 인쇄/PDF: Ctrl/⌘+P</footer>
+</div>
+<script>var PAGE="10_pitfalls";
+(function(){
+  var KEY='embai:'+PAGE;
+  var boxes=document.querySelectorAll('input[type=checkbox][data-k]');
+  var fill=document.getElementById('fill'), pct=document.getElementById('pct');
+  var saved={};try{saved=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){}
+  function upd(){var d=0;boxes.forEach(function(b){if(b.checked)d++});
+    var p=boxes.length?Math.round(d/boxes.length*100):0;
+    if(fill)fill.style.width=p+'%';
+    if(pct)pct.textContent=boxes.length?(d+' / '+boxes.length+'  ('+p+'%)'):'체크리스트 없음';}
+  boxes.forEach(function(b){var k=b.getAttribute('data-k');
+    if(saved[k])b.checked=true;
+    b.addEventListener('change',function(){saved[k]=b.checked;
+      try{localStorage.setItem(KEY,JSON.stringify(saved))}catch(e){};upd();});});
+  upd();
+})();
+</script>
+</body></html>

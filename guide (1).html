@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Embedded AI Engineer 실전 학습 가이드</title>
+<style>
+  :root{
+    --bg:#0f1115; --card:#171a21; --line:#2a2f3a; --tx:#e6e8ec;
+    --dim:#9aa3b2; --acc:#5aa9ff; --ok:#3ecf8e; --warn:#f0b429; --bad:#ff6b6b;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--tx);
+    font-family:-apple-system,"Pretendard","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+    line-height:1.75; font-size:16px;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:48px 24px 120px}
+  header{border-bottom:2px solid var(--acc); padding-bottom:24px; margin-bottom:8px}
+  h1{font-size:2rem; margin:0 0 8px; letter-spacing:-.02em}
+  .sub{color:var(--dim); font-size:.95rem}
+  h2{
+    font-size:1.35rem; margin:56px 0 16px; padding-left:12px;
+    border-left:4px solid var(--acc);
+  }
+  h3{font-size:1.05rem; margin:28px 0 10px; color:var(--acc)}
+  p,li{color:var(--tx)}
+  a{color:var(--acc)}
+
+  .lead{
+    background:var(--card); border:1px solid var(--line); border-left:4px solid var(--warn);
+    padding:18px 20px; border-radius:8px; margin:28px 0;
+  }
+  .card{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:20px 22px; margin:18px 0}
+
+  table{width:100%; border-collapse:collapse; margin:18px 0; font-size:.92rem}
+  th,td{border:1px solid var(--line); padding:10px 12px; text-align:left; vertical-align:top}
+  th{background:#1e222b; color:var(--acc); font-weight:600}
+
+  code{
+    background:#20242e; color:#ffd479; padding:2px 6px; border-radius:4px;
+    font-family:"SFMono-Regular",Consolas,monospace; font-size:.88em;
+  }
+  pre{
+    background:#0b0d11; border:1px solid var(--line); border-radius:8px;
+    padding:16px; overflow-x:auto; font-size:.86rem; line-height:1.6;
+  }
+  pre code{background:none; color:#c8d3e0; padding:0}
+
+  .chk{display:flex; gap:10px; align-items:flex-start; margin:8px 0}
+  .chk input{margin-top:7px; width:16px; height:16px; accent-color:var(--acc); cursor:pointer; flex-shrink:0}
+  .chk label{cursor:pointer}
+  .chk input:checked + label{color:var(--dim); text-decoration:line-through}
+
+  .bar{position:sticky; top:0; background:rgba(15,17,21,.95); backdrop-filter:blur(8px);
+       padding:12px 0; border-bottom:1px solid var(--line); z-index:10; margin-bottom:24px}
+  .bar-in{max-width:960px; margin:0 auto; padding:0 24px; display:flex; align-items:center; gap:14px}
+  .track{flex:1; height:8px; background:#252a34; border-radius:99px; overflow:hidden}
+  .fill{height:100%; width:0; background:linear-gradient(90deg,var(--acc),var(--ok)); transition:width .3s}
+  .pct{font-size:.85rem; color:var(--dim); min-width:90px; text-align:right}
+
+  .ok{color:var(--ok)} .warn{color:var(--warn)} .bad{color:var(--bad)}
+  .tag{display:inline-block; font-size:.72rem; padding:2px 8px; border-radius:99px;
+       background:#252a34; color:var(--dim); margin-left:6px}
+  ul{padding-left:20px} li{margin:6px 0}
+  footer{margin-top:80px; padding-top:20px; border-top:1px solid var(--line); color:var(--dim); font-size:.85rem}
+
+  @media print{
+    body{background:#fff; color:#000}
+    .bar{display:none}
+    .card,.lead{background:#f7f7f7; border:1px solid #ccc}
+    pre{background:#f0f0f0; border:1px solid #ccc}
+    pre code,code{color:#000}
+    h2{border-left-color:#000} h3{color:#000} a{color:#000}
+    th{background:#eee; color:#000}
+  }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <div class="bar-in">
+    <strong style="font-size:.9rem">진행률</strong>
+    <div class="track"><div class="fill" id="fill"></div></div>
+    <span class="pct" id="pct">0 / 0</span>
+  </div>
+</div>
+
+<div class="wrap">
+
+<header>
+  <h1>Embedded AI Engineer 실전 학습 가이드</h1>
+  <div class="sub">멀티카메라 Transformer 인식 모델의 INT8 양자화 · 멀티 SoC 배포 · HW-aware 재설계</div>
+  <div class="sub">대상 SoC: NVIDIA Orin/Thor · TI Jacinto(TDA4) · Qualcomm · Renesas RZ/V</div>
+  <div class="sub" style="margin-top:4px">v2 (2026-07) — 0.5단계 "쉬운 방법부터: 배포 난이도 사다리" 추가 (Edge Impulse · LiteRT · ONNX Runtime · ExecuTorch · Qualcomm AI Hub)</div>
+</header>
+
+<div class="lead">
+  <strong>이 직무의 본질 — 3중 제약 사이의 탐색</strong>
+  <ol style="margin:10px 0 0">
+    <li>정확도 (mAP / IoU)</li>
+    <li>실시간성 (latency / memory / bandwidth)</li>
+    <li><strong>툴체인이 그 op를 먹는가</strong></li>
+  </ol>
+  <p style="margin:12px 0 0">①②는 책으로 배울 수 있지만 <strong>③은 직접 깨져봐야만</strong> 배웁니다.
+  그래서 이 로드맵은 "책 → 실습"이 아니라 <strong>"작은 모델을 실제로 칩(또는 에뮬레이터)에 올려서 깨뜨려보기"</strong>를 축으로 짜여 있습니다.</p>
+</div>
+
+<!-- 0 -->
+<h2>0. 환경 준비 — 보드 없어도 80%는 가능합니다</h2>
+<p>가장 큰 오해가 "SoC 4종 사려면 수천만 원 든다"인데, <strong>컴파일 · 양자화 · 정확도 검증은 대부분 x86 PC에서 됩니다.</strong></p>
+
+<table>
+<tr><th>타깃</th><th>보드 없이 가능</th><th>보드 필요</th></tr>
+<tr><td><strong>NVIDIA Orin</strong></td><td>x86 dGPU에서 TensorRT 빌드 / INT8 캘리브레이션 전 과정</td><td>DLA, 실제 latency</td></tr>
+<tr><td><strong>TI TIDL</strong></td><td>x86 모델 컴파일 + host emulation 추론, 정확도 벤치마크</td><td>실제 성능 측정</td></tr>
+<tr><td><strong>Qualcomm QNN</strong></td><td>x86_64에서 QDQ 양자화 (<code>get_qnn_qdq_config</code>)</td><td>HTP 실행 (AI Hub로 대체 가능)</td></tr>
+<tr><td><strong>Renesas DRP-AI</strong></td><td>DRP-AI TVM 컴파일, Interpreter mode로 양자화 ONNX 정확도 확인, 추론시간 추정</td><td>실제 실행</td></tr>
+</table>
+
+<div class="card">
+  <strong>필요한 것:</strong> RTX GPU 달린 Linux PC + Docker. (Jetson Orin이 있으면 실측까지 완결)
+  <div class="chk"><input type="checkbox" id="c0a"><label for="c0a">Ubuntu + NVIDIA driver + Docker + nvidia-container-toolkit 세팅</label></div>
+  <div class="chk"><input type="checkbox" id="c0b"><label for="c0b">TensorRT / ONNX Runtime / polygraphy 설치</label></div>
+  <div class="chk"><input type="checkbox" id="c0c"><label for="c0c">nuScenes mini 데이터셋 다운로드</label></div>
+</div>
+
+<!-- 0.5 : NEW — 쉬운 방법부터 -->
+<h2>0.5단계 — 쉬운 방법부터: 배포 난이도 사다리 <span class="tag">신규 · 2026 기준</span></h2>
+<p>본 로드맵(TensorRT/TIDL/QNN/DRP-AI)은 난이도 최상급입니다. <strong>"모델을 임베디드에 올린다"는 감각을 가장 빨리 얻는 순서</strong>는 아래 사다리입니다.
+각 레벨을 반나절~며칠 안에 끝내고 다음으로 올라가면, 1단계 이후의 본 커리큘럼이 훨씬 수월해집니다.</p>
+
+<table>
+<tr><th style="width:70px">레벨</th><th>방법</th><th>난이도</th><th>이런 사람에게</th></tr>
+<tr><td>Lv.1</td><td><strong>Edge Impulse</strong> (노코드/로우코드)</td><td class="ok">★☆☆☆☆</td><td>파이프라인 전체를 하루 만에 체험하고 싶을 때</td></tr>
+<tr><td>Lv.2</td><td><strong>LiteRT</strong> (구 TensorFlow Lite) + Raspberry Pi</td><td class="ok">★★☆☆☆</td><td>변환·양자화·온디바이스 추론을 코드로 처음 해볼 때</td></tr>
+<tr><td>Lv.3</td><td><strong>ONNX Runtime</strong> (EP 교체 방식)</td><td class="warn">★★★☆☆</td><td>PyTorch 모델을 여러 하드웨어에 이식하는 감각</td></tr>
+<tr><td>Lv.4</td><td><strong>ExecuTorch</strong> (PyTorch 네이티브)</td><td class="warn">★★★★☆</td><td>ONNX 우회 없이 PyTorch → 엣지 직행 경로</td></tr>
+<tr><td>Lv.5</td><td><strong>벤더 툴체인 직접 공략</strong> (TensorRT/TIDL/QNN/DRP-AI)</td><td class="bad">★★★★★</td><td>본 가이드 1~5단계 = 이 레벨</td></tr>
+</table>
+
+<h3>Lv.1 — Edge Impulse: 가장 쉬운 시작 <span class="tag">반나절</span></h3>
+<ul>
+  <li>웹 UI에서 데이터 수집 → 학습 → <strong>양자화(INT8 TFLite)까지 자동</strong> → 보드용 펌웨어/라이브러리로 원클릭 배포. 최적화 고민 없이 전체 파이프라인을 경험하는 데 최적.</li>
+  <li>2025년 <strong>Qualcomm이 인수</strong>하여 Dragonwing 계열 보드 + Hexagon NPU(QNN) 배포까지 공식 지원 — 즉 Lv.1에서 시작해도 나중에 본 가이드의 QNN 트랙과 자연스럽게 연결됨.</li>
+  <li>BYOM(Bring Your Own Model): 직접 만든 ONNX/TFLite 모델을 업로드해 NPU 가속 배포도 가능.</li>
+  <li>보드: 갖고 있는 Raspberry Pi, Arduino Nano 33 BLE Sense 등 아무거나. 없으면 스마트폰도 타깃이 됨.</li>
+</ul>
+<div class="chk"><input type="checkbox" id="c05a"><label for="c05a">Edge Impulse로 키워드 인식(또는 이미지 분류) 모델을 만들어 보드/폰에 배포, INT8 자동 양자화 결과 확인</label></div>
+
+<h3>Lv.2 — LiteRT (구 TFLite): 코드로 하는 첫 변환 <span class="tag">2~3일</span></h3>
+<ul>
+  <li>2024년 TensorFlow Lite가 <strong>LiteRT</strong>로 개명 (TFLite Micro → LiteRT Micro). 임베디드 툴체인 중 가장 성숙하고 자료가 많음.</li>
+  <li>흐름: Keras/TF 모델 → <code>tf.lite.TFLiteConverter</code> → <code>.tflite</code> → Raspberry Pi에서 Python 인터프리터로 추론.</li>
+  <li>여기서 처음으로 <strong>post-training quantization 옵션을 직접 켜보는 것</strong>이 핵심 — representative dataset을 넣어 INT8 변환 후 정확도 변화를 눈으로 확인.</li>
+</ul>
+<pre><code>converter = tf.lite.TFLiteConverter.from_saved_model(path)
+converter.optimizations = [tf.lite.Optimize.DEFAULT]
+converter.representative_dataset = rep_data_gen   # ← 1단계 '캘리브레이션' 개념의 축소판
+tflite_int8 = converter.convert()</code></pre>
+<div class="chk"><input type="checkbox" id="c05b"><label for="c05b">MobileNet류를 LiteRT로 INT8 변환 → Pi(또는 PC)에서 FP32 vs INT8 정확도/속도 비교</label></div>
+
+<h3>Lv.3 — ONNX Runtime: "한 모델, 여러 하드웨어"의 원형 <span class="tag">3~5일</span></h3>
+<ul>
+  <li>PyTorch/TF 어디서 학습했든 ONNX로 내보내면 <strong>Execution Provider(EP) 한 줄 교체</strong>로 CPU → CUDA → TensorRT EP → QNN EP → OpenVINO를 오갈 수 있음. 지원 하드웨어 폭이 가장 넓은 중립 지대.</li>
+  <li>본 가이드 4단계(멀티 SoC)의 <strong>미니어처 버전</strong>: EP를 바꿔가며 latency를 재보면 "같은 ONNX, 다른 백엔드" 감각이 바로 생김.</li>
+  <li>단, 양자화·NPU 최적화는 벤더 네이티브 런타임(LiteRT/ExecuTorch/벤더 SDK)이 보통 한두 발 앞서 있다는 한계도 함께 체감할 것.</li>
+</ul>
+<div class="chk"><input type="checkbox" id="c05c"><label for="c05c">ResNet/YOLO를 ONNX export → CPU EP vs (가능하면) CUDA/TensorRT EP latency 비교표 작성</label></div>
+
+<h3>Lv.4 — ExecuTorch: PyTorch 진영의 정식 엣지 경로 <span class="tag">1주</span></h3>
+<ul>
+  <li>Meta의 온디바이스 런타임, 2025년 말 <strong>v1.0 GA</strong>. 기본 풋프린트 ~50KB로 MCU부터 스마트폰까지, 하드웨어 백엔드 12개 이상(XNNPACK/QNN/CoreML 등).</li>
+  <li>기존의 "PyTorch → ONNX → TFLite" 우회 없이 <code>torch.export</code>로 직행 — 자율주행 R&D처럼 PyTorch 중심 파이프라인이면 특히 자연스러움.</li>
+  <li>아직 성숙 중이라 일부 op 미지원 → 여기서 처음으로 <strong>"export가 깨지는 경험"</strong>을 하게 되는데, 이것이 2단계(Transformer 양자화 지옥)의 예고편.</li>
+</ul>
+<div class="chk"><input type="checkbox" id="c05d"><label for="c05d">작은 PyTorch 모델을 torch.export → ExecuTorch(XNNPACK)로 폰/PC에서 실행</label></div>
+
+<div class="card">
+  <strong>보드 없이 실기기 성능까지: Qualcomm AI Hub</strong><br>
+  모델을 업로드하면 <strong>클라우드에 물려 있는 실제 단말</strong>에서 컴파일·프로파일링·정확도 검증을 해줌.
+  QNN 트랙(4단계)의 "HTP 실행은 보드 필요" 항목을 보드 구매 없이 상당 부분 대체 가능 — 0단계 표의 AI Hub 언급이 바로 이것.
+</div>
+
+<div class="lead">
+  <strong>사다리의 요점</strong> — Lv.1~4는 전부 합쳐도 2~3주면 끝납니다. 이 과정에서
+  <em>변환 → 양자화 → 배포 → fallback</em>이라는 동일한 뼈대를 낮은 난이도에서 4번 반복하게 되고,
+  그 다음에 본 커리큘럼(1~5단계)으로 들어가면 "처음 보는 개념"이 거의 없는 상태가 됩니다.
+  이미 TensorRT/ONNX 경험이 있다면 Lv.1~2는 건너뛰고 <strong>Lv.3부터</strong> 시작해도 됩니다.
+</div>
+
+<!-- 1 -->
+<h2>1단계 — 양자화 이론 <span class="tag">1~2주</span></h2>
+<h3>손으로 유도할 수 있어야 하는 것</h3>
+<pre><code>q = round(x / s) + z      # s: scale, z: zero-point
+x̂ = s * (q - z)           # dequant</code></pre>
+<ul>
+  <li><strong>symmetric vs asymmetric</strong> / <strong>per-tensor vs per-channel</strong><br>
+  → weight는 per-channel symmetric, activation은 per-tensor asymmetric. <strong>왜 그런지</strong> 설명 못 하면 면접에서 걸립니다.</li>
+  <li><strong>QDQ 그래프</strong>: Q-DQ 노드 쌍이 박힌 ONNX. 요즘 모든 툴체인의 공용어.</li>
+  <li><strong>캘리브레이션</strong>: MinMax / Percentile(99.9%) / <strong>Entropy(KL)</strong> / MSE</li>
+  <li><strong>QAT</strong>: fake quant + <strong>STE</strong> — round의 gradient를 어떻게 통과시키는가</li>
+</ul>
+
+<h3>읽을 것 (3개면 충분)</h3>
+<div class="chk"><input type="checkbox" id="c1a"><label for="c1a">Gholami et al., <em>A Survey of Quantization Methods for Efficient NN Inference</em> (2021)</label></div>
+<div class="chk"><input type="checkbox" id="c1b"><label for="c1b">Nagel et al., <em>A White Paper on Neural Network Quantization</em> (Qualcomm, 2021) — AdaRound / CLE / Bias Correction</label></div>
+<div class="chk"><input type="checkbox" id="c1c"><label for="c1c">Jacob et al., <em>Integer-Arithmetic-Only Inference</em> (2018) — 원조</label></div>
+
+<h3>실습</h3>
+<pre><code>ResNet18 → ONNX → INT8 PTQ (MinMax / Entropy 각각)
+→ ImageNet-val 1000장 top-1 비교
+→ 레이어별 SNR / 코사인 유사도 → "어느 레이어가 범인인지" 특정</code></pre>
+<div class="chk"><input type="checkbox" id="c1d"><label for="c1d"><strong>산출물:</strong> <code>layer_sensitivity.csv</code> — mixed precision의 근거가 됨</label></div>
+
+<!-- 2 -->
+<h2>2단계 — Transformer 양자화 지옥 <span class="tag">2~3주 · 핵심</span></h2>
+<p>CNN 양자화는 거의 풀린 문제입니다. <strong>이 JD가 사람을 못 구하는 이유는 Transformer 때문입니다.</strong></p>
+
+<h3>왜 Transformer가 INT8에서 깨지는가</h3>
+<table>
+<tr><th>문제</th><th>원인</th><th>대응</th></tr>
+<tr><td>LayerNorm</td><td>채널별 activation outlier가 극심 → per-tensor scale이 outlier에 끌려감</td><td>SmoothQuant, per-channel, FP16 유지</td></tr>
+<tr><td>Softmax</td><td>출력이 [0,1]에 몰림, exp가 dynamic range 폭발</td><td>보통 INT8 금지 → FP16 fallback</td></tr>
+<tr><td>GELU</td><td>음수 구간 비선형 → INT8 정보 손실</td><td>LUT 근사 또는 ReLU/HardSwish 교체</td></tr>
+<tr><td>QK<sup>T</sup> / SV matmul</td><td><strong>activation×activation</strong> 곱 (weight×activation이 아님) → 양쪽 다 dynamic</td><td>별도 캘리브레이션, 종종 FP16</td></tr>
+</table>
+
+<h3>읽을 것</h3>
+<div class="chk"><input type="checkbox" id="c2a"><label for="c2a"><strong>SmoothQuant</strong> (Xiao et al., 2022) — activation outlier를 weight로 밀어넣는 트릭. 필독.</label></div>
+<div class="chk"><input type="checkbox" id="c2b"><label for="c2b">FQ-ViT / PTQ4ViT / RepQ-ViT — ViT 양자화 3부작</label></div>
+<div class="chk"><input type="checkbox" id="c2c"><label for="c2c">DETR·BEVFormer 계열 양자화 최근 논문 (decoder가 특히 까다로움)</label></div>
+
+<h3 class="bad">BEV / Occupancy 특유의 지뢰</h3>
+<ul>
+  <li><code>grid_sample</code> — BEV 뷰 변환의 핵심 op. TIDL에서는 grid가 경계를 벗어날 때 값이 틀어지는 알려진 버그가 있을 만큼 지원이 불안정하고, NPU에서는 아예 미지원인 경우가 많음.</li>
+  <li><strong>Deformable Attention</strong> (BEVFormer의 심장) — 대부분의 임베디드 툴체인에서 <strong>커스텀 플러그인을 직접 작성</strong>해야 함. TensorRT plugin(C++/CUDA) 작성 경험이 이 직무의 강력한 차별점.</li>
+  <li><code>scatter</code> / <code>gather</code> / dynamic shape — voxelization·pooling에 필수인데 NPU가 극도로 싫어함.</li>
+  <li>TIDL은 self-attention 블록이 있는 QDQ 모델이 컴파일 단계에서 에러를 내는 사례가 릴리스 노트에 올라올 정도. 즉 <strong>"Transformer + 자동차 NPU"는 아직 진행형 문제</strong>이고, 그래서 이 자리를 뽑는 것.</li>
+</ul>
+
+<h3>실습</h3>
+<pre><code>DETR (또는 BEVFormer-tiny) → ONNX export 시도
+→ 100% 실패 → 실패 로그 전부 기록
+→ 하나씩 해결: op 치환, shape 고정, deformable attn 분해
+→ INT8 PTQ → mAP 폭락 확인 → mixed precision으로 회복</code></pre>
+<div class="chk"><input type="checkbox" id="c2d"><label for="c2d"><strong>산출물:</strong> <code>onnx_export_failures.md</code> — "무엇이 왜 깨졌고 어떻게 우회했는가". <strong>이 문서 자체가 포트폴리오</strong>이자 design rules의 원형.</label></div>
+
+<!-- 3 -->
+<h2>3단계 — TensorRT로 첫 완주 <span class="tag">2~3주</span></h2>
+<p>Orin이 있다면 여기서 시작하는 게 현실적. 다른 SoC도 개념은 90% 동일합니다.</p>
+
+<h3>배울 것</h3>
+<ul>
+  <li><code>trtexec</code> — profiling의 절반이 여기서 끝남<br>
+    <code>--int8 --fp16 --best --dumpProfile --separateProfileRun</code></li>
+  <li><strong><code>polygraphy</code></strong> — FP32 vs INT8 레이어별 출력 비교. 정확도 디버깅 필수품.</li>
+  <li>TensorRT INT8 캘리브레이터(<code>IInt8EntropyCalibrator2</code>) 직접 구현</li>
+  <li>TensorRT Model Optimizer / pytorch-quantization — QAT + QDQ export</li>
+  <li><strong>DLA</strong>: INT8/FP16만, 지원 레이어가 GPU보다 훨씬 좁음 → <strong>GPU-DLA 파티셔닝</strong>.<br>
+    <code>--useDLACore=0 --allowGPUFallback</code> 으로 fallback 확인 →
+    <span class="warn">fallback이 많으면 메모리 복사 오버헤드로 오히려 느려짐</span></li>
+  <li>Nsight Systems / Nsight Compute — 커널 단위 병목</li>
+</ul>
+
+<h3>실습</h3>
+<div class="chk"><input type="checkbox" id="c3a"><label for="c3a">YOLO류 detector: FP32 → FP16 → INT8, latency/mAP 3점 비교</label></div>
+<div class="chk"><input type="checkbox" id="c3b"><label for="c3b">동일 모델을 GPU-only / DLA-only / 하이브리드 3가지로 빌드</label></div>
+<div class="chk"><input type="checkbox" id="c3c"><label for="c3c">DLA fallback 레이어 목록 추출 → 유발 op 치환 → <strong>fallback 0 만들기</strong> (HW-aware redesign의 미니 버전)</label></div>
+<div class="chk"><input type="checkbox" id="c3d"><label for="c3d">TensorRT custom plugin 직접 작성 (예: deformable attention) — <span class="ok">진짜 차별점</span></label></div>
+
+<!-- 4 -->
+<h2>4단계 — 멀티 SoC 확장 <span class="tag">3~4주</span></h2>
+<p><strong>같은 ONNX 하나를 4개 백엔드에 밀어넣습니다.</strong> JD의 "multi-target deployment pipeline"이 정확히 이것.</p>
+
+<h3>TI TIDL</h3>
+<pre><code>git clone https://github.com/TexasInstruments/edgeai-tidl-tools
+# Docker → x86 컴파일 → host emulation 추론</code></pre>
+<ul>
+  <li>8-bit / 16-bit / mixed precision 지원. <strong>8-bit 우선</strong> → 정확도 갭 보이면 mixed 또는 16-bit로 상향.</li>
+  <li>PTQ 실패 시 → QAT 또는 pre-quantized(QDQ ONNX / TFLite)를 넣어 TIDL 캘리브레이션 단계를 우회.</li>
+  <li><strong>핵심:</strong> 어떤 레이어가 TIDL에 offload되고 어떤 게 ARM CPU로 fallback되는지 로그에서 읽어내기. fallback이 많으면 subgraph가 잘게 쪼개지고 성능이 무너짐.</li>
+</ul>
+
+<h3>Qualcomm QNN</h3>
+<pre><code>from onnxruntime.quantization.execution_providers.qnn import (
+    get_qnn_qdq_config, qnn_preprocess_model
+)</code></pre>
+<ul>
+  <li>HTP 백엔드는 <strong>양자화된 모델만</strong> 실행. FP32는 반드시 8/16-bit 정수로 먼저 양자화.</li>
+  <li>QNN EP는 ONNX op의 <strong>부분집합만</strong> 지원 (Loop, If 미지원). 양자화 유틸은 x86_64에서만 동작.</li>
+  <li><strong>context binary</strong>(사전 컴파일된 그래프 캐시) 개념 → 초기화 시간 최적화 논의 가능.</li>
+</ul>
+
+<h3>Renesas DRP-AI</h3>
+<pre><code>git clone https://github.com/renesas-rz/rzv_drp-ai_tvm
+python3 compile_onnx_model_quant.py model.onnx -o out \
+    -t $SDK -d $TRANSLATOR -c $QUANTIZER --images ./calib/</code></pre>
+<ul>
+  <li>RZ/V2H의 DRP-AI MAC은 <strong>INT8 연산만</strong> 수행 → translation 전에 반드시 양자화.</li>
+  <li>DRP-AI는 <strong>feed-forward 전용</strong> — RNN/LSTM/GRU 등 루프/재귀 구조 매핑 불가.
+      DRP-AI3 양자화는 모든 노드 입력이 각자의 initializer를 가질 것을 요구.
+      <span class="ok">← 이런 게 바로 design rules에 들어갈 항목</span></li>
+  <li>DRP-AI TVM은 TVM 기반이라 미지원 레이어를 CPU에 위임 → <strong>CPU 위임이 늘수록 느려짐</strong> (TIDL과 동일 구조의 문제).</li>
+  <li>캘리브레이션 이미지의 <strong>전처리(mean/std)를 학습 때와 정확히 일치</strong>시키지 않으면 정확도가 조용히 무너짐. 실무 최다 실수.</li>
+</ul>
+
+<div class="lead">
+  <strong>이 단계의 진짜 교훈</strong><br>
+  4개를 다 해보면 <strong>"툴체인은 달라도 문제는 똑같다"</strong>는 걸 체득하게 됩니다.
+  <p style="margin:10px 0 0"><code>ONNX 표준 op → 벤더 지원 부분집합 → 그 중 INT8 가능한 부분집합 → 나머지는 CPU fallback → <strong>fallback 최소화가 전부</strong></code></p>
+  <p style="margin:10px 0 0">이 문장을 <em>자기 경험</em>으로 말할 수 있으면 면접은 통과입니다.</p>
+</div>
+
+<!-- 5 -->
+<h2>5단계 — 인프라화 <span class="tag">시니어와 갈리는 지점</span></h2>
+<p>혼자 튜닝하는 사람과 <strong>조직에 시스템을 남기는 사람</strong>의 차이.</p>
+
+<pre><code>bench/
+├── models/          # 모델 정의 + FP32 체크포인트
+├── calib/           # 캘리브레이션 데이터셋 (대표성 확보!)
+├── backends/
+│   ├── trt.py       # 빌드 → 실행 → latency/mem 수집
+│   ├── tidl.py
+│   ├── qnn.py
+│   └── drpai.py
+├── report/          # SoC × precision × latency × mAP 매트릭스 자동 생성
+└── ci.yml           # 커밋마다 회귀 테스트, mAP 1% 이상 하락 시 실패</code></pre>
+
+<h3>핵심 산출물 3개</h3>
+<div class="chk"><input type="checkbox" id="c5a"><label for="c5a"><strong>성능 매트릭스</strong> (모델 × SoC × precision → latency / peak mem / mAP)</label></div>
+<div class="chk"><input type="checkbox" id="c5b"><label for="c5b"><strong><code>design_rules.md</code></strong> — JD가 명시적으로 요구한 그것</label></div>
+<div class="chk"><input type="checkbox" id="c5c"><label for="c5c"><strong>decision log</strong> — "왜 이 레이어를 FP16으로 남겼는가"의 기록</label></div>
+
+<div class="card">
+<strong>design_rules.md 예시</strong>
+<pre><code><span class="ok">✅ 권장</span>  Conv + BN + ReLU (fusable, per-channel quantizable)
+<span class="warn">⚠️ 주의</span>  LayerNorm (SmoothQuant 필수) / GELU (LUT 근사)
+<span class="bad">❌ 금지</span>  grid_sample (TIDL 불안정) / dynamic shape / Loop·If (QNN 미지원)
+📏 제약  BEV grid 200×200 초과 시 SRAM 초과 → 128×128 권장
+📏 제약  DRP-AI: feed-forward only, 모든 노드 입력에 initializer 필요</code></pre>
+</div>
+
+<!-- capstone -->
+<h2>캡스톤 프로젝트 — 이거 하나면 지원 가능</h2>
+<div class="lead">
+  <strong>"nuScenes mini 기반 멀티카메라 BEV detector를 4개 타깃에 배포하고 성능/정확도를 비교한다"</strong>
+</div>
+<pre><code>BEVDet / BEVFormer-tiny / PETR (택1, 가벼운 것부터)
+  → PyTorch → ONNX (deformable attn 처리)
+  → INT8 PTQ (Entropy calib, 200 프레임)
+  → 레이어 민감도 분석 → mixed precision 튜닝
+  → TensorRT(Orin, GPU+DLA) / TIDL(host emu) / QNN(x86 QDQ) / DRP-AI TVM
+  → 성능 대시보드 + design_rules.md + 실패 로그
+  → GitHub 공개 + 기술 블로그 5편</code></pre>
+<p>완주하면 JD의 ①②③④를 <strong>전부</strong> 커버합니다. 그리고 이 조합을 공개적으로 해놓은 사람은 국내에 거의 없습니다.</p>
+
+<!-- roadmap -->
+<h2>12주 로드맵</h2>
+<table>
+<tr><th style="width:80px">주차</th><th>할 일</th><th>산출물</th></tr>
+<tr><td>워밍업<br>(0, 선택)</td><td>난이도 사다리 Lv.1~4 (Edge Impulse → LiteRT → ONNX Runtime → ExecuTorch)</td><td>첫 온디바이스 배포 경험, FP32/INT8 비교 메모</td></tr>
+<tr><td>1–2</td><td>양자화 이론 + ResNet PTQ 실습</td><td><code>layer_sensitivity.csv</code></td></tr>
+<tr><td>3–5</td><td>Transformer 양자화 (SmoothQuant, ViT/DETR)</td><td><code>onnx_export_failures.md</code></td></tr>
+<tr><td>6–8</td><td>TensorRT 완주 (INT8 / DLA / custom plugin)</td><td>Orin 성능 리포트</td></tr>
+<tr><td>9–11</td><td>TIDL / QNN / DRP-AI 확장</td><td>4-target 성능 매트릭스</td></tr>
+<tr><td>12</td><td>인프라화 + 문서화</td><td><code>design_rules.md</code>, 회귀 하네스</td></tr>
+</table>
+
+<!-- pitfalls -->
+<h2>함정 5개 — 미리 알면 시간 아낍니다</h2>
+<ol>
+  <li><strong>캘리브레이션 데이터가 전부다.</strong> 야간·터널·역광이 빠진 캘리브 셋으로 양자화하면 딱 그 상황에서 무너집니다.</li>
+  <li><strong>전처리 불일치.</strong> 학습 때 mean/std ≠ 캘리브 때 mean/std → 조용히 정확도가 죽습니다.</li>
+  <li><strong>"ONNX export 성공" ≠ "칩에서 동작".</strong> export는 시작일 뿐입니다.</li>
+  <li><strong>fallback 지옥.</strong> subgraph가 20개로 쪼개지면 FP32보다 느려질 수도 있습니다. 항상 <strong>offload 비율</strong>부터 확인.</li>
+  <li><strong>C++를 피하지 마세요.</strong> 커스텀 플러그인 · 런타임 통합 · 메모리 최적화는 전부 C++입니다. JD가 C/C++를 필수로 박아둔 이유.</li>
+</ol>
+
+<footer>
+  Embedded AI Engineer 학습 가이드 · 체크 상태는 브라우저에 자동 저장됩니다 (localStorage).<br>
+  인쇄 / PDF 저장: <code>Ctrl+P</code> (Mac: <code>⌘+P</code>)
+</footer>
+
+</div>
+
+<script>
+(function(){
+  const boxes = document.querySelectorAll('input[type=checkbox]');
+  const fill = document.getElementById('fill');
+  const pct  = document.getElementById('pct');
+  const KEY  = 'embai_guide_v1';
+  let saved = {};
+  try { saved = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch(e){}
+
+  function update(){
+    let done = 0;
+    boxes.forEach(b => { if(b.checked) done++; });
+    const p = boxes.length ? Math.round(done / boxes.length * 100) : 0;
+    fill.style.width = p + '%';
+    pct.textContent = done + ' / ' + boxes.length + '  (' + p + '%)';
+  }
+
+  boxes.forEach(b => {
+    if (saved[b.id]) b.checked = true;
+    b.addEventListener('change', () => {
+      saved[b.id] = b.checked;
+      try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch(e){}
+      update();
+    });
+  });
+  update();
+})();
+</script>
+
+</body>
+</html>

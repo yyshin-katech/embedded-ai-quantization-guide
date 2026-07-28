@@ -1,0 +1,977 @@
+# 1. 양자화 이론 (Quantization Theory)
+
+> **원본 가이드 매핑**: "1단계 — 양자화 이론 (1~2주)"
+> **예상 소요**: 1~2주 (이론 3~4일 + 실습 3~4일)
+> **선행 조건**: [0.5단계 배포 사다리](02_deployment_ladder.md) 완료 · Ubuntu 22.04 + NVIDIA RTX GPU · Python 3.10+ / PyTorch / CUDA 12.8 동작 확인
+
+---
+
+## 0) 이 단계에서 무엇을·왜 하는가
+
+임베디드 AI 엔지니어 면접에서 **가장 먼저 검증되는 것이 양자화 수식**이다. "INT8로 줄이면 빨라진다"는 누구나 안다. 하지만 `q = round(x/s) + z`를 화이트보드에 유도하고, "왜 weight는 per-channel symmetric이고 activation은 per-tensor asymmetric인가"를 5분 안에 설명하지 못하면 그 자리에서 탈락한다.
+
+이 단계의 목표는 두 가지다.
+
+1. **손으로 유도할 수 있는 수준**의 이론 내재화 — scale/zero-point, symmetric/asymmetric, per-tensor/per-channel, QDQ 그래프, 캘리브레이션 4종, QAT+STE. 단순 암기가 아니라 **"양자화 오차 = rounding error + clipping error"라는 오차 분해**에서 모든 결정(scale 선택, 캘리브레이션 방법, per-channel 여부)이 왜 나오는지를 하나의 논리로 꿴다.
+2. **범인 레이어를 특정하는 실전 감각** — ResNet18을 실제로 INT8 PTQ 하고, 캘리브레이터(MinMax vs Entropy vs Percentile)에 따라 top-1이 어떻게 달라지는지, 그리고 **어느 레이어가 정확도를 깎아먹는지**를 SQNR/코사인 유사도로 정량화한다.
+
+이 단계의 산출물 `layer_sensitivity.csv`는 **이후 모든 단계(2단계 Transformer 양자화, 3단계 TensorRT mixed precision)에서 "어디를 FP16으로 남길지" 결정하는 입력**이 된다. 즉, 여기서 만드는 감도 분석 방법론은 재사용된다. 이 CSV는 **이 문서의 1단계 실습(4.5절)이 직접 생성**한다.
+
+> 💡 **팁**: 이 단계는 보드가 필요 없다. x86 PC(RTX GPU)에서 100% 완결된다. ONNX Runtime의 CPU/CUDA만으로 PTQ와 정확도 평가가 끝난다.
+
+### 이 단계를 관통하는 한 문장
+
+> **양자화란 "연속 실수축을 균등한 정수 격자에 스냅(snap)하는" 것이고, 정확도 손실은 오직 두 곳에서만 발생한다 — (1) 격자 안에서 가장 가까운 눈금으로 반올림할 때(rounding), (2) 격자 밖으로 삐져나간 값을 격자 끝으로 잘라낼 때(clipping).** 이 두 오차는 서로 상충(trade-off)하며, scale `s` 하나가 그 균형점을 결정한다.
+
+이 문장을 손에 쥐고 있으면 2.1~2.4절의 모든 내용이 "그래서 이 오차를 어떻게 줄이나"의 변주로 읽힌다.
+
+---
+
+## 1) 학습 목표 & 완료 체크리스트
+
+- [ ] `q = round(x/s) + z` 와 `x̂ = s·(q − z)` 를 백지에 유도하고, s·z를 min/max로부터 계산할 수 있다.
+- [ ] **양자화 오차를 rounding error와 clipping error로 분해**하고, scale을 키우면/줄이면 각 항이 어떻게 움직이는지(trade-off) 수식과 수치 예로 설명할 수 있다.
+- [ ] symmetric vs asymmetric, per-tensor vs per-channel을 표로 설명하고 **"weight=per-channel symmetric, activation=per-tensor asymmetric"인 이유**를 채널별 분포 수치 예와 함께 서술할 수 있다.
+- [ ] QDQ 그래프가 무엇이며 왜 "모든 툴체인의 공용어"인지 설명하고, ONNX 안의 `QuantizeLinear`/`DequantizeLinear` 노드 쌍을 읽을 수 있다.
+- [ ] 캘리브레이션 4종(MinMax / Percentile / Entropy(KL) / MSE)의 원리·장단·언제 쓰는지를 비교표로 설명하고, **특히 Entropy(KL)의 히스토그램 구성 → 후보 threshold별 KL 최소화 절차를 의사코드 수준으로** 설명할 수 있다.
+- [ ] QAT의 fake-quant와 STE(Straight-Through Estimator)를 `torch.autograd.Function`으로 구현하고, 미니 학습 루프(옵티마이저·손실)로 돌릴 수 있다. LSQ(learnable scale)가 무엇인지 한 문장으로 말할 수 있다.
+- [ ] ResNet18을 ONNX로 export하고, ONNX Runtime `quantize_static`으로 INT8 PTQ(MinMax/Entropy/Percentile, per-channel 옵션)를 수행.
+- [ ] ImageNet-val 1000장으로 FP32 vs INT8(각 캘리브레이션) top-1을 비교하고, **표본 수에 따른 신뢰구간**을 계산해 "이 차이가 통계적으로 유의한가"를 판단할 수 있다.
+- [ ] 레이어별 SQNR/코사인 유사도를 계산해 **`layer_sensitivity.csv`** 를 생성(다음 단계 입력)하고, **어떤 임계로 FP16 승격을 결정하는지** 서술할 수 있다.
+- [ ] 논문 3편(Gholami / Nagel / Jacob)을 읽고 각 1문단으로 요약.
+
+---
+
+## 2) 배경 이론 / 개념
+
+### 2.1 균등 아핀 양자화 (Uniform Affine Quantization)
+
+실수(FP32) 텐서 `x`를 정수 `q`로 매핑하는 가장 기본 공식:
+
+```
+양자화 (quantize):    q = clamp( round(x / s) + z,  q_min,  q_max )
+역양자화 (dequantize): x̂ = s · (q − z)
+```
+
+- **s (scale)**: 실수 한 스텝의 크기(격자 눈금 간격). `s = (real_max − real_min) / (q_max − q_min)`
+- **z (zero-point)**: 실수 0이 매핑되는 정수 값. `z = q_min − round(real_min / s)`
+- **clamp**: `q`를 표현 가능한 정수 범위 `[q_min, q_max]`로 자름 (INT8 signed면 `[-128, 127]`, unsigned면 `[0, 255]`).
+
+#### 왜 이 공식인가 (유도)
+
+우리가 원하는 것은 **실수 구간 `[β, α]`(β=real_min, α=real_max)를 정수 구간 `[q_min, q_max]`에 1차(아핀) 함수로 겹치는 것**이다. 아핀 함수는 `q = a·x + b` 꼴이고, 두 끝점이 대응해야 하므로:
+
+```
+q_max = a·α + b       ...(끝 대 끝)
+q_min = a·β + b       ...(시작 대 시작)
+```
+
+두 식을 빼면 `q_max − q_min = a·(α − β)` → 기울기 `a = (q_max − q_min)/(α − β)`. 그런데 우리는 반대 방향(정수→실수 눈금 간격)을 `s`로 정의하는 게 하드웨어에 편하므로 `s ≡ 1/a = (α − β)/(q_max − q_min)`, 즉 `a = 1/s`. 이제 절편은 아래쪽 끝점 식에서 `b = q_min − a·β = q_min − β/s`. `z ≡ b`로 두면:
+
+```
+q = x/s + z,   z = q_min − β/s = q_min − round(real_min / s)
+```
+
+`round`와 `clamp`는 "실수축의 아핀 이미지"를 **정수 격자에 스냅**하고 **표현 범위 밖을 잘라내기** 위해 뒤에 씌운 것이다. 역함수는 `q = x/s + z`에서 `x`를 풀면 `x̂ = s·(q − z)`. 이렇게 `s`와 `z`가 min/max에서 유일하게 결정된다.
+
+> 💡 **직관**: `s`는 "자의 눈금 간격", `z`는 "자를 어디서부터 세느냐(원점 위치)"다. symmetric은 자의 원점(정수 0)을 실수 0에 못 박은 것(z를 고정), asymmetric은 자를 좌우로 밀어 실제 데이터에 딱 맞춘 것(z를 자유롭게).
+
+**유도 예시 (asymmetric, uint8):** 활성값 범위가 `real_min = -1.0`, `real_max = 3.0`, uint8이면 `q_min=0, q_max=255`.
+
+```
+s = (3.0 - (-1.0)) / (255 - 0) = 4.0 / 255 ≈ 0.01569
+z = 0 - round(-1.0 / 0.01569) = 0 - round(-63.75) = 0 - (-64) = 64
+```
+→ 실수 `x = 0.5` 는 `q = round(0.5/0.01569) + 64 = round(31.9) + 64 = 32 + 64 = 96`.
+→ 다시 `x̂ = 0.01569 · (96 - 64) = 0.01569 · 32 = 0.502` (양자화 오차 ≈ 0.002).
+
+> 💡 **팁**: 여기서 발생하는 `x - x̂` 가 **양자화 노이즈**다. 캘리브레이션과 QAT는 전부 "이 노이즈를 어떻게 줄이느냐"의 문제다.
+
+### 2.1.1 양자화 오차의 분해 — rounding error vs clipping error
+
+이 절이 이 문서에서 가장 중요하다. 양자화 오차 `e(x) = x − x̂` 를 **두 성분으로 완전히 분리**하면, scale 선택·캘리브레이션·per-channel의 모든 이유가 한 줄로 설명된다.
+
+임의의 실수 `x`에 대해:
+
+```
+                ┌ x가 표현 범위 [β, α] 안에 있으면 → rounding error(반올림 오차)
+e(x) = x − x̂ = ┤
+                └ x가 범위 밖이면            → clipping error(포화 오차)
+```
+
+**(A) Rounding error (반올림 오차).** 범위 **안**의 값은 가장 가까운 격자 눈금(간격 `s`)으로 스냅되므로, 오차는 `[−s/2, +s/2]` 구간에 갇힌다. 값이 격자 안에서 "고르게 퍼져 있다"고 가정하면(uniform 근사), 반올림 오차는 폭 `s`인 균등분포이고 그 분산은 잘 알려진 결과:
+
+```
+Var(rounding error) = s² / 12       (균등분포 [−s/2, s/2]의 분산)
+```
+
+→ **핵심: scale `s`가 작을수록(격자가 촘촘) 반올림 오차는 작아진다. 오차의 RMS ≈ s/√12.**
+
+**(B) Clipping error (포화 오차).** 범위 **밖**의 값(예: `x > α`)은 전부 `α`(격자 끝)로 잘리므로 오차 `= x − α`가 크게 남는다. 분포의 꼬리를 `T`(=범위 절반, threshold)에서 자른다면, 클리핑 오차의 기댓값은 꼬리에 얼마나 많은 확률질량이 있느냐로 결정된다:
+
+```
+E[clipping error²] ≈ ∫_{|x|>T} (|x| − T)² · p(x) dx
+```
+
+→ **핵심: 범위 `[β, α]`를 넓게 잡을수록(=T를 크게) 꼬리를 덜 자르니 클리핑 오차는 줄지만, 대신 같은 128개 눈금으로 더 넓은 구간을 덮어야 하므로 `s = (α−β)/(q_max−q_min)`가 커져 반올림 오차가 커진다.**
+
+#### 총오차 = rounding + clipping, 그리고 상충(trade-off)
+
+```
+E[e²] ≈ (범위 안 반올림)  +  (범위 밖 클리핑)
+      ≈  s²/12 · P(|x|≤T)  +  E[(|x|−T)² · 1{|x|>T}]
+                ▲                          ▲
+        T ↑ 이면 s ↑ → 증가        T ↑ 이면 꼬리 ↓ → 감소
+```
+
+이것이 **캘리브레이션의 본질**이다. `T`를 너무 크게(=MinMax처럼 outlier까지 포함) 잡으면 반올림 오차가 폭증하고, 너무 작게 잡으면 클리핑 오차가 폭증한다. **최적 `T`는 둘의 합이 최소가 되는 지점**이며, 이걸 어떻게 찾느냐가 MinMax/Percentile/Entropy/MSE를 가른다(2.4절).
+
+> 💡 **직관 한 줄**: "자를 촘촘하게(작은 s) 하려면 짧게 잘라야(작은 범위) 하고, 길게 재려면(큰 범위) 눈금이 성겨진다(큰 s). 어느 쪽이든 공짜가 없다."
+
+#### Worked example — scale 선택이 총오차를 어떻게 바꾸는가
+
+한 activation 텐서가 대략 표준정규 `N(0,1)`를 따르되 값 하나가 **outlier로 8.0**에 있다고 하자(예: 10000개 중 1개). signed int8, symmetric(z=0), `q_max=127`. 세 가지 범위 선택 `T`(=절대 최대 표현값)에 대해 총오차를 손으로 비교한다.
+
+| 선택 | T (범위 절반) | s = T/127 | rounding RMS ≈ s/√12 | 클리핑되는 값 | clipping 기여 |
+|------|--------------|-----------|----------------------|--------------|---------------|
+| **MinMax** | 8.0 (outlier까지 포함) | 0.0630 | **0.0182** | 없음 | 0 |
+| **Percentile 99.9%** | ≈ 3.09 (N(0,1)의 99.9% 지점) | 0.0243 | **0.0070** | outlier 1개(8.0→3.09, 오차 4.91) + 극소수 꼬리 | 작음(1/10000 확률) |
+| **너무 좁게** | 1.0 | 0.00787 | **0.00227** | 값의 약 32%(|x|>1) | **큼** |
+
+계산 근거:
+- rounding RMS: `s/√12 = (T/127)/3.464`. MinMax는 `8/127/3.464 = 0.0182`, Percentile은 `3.09/127/3.464 = 0.0070`, 좁게는 `1/127/3.464 = 0.00227`.
+- 클리핑: MinMax는 아무것도 안 자르므로 0. Percentile은 outlier 1개(오차 4.91²≈24.1)를 10000개로 평균 내면 `24.1/10000 ≈ 0.0024`의 제곱기여 → RMS 기여 `√0.0024 ≈ 0.049`이지만 이는 **단 하나의 값에만** 실리고, 나머지 9999개는 반올림 오차 0.0070만 받는다. 좁게(T=1)는 전체의 32%가 크게 잘려 평균 오차가 급증.
+
+**결론(정량적)**:
+- **MinMax**: outlier 1개 때문에 s가 8/3.09 ≈ 2.6배 커져, **9999개의 정상 값 전부가 2.6배 큰 반올림 오차**(0.0070 → 0.0182)를 뒤집어쓴다. outlier 1개 살리자고 나머지를 다 희생. → **outlier에 취약**.
+- **Percentile 99.9%**: 정상 값 9999개는 최소 반올림 오차(0.0070)를 누리고, outlier 1개만 잘린다. **전체 텐서의 평균 제곱오차(MSE)로 보면 Percentile이 MinMax를 크게 이긴다** — 이것이 CNN activation에서 Percentile/Entropy가 MinMax보다 top-1이 높은 정확한 이유다.
+- **너무 좁게(T=1)**: 반올림은 최소지만 32%를 잘라 클리핑이 지배 → **최악**.
+
+> 🔴 **함정**: "범위를 넉넉히 잡으면 안전하다"는 직관은 틀렸다. 넉넉한 범위(MinMax)는 **모든 정상 값의 해상도를 outlier에 인질로 잡힌다**. 이 예시의 숫자(0.0070 vs 0.0182)를 면접에서 대면 "오차 분해를 이해했다"는 강한 신호다.
+
+### 2.2 Symmetric vs Asymmetric, Per-tensor vs Per-channel
+
+**Symmetric(대칭)**: `z = 0` 으로 고정. 범위를 `[-|max|, +|max|]`로 잡는다. 정수 0 ↔ 실수 0 이 정확히 일치 → 곱셈 시 zero-point 항이 사라져 **정수 연산이 훨씬 단순**해진다(아래 2.2.1 유도 참고).
+
+**Asymmetric(비대칭)**: `z ≠ 0` 허용. 범위를 실제 `[min, max]`에 딱 맞춤 → **한쪽으로 치우친 분포**(예: ReLU 뒤의 항상 ≥0인 활성값)를 낭비 없이 표현.
+
+| 구분 | 정의 | 장점 | 단점 | 주 사용처 |
+|------|------|------|------|-----------|
+| **Symmetric** | z=0, `[-a, +a]` | 정수 MAC 단순(zero-point 항 제거), 하드웨어 친화 | 0 기준 비대칭 분포는 절반 낭비 | **weight** |
+| **Asymmetric** | z≠0, `[min, max]` | 치우친 분포를 꽉 채워 표현 → 해상도↑ | zero-point 보정 연산 추가 | **activation** |
+| **Per-tensor** | 텐서 1개당 (s, z) 1쌍 | 메모리·연산 최소, 모든 HW 지원 | 채널 간 분포 차이 큰 weight에서 손실 | **activation** |
+| **Per-channel** | 출력 채널마다 (s, z) | 채널별 범위를 각각 최적화 → 정확도↑ | activation엔 부적합(HW·연산 복잡), weight 전용 | **weight** (Conv/Linear의 output축) |
+
+#### 2.2.1 왜 symmetric이면 정수 MAC이 단순해지는가 (유도)
+
+`y = Σᵢ wᵢ·xᵢ` 를 정수로 계산한다고 하자. asymmetric이면 `wᵢ ≈ s_w(q_wᵢ − z_w)`, `xᵢ ≈ s_x(q_xᵢ − z_x)`이므로:
+
+```
+y ≈ Σ s_w(q_wᵢ − z_w) · s_x(q_xᵢ − z_x)
+  = s_w·s_x · Σ (q_wᵢ − z_w)(q_xᵢ − z_x)
+  = s_w·s_x · [ Σ q_wᵢ·q_xᵢ  −  z_w·Σ q_xᵢ  −  z_x·Σ q_wᵢ  +  N·z_w·z_x ]
+                     ▲               ▲              ▲              ▲
+                본 계산(INT MAC)   교차항1        교차항2       상수항
+```
+
+교차항이 **3개나 추가**된다. 그런데 **weight를 symmetric(z_w = 0)** 으로 두면:
+
+```
+y ≈ s_w·s_x · [ Σ q_wᵢ·q_xᵢ  −  z_x·Σ q_wᵢ ]
+```
+
+`z_w`가 낀 두 항이 통째로 사라지고, 남은 `z_x·Σ q_wᵢ` 는 `Σ q_wᵢ`가 **weight만의 상수**라 미리(오프라인) 계산해 bias에 흡수할 수 있다. 결과적으로 런타임에는 순수 `Σ q_wᵢ·q_xᵢ`(INT8×INT8→INT32 MAC)만 남는다. 이것이 Jacob 2018 "integer-arithmetic-only inference"의 핵심이고, **weight를 symmetric으로 하는 하드웨어적 이유**다.
+
+> 💡 **직관**: symmetric은 "곱셈의 원점을 0에 맞춰 교차항을 없애는" 트릭이다. activation은 런타임 텐서라 `z_x`를 없앨 수 없지만(치우친 분포를 살려야 해 asymmetric이 이득), weight는 정적이라 `z_w=0`의 대가(약간의 표현 낭비)가 교차항 제거 이득보다 작다.
+
+#### 2.2.2 채널별 분포 차이 — per-channel이 weight에 유리한 이유 (수치 예)
+
+Conv 레이어의 weight는 `[out_channels, in_channels, kh, kw]` 이고, **출력 채널(필터)마다 크기(dynamic range)가 크게 다르다**. 3개 출력 채널의 절대 최댓값이 아래처럼 다르다고 하자:
+
+| 출력 채널 | |max| (그 채널 weight의 절대 최대) |
+|-----------|-----------------------------------|
+| 채널 A | 0.12 |
+| 채널 B | 0.95 |
+| 채널 C | 3.40 |
+
+signed int8 symmetric, `q_max = 127`.
+
+**Per-tensor (전 채널 공통 s):** 텐서 전체 `|max| = 3.40` 하나로 `s = 3.40/127 = 0.02677`.
+- 채널 A의 값들은 최대 0.12 → 정수로 `0.12/0.02677 ≈ 4.5`, 즉 **±4 정도의 정수 레벨만** 사용. 128단계 중 실질 9단계(−4~+4)만 쓰고 나머지는 낭비. → 채널 A의 유효 비트 ≈ log2(9) ≈ **3.2 bit**.
+- 채널 C만 128단계를 꽉 씀. **채널 A는 INT8인데 사실상 3비트 해상도**로 뭉개진다.
+
+**Per-channel (채널별 s):** 채널마다 자기 `|max|`로 s를 따로.
+- 채널 A: `s_A = 0.12/127 = 0.000945` → 채널 A 값이 −127~+127 전 범위를 사용. **온전한 8비트.**
+- 채널 B: `s_B = 0.95/127`, 채널 C: `s_C = 3.40/127`. 각자 128단계 풀 활용.
+
+**정량 비교 (채널 A의 반올림 RMS):**
+- per-tensor: `s/√12 = 0.02677/3.464 = 0.00773`. 채널 A 값(최대 0.12) 대비 상대오차 `0.00773/0.12 ≈ 6.4%`.
+- per-channel: `s_A/√12 = 0.000945/3.464 = 0.000273`. 상대오차 `0.000273/0.12 ≈ 0.23%`.
+- → **per-channel이 채널 A에서 약 28배(0.00773/0.000273) 정확**하다. dynamic range가 좁은 채널일수록 이득이 폭발한다.
+
+**왜 activation은 per-channel을 안 하나:** weight는 **정적**이라 채널별 s를 학습/PTQ 시 한 번 계산해 저장하면 끝(추가 런타임 비용 0). 반면 activation은 **런타임에 값이 바뀌는 동적 텐서**라, per-channel로 하려면 매 추론마다 채널별 min/max를 실시간 계산해야 하고, 무엇보다 대부분의 정수 MAC 배열이 **채널마다 다른 s를 가진 activation을 곱하는 하드웨어 경로가 없다**(가속기는 텐서 하나에 s 하나를 가정). 그래서 activation은 per-tensor로 캘리브레이션해 고정한다.
+
+> 🔴 **함정**: "그럼 activation도 채널별 min/max를 미리 캘리브레이션해서 고정하면 per-channel 되지 않나?"— activation의 채널 축은 **공간(H,W) 위치마다 통계가 또 다르고**, 다음 레이어 Conv가 입력 채널을 가로질러 합산(`Σ_in`)하므로 채널별 s가 서로 다르면 합산 전에 재정렬(re-quantize)이 필요해 연산이 폭증한다. Transformer의 토큰별 outlier(2단계 SmoothQuant)는 이 문제의 특수 사례다.
+
+#### 왜 weight = per-channel symmetric 인가 (면접 답변, 요약)
+
+1. **Symmetric**: 2.2.1의 교차항 제거로 정수 MAC이 깔끔(Jacob 2018). ONNX Runtime도 `WeightSymmetric` 기본값이 **True**다. weight 분포가 대체로 0 대칭이라 대칭화 손실도 작다.
+2. **Per-channel**: 2.2.2처럼 채널별 dynamic range 차이가 크고, weight는 정적이라 채널별 s 저장 비용이 0. 좁은 채널이 INT8 해상도를 온전히 쓴다.
+
+#### 왜 activation = per-tensor asymmetric 인가 (요약)
+
+1. **Asymmetric**: ReLU/GeLU 뒤 활성값은 한쪽으로 치우친다. symmetric `[-a,+a]`는 음수 절반을 버리지만, asymmetric은 `z`를 옮겨 `[0,max]`를 꽉 채워 유효 해상도가 사실상 1비트 늘어난다.
+2. **Per-tensor**: activation은 동적 텐서 + 가속기 HW 제약(위) 때문에 텐서당 (s,z) 1쌍을 캘리브레이션으로 고정.
+
+> 🔴 **함정**: "activation도 per-channel 하면 더 정확하지 않나요?"는 흔한 오해다. Transformer의 activation outlier 문제(2단계 SmoothQuant)를 제외하면, activation per-channel은 HW 미지원·연산 폭증으로 실전에서 거의 안 쓴다. 이 이유를 못 대면 감점이다.
+
+### 2.3 QDQ 그래프 — 모든 툴체인의 공용어
+
+**QDQ**(Quantize-Dequantize)는 원본 그래프의 텐서 앞뒤에 `QuantizeLinear`(Q)와 `DequantizeLinear`(DQ) 노드 쌍을 삽입한 ONNX 표현이다. 값 자체는 여전히 FP지만, **"여기서 이 scale/zero-point로 INT8 양자화가 일어난다"는 정보가 그래프에 박혀** 있다.
+
+```
+    (FP32 weight)                (FP32 input)
+         │                            │
+   QuantizeLinear (s_w, z_w=0)   QuantizeLinear (s_x, z_x)
+         │                            │
+   DequantizeLinear             DequantizeLinear
+         │                            │
+         └──────────► Conv ◄──────────┘
+                       │
+                 QuantizeLinear (s_y, z_y)
+                       │
+                 DequantizeLinear
+                       │
+                    (다음 레이어)
+```
+
+- **왜 공용어인가**: TensorRT, ONNX Runtime, TIDL, QNN 등 거의 모든 백엔드가 이 QDQ ONNX를 입력으로 받아 **자기 하드웨어에 맞는 진짜 INT8 커널로 fuse**한다. 즉 QDQ ONNX 하나만 잘 만들어 두면 여러 타깃으로 배포할 수 있다.
+- **Q/DQ 쌍의 의미**: 연속된 `Q → DQ`는 "이 지점의 텐서를 INT8 정밀도로 반올림했다가 다시 FP로 편다"는 뜻 → **양자화 노이즈를 그래프 상에서 시뮬레이션**한다. 백엔드는 이 쌍을 만나면 실제 INT8 연산으로 대체한다.
+- **fuse의 실제**: 백엔드는 `DQ → Conv → Q` 패턴을 만나면 "입력을 INT8로 받아 INT8 커널로 Conv하고 출력을 다시 INT8로 낸다"로 융합한다. Q/DQ가 붙어 있는 텐서 = "여기는 INT8로 흘러도 된다"는 **컴파일러 힌트**인 셈이다.
+
+실제 ONNX QDQ 노드(`onnx`로 로드해 출력한 예시):
+
+```python
+# QuantizeLinear 노드 하나
+node {
+  op_type: "QuantizeLinear"
+  input: "input_tensor"      # FP32 텐서
+  input: "scale"             # s (float)
+  input: "zero_point"        # z (int8/uint8)
+  output: "input_quantized"  # int8 텐서
+}
+# 바로 뒤 DequantizeLinear
+node {
+  op_type: "DequantizeLinear"
+  input: "input_quantized"   # int8
+  input: "scale"             # 같은 s
+  input: "zero_point"        # 같은 z
+  output: "input_dequant"    # FP32 (노이즈 포함)
+}
+```
+
+> 💡 **팁**: ONNX Runtime `quantize_static`의 기본 포맷이 바로 이 `QuantFormat.QDQ`다(ORT 1.11부터 기본). 대안인 `QOperator` 포맷은 `QLinearConv` 같은 통합 op를 쓰지만, **QDQ가 백엔드 이식성이 좋아 표준**이다.
+
+### 2.4 캘리브레이션 4종
+
+캘리브레이션 = "activation의 (s, z)를 정하기 위해 대표 데이터 몇 백~몇 천 장을 흘려보내 값의 분포(범위)를 관측"하는 과정. **2.1.1의 오차 분해로 보면, 캘리브레이션은 "rounding + clipping 총오차를 최소화하는 threshold `T`를 찾는 문제"** 다. 네 방법은 이 `T`를 찾는 전략이 다를 뿐이다.
+
+| 방법 | 원리(찾는 T) | 장점 | 단점 | 언제 쓰나 |
+|------|------|------|------|-----------|
+| **MinMax** | 관측된 절대 min/max = T (클리핑 0) | 가장 단순·빠름, outlier도 포함 | outlier 하나가 T를 늘려 s 폭증 → 반올림 오차 낭비 | 분포가 깨끗하거나 빠른 baseline |
+| **Percentile** | 상·하위 p%(예: 99.9%)를 버린 지점 = T | outlier 무시 → s 축소 → 해상도↑ | p 값 튜닝 필요, 정보 손실 위험 | activation에 outlier가 있을 때 |
+| **Entropy (KL)** | FP 분포와 양자화 분포의 **KL divergence 최소화** 지점 = T | 정보 손실 최소, CNN에서 보편적 | 계산 무겁고 느림, 히스토그램 bin 설정 필요 | 정확도 민감한 CNN(TensorRT 기본과 동계열) |
+| **MSE** | quantize→dequantize 재구성 오차(MSE) 최소화 T | 오차(2.1.1 총오차)를 직접 최소화 | 탐색 비용, 레이어별 반복 | outlier 많고 정밀도 중요할 때 |
+
+각 방법을 2.1.1의 언어로 다시 보면:
+- **MinMax**는 클리핑을 0으로 강제하고 반올림을 방치 → outlier에 취약(2.1.1 worked example의 MinMax 열).
+- **Percentile**은 "꼬리 p%를 버려도 되는 클리핑으로 취급"해 s를 줄이는 휴리스틱.
+- **MSE**는 총오차 `E[e²]`를 T의 함수로 직접 그려 최솟값을 찾는 정공법.
+- **Entropy(KL)**는 오차를 제곱합이 아니라 **분포 간 정보 손실(KL)**로 재는 것 — 아래에서 자세히.
+
+#### 2.4.1 MinMax — 절차
+
+```
+1. 캘리브 데이터를 흘려 각 activation 텐서의 running min/max를 갱신.
+2. T = max(|min|, |max|)  (symmetric) 또는 [min, max] 그대로 (asymmetric).
+3. s, z를 2.1의 공식으로 계산.
+```
+장점은 O(N) 한 번 훑기로 끝난다는 것. 단점은 2.1.1에서 본 대로 outlier 1개에 s가 끌려간다.
+
+#### 2.4.2 Percentile — 절차
+
+```
+1. 각 텐서 값들의 히스토그램(또는 정렬)을 만든다.
+2. 하위 (100−p)/2 %, 상위 (100−p)/2 % 를 잘라내고 남은 구간의 끝을 T로.
+   (예: p=99.9 → 상·하위 0.05%씩 버림)
+3. 버려진 값들은 클리핑(격자 끝으로 포화).
+```
+`p`가 클수록 MinMax에 수렴, 작을수록 공격적으로 자름. ORT는 기본 `99.999`.
+
+#### 2.4.3 Entropy (KL divergence) — 히스토그램 구성 → 후보 threshold별 KL 최소화 (핵심)
+
+Entropy 캘리브레이션은 NVIDIA Szymon Migacz가 GTC 2017 "8-bit Inference with TensorRT"에서 제시한 알고리즘으로, TensorRT의 전통적 기본 캘리브레이터(`IInt8EntropyCalibrator2`) 계열과 같은 아이디어다. **"FP32 분포(P)와, threshold T에서 잘라 INT8 128레벨로 뭉갠 분포(Q)가 정보량 관점에서 가장 비슷해지는 T"** 를 찾는다.
+
+**왜 KL인가 (직관):** MSE(2.1.1 총오차)는 "값이 얼마나 틀렸나"를 재지만, 신경망 activation에서 정말 중요한 건 **분포의 모양(어디에 확률질량이 있나)이 보존되는가**다. KL divergence `D(P‖Q) = Σ P·log(P/Q)`는 "P를 Q로 근사할 때 잃는 정보량(bits)"이라, 이걸 최소화하면 **양자화 후에도 원분포의 정보를 최대한 보존**한다.
+
+**단계별 절차:**
+
+```
+[준비] 캘리브 데이터로 각 activation 텐서의 절댓값 히스토그램을 만든다.
+       - bin 개수 = 2048 (TensorRT 관행). 범위는 [0, |max|].
+       - 즉 hist[0..2047], 각 bin은 폭 (|max|/2048)의 값 구간의 카운트.
+
+[탐색] threshold 후보 i를 128부터 2048까지 훑는다 (i = 자를 bin 인덱스):
+
+  for i in range(128, 2048):
+
+      # (1) 참조 분포 P: 앞쪽 i개 bin만 취한다.
+      P = hist[0 : i]                       # 길이 i
+      # (1-a) i 밖으로 잘리는 outlier는 버리지 않고 마지막 bin에 몰아넣는다.
+      P[i-1] += sum(hist[i : 2048])         # 꼬리 질량을 경계 bin에 합산
+      P = P / sum(P)                        # 확률로 정규화
+
+      # (2) 후보 양자화 분포 Q: 앞쪽 i개 bin을 128 레벨로 뭉갠다.
+      Q_128 = quantize_into_128_levels(hist[0 : i])   # i개 → 128개로 병합
+      #        (i개 bin을 128 그룹으로 균등 분할, 각 그룹 카운트 합산)
+
+      # (3) Q를 다시 i개 bin으로 "펴서(expand)" P와 길이를 맞춘다.
+      #     각 128-레벨의 카운트를 그 레벨이 커버하던 원래 bin들에
+      #     (0이 아닌 bin에만) 균등 분배해 되돌린다.
+      Q = expand_128_back_to_i_bins(Q_128)  # 길이 i
+      Q = Q / sum(Q)                        # 확률로 정규화 (0 방지 epsilon 추가)
+
+      # (4) KL divergence 계산
+      divergence[i] = KL(P, Q) = Σ_j P[j] * log( P[j] / Q[j] )
+
+  # (5) 최적 threshold = divergence가 최소인 i
+  m = argmin_i divergence[i]
+  T = (m + 0.5) * (|max| / 2048)            # bin 인덱스를 실수 threshold로 환산
+  s = T / 127                               # symmetric int8 scale
+```
+
+**각 단계의 의미:**
+- **(1) P는 "정답 분포"**: 앞 i bin의 실제 FP 히스토그램. 꼬리(i 밖)를 마지막 bin에 몰아넣는 것은 "이 값들은 T로 클리핑될 것"임을 P에도 반영해 **공정한 비교**를 만들기 위함(P와 Q 둘 다 클리핑을 겪게).
+- **(2) 128 레벨로 병합**: int8 symmetric은 양의 절반에 128 레벨(0~127)만 있으므로, i개 bin을 128개로 뭉개는 것이 "이 threshold로 양자화하면 이렇게 뭉개진다"의 시뮬레이션.
+- **(3) 다시 i개로 확장**: P와 길이를 맞춰 bin 대 bin으로 KL을 계산하기 위한 트릭. 정보가 없는(카운트 0) 원 bin에는 분배하지 않아 인위적 확률을 만들지 않는다.
+- **(4)(5)**: 모든 후보 T 중 정보 손실(KL)이 최소인 지점 선택.
+
+**작은 worked example (개념 확인용, bin 8개·레벨 2개로 축소):**
+FP 히스토그램(카운트) `hist = [40, 30, 15, 8, 4, 2, 1, 0]` (bin 0이 가장 작은 값, 오른쪽이 꼬리). "레벨 2개"로 뭉갠다고 하고 threshold 후보를 `i=4`와 `i=6`으로 비교.
+
+- **i=4**: P의 앞 4 bin `[40,30,15,8]`, 꼬리 `4+2+1+0=7`을 마지막에 → `P=[40,30,15,15]`, 정규화 `[0.40,0.30,0.15,0.15]`. Q(2레벨로): 앞 2 bin→그룹1 `40+30=70`, 뒤 2 bin→그룹2 `15+15=30`; 다시 4 bin으로 균등 확장 → `[35,35,15,15]`, 정규화 `[0.35,0.35,0.15,0.15]`. KL = `0.40·ln(0.40/0.35)+0.30·ln(0.30/0.35)+0.15·ln1+0.15·ln1 = 0.40·0.1335 + 0.30·(−0.1542) = 0.0534 − 0.0463 = 0.0071`.
+- **i=6**: P의 앞 6 bin `[40,30,15,8,4,2]`, 꼬리 `1+0=1` → `P=[40,30,15,8,4,3]`, 합 100 → `[0.40,0.30,0.15,0.08,0.04,0.03]`. Q: 앞 3→`85`, 뒤 3→`15`; 6 bin으로 확장 `[28.3,28.3,28.3,5,5,5]`, 정규화 `[0.283,0.283,0.283,0.05,0.05,0.05]`. KL = `0.40·ln(0.40/0.283)+0.30·ln(0.30/0.283)+0.15·ln(0.15/0.283)+0.08·ln(0.08/0.05)+0.04·ln(0.04/0.05)+0.03·ln(0.03/0.05)` = `0.40·0.346+0.30·0.058+0.15·(−0.635)+0.08·0.470+0.04·(−0.223)+0.03·(−0.511)` = `0.1384+0.0174−0.0953+0.0376−0.0089−0.0153 = 0.0739`.
+
+→ **i=4의 KL(0.0071)이 i=6(0.0739)보다 작다** → 이 분포에서는 threshold를 `i=4` 근처로 좁게 잡는 게 정보 손실이 적다(꼬리가 얇아 클리핑해도 손해가 작고, 좁힐수록 앞쪽 해상도가 산다). 실제 알고리즘은 128~2048 전 구간을 이렇게 훑어 최소 KL 지점을 고른다.
+
+> 💡 **팁**: TensorRT는 `divergence`가 최소인 bin `m`에서 `T=(m+0.5)·bin_width`로 threshold를 잡는다(bin 중앙 보정). ORT `CalibrationMethod.Entropy`도 같은 계열(히스토그램+KL) 구현이다.
+
+> 🔴 **함정**: KL 계산에서 `Q[j]=0`인데 `P[j]>0`이면 `log(P/Q)=∞`로 발산한다. 그래서 구현은 확장 시 0 bin에 **작은 epsilon**을 더하거나, P가 0인 bin은 KL 합에서 제외한다. 직접 구현할 일은 없지만(ORT/TensorRT가 처리) 원리를 알면 "왜 히스토그램 bin이 비면 안 되나"를 설명할 수 있다.
+
+#### 2.4.4 MSE — 절차
+
+```
+1. 텐서 히스토그램(또는 샘플)을 준비.
+2. threshold 후보 T들을 훑으며, 각 T로 실제 quantize→dequantize 수행.
+3. 재구성 오차 MSE = mean((x − x̂)²) 를 계산 (= 2.1.1의 총오차 E[e²]).
+4. MSE가 최소인 T 선택.
+```
+KL이 "분포 유사도"를 재는 대신, MSE는 2.1.1의 총오차(rounding+clipping)를 **직접** 재 최소화한다. outlier가 많거나 분포가 비대칭일 때 KL보다 robust한 경우가 있다.
+
+> 💡 **팁**: ONNX Runtime의 `CalibrationMethod`는 `MinMax(0) / Entropy(1) / Percentile(2) / Distribution(3)` 4종을 제공한다(2026-07, ORT 1.28.0 기준 `calibrate.py`). MSE는 ORT에 별도 enum이 없고, **NVIDIA Model Optimizer**(`modelopt`, https://github.com/NVIDIA/Model-Optimizer) 등 다른 툴에서 지원한다. Entropy가 NVIDIA TensorRT의 전통적 기본 캘리브레이터(EntropyCalibrator) 계열과 같은 아이디어다.
+
+### 2.5 QAT + STE (Straight-Through Estimator)
+
+PTQ로 정확도가 부족하면 **QAT(Quantization-Aware Training)**: 학습 그래프에 fake-quant(가짜 양자화) 노드를 넣어 **양자화 노이즈를 학습 중에 겪게** 한다. 문제는 `round()`의 미분이 거의 어디서나 0이라(계단 함수) gradient가 흐르지 못한다는 것. 이를 우회하는 것이 **STE**: forward는 진짜로 round/clamp 하되, **backward에서는 round를 항등함수처럼 취급**해 gradient를 그대로 통과시킨다(clip 범위 밖만 0).
+
+#### 2.5.1 왜 STE가 필요한가 (수식)
+
+fake-quant 함수 `x̂ = s·clamp(round(x/s), q_min, q_max)`의 진짜 미분은:
+
+```
+d(x̂)/dx = s · (1/s) · d[round(u)]/du = d[round(u)]/du,   u = x/s
+```
+
+그런데 `round(u)`는 정수 지점마다 +1씩 점프하는 계단 함수라, 미분은 **정수 아닌 곳에서 0, 정수 지점에서 ∞(정의 안 됨)**. 이대로면 `∂Loss/∂x = ∂Loss/∂x̂ · 0 = 0` → weight가 절대 안 움직인다(학습 불가).
+
+**STE의 정의:** backward에서 `d[round(u)]/du ≈ 1` (범위 안), `0` (범위 밖)으로 **가짜 미분을 심는다**:
+
+```
+∂x̂/∂x ≈ 1{ q_min ≤ round(x/s) ≤ q_max }    # 범위 안이면 1, 밖이면 0
+```
+
+즉 forward는 계단(양자화 노이즈를 진짜로 겪음), backward는 기울기 1의 직선(gradient 통과). "forward는 정수의 거친 세계, backward는 매끄러운 FP 기울기"라는 **비대칭**이 STE의 전부다.
+
+#### 2.5.2 `torch.autograd.Function` 전체 구현
+
+```python
+import torch
+
+class FakeQuantSTE(torch.autograd.Function):
+    """대칭 per-tensor fake-quant + STE.
+    forward : 실제 quantize→dequantize (노이즈 발생)
+    backward: round의 gradient를 1로 통과(STE), clip 범위 밖은 0."""
+
+    @staticmethod
+    def forward(ctx, x, scale, q_min, q_max):
+        u = x / scale
+        q = torch.round(u)                          # 반올림 (미분 불가 지점)
+        q_clamped = torch.clamp(q, q_min, q_max)    # 정수 범위로 clip
+        x_hat = q_clamped * scale                   # dequantize
+        # clip 범위 안(=gradient 통과 영역) 마스크 저장
+        mask = (u >= q_min) & (u <= q_max)
+        ctx.save_for_backward(mask)
+        return x_hat
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        (mask,) = ctx.saved_tensors
+        # STE: round는 identity로 간주 → grad 그대로,
+        # 단 clip 밖은 0 (그쪽으로는 학습 신호 없음)
+        grad_x = grad_output * mask.to(grad_output.dtype)
+        return grad_x, None, None, None             # scale/q_min/q_max엔 grad 없음
+
+
+def fake_quantize(x, num_bits=8, symmetric=True):
+    """weight/activation에 삽입하는 편의 함수."""
+    q_max = 2 ** (num_bits - 1) - 1                 # 127
+    q_min = -q_max if symmetric else 0              # -127 (symmetric)
+    scale = x.detach().abs().max() / q_max          # per-tensor symmetric scale
+    scale = torch.clamp(scale, min=1e-8)            # 0 나눗셈 방지
+    return FakeQuantSTE.apply(x, scale, q_min, q_max)
+```
+
+#### 2.5.3 미니 QAT 학습 루프 (옵티마이저·손실 포함, 예상 출력)
+
+STE가 실제로 gradient를 통과시켜 학습이 되는지 **10줄짜리 회귀 문제**로 확인한다. 목표: 랜덤 선형 함수 `y = Wx + b`를 **weight에 fake-quant를 씌운 채** 근사. STE가 없으면 loss가 안 줄고, 있으면 줄어드는 것을 눈으로 본다.
+
+```python
+# mini_qat_demo.py — STE가 gradient를 통과시키는지 확인하는 최소 QAT 루프
+import torch
+# (위 FakeQuantSTE, fake_quantize 정의를 같은 파일에 둔다고 가정)
+
+torch.manual_seed(0)
+N, D = 512, 16
+X = torch.randn(N, D)
+W_true = torch.randn(D, 1)
+y = X @ W_true + 0.1 * torch.randn(N, 1)           # 정답 (약간의 노이즈)
+
+W = torch.zeros(D, 1, requires_grad=True)          # 학습 대상 (0에서 시작)
+opt = torch.optim.SGD([W], lr=0.1)
+loss_fn = torch.nn.MSELoss()
+
+for step in range(200):
+    opt.zero_grad()
+    W_q = fake_quantize(W, num_bits=8, symmetric=True)   # ← weight를 fake-quant
+    pred = X @ W_q                                       # 양자화된 weight로 forward
+    loss = loss_fn(pred, y)
+    loss.backward()                                      # STE로 grad가 W까지 흐름
+    opt.step()
+    if step % 40 == 0:
+        # W의 grad가 0이 아니어야 학습이 되는 것 (STE 작동 증거)
+        gnorm = W.grad.norm().item()
+        print(f"step {step:3d}  loss={loss.item():.4f}  |grad|={gnorm:.4f}")
+
+print("final loss:", round(loss.item(), 4))
+print("cos(W_q, W_true):",
+      round(torch.nn.functional.cosine_similarity(
+          fake_quantize(W).flatten(), W_true.flatten(), dim=0).item(), 4))
+```
+
+**예상 출력(시드 고정, 값은 하드웨어에 따라 미세 차이):**
+
+```
+step   0  loss=1.7...  |grad|=2.3...
+step  40  loss=0.05..  |grad|=0.3...
+step  80  loss=0.02..  |grad|=0.1...
+step 120  loss=0.01..  |grad|=0.0...
+step 160  loss=0.01..  |grad|=0.0...
+final loss: 0.01..
+cos(W_q, W_true): 0.99..
+```
+
+**해석**: `|grad|`가 0이 아니고 loss가 계속 줄어드는 것이 **STE가 round의 0 gradient를 우회해 학습 신호를 통과시켰다는 직접 증거**다. 만약 STE 없이 `torch.round`를 그냥 forward/backward에 두면 `|grad|=0`이 찍히고 loss가 초기값에서 멈춘다(직접 바꿔 확인해보라 — 좋은 학습이 된다).
+
+> 💡 **팁**: STE의 직관 — "forward는 정수의 거친 세계를 겪지만, backward는 매끄러운 FP 기울기를 그대로 받아 weight를 조금씩 옮긴다." 이 한 줄로 설명할 수 있으면 충분하다.
+
+#### 2.5.4 LSQ (Learned Step Size Quantization) — 한 줄 소개
+
+위 코드는 `scale`을 매 step **weight의 max에서 다시 계산**(고정 규칙)한다. **LSQ**(Esser et al., ICLR 2020, arXiv:1902.08153)는 여기서 한 걸음 더 나아가 **scale(step size) `s` 자체를 학습 가능한 파라미터로 두고 gradient descent로 함께 학습**한다. 핵심은 `∂x̂/∂s`(양자화 출력의 scale에 대한 미분)를 STE 방식으로 근사해 흘리고, step size gradient에 `1/√(N·q_max)` 스케일 보정을 걸어 weight 업데이트와 크기 균형을 맞추는 것. **"scale을 손으로 정하지 말고 loss가 정하게 하라"**가 LSQ의 한 문장이며, 저비트(2~4bit) QAT에서 특히 효과가 크다(3bit로 FP 정확도 근접).
+
+> ⚠️ **주의**: 위 코드는 개념 학습용이다. 실전 QAT는 직접 짜지 말고 검증된 라이브러리를 쓴다 — PyTorch 네이티브(`torch.ao.quantization`) 또는 **NVIDIA Model Optimizer**(`modelopt.torch.quantization`, `mtq.quantize()`; https://github.com/NVIDIA/Model-Optimizer). (구 `pytorch-quantization` 패키지는 여전히 `NVIDIA/TensorRT` 저장소에 있으나 사실상 Model Optimizer로 대체되었다 — 2026-07 기준. 자세한 QAT 실습은 이 단계 범위 밖.)
+
+---
+
+## 3) 환경·도구 준비
+
+이론 실습은 x86 PC(RTX GPU)에서 완결. GPU가 없어도 CPU로 실행 가능하나(느림), RTX가 있으면 ONNX Runtime CUDA EP로 평가가 빠르다. 이 스터디의 정본 스택은 **CUDA 12.8 / onnxruntime-gpu 1.28.0 / TensorRT 10.16.x LTS** 다(TensorRT는 3단계에서 사용).
+
+```bash
+# 1) 가상환경 (프로젝트 루트에서)
+python3 -m venv ~/venv/quant && source ~/venv/quant/bin/activate
+python -m pip install --upgrade pip
+
+# 2) 핵심 패키지 (2026-07 기준 최신 계열)
+#    torch/torchvision: ResNet18 로드 + ONNX export
+#    onnx: 그래프 조작/검증,  onnxruntime-gpu: 정적 양자화 + 평가
+pip install "torch>=2.3" "torchvision>=0.18"            # CUDA 12.x 휠 자동
+pip install "onnx>=1.16" "onnxruntime-gpu==1.28.0"      # 2026-07 기준 정본 버전
+pip install numpy pillow tqdm scipy                      # 데이터/평가/통계 유틸
+```
+
+```bash
+# 3) 설치 검증 (버전·EP 확인)
+python - <<'PY'
+import torch, torchvision, onnx, onnxruntime as ort
+print("torch      :", torch.__version__, "cuda?", torch.cuda.is_available())
+print("torchvision:", torchvision.__version__)
+print("onnx       :", onnx.__version__)
+print("onnxruntime:", ort.__version__)
+print("providers  :", ort.get_available_providers())  # CUDAExecutionProvider 있어야 GPU 사용
+PY
+```
+
+> 💡 **팁**: `onnxruntime-gpu`의 정본 버전은 이 스터디 기준 **1.28.0**이다. ⚠️ 단 PyPI 기본 wheel의 CUDA 라인이 1.27부터 CUDA 13으로 바뀌었으므로, 이 스터디의 CUDA 12.8 스택에서는 **CUDA 12 대응 wheel**을 써야 한다(자세한 CUDA 12/13 전환 캐비앗은 [0단계 2·3절](01_environment_setup.md) 참조). CPU만 쓸 거면 `onnxruntime`(GPU 없는 패키지)을 설치한다. 두 패키지를 동시에 설치하지 말 것(충돌).
+
+**ImageNet 검증셋 준비**: ImageNet-1k `val`에서 **1000장**만 있으면 된다(캘리브레이션 100~500장 + 평가 1000장). 폴더 구조는 클래스별 서브폴더(`val/n01440764/*.JPEG` …) 형태를 권장. 라이선스상 데이터는 직접 받아야 한다.
+
+> ⚠️ **확인 필요**: ImageNet은 계정 등록 후 다운로드해야 한다([image-net.org](https://www.image-net.org/)). 접근이 어려우면 Imagenette(10클래스 서브셋) 등으로 대체하되, top-1 절대값이 아니라 **FP32 대비 상대 하락폭**을 보는 것이 이 실습의 목적이므로 무방하다.
+
+---
+
+## 4) 단계별 실습
+
+### 4.1 ResNet18 로드 → ONNX export
+
+```python
+# export_resnet18.py — torchvision ResNet18(사전학습) → ONNX
+import torch, torchvision
+
+model = torchvision.models.resnet18(
+    weights=torchvision.models.ResNet18_Weights.IMAGENET1K_V1  # 사전학습 가중치
+).eval()
+
+dummy = torch.randn(1, 3, 224, 224)                            # 고정 입력 shape
+torch.onnx.export(
+    model, dummy, "resnet18_fp32.onnx",
+    input_names=["input"], output_names=["logits"],
+    dynamic_axes={"input": {0: "batch"}, "logits": {0: "batch"}},  # 배치 동적
+    opset_version=17,                                          # 안정적인 opset
+)
+print("saved resnet18_fp32.onnx")
+```
+
+```bash
+python export_resnet18.py
+# ONNX 그래프 유효성 검사
+python -c "import onnx; onnx.checker.check_model(onnx.load('resnet18_fp32.onnx')); print('ONNX OK')"
+```
+
+### 4.2 캘리브레이션 데이터 리더 구현
+
+`quantize_static`은 `CalibrationDataReader` 인터페이스(추상 메서드 `get_next()`)를 요구한다. `get_next()`는 매 호출마다 `{input_name: np.ndarray}`를 반환하고, 데이터가 끝나면 `None`을 반환한다.
+
+```python
+# calib_reader.py — ImageNet 전처리 + CalibrationDataReader
+import os, glob, numpy as np
+from PIL import Image
+from onnxruntime.quantization import CalibrationDataReader
+
+MEAN = np.array([0.485, 0.456, 0.406], dtype=np.float32)
+STD  = np.array([0.229, 0.224, 0.225], dtype=np.float32)
+
+def preprocess(path):
+    img = Image.open(path).convert("RGB").resize((256, 256))
+    img = np.asarray(img).astype(np.float32) / 255.0
+    # center crop 224
+    img = img[16:240, 16:240, :]
+    img = (img - MEAN) / STD
+    return np.transpose(img, (2, 0, 1))[None, :].astype(np.float32)  # NCHW
+
+class ImageNetCalibReader(CalibrationDataReader):
+    def __init__(self, calib_dir, input_name="input", limit=200):
+        self.paths = sorted(glob.glob(os.path.join(calib_dir, "**", "*.JPEG"),
+                                       recursive=True))[:limit]     # 캘리브 200장
+        self.input_name = input_name
+        self._it = iter(self.paths)
+
+    def get_next(self):
+        path = next(self._it, None)
+        if path is None:
+            return None                                   # 끝나면 None
+        return {self.input_name: preprocess(path)}
+
+    def rewind(self):
+        self._it = iter(self.paths)
+```
+
+> 🔴 **함정**: 전처리(resize/crop/정규화)가 **원 모델 학습 때와 다르면** 캘리브레이션 범위가 엉뚱해져 INT8 정확도가 폭락한다. torchvision ResNet18은 위 mean/std가 표준이다. 평가 스크립트와 **완전히 동일한 전처리**를 써야 한다.
+
+### 4.3 INT8 정적 양자화 (MinMax vs Entropy vs Percentile, per-channel 옵션)
+
+```python
+# quantize_ptq.py — MinMax / Entropy / Percentile × per-channel 옵션 비교
+from onnxruntime.quantization import (
+    quantize_static, CalibrationMethod, QuantType, QuantFormat,
+)
+from calib_reader import ImageNetCalibReader
+
+CALIB_DIR = "imagenet/val"   # 캘리브레이션용 이미지 폴더
+
+def run(method, out_path, per_channel=True, percentile=None):
+    reader = ImageNetCalibReader(CALIB_DIR, input_name="input", limit=200)
+    extra = {
+        "WeightSymmetric": True,             # weight 대칭(기본 True)
+        "ActivationSymmetric": False,        # activation 비대칭(기본 False)
+    }
+    if percentile is not None:
+        extra["CalibPercentile"] = percentile   # Percentile일 때만 (버전별 키명 주의)
+    quantize_static(
+        model_input="resnet18_fp32.onnx",
+        model_output=out_path,
+        calibration_data_reader=reader,
+        quant_format=QuantFormat.QDQ,            # QDQ 그래프 생성(기본)
+        calibrate_method=method,                 # ← MinMax / Entropy / Percentile
+        activation_type=QuantType.QUInt8,        # activation: uint8 (asymmetric)
+        weight_type=QuantType.QInt8,             # weight: int8 (symmetric)
+        per_channel=per_channel,                 # weight per-channel on/off
+        reduce_range=False,
+        extra_options=extra,
+    )
+    print("saved", out_path)
+
+if __name__ == "__main__":
+    # 캘리브레이션 3종 비교
+    run(CalibrationMethod.MinMax,     "resnet18_int8_minmax.onnx")
+    run(CalibrationMethod.Entropy,    "resnet18_int8_entropy.onnx")
+    run(CalibrationMethod.Percentile, "resnet18_int8_pct999.onnx", percentile=99.9)
+    # per-channel 효과 대조: MinMax를 per-tensor로도 뽑아 비교
+    run(CalibrationMethod.MinMax,     "resnet18_int8_minmax_pertensor.onnx",
+        per_channel=False)
+```
+
+```bash
+python quantize_ptq.py
+# → resnet18_int8_{minmax,entropy,pct999,minmax_pertensor}.onnx 생성
+```
+
+이 코드가 **이 단계 이론의 실체화**다. 정리하면:
+- `activation_type=QUInt8` + `ActivationSymmetric=False` → **activation = asymmetric uint8** (2.2절).
+- `weight_type=QInt8` + `WeightSymmetric=True` + `per_channel=True` → **weight = per-channel symmetric int8** (2.2절).
+- `quant_format=QuantFormat.QDQ` → **QDQ 그래프** 생성(2.3절).
+- `calibrate_method` 를 바꿔 **MinMax vs Entropy vs Percentile**(2.4절)를 비교.
+- `per_channel=False` 대조군으로 **2.2.2의 per-channel 이득**을 top-1으로 직접 확인.
+
+> 💡 **팁**: x86(VNNI) 하드웨어에서 ONNX Runtime 공식 권장이 `activation=QUInt8, weight=QInt8`이다. 위 설정은 이 권장과 이론(activation 비대칭 / weight 대칭)이 정확히 일치한다.
+
+> ⚠️ **주의**: Percentile 옵션의 키 이름은 ORT 버전에 따라 다르다(`CalibPercentile` 또는 `Percentile`). 설치된 `calibrate.py`에서 실제 파라미터명을 확인하라 — `python -c "import onnxruntime.quantization.calibrate as c; help(c)"`.
+
+### 4.4 top-1 평가 스크립트 (+ 신뢰구간)
+
+```python
+# eval_top1.py — FP32/INT8 ONNX를 ImageNet-val N장으로 top-1 평가 + 신뢰구간
+import os, glob, math, numpy as np, onnxruntime as ort
+from calib_reader import preprocess          # 4.2와 동일 전처리 재사용
+
+def load_labels(val_dir):
+    # 클래스 폴더명을 정렬 → 인덱스. (path, label_idx) 리스트 반환
+    classes = sorted(os.listdir(val_dir))
+    cls2idx = {c: i for i, c in enumerate(classes)}
+    items = []
+    for c in classes:
+        for p in glob.glob(os.path.join(val_dir, c, "*.JPEG")):
+            items.append((p, cls2idx[c]))
+    return items
+
+def evaluate(onnx_path, items, n=1000):
+    sess = ort.InferenceSession(
+        onnx_path, providers=["CUDAExecutionProvider", "CPUExecutionProvider"])
+    iname = sess.get_inputs()[0].name
+    correct = 0
+    for path, label in items[:n]:
+        logits = sess.run(None, {iname: preprocess(path)})[0]
+        if int(np.argmax(logits)) == label:
+            correct += 1
+    return correct, n
+
+def wilson_ci(correct, n, z=1.96):
+    """이항 비율 p=correct/n의 95% Wilson 신뢰구간 (정규근사보다 소표본에 안전)."""
+    p = correct / n
+    denom = 1 + z*z/n
+    center = (p + z*z/(2*n)) / denom
+    half = z * math.sqrt(p*(1-p)/n + z*z/(4*n*n)) / denom
+    return p, center - half, center + half
+
+if __name__ == "__main__":
+    items = load_labels("imagenet/val")
+    for name, path in [
+        ("FP32",            "resnet18_fp32.onnx"),
+        ("INT8 MinMax",     "resnet18_int8_minmax.onnx"),
+        ("INT8 MinMax(PT)", "resnet18_int8_minmax_pertensor.onnx"),
+        ("INT8 Entropy",    "resnet18_int8_entropy.onnx"),
+        ("INT8 Pctile99.9", "resnet18_int8_pct999.onnx"),
+    ]:
+        c, n = evaluate(path, items, n=1000)
+        p, lo, hi = wilson_ci(c, n)
+        print(f"{name:16s} top-1 = {p*100:5.2f}%  "
+              f"95% CI [{lo*100:5.2f}, {hi*100:5.2f}]  (n={n})")
+```
+
+```bash
+python eval_top1.py
+```
+
+> 🔴 **함정 (표본 수·신뢰구간)**: n=1000장에서 top-1 차이 **±1%p 이내는 통계적으로 유의하지 않을 수 있다**. 이항비율 표준오차는 `√(p(1−p)/n)`이라 p≈0.69, n=1000이면 SE ≈ 1.46%p, 95% 신뢰구간 폭은 대략 **±2.9%p**다. 즉 "MinMax 68.4% vs Entropy 69.1%"의 0.7%p 차이는 **1000장으로는 노이즈와 구분 안 될 수도** 있다. 결론을 강하게 내려면 (a) 평가 장수를 5000~50000으로 늘리거나, (b) **같은 이미지 집합**에 대해 두 모델의 정오답을 짝지어(paired, McNemar 검정) 비교하라. 위 스크립트의 Wilson CI가 겹치면 "차이 있다"고 단정하지 말 것.
+
+> 🔴 **함정 (라벨 매핑)**: 위 `load_labels`는 "폴더명 정렬 순서 = torchvision 클래스 인덱스"라고 가정한다. torchvision ResNet18의 실제 인덱스는 ImageNet **synset ID(n0…)의 정렬 순서와 일치**하므로 val 폴더가 synset ID 이름이면 맞는다. 라벨 매핑이 어긋나면 top-1이 0%에 가깝게 나오니 먼저 FP32가 ~69%인지 확인하라(sanity check).
+
+### 4.5 레이어별 SQNR / 코사인 유사도 → `layer_sensitivity.csv`
+
+**아이디어**: FP32 weight와 그것을 INT8로 양자화한 weight를 레이어마다 비교해, 얼마나 달라졌는지를 측정한다. 많이 달라진(=SQNR 낮고, 코사인 유사도 낮은) 레이어가 **양자화에 민감한 "범인 레이어"**다. 이 레이어를 다음 단계에서 FP16으로 남기면(mixed precision) 정확도를 되살릴 수 있다.
+
+#### 4.5.1 SQNR·코사인 유사도 유도
+
+**SQNR (Signal-to-Quantization-Noise Ratio, dB).** "신호 대 양자화잡음 비"를 데시벨로 나타낸 것. 원신호 `x`, 양자화 재구성 `x̂`, 잡음 `n = x − x̂`.
+
+```
+SQNR = 10 · log10( 신호 파워 / 잡음 파워 )
+     = 10 · log10( E[x²] / E[(x − x̂)²] )
+     = 10 · log10( ‖x‖² / ‖x − x̂‖² )      (텐서 전체 합으로 추정)
+```
+
+높을수록 잡음이 신호 대비 작다(=안전). **유도로 얻는 통찰(6 dB/bit 규칙):** 2.1.1에서 반올림잡음 파워 ≈ `s²/12`이고 `s = 2A/2ᵇ`(범위 절반 A, b비트)이면 신호 파워를 `σ²`로 둘 때
+
+```
+SQNR ≈ 10·log10( σ² / (s²/12) ) = 10·log10( 12σ²/s² )
+     = 10·log10(12σ²) − 20·log10(s)
+     ∝ 20·log10(2ᵇ) = b · 20·log10(2) ≈ 6.02·b (dB)
+```
+
+→ **비트를 1 늘리면 SQNR이 약 6 dB 오른다**(고전 DSP의 "6 dB/bit"). INT8(8bit) weight의 이상적 SQNR은 대략 `6·8 ≈ 48 dB`에 상수항을 더한 값 근처이며, **실측이 이보다 크게 낮으면(예: 20 dB대) 그 레이어는 outlier/넓은 dynamic range로 유효 비트를 못 쓰고 있다**는 신호다. 이것이 감도 지표로 SQNR을 쓰는 이유다.
+
+**코사인 유사도.** 두 벡터의 방향이 얼마나 같은지(크기 무시).
+
+```
+cos(x, x̂) = (x · x̂) / (‖x‖ · ‖x̂‖) = Σ xᵢ x̂ᵢ / (√Σxᵢ² · √Σx̂ᵢ²)
+```
+
+1에 가까울수록 방향 보존. **SQNR과 상보적**인 이유: SQNR은 크기 오차에 민감하지만, 신경망은 다음 레이어가 내적(방향)을 취하므로 **방향이 틀어지는 것**이 치명적일 수 있다. 예컨대 x̂이 x를 전부 2배 키웠다면 SQNR은 나쁘지만 코사인은 1.0(방향 동일). 두 지표를 함께 봐야 "크기가 나간 건지, 방향이 나간 건지" 진단된다.
+
+> 💡 **팁**: 이전 판에서 "SNR"로 부르던 것과 동일 개념이다. 양자화 문헌에서는 잡음이 양자화에서 오므로 **SQNR**(Signal-to-**Quantization**-Noise Ratio)이 더 정확한 용어다.
+
+여기서는 **각 레이어의 weight를 직접 양자화**했을 때의 재구성 오차로 감도를 측정한다(activation 없이 weight만으로도 범인 레이어 후보를 잘 잡아낸다. ONNX 중간 텐서를 뽑는 방법은 4.5-b 참고).
+
+```python
+# layer_sensitivity.py — 레이어별 weight 양자화 SQNR/코사인 → CSV
+import csv, numpy as np, torch, torchvision
+
+def quantize_per_channel_symmetric(w, num_bits=8):
+    """weight를 output-channel별 symmetric int8로 quantize→dequantize."""
+    q_max = 2 ** (num_bits - 1) - 1                       # 127
+    w2 = w.reshape(w.shape[0], -1)                        # [out_ch, *]
+    scale = w2.abs().max(dim=1).values / q_max            # 채널별 scale
+    scale = torch.clamp(scale, min=1e-12).unsqueeze(1)
+    q = torch.clamp(torch.round(w2 / scale), -q_max, q_max)
+    w_hat = (q * scale).reshape(w.shape)
+    return w_hat
+
+def sqnr_db(x, x_hat):
+    noise = (x - x_hat).pow(2).sum().item()
+    sig   = x.pow(2).sum().item()
+    return 10 * np.log10(sig / (noise + 1e-12))
+
+def cosine(x, x_hat):
+    a, b = x.flatten(), x_hat.flatten()
+    return (a @ b / (a.norm() * b.norm() + 1e-12)).item()
+
+if __name__ == "__main__":
+    model = torchvision.models.resnet18(
+        weights=torchvision.models.ResNet18_Weights.IMAGENET1K_V1).eval()
+
+    rows = []
+    for name, module in model.named_modules():
+        if isinstance(module, (torch.nn.Conv2d, torch.nn.Linear)):
+            w = module.weight.detach().float()
+            w_hat = quantize_per_channel_symmetric(w)
+            rows.append({
+                "layer": name,
+                "type": type(module).__name__,
+                "out_channels": w.shape[0],
+                "num_params": int(w.numel()),
+                "sqnr_db": round(sqnr_db(w, w_hat), 3),
+                "cosine": round(cosine(w, w_hat), 6),
+            })
+
+    # SQNR 오름차순 = 가장 민감한(위험한) 레이어가 위로
+    rows.sort(key=lambda r: r["sqnr_db"])
+    with open("layer_sensitivity.csv", "w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+        writer.writeheader()
+        writer.writerows(rows)
+
+    print("saved layer_sensitivity.csv  (rows:", len(rows), ")")
+    for r in rows[:5]:                                   # 범인 후보 top-5
+        print(f'  {r["layer"]:30s} SQNR={r["sqnr_db"]:6.2f} dB  cos={r["cosine"]:.4f}')
+```
+
+```bash
+python layer_sensitivity.py
+# → layer_sensitivity.csv 생성 + 범인 후보 top-5 출력
+```
+
+#### 4.5.2 `layer_sensitivity.csv` 스키마 (컬럼 정의)
+
+이 CSV는 **이 문서(1단계)가 생성하는 정본 산출물**이며, 2·3단계가 그대로 읽는다. 컬럼 정의:
+
+| 컬럼 | 타입 | 의미 | 사용처 |
+|------|------|------|--------|
+| `layer` | str | 레이어의 `named_modules()` 이름 (예: `layer3.0.conv1`) | FP16 승격 대상 지정 키 |
+| `type` | str | `Conv2d` / `Linear` | 레이어 종류별 정책 분기 |
+| `out_channels` | int | 출력 채널 수 | 채널 적은 레이어가 민감한지 진단 |
+| `num_params` | int | weight 원소 수 (`w.numel()`) | 승격 시 늘어나는 메모리/연산 가늠 |
+| `sqnr_db` | float | weight 양자화 SQNR(dB), **낮을수록 위험** | **정렬·임계의 주 지표** |
+| `cosine` | float | weight 코사인 유사도, **낮을수록(1에서 멀수록) 위험** | SQNR 보조 진단(방향 붕괴) |
+
+행은 **`sqnr_db` 오름차순**(가장 위험한 레이어가 맨 위)으로 저장된다.
+
+#### 4.5.3 활용법 — 어떤 임계로 FP16 승격을 결정하나
+
+목표: 전체를 INT8로 두되, **가장 민감한 소수 레이어만 FP16으로 되돌려(mixed precision)** 정확도를 회복하고 속도 이득은 지킨다. 결정 기준 3가지(권장 순):
+
+1. **상대 기준(권장·robust):** CSV를 `sqnr_db` 오름차순으로 보고 **하위 5~10%** 를 FP16 후보로. 모델·데이터에 무관하게 잘 작동. 예) ResNet18의 Conv/Linear ~20개면 하위 2~3개.
+2. **절대 기준(보조):** `sqnr_db < 20 dB` **또는** `cosine < 0.99` 인 레이어를 후보로. 단, 임계값은 모델마다 재보정 필요(2.5.1의 6dB/bit로 감을 잡되 실측 분포를 보고 조정).
+3. **비용가중 기준:** `sqnr_db`가 낮고 `num_params`가 작은 레이어를 우선 승격(적은 비용으로 큰 정확도 회복). `first conv`/`downsample`처럼 채널 적고 민감한 레이어가 여기 자주 걸린다.
+
+**실전 절차:** ① 후보 레이어 목록을 CSV에서 뽑는다 → ② 3단계 TensorRT에서 해당 레이어에 `precision=FP16`(또는 Q/DQ 제거)을 지정 → ③ top-1을 4.4로 재측정, 신뢰구간까지 확인 → ④ 목표 정확도(예: FP32 대비 −0.5%p 이내)를 만족할 때까지 후보를 1~2개씩 늘린다. **CSV는 "어디부터 되돌릴지"의 우선순위 큐** 역할을 한다.
+
+> 💡 **팁 (activation SQNR까지 보려면, 4.5-b)**: weight만으로 부족하면 ONNX 중간 텐서를 뽑아 activation SQNR을 잰다. `onnx.utils.extract_model(...)`로 특정 노드까지 잘라낸 서브그래프를 만들거나, 모델의 모든 중간 텐서를 graph output으로 추가한 뒤 FP32/INT8 세션에서 같은 입력으로 실행해 텐서별로 위 `sqnr_db`/`cosine`을 적용하면 된다. QDQ 노드가 텐서 이름을 바꾸므로 이름 매칭에 주의. activation은 데이터 의존적이라 weight-only보다 실제 정확도와 상관이 높지만 계산이 무겁다 — **weight-only로 후보를 좁힌 뒤 상위 후보만 activation SQNR로 재확인**하는 2단계 전략이 실전적이다.
+
+---
+
+## 5) 예시 / 결과 해석
+
+### 5.1 top-1 비교 (예시 값 — 환경/데이터셋에 따라 다름)
+
+> ⚠️ 아래는 **해석 방법을 보여주는 예시 수치**다(ImageNet-val 1000장, ResNet18). 실제 값은 캘리브 장수·전처리·데이터에 따라 달라진다. 95% CI는 Wilson(4.4).
+
+| 모델 | 캘리브레이션 | per-channel | top-1 (예시) | 95% CI(예시) | FP32 대비 |
+|------|-------------|-------------|-------------|--------------|-----------|
+| FP32 (기준) | — | — | 69.5% | [66.6, 72.3] | — |
+| INT8 | MinMax | ✔ | 68.4% | [65.4, 71.2] | −1.1%p |
+| INT8 | MinMax | ✘ (per-tensor) | 66.9% | [63.9, 69.8] | −2.6%p |
+| INT8 | Entropy(KL) | ✔ | 69.1% | [66.2, 71.9] | −0.4%p |
+| INT8 | Percentile 99.9% | ✔ | 69.0% | [66.1, 71.8] | −0.5%p |
+
+**해석**:
+- ResNet18 정도의 잘 정규화된 CNN은 INT8 PTQ만으로도 손실이 1%p 안팎으로 작다.
+- **Entropy/Percentile이 MinMax보다 우수**한 것은, MinMax가 소수의 outlier 활성값까지 범위에 포함시켜 대부분 구간의 해상도를 낭비하는 반면(2.1.1 worked example의 MinMax 열), Entropy(KL)/Percentile은 꼬리를 적절히 잘라 해상도를 되찾기 때문이다(2.4절).
+- **per-channel 대조**: MinMax를 per-tensor로 바꾸면(−2.6%p) per-channel(−1.1%p)보다 눈에 띄게 나빠진다 → **2.2.2의 채널별 dynamic range 이득이 top-1으로 확인**된다. 이 대조가 이 실습에서 가장 교육적이다.
+- ⚠️ **다만** 위 표의 캘리브레이션 간 차이(예: Entropy 69.1 vs Percentile 69.0)는 **95% CI가 겹쳐** 1000장으로는 유의하지 않을 수 있다(4.4 함정). "per-channel vs per-tensor(1.5%p)"처럼 CI가 갈리는 차이만 강하게 주장하라. Entropy가 오히려 더 나쁘게 나온다면 캘리브 장수가 너무 적거나(→ 200장 이상) 전처리 불일치를 의심.
+
+### 5.2 `layer_sensitivity.csv` 해석 (예시)
+
+```
+layer                          type    out_channels  num_params  sqnr_db  cosine
+conv1                          Conv2d  64            9408        22.15    0.9931
+layer4.0.downsample.0          Conv2d  512           131072      24.02    0.9958
+layer1.0.conv1                 Conv2d  64            36864       27.83    0.9985
+...
+fc                             Linear  1000          512000      31.20    0.9994
+```
+
+- **SQNR이 낮은(예: 20 dB대) 레이어 = 범인 후보**. 첫 conv(`conv1`)나 downsample처럼 채널 수가 적거나 dynamic range가 넓은 레이어가 자주 걸린다(2.5.1의 6dB/bit 기준으로 보면 INT8 이상치 48 dB 근처보다 한참 낮음 → 유효 비트를 못 씀).
+- 이 CSV의 상위 몇 개 레이어를 **다음 단계에서 FP16으로 유지(mixed precision)** 하면, 전체를 INT8로 두는 것보다 정확도를 크게 회복하면서 대부분의 속도 이득은 지킬 수 있다(4.5.3).
+
+> 💡 **팁**: SQNR 절대 임계값(예: "20 dB 미만은 FP16")보다, **CSV를 SQNR 오름차순 정렬해 하위 5~10%를 후보로 보는 상대 기준**이 실전에서 안전하다(4.5.3의 기준 1).
+
+---
+
+## 6) 흔한 오류와 해결 (Troubleshooting)
+
+| 증상 | 원인 | 해결 |
+|------|------|------|
+| INT8 top-1이 FP32보다 5%p 이상 폭락 | 전처리(mean/std/crop) 불일치, 캘리브 장수 부족 | 평가·캘리브 전처리를 **동일 함수**로 통일, 캘리브 200장↑ |
+| top-1이 0~1%에 가까움 | 라벨 인덱스 매핑 오류 | 먼저 FP32가 ~69%인지 확인(4.4 sanity check), synset 정렬 순서 확인 |
+| `quantize_static`에서 `CalibrationDataReader` 관련 에러 | `get_next()`가 dict/None을 안 돌려줌 | 반환은 `{input_name: ndarray}` 또는 끝에서 `None` |
+| `onnxruntime` GPU인데 CPU만 잡힘 | `onnxruntime`(CPU)와 `onnxruntime-gpu` 혼재 | CPU 패키지 제거 후 `onnxruntime-gpu==1.28.0`만 재설치, `get_available_providers()` 확인 |
+| ONNX export 후 `checker` 실패 | opset 불일치/동적축 문제 | `opset_version=17`로 고정, dynamic_axes 재확인 |
+| Entropy 캘리브가 매우 느림/메모리 폭증 | 히스토그램 계산 비용, 캘리브 장수 과다 | 캘리브 장수 축소(100~300장), Percentile로 대체 검토 |
+| Percentile 옵션이 안 먹힘 | 키 이름/버전 차이 | 설치된 `calibrate.py`에서 실제 파라미터명 확인(`CalibPercentile` vs `Percentile`) |
+| STE 학습이 loss가 안 줄고 grad=0 | `torch.round`를 그냥 forward/backward에 씀 | `FakeQuantSTE.apply`로 backward에서 STE 마스크를 태워야 함(2.5.2) |
+| 캘리브레이션 간 top-1 차이가 재현이 안 됨 | 표본 수 부족으로 노이즈에 묻힘 | 평가 장수↑ 또는 paired(McNemar) 비교, Wilson CI 겹침 확인(4.4) |
+
+### 6.1 정확도 급락 시 "범인 레이어" 특정 절차 (확대)
+
+INT8 top-1이 목표보다 크게 떨어졌을 때, **어느 레이어가 원인인지 좁히는 체계적 절차**:
+
+```
+[0] Sanity: FP32 ONNX가 ~69%인지 먼저 확인 (아니면 라벨/전처리 문제 → 6장 상단).
+
+[1] 전역 원인 배제:
+    - 캘리브 전처리 == 평가 전처리 인가? (4.2 함정)
+    - 캘리브 장수 200장↑ 인가?
+    - per_channel=True 인가? (per-tensor면 여기서 크게 손해 — 5.1)
+    이 셋을 고쳐 대부분의 "폭락"은 사라진다.
+
+[2] weight-only 감도로 후보 압축 (4.5):
+    - layer_sensitivity.csv 를 sqnr_db 오름차순으로 열고 하위 5~10% 를 후보로.
+
+[3] leave-one-in-FP16 (한 레이어씩 FP16 복원):
+    - 후보 레이어를 "하나만" FP16으로 되돌린 모델을 만들어 top-1 측정.
+    - top-1이 가장 많이 회복되는 레이어 = 진짜 범인.
+    - (반대로 leave-one-out: 한 레이어만 INT8로 두고 나머지 FP32 → 그 레이어만의
+       손실 기여를 격리. 계산 많지만 가장 확실.)
+
+[4] activation SQNR로 교차검증 (4.5-b):
+    - 후보 상위 레이어만 activation 중간 텐서를 뽑아 SQNR/cosine 재측정.
+    - weight-only에서 안 잡히던 activation outlier 레이어를 여기서 발견하기도.
+
+[5] 확정된 범인들을 FP16으로 승격(mixed precision) → 목표 정확도까지 1~2개씩 확대(4.5.3).
+```
+
+> 💡 **팁**: [3]의 leave-one-in-FP16이 실무에서 가장 신뢰도 높다. weight SQNR(정적)과 실제 정확도(데이터 의존)가 항상 일치하지는 않기 때문 — SQNR은 **후보를 20개→3개로 줄이는 필터**, leave-one-in은 **최종 확인**으로 역할을 나눈다.
+
+> 🔴 **함정**: 범인을 못 찾겠다고 무작정 FP16 레이어를 늘리면 속도 이득이 사라진다(전부 FP16이면 INT8을 한 의미가 없음). CSV 우선순위대로 **최소 개수**만 되돌리는 것이 mixed precision의 요령이다.
+
+---
+
+## 7) 산출물 (Deliverables)
+
+이 단계가 끝나면 아래가 남아야 한다. 특히 **`layer_sensitivity.csv`는 2단계·3단계의 입력**이다(이 문서 4.5절이 생성).
+
+- [ ] `resnet18_fp32.onnx` — torchvision ResNet18의 FP32 ONNX (opset 17).
+- [ ] `resnet18_int8_minmax.onnx`, `resnet18_int8_entropy.onnx`, `resnet18_int8_pct999.onnx`, `resnet18_int8_minmax_pertensor.onnx` — INT8 QDQ 그래프(캘리브레이션 3종 + per-tensor 대조).
+- [ ] top-1 비교 결과 (표 또는 로그) — FP32 vs INT8(캘리브레이션 3종) vs per-tensor, **각 Wilson 95% CI 포함**.
+- [ ] **`layer_sensitivity.csv`** — 레이어별 `sqnr_db`/`cosine`/`num_params`/`out_channels`/`type` (SQNR 오름차순). 스키마는 4.5.2. **mixed precision 근거로 다음 단계에서 재사용**.
+- [ ] QAT/STE 미니 데모 로그 — `mini_qat_demo.py`의 loss 감소·grad≠0 출력(STE 작동 증거).
+- [ ] 논문 3편 요약 메모 — Gholami / Nagel / Jacob 각 1문단(핵심 기여 + 이 단계와의 연결).
+- [ ] 수식 유도 노트 — `q=round(x/s)+z` 유도 + **오차 분해(rounding+clipping)** + symmetric/asymmetric·per-tensor/per-channel 표 + "왜 weight=per-channel sym, activation=per-tensor asym" 서술(면접 대비).
+
+---
+
+## 8) 참고 사이트 & 참고문헌
+
+### 공식 문서 / 도구
+- [ONNX Runtime — Quantize ONNX models](https://onnxruntime.ai/docs/performance/model-optimizations/quantization.html) — `quantize_static`, 캘리브레이션, QDQ/QOperator, HW별 권장 dtype (2026-07 확인).
+- [ONNX Runtime — quantize.py (소스)](https://github.com/microsoft/onnxruntime/blob/main/onnxruntime/python/tools/quantization/quantize.py) — `quantize_static` 정확한 시그니처/기본값.
+- [ONNX Runtime — calibrate.py (소스)](https://github.com/microsoft/onnxruntime/blob/main/onnxruntime/python/tools/quantization/calibrate.py) — `CalibrationMethod`(MinMax/Entropy/Percentile/Distribution), `CalibrationDataReader`.
+- [PyTorch Quantization 문서](https://pytorch.org/docs/stable/quantization.html) — `torch.ao.quantization`(fake-quant/QAT).
+- [NVIDIA Model Optimizer (구 TensorRT Model Optimizer)](https://github.com/NVIDIA/Model-Optimizer) — `modelopt.torch.quantization`, `mtq.quantize()`. PTQ/QAT/MSE 캘리브 실전 툴(2단계·3단계에서 사용).
+- [torchvision models](https://pytorch.org/vision/stable/models.html) — ResNet18 사전학습 가중치.
+
+### 논문
+- Gholami et al. (2021), *A Survey of Quantization Methods for Efficient Neural Network Inference*, arXiv:[2103.13630](https://arxiv.org/abs/2103.13630) — 양자화 전반 분류(PTQ/QAT, uniform/non-uniform, per-tensor/per-channel)의 지도. 용어·개념 정리에 필독.
+- Nagel et al. (2021, Qualcomm AI Research), *A White Paper on Neural Network Quantization*, arXiv:[2106.08295](https://arxiv.org/abs/2106.08295) — PTQ 고급 기법(**AdaRound**, **CLE(cross-layer equalization)**, **bias correction**)과 QAT 실무 레시피. 이 단계 PTQ 정확도 회복의 근거.
+- Jacob et al. (2018, CVPR; arXiv 2017), *Quantization and Training of Neural Networks for Efficient Integer-Arithmetic-Only Inference*, arXiv:[1712.05877](https://arxiv.org/abs/1712.05877) — 정수 전용 추론 스킴의 원조. symmetric weight(zero-point=0)로 정수 MAC이 단순해지는 이유(2.2.1 유도)의 출처.
+- Esser et al. (2020, ICLR), *Learned Step Size Quantization (LSQ)*, arXiv:[1902.08153](https://arxiv.org/abs/1902.08153) — scale(step size)을 학습 파라미터로 두는 QAT. 2.5.4의 출처. 저비트(2~4bit)에서 특히 강력.
+
+> ⚠️ **확인 필요**: Jacob et al.은 arXiv 등록이 2017-12(ID 1712.05877)이고 학회 발표는 **CVPR 2018**이다. 인용 시 맥락에 맞게 연도를 표기.
+
+> 💡 **참고(캘리브레이션 KL의 원전)**: 2.4.3의 KL 알고리즘은 Szymon Migacz, *8-bit Inference with TensorRT* (NVIDIA GTC 2017) 발표에서 유래한다. NVIDIA 슬라이드가 정본이며, 2048 bin·threshold 128~2048 탐색·`T=(m+0.5)·bin_width`가 이 발표에서 제시되었다.
+
+---
+
+## 9) 다음 단계
+
+- **이전**: [0.5단계 — 배포 사다리](02_deployment_ladder.md)
+- **다음**: [2단계 — Transformer 양자화](04_transformer_quantization.md) — ViT/Transformer의 activation outlier 문제와 SmoothQuant, FQ-ViT/PTQ4ViT/RepQ-ViT. **이 단계의 `layer_sensitivity.csv` 방법론(4.5)을 Transformer에 확장**해 어떤 레이어를 FP16으로 남길지 결정한다. 특히 2.2.2의 "activation per-channel을 왜 못 하나"가 Transformer의 토큰별 outlier에서 어떻게 문제가 되는지로 이어진다.

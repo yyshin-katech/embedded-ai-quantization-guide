@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3. TensorRT로 첫 완주</title><style>
+:root{--bg:#0f1115;--card:#171a21;--line:#2a2f3a;--tx:#e6e8ec;--dim:#9aa3b2;--acc:#5aa9ff;--ok:#3ecf8e;--warn:#f0b429;--bad:#ff6b6b;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:-apple-system,"Pretendard","Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;font-size:16px}
+a{color:var(--acc);text-decoration:none}a:hover{text-decoration:underline}
+.bar{position:sticky;top:0;background:rgba(15,17,21,.96);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);z-index:20}
+.bar-in{max-width:1000px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:14px}
+.bar b{font-size:.9rem;white-space:nowrap}
+.track{flex:1;height:8px;background:#252a34;border-radius:99px;overflow:hidden;min-width:80px}
+.fill{height:100%;width:0;background:linear-gradient(90deg,var(--acc),var(--ok));transition:width .3s}
+.pct{font-size:.82rem;color:var(--dim);min-width:96px;text-align:right;white-space:nowrap}
+.stagenav{border-bottom:1px solid var(--line);background:#12151b}
+.stagenav-in{max-width:1000px;margin:0 auto;padding:8px 20px;display:flex;flex-wrap:wrap;gap:6px}
+.stagenav a{font-size:.76rem;padding:3px 9px;border-radius:99px;background:#1e222b;color:var(--dim)}
+.stagenav a.cur{background:var(--acc);color:#08111f;font-weight:600}
+.wrap{max-width:1000px;margin:0 auto;padding:34px 24px 120px}
+h1{font-size:1.9rem;margin:0 0 20px;letter-spacing:-.02em;border-bottom:2px solid var(--acc);padding-bottom:16px}
+h2{font-size:1.35rem;margin:48px 0 14px;padding-left:12px;border-left:4px solid var(--acc);scroll-margin-top:110px}
+h3{font-size:1.08rem;margin:26px 0 10px;color:var(--acc);scroll-margin-top:110px}
+h4{font-size:1rem;margin:20px 0 8px;color:var(--tx)}
+p,li{color:var(--tx)}
+ul,ol{padding-left:22px}li{margin:6px 0}
+li.task{list-style:none;margin-left:-22px}
+li.task label{cursor:pointer;display:flex;gap:9px;align-items:flex-start}
+li.task input{margin-top:6px;width:16px;height:16px;accent-color:var(--acc);cursor:pointer;flex-shrink:0}
+li.task input:checked ~ *{color:var(--dim)}
+code{background:#20242e;color:#ffd479;padding:2px 6px;border-radius:4px;font-family:"SFMono-Regular",Consolas,monospace;font-size:.86em}
+pre{background:#0b0d11;border:1px solid var(--line);border-radius:8px;padding:15px;overflow-x:auto;font-size:.85rem;line-height:1.55}
+pre code{background:none;color:#c8d3e0;padding:0}
+.tablewrap{overflow-x:auto;margin:16px 0}
+table{width:100%;border-collapse:collapse;font-size:.9rem}
+th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}
+th{background:#1e222b;color:var(--acc);font-weight:600}
+blockquote{margin:16px 0;padding:14px 18px;border-radius:8px;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--acc)}
+blockquote.tip{border-left-color:var(--ok)}
+blockquote.warn{border-left-color:var(--warn)}
+blockquote.bad{border-left-color:var(--bad)}
+hr{border:none;border-top:1px solid var(--line);margin:32px 0}
+.toc{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 18px;margin:8px 0 28px}
+.toc summary{cursor:pointer;color:var(--acc);font-weight:600;font-size:.92rem}
+.toc ul{margin:10px 0 2px;padding-left:18px}
+.toc li{margin:3px 0;font-size:.9rem}
+.toc .l3{padding-left:16px;font-size:.85rem}
+.pager{display:flex;justify-content:space-between;gap:12px;margin:16px 0 0}
+.pager a{flex:1;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 16px;font-size:.9rem}
+.pager a.next{text-align:right}
+.pager .lbl{display:block;font-size:.72rem;color:var(--dim)}
+footer{margin-top:60px;padding-top:18px;border-top:1px solid var(--line);color:var(--dim);font-size:.82rem}
+@media print{body{background:#fff;color:#000}.bar,.stagenav,.pager{display:none}.card,blockquote{background:#f7f7f7;border:1px solid #ccc}pre{background:#f4f4f4}pre code,code{color:#000}h2,h3{color:#000}a{color:#000}th{background:#eee;color:#000}}
+</style></head><body>
+<div class="bar"><div class="bar-in"><b>3. TensorRT로 첫 완주</b>
+<div class="track"><div class="fill" id="fill"></div></div>
+<span class="pct" id="pct">0 / 0</span></div></div>
+<div class="stagenav"><div class="stagenav-in"><a class="" href="README.html">홈</a><a class="" href="01_environment_setup.html">0. 환경준비</a><a class="" href="02_deployment_ladder.html">0.5 사다리</a><a class="" href="03_quantization_theory.html">1. 양자화이론</a><a class="" href="04_transformer_quantization.html">2. Transformer</a><a class="cur" href="05_tensorrt.html">3. TensorRT</a><a class="" href="06_multi_soc.html">4. 멀티SoC</a><a class="" href="07_infrastructure.html">5. 인프라화</a><a class="" href="08_capstone.html">캡스톤</a><a class="" href="09_roadmap.html">12주 로드맵</a><a class="" href="10_pitfalls.html">함정 5</a></div></div>
+<div class="wrap"><details class="toc" open><summary>목차</summary><ul><li><a href="#0-이-단계에서-무엇을왜-하는가">0) 이 단계에서 무엇을·왜 하는가</a></li><li><a href="#1-학습-목표-완료-체크리스트">1) 학습 목표 &amp;amp; 완료 체크리스트</a></li><li><a href="#2-배경-이론-개념">2) 배경 이론 / 개념</a></li><li class="l3"><a href="#21-tensorrt가-하는-일">2.1 TensorRT가 하는 일</a></li><li class="l3"><a href="#22-implicit-vs-explicit-quantization-버전-경계의-핵심">2.2 Implicit vs Explicit quantization (버전 경계의 핵심)</a></li><li class="l3"><a href="#23-dla-deep-learning-accelerator">2.3 DLA (Deep Learning Accelerator)</a></li><li class="l3"><a href="#24-이-단계에서-도구가-겹치지-않게-trtexec-polygraphy-modelopt-nsight-역할-분담">2.4 이 단계에서 도구가 겹치지 않게: trtexec / polygraphy / ModelOpt / Nsight 역할 분담</a></li><li><a href="#3-환경도구-준비">3) 환경·도구 준비</a></li><li class="l3"><a href="#31-tensorrt-설치-확인-0단계에서-설치-가정">3.1 TensorRT 설치 확인 (0단계에서 설치 가정)</a></li><li class="l3"><a href="#32-부가-도구-설치">3.2 부가 도구 설치</a></li><li><a href="#4-단계별-실습">4) 단계별 실습</a></li><li class="l3"><a href="#실습-1-yolo-detector-fp32-fp16-int8-latencymap-3점-비교">실습 1 — YOLO detector: FP32 → FP16 → INT8, latency/mAP 3점 비교</a></li><li class="l3"><a href="#실습-2-polygraphy로-fp32onnx-runtime-vs-int8trt-레이어별-비교-debug-precision-이분탐색">실습 2 — polygraphy로 FP32(ONNX-Runtime) vs INT8(TRT) 레이어별 비교 + debug precision 이분탐색</a></li><li class="l3"><a href="#실습-3-int8-캘리브레이터-직접-구현-tensorrt-10x-iint8entropycalibrator2">실습 3 — INT8 캘리브레이터 직접 구현 (TensorRT 10.x, IInt8EntropyCalibrator2)</a></li><li class="l3"><a href="#실습-4-tensorrt-model-optimizer로-ptqqat-qdq-onnx-export-10x11x-공통-권장">실습 4 — TensorRT Model Optimizer로 PTQ/QAT + QDQ ONNX export (10.x·11.x 공통, 권장)</a></li><li class="l3"><a href="#실습-5-dla-파티셔닝-gpu-only-dla-only-하이브리드">실습 5 — DLA 파티셔닝 (GPU-only / DLA-only / 하이브리드)</a></li><li class="l3"><a href="#실습-6-custom-plugin-골격-ipluginv3-c-진짜-차별점">실습 6 — Custom Plugin 골격 (IPluginV3, C++) — 진짜 차별점</a></li><li class="l3"><a href="#실습-7-nsight-systems로-커널-단위-병목-찾기-선택-심화">실습 7 — Nsight Systems로 커널 단위 병목 찾기 (선택, 심화)</a></li><li><a href="#5-예시-결과-해석">5) 예시 / 결과 해석</a></li><li class="l3"><a href="#51-latencymap-3점-비교표-예시-실제-값은-각자-환경에서-채움">5.1 latency/mAP 3점 비교표 (예시 — 실제 값은 각자 환경에서 채움)</a></li><li class="l3"><a href="#52-trtexec-출력-판독-예시-무엇을-보고-무슨-결론을-내렸나">5.2 trtexec 출력 판독 예시 (무엇을 보고 무슨 결론을 내렸나)</a></li><li class="l3"><a href="#53-polygraphy-레이어-비교-해석-예시">5.3 polygraphy 레이어 비교 해석 (예시)</a></li><li class="l3"><a href="#54-dla-결과-해석-보드-시">5.4 DLA 결과 해석 (보드 시)</a></li><li><a href="#6-흔한-오류와-해결-troubleshooting">6) 흔한 오류와 해결 (Troubleshooting)</a></li><li><a href="#7-산출물-deliverables">7) 산출물 (Deliverables)</a></li><li><a href="#8-참고-사이트-참고문헌">8) 참고 사이트 &amp;amp; 참고문헌</a></li><li class="l3"><a href="#공식-문서-도구">공식 문서 / 도구</a></li><li class="l3"><a href="#논문">논문</a></li><li><a href="#9-다음-단계">9) 다음 단계</a></li></ul></details><div class="pager"><a class="prev" href="04_transformer_quantization.html"><span class="lbl">← 이전</span>2. Transformer</a><a class="next" href="06_multi_soc.html"><span class="lbl">다음 →</span>4. 멀티SoC</a></div><h1>3. TensorRT로 첫 완주</h1>
+<blockquote class="callout">원본 가이드 매핑: "3단계 — TensorRT로 첫 완주 (2~3주)" · 예상 소요: 2~3주 · 선행 조건: <a href="01_environment_setup.html">0단계 환경 준비</a> 완료(CUDA/드라이버/TensorRT 설치), <a href="03_quantization_theory.html">1단계 양자화 이론</a>의 <code>layer_sensitivity.csv</code> 산출물 실행 환경: <strong>Ubuntu 22.04 LTS + NVIDIA RTX GPU(dGPU)</strong>. Orin 보드가 있으면 실측이 이상적이고, 없으면 RTX에서 90%를 진행할 수 있다(DLA·실제 보드 latency만 Orin 필요). 다른 SoC와도 개념은 90% 동일하다.</blockquote>
+<hr>
+<h2 id="0-이-단계에서-무엇을왜-하는가">0) 이 단계에서 무엇을·왜 하는가</h2>
+<p>이론(1·2단계)에서 "양자화가 왜 정확도를 떨어뜨리는가"를 배웠다면, 이 단계는 <strong>실제 하드웨어 위에서 엔진을 빌드하고 latency와 정확도를 숫자로 재는 첫 완주</strong>다. 임베디드 AI 엔지니어가 실무에서 가장 많이 만지는 도구가 TensorRT이고, 면접에서도 "trtexec로 뭘 봤냐 / DLA fallback을 어떻게 잡았냐 / custom plugin을 짜봤냐"를 묻는다.</p>
+<p>핵심 메시지 3가지:</p>
+<ol><li><strong>profiling의 절반은 <code>trtexec</code>에서 끝난다.</strong> 엔진 하나 빌드하고 per-layer 프로파일을 뽑는 것만으로 병목의 대부분이 보인다. 그런데 대부분의 사람은 <code>trtexec</code>가 뱉는 숫자(Throughput / Latency / Enqueue Time / GPU Compute Time / H2D·D2H)를 <strong>읽을 줄 모른다.</strong> 이 문서는 그 출력을 한 줄씩 해석하는 데 지면을 크게 쓴다.</li><li><strong>정확도 디버깅은 <code>polygraphy</code>가 필수품이다.</strong> "INT8로 바꿨더니 mAP가 떨어졌다"를 레이어 단위로 어디서 깨졌는지 찾는다. 특히 <code>polygraphy debug precision</code>으로 <strong>"몇 번째 레이어까지 고정밀로 돌리면 정확도가 회복되는가"를 이분탐색(bisect)</strong> 하는 절차가 실무의 핵심이다.</li><li><strong>DLA와 custom plugin이 진짜 차별점이다.</strong> GPU-only 빌드는 누구나 한다. DLA fallback을 0으로 만들고, 미지원 op를 위한 plugin을 직접 짜는 능력이 임베디드 특화 역량이다.</li></ol>
+<blockquote class="callout warn">⚠️ <strong>버전 경계 (2026-07 기준, 반드시 먼저 읽을 것)</strong> TensorRT는 2026년 상반기 <strong>11.x</strong>가 나오면서 API가 크게 바뀌었다. 이 단계는 <strong>두 세계</strong>를 다루되, <strong>정본(주 경로)은 10.x LTS</strong>다. - <strong>TensorRT 10.x (주 경로)</strong>: JetPack(Orin)에 탑재되는 계열이자 이 스터디의 정본. <code>trtexec --int8 --fp16 --best</code>, <code>IInt8EntropyCalibrator2</code>, implicit quantization이 <strong>그대로 동작</strong>한다(단, 10.1부터 캘리브레이터는 deprecated 경고). <strong>그리고 DLA는 10.x에서만 지원된다</strong> — 11.0/11.1에는 DLA 지원이 아예 없다(<a href="https://docs.nvidia.com/deeplearning/tensorrt/latest/inference-library/work-with-dla.html">Working with DLA</a>). Orin으로 넘어갈 것이라면 10.x가 사실상 강제된다. - <strong>TensorRT 11.x (참고)</strong>: RTX 데스크톱 최신. <strong>모든 네트워크가 strongly-typed</strong>여서 <code>--fp16/--int8/--best/--bf16/--fp8/--int4/--calib</code> 플래그가 <strong>전부 제거</strong>됐고, 정밀도는 빌드가 아니라 <strong>모델에 미리 심어서</strong>(ModelOpt AutoCast / QDQ) 결정한다. DLA도 빠졌다. 자신이 어느 버전인지 <code>trtexec --version</code>으로 먼저 확인하고, 각 실습의 <strong>버전 태그</strong>를 따라가라. 📌 <strong>이 스터디의 정본(canonical) 경로 = TensorRT 10.x LTS 고정</strong>(<a href="01_environment_setup.html">0단계 결정</a> 참조). 아래 실습의 <strong>주 경로는 10.16.x LTS</strong>(<code>trtexec --int8 --fp16</code> 등이 그대로 동작)이고, <strong>11.x 변경사항은 "앞으로 이렇게 바뀐다"는 참고</strong>로 각 실습의 <code>2-B</code>/버전 주의 콜아웃에 병기한다. Orin JetPack도 10.x 계열이라 10.x로 배워두면 데스크톱·보드가 일치한다. - 왜 하필 <strong>10.16.x LTS</strong>인가: 10.16은 <strong>Long-Term Support 라인</strong>으로, 여기서 deprecated된 API도 <strong>2027-03까지 유지</strong>된다(<a href="https://docs.nvidia.com/deeplearning/tensorrt/latest/getting-started/release-notes-10/10.16.0.html">TensorRT 10.16 Release Notes</a>). 즉 학습·포트폴리오 기간 내내 명령/코드가 안 깨진다. <code>--int8 --fp16</code>이 동작하고 DLA가 살아있는 <strong>가장 안정적인 축</strong>이다.</blockquote>
+<hr>
+<h2 id="1-학습-목표-완료-체크리스트">1) 학습 목표 &amp; 완료 체크리스트</h2>
+<ul><li class="task"><label><input type="checkbox" data-k="63e2e6fd49"> <code>trtexec --version</code>으로 내 TensorRT 메이저 버전(10.x인지 11.x인지) 확인 — 정본은 <strong>10.16.x LTS</strong></label></li><li class="task"><label><input type="checkbox" data-k="f9cbbd5af5"> YOLO(YOLO11/YOLOv8)를 ONNX로 export하고 <code>trtexec</code>로 엔진을 빌드</label></li><li class="task"><label><input type="checkbox" data-k="e561ee1395"> 동일 모델을 <strong>FP32 / FP16 / INT8</strong> 3가지로 빌드하고 <strong>latency + mAP 3점 비교표</strong> 작성</label></li><li class="task"><label><input type="checkbox" data-k="2908d3e7d0"> <code>trtexec</code> 출력에서 <strong>Throughput / Latency(min·median·p90·p99) / Enqueue Time / GPU Compute Time / H2D·D2H</strong>를 각각 무슨 뜻인지 말로 설명</label></li><li class="task"><label><input type="checkbox" data-k="a1d58ff4c6"> <code>--dumpProfile</code>의 <strong>per-layer 표</strong>를 읽고 상위 5개 레이어가 시간의 몇 %인지 계산</label></li><li class="task"><label><input type="checkbox" data-k="91ede5ab86"> <code>--timingCacheFile</code>로 빌드 시간을 단축하고, <code>--saveEngine</code>/<code>--loadEngine</code>으로 엔진 직렬화·역직렬화</label></li><li class="task"><label><input type="checkbox" data-k="a0ac922e1b"> <code>polygraphy inspect model</code>로 그래프 구조 확인, <code>polygraphy run --trt --onnxrt --atol/--rtol</code>로 프레임워크 간 출력 비교</label></li><li class="task"><label><input type="checkbox" data-k="b29cf0e471"> <code>polygraphy debug precision --mode bisect</code>로 <strong>"몇 번째 레이어까지 FP16로 올리면 정확도가 회복되는가"</strong> 를 이분탐색</label></li><li class="task"><label><input type="checkbox" data-k="1d6da37b32"> <code>IInt8EntropyCalibrator2</code>(10.x) <strong>또는</strong> ModelOpt PTQ(11.x)로 INT8 캘리브레이션 직접 수행 + <strong>캘리브 캐시 저장/재사용</strong></label></li><li class="task"><label><input type="checkbox" data-k="448ff5c627"> TensorRT Model Optimizer로 <strong>QDQ ONNX</strong> export → <code>trtexec</code> 빌드까지 1회 연계</label></li><li class="task"><label><input type="checkbox" data-k="d17d15f99d"> (Orin 보드 있으면) 동일 모델을 <strong>GPU-only / DLA-only / 하이브리드</strong> 3가지로 빌드</label></li><li class="task"><label><input type="checkbox" data-k="d31a5ac960"> (Orin 보드 있으면) <strong>DLA fallback 레이어 목록 추출 → 유발 op 치환 → fallback 0</strong> 도전</label></li><li class="task"><label><input type="checkbox" data-k="0c3817806a"> TensorRT <strong>custom plugin(IPluginV3)</strong> C++ 골격을 이해하고 최소 빌드(identity plugin)</label></li><li class="task"><label><input type="checkbox" data-k="eb031e40ab"> Nsight Systems로 커널 단위 타임라인 1회 캡처하고 병목 유형(전송 vs 연산)을 판정</label></li><li class="task"><label><input type="checkbox" data-k="d1eac47445"> 산출물 <code>latency_accuracy_matrix.csv</code>, <code>polygraphy_diff.md</code>, (보드 시) <code>dla_fallback.md</code> 작성</label></li></ul>
+<hr>
+<h2 id="2-배경-이론-개념">2) 배경 이론 / 개념</h2>
+<h3 id="21-tensorrt가-하는-일">2.1 TensorRT가 하는 일</h3>
+<p>ONNX/프레임워크 그래프를 받아 → <strong>레이어 융합(fusion)</strong>, <strong>정밀도 선택</strong>, <strong>커널 auto-tuning(tactic 선택)</strong>, <strong>메모리 재사용</strong>을 거쳐 특정 GPU/DLA에 최적화된 <strong>엔진(.engine/.plan)</strong> 을 만든다.</p>
+<p>직관적으로 왜 이렇게 하나:</p>
+<ul><li><strong>fusion</strong>: <code>Conv → Bias → ReLU</code>를 하나의 커널로 합치면, 중간 결과를 글로벌 메모리에 썼다 읽는 왕복이 사라진다. 임베디드에서 병목은 연산량(FLOPs)이 아니라 <strong>메모리 대역폭</strong>인 경우가 많아서, fusion이 곧 속도다.</li><li><strong>tactic 선택(auto-tuning)</strong>: 같은 Conv라도 GPU/입력크기에 따라 최적 CUDA 커널이 다르다. TensorRT는 후보 커널들을 <strong>실제로 타이밍해 보고</strong> 가장 빠른 것을 고른다. 그래서 <strong>빌드가 느리다</strong>(그 대신 <code>--timingCacheFile</code>로 캐시하면 다음 빌드가 빨라진다).</li><li><strong>정밀도 선택</strong>: FP32/FP16/INT8 중 레이어별로 어떤 걸 쓸지 결정한다. 10.x는 <code>--fp16/--int8/--best</code> 플래그로, 11.x는 모델에 심긴 정보로 결정한다.</li></ul>
+<p>엔진은 <strong>빌드한 GPU 아키텍처·TensorRT 버전에 종속적</strong>이라 <strong>타깃에서 빌드</strong>하는 게 원칙이다(RTX에서 빌드한 엔진은 Orin에서 안 돌아간다). 이식이 꼭 필요하면 <code>--versionCompatible</code>(버전 호환 엔진) 같은 옵션이 있으나, 아키텍처 자체(SM 버전)가 다르면 여전히 재빌드가 안전하다.</p>
+<h3 id="22-implicit-vs-explicit-quantization-버전-경계의-핵심">2.2 Implicit vs Explicit quantization (버전 경계의 핵심)</h3>
+<div class="tablewrap"><table><thead><tr><th>구분</th><th>Implicit (10.x)</th><th>Explicit / QDQ (10.x·11.x)</th></tr></thead><tbody><tr><td>스케일 결정</td><td>빌드 시 캘리브레이터가 결정</td><td>모델 그래프의 Q/DQ 노드가 이미 보유</td></tr><tr><td>대표 API</td><td><code>IInt8EntropyCalibrator2</code></td><td>ModelOpt / pytorch-quantization의 QDQ export</td></tr><tr><td>정밀도 제어</td><td><code>trtexec --int8 --fp16</code> 플래그</td><td>strong typing(모델이 곧 정밀도)</td></tr><tr><td>11.x 지원</td><td><strong>제거됨</strong></td><td><strong>표준 방식</strong></td></tr><tr><td>정확도</td><td>자동이라 편하지만 최적 아님</td><td>QAT와 결합 시 최고</td></tr></tbody></table></div>
+<p><strong>왜 이 방향으로 통일됐나:</strong> implicit은 "빌드할 때 캘리브레이션 데이터를 흘려서 스케일을 정한다"라서, <strong>엔진을 빌드하는 순간까지 정밀도가 확정되지 않는다.</strong> 이는 재현성·디버깅·부분 정밀도 지정을 어렵게 한다. explicit(QDQ)은 <strong>모델 그래프 안에 Q/DQ(Quantize/DeQuantize) 노드가 스케일을 들고 있어</strong>, 엔진 빌더는 그저 그 정보를 읽어 인접 레이어에 fuse할 뿐이다. "정밀도는 모델의 속성"이 되어 재현성이 좋다.</p>
+<p>NVIDIA는 10.1부터 implicit(entropy calibrator)을 deprecated 처리했고, 11.0에서 관련 <code>trtexec</code> 플래그를 없앴다. <strong>엔진 빌드가 아니라 "모델에 Q/DQ를 심는 단계"에서 정밀도가 결정되는 방향</strong>으로 통일됐다. 정본(10.16.x LTS)에서는 <strong>둘 다 동작</strong>하므로, implicit로 감을 잡고 explicit/QDQ로 실무 감각을 익히는 순서가 좋다.</p>
+<blockquote class="callout tip">💡 <strong>QDQ가 엔진에서 어떻게 INT8이 되나:</strong> ONNX의 <code>... → DQ → Conv → Q → ...</code> 패턴을 TensorRT가 보면, DQ와 Q를 Conv 안으로 <strong>접어(fuse)</strong> Conv를 <strong>INT8 텐서코어 커널</strong>로 실행한다. 그래서 QDQ 모델을 빌드하면 <code>--int8</code> 플래그 없이도(11.x) 또는 있어도(10.x) INT8 실행이 나온다. <code>--dumpProfile</code>에서 해당 Conv의 tactic 이름에 <code>int8</code>/<code>imma</code>(integer matrix-multiply-accumulate)가 뜨면 성공이다.</blockquote>
+<h3 id="23-dla-deep-learning-accelerator">2.3 DLA (Deep Learning Accelerator)</h3>
+<p>Orin/Xavier에 있는 <strong>고정 기능 가속기</strong>. 특징:</p>
+<ul><li><strong>FP16·INT8만</strong> 지원(FP32 불가).</li><li>지원 op가 GPU보다 <strong>훨씬 좁다.</strong> CNN(Conv/Deconv/Pool/Activation/ElementWise/Scale/LRN/Concat/Resize/Slice/Shuffle/Reduce 등)은 대체로 되지만, <strong>Softmax는 Orin에서만</strong>(Xavier 불가), <strong>MatMul/attention/transformer 계열은 통째로 DLA에서 안 돈다</strong>(<a href="https://docs.nvidia.com/deeplearning/tensorrt/latest/inference-library/dla-layer-restrictions.html">DLA Supported Layers</a>). 게다가 <strong>동적 shape 불가</strong> — profile의 min=opt=max여야 한다.</li><li>미지원 레이어는 <code>--allowGPUFallback</code>으로 GPU에 떨어뜨린다 → 이걸 <strong>GPU-DLA 파티셔닝</strong>이라 부른다.</li><li>🔴 <strong>함정:</strong> fallback이 많으면 DLA↔GPU 사이 <strong>메모리 복사 오버헤드</strong>가 커져서 <strong>오히려 느려진다.</strong> 경험칙으로 연산의 <strong>20~30% 이상이 GPU로 fallback되면 DLA를 쓰는 이점이 사라진다.</strong> 그래서 "fallback 0 만들기"가 목표가 된다.</li><li>⚠️ <strong>DLA는 TensorRT 10.x 전용 개념이다.</strong> 11.0/11.1은 DLA를 지원하지 않으므로, DLA 실습은 <strong>10.x(JetPack) + Orin/Xavier 보드</strong>에서만 의미가 있다.</li></ul>
+<h3 id="24-이-단계에서-도구가-겹치지-않게-trtexec-polygraphy-modelopt-nsight-역할-분담">2.4 이 단계에서 도구가 겹치지 않게: trtexec / polygraphy / ModelOpt / Nsight 역할 분담</h3>
+<div class="tablewrap"><table><thead><tr><th>도구</th><th>한 문장 역할</th><th>주 산출물</th></tr></thead><tbody><tr><td><code>trtexec</code></td><td>엔진 빌드 + latency/throughput 벤치마크 + per-layer 프로파일</td><td><code>.engine</code>, latency 표</td></tr><tr><td><code>polygraphy</code></td><td><strong>정확도</strong> 디버깅(프레임워크 간 출력 비교, 어느 레이어가 깨지는지 이분탐색)</td><td>mismatch 레이어 목록</td></tr><tr><td>ModelOpt</td><td>모델에 <strong>Q/DQ를 심는</strong>(PTQ/QAT) 단계 → QDQ ONNX</td><td><code>*.quant.onnx</code></td></tr><tr><td>Nsight Systems</td><td>커널·메모리 복사 <strong>타임라인</strong>(전송 vs 연산 병목 판정)</td><td><code>*.nsys-rep</code></td></tr></tbody></table></div>
+<p>"속도는 trtexec/Nsight, 정확도는 polygraphy, 정밀도 심기는 ModelOpt"로 외우면 헷갈리지 않는다.</p>
+<hr>
+<h2 id="3-환경도구-준비">3) 환경·도구 준비</h2>
+<h3 id="31-tensorrt-설치-확인-0단계에서-설치-가정">3.1 TensorRT 설치 확인 (0단계에서 설치 가정)</h3>
+<pre><code class="lang-bash"># TensorRT 버전 확인 — 정본은 10.16.x LTS. 10.x인지 11.x인지가 이 단계 전체의 분기점
+trtexec --version                      # trtexec가 PATH에 없으면 아래 경로 시도
+/usr/src/tensorrt/bin/trtexec --version
+dpkg -l | grep -i tensorrt             # deb 설치 시 패키지 버전
+python3 -c &quot;import tensorrt as trt; print(trt.__version__)&quot;   # Python 바인딩 버전</code></pre>
+<p>예상 출력(정본 10.16.x 예):</p>
+<pre><code class="lang-text">[I] TensorRT version: 10.16.0
+...
+&amp;&amp;&amp;&amp; PASSED TensorRT.trtexec [TensorRT v101600] ...</code></pre>
+<ul><li><code>TensorRT v101600</code> = 10.16.0. 앞 두 자리(<code>10</code>)가 메이저 → <strong><code>--int8/--fp16/--best</code>가 살아있는 10.x 계열</strong>임을 뜻한다.</li><li><code>v110000</code> 이상이면 11.x → 정밀도 플래그가 없으니 실습 2-B/4로 간다.</li></ul>
+<blockquote class="callout warn">⚠️ 확인 필요: 위에서 나온 버전을 웹의 <a href="https://docs.nvidia.com/deeplearning/tensorrt/latest/getting-started/release-notes.html">TensorRT Release Notes</a>와 대조해 EOL/알려진 버그를 확인하라. 2026-07 기준 <strong>정본은 10.16.x LTS</strong>(10.16에서 deprecated된 API는 2027-03까지 유지)이며, 11.x는 최신이나 정밀도 플래그·DLA가 없다. Orin JetPack은 통상 <strong>TensorRT 10.x</strong>를 탑재한다.</blockquote>
+<h3 id="32-부가-도구-설치">3.2 부가 도구 설치</h3>
+<pre><code class="lang-bash"># ultralytics (YOLO export용), onnx, onnxruntime-gpu
+pip install -U ultralytics onnx onnxruntime-gpu
+
+# Polygraphy (정확도/레이어 디버깅) — NVIDIA index 병용
+python3 -m pip install colored polygraphy --extra-index-url https://pypi.ngc.nvidia.com
+polygraphy --version                   # 설치 확인 (2026-07 기준 0.49.x 계열)
+
+# TensorRT Model Optimizer (QDQ export / PTQ / QAT)
+pip install -U nvidia-modelopt[all]    # import 이름은 modelopt (modelopt.onnx / modelopt.torch)
+python3 -c &quot;import modelopt; print(modelopt.__version__)&quot;
+
+# pycuda (직접 캘리브레이터 구현 시 버퍼 관리에 사용) — 선택
+pip install pycuda</code></pre>
+<p>각 패키지가 이 단계에서 하는 일:</p>
+<ul><li><code>ultralytics</code>: YOLO <code>.pt</code> → ONNX export, <code>.engine</code> 검증(mAP)까지 한 CLI로.</li><li><code>polygraphy</code>: <code>inspect</code>/<code>run</code>/<code>debug</code>/<code>data</code> 서브커맨드. 정확도 디버깅 전용.</li><li><code>nvidia-modelopt</code>: <code>modelopt.onnx.quantization</code>(ONNX PTQ), <code>modelopt.torch.quantization</code>(QAT). QDQ ONNX를 만든다.</li><li><code>pycuda</code>: 파이썬 캘리브레이터에서 디바이스 버퍼 할당/H2D 복사(<code>mem_alloc</code>, <code>memcpy_htod</code>).</li></ul>
+<blockquote class="callout tip">💡 팁: 버전 충돌이 잦다. <code>pip install</code> 후 <code>python3 -c &quot;import tensorrt, onnxruntime, modelopt&quot;</code>가 한 번에 통과하는지 확인하고, 안 되면 컨테이너(<code>nvcr.io/nvidia/tensorrt</code>)로 격리하는 편이 빠르다. 컨테이너 태그는 정본에 맞춰 <strong>10.16.x 계열</strong>을 고른다.</blockquote>
+<hr>
+<h2 id="4-단계별-실습">4) 단계별 실습</h2>
+<h3 id="실습-1-yolo-detector-fp32-fp16-int8-latencymap-3점-비교">실습 1 — YOLO detector: FP32 → FP16 → INT8, latency/mAP 3점 비교</h3>
+<h4 id="1-yolo를-onnx로-export">(1) YOLO를 ONNX로 export</h4>
+<pre><code class="lang-bash"># YOLO11n(또는 yolov8n) COCO 사전학습 가중치를 ONNX로 export
+# opset&gt;=13 권장(INT8 QDQ 요구). simplify로 그래프 정리.
+yolo export model=yolo11n.pt format=onnx opset=13 imgsz=640 simplify=True
+# 결과: yolo11n.onnx  (동적 배치가 필요하면 dynamic=True 추가)</code></pre>
+<pre><code class="lang-bash"># ONNX 그래프 구조/입출력 이름·shape 확인 (polygraphy inspect)
+polygraphy inspect model yolo11n.onnx --show layers | head -n 40</code></pre>
+<p><code>polygraphy inspect model</code> 출력에서 봐야 할 것:</p>
+<ul><li>맨 위 <strong>입력/출력 텐서 이름과 shape</strong>(예: <code>images [1,3,640,640] float32</code>, <code>output0 [1,84,8400]</code>). 뒤에서 <code>polygraphy run</code>이나 캘리브레이터가 이 이름을 정확히 써야 한다.</li><li><code>--show layers</code>는 노드 나열, <code>--show layers attrs</code>까지 주면 각 노드의 attribute(커널 크기·stride 등)도 나온다. <strong>DLA 친화성</strong>(2.3)을 판단할 때 이 attribute를 본다.</li></ul>
+<h4 id="2-a-tensorrt-10x-정본-플래그로-3점-빌드">(2-A) TensorRT 10.x (정본) — 플래그로 3점 빌드</h4>
+<pre><code class="lang-bash"># FP32 (기준선). --saveEngine으로 엔진 저장, --dumpProfile로 per-layer 시간
+trtexec --onnx=yolo11n.onnx --saveEngine=yolo11n_fp32.engine \
+        --dumpProfile --separateProfileRun \
+        --profilingVerbosity=detailed \
+        --timingCacheFile=yolo11n.timing.cache
+
+# FP16
+trtexec --onnx=yolo11n.onnx --fp16 --saveEngine=yolo11n_fp16.engine \
+        --dumpProfile --separateProfileRun \
+        --timingCacheFile=yolo11n.timing.cache
+
+# INT8 (implicit). 캘리브레이터 없이 --int8만 주면 임의 스케일 → 정확도 안 봄, latency만 참고
+# 정확한 INT8은 실습 3의 캘리브레이터 또는 QDQ 모델을 쓴다.
+trtexec --onnx=yolo11n.onnx --int8 --saveEngine=yolo11n_int8.engine \
+        --dumpProfile --separateProfileRun \
+        --timingCacheFile=yolo11n.timing.cache
+
+# --best = FP32/FP16/INT8 모든 정밀도를 켜고 레이어별로 가장 빠른 것을 자동 선택(정확도 보장 아님)
+trtexec --onnx=yolo11n.onnx --best --saveEngine=yolo11n_best.engine \
+        --timingCacheFile=yolo11n.timing.cache</code></pre>
+<p>각 플래그의 의미:</p>
+<ul><li><code>--saveEngine=&lt;file&gt;</code> : 빌드된 엔진을 파일로 <strong>직렬화</strong>(serialize). 이후 <code>--loadEngine</code>으로 재빌드 없이 로드한다.</li><li><code>--dumpProfile</code> : 벤치 실행 후 <strong>레이어별 실행 시간 표</strong>를 출력(아래 (3)에서 해석).</li><li><code>--separateProfileRun</code> : 벤치마크 실행과 프로파일 실행을 <strong>분리</strong>. 프로파일링 훅이 latency를 오염시키지 않게 하여, latency 수치와 per-layer 프로파일을 <strong>둘 다 신뢰</strong>할 수 있게 한다.</li><li><code>--profilingVerbosity=detailed</code> : 레이어 이름/tactic까지 상세히. <code>layer_names_only</code>(기본)보다 정보가 많아 병목 레이어 특정에 유리.</li><li><code>--timingCacheFile=&lt;file&gt;</code> : tactic 타이밍 결과를 캐시. <strong>첫 빌드는 캐시를 만들고, 이후 FP16/INT8/best 빌드가 이 캐시를 재사용</strong>해 빌드가 눈에 띄게 빨라진다(같은 그래프의 반복 타이밍을 건너뛴다).</li><li><code>--best</code> : FP32/FP16/INT8 <strong>모든 정밀도를 후보로 켜서</strong> 레이어별 최속 정밀도 선택. 정확도는 보장하지 않으니 <strong>속도 상한을 보는 용도</strong>.</li></ul>
+<blockquote class="callout bad">🔴 함정: <code>--int8</code>만 주고 캘리브레이션 데이터를 안 주면 TensorRT가 <strong>동적 범위를 임의(또는 미지정)로 잡아</strong> mAP가 크게 깨진다. latency 비교용으로만 쓰고, <strong>정확도 숫자는 실습 3의 캘리브레이션 엔진으로</strong> 낸다.</blockquote>
+<blockquote class="callout tip">💡 <strong>빌드 옵션 심화 — workspace / sparsity</strong> - <code>--memPoolSize=workspace:2048</code> : 빌더가 tactic 탐색·중간 버퍼에 쓸 수 있는 <strong>workspace 상한을 2048 MB</strong>로. 너무 작으면 빠른 tactic을 못 골라 <code>no implementation</code> 에러나 느린 엔진이 된다. 크게 주면 더 빠른 tactic을 찾을 여지가 생긴다(메모리 여유 내에서). DLA용은 <code>--memPoolSize=dlaSRAM:1,dlaLocalDRAM:...</code>처럼 pool별로 준다. - <code>--sparsity=enable</code> : 가중치가 <strong>2:4 구조적 sparsity</strong> 패턴이면 sparse 텐서코어를 사용. 단, 아무 모델이나 빨라지지 않는다 — 가중치가 실제로 2:4 패턴이어야 한다. <code>--sparsity=force</code>는 "패턴이라 가정하고" 켜지만, 그건 먼저 <code>polygraphy surgeon prune</code>으로 가중치를 2:4로 다시 쓴 뒤 <code>--sparsity=enable</code>을 쓰는 게 정석이다(force는 정확도를 깨뜨릴 수 있음).</blockquote>
+<h4 id="엔진-직렬화역직렬화-한-번-빌드-여러-번-로드">엔진 직렬화/역직렬화 (한 번 빌드, 여러 번 로드)</h4>
+<pre><code class="lang-bash"># 저장한 엔진을 재빌드 없이 로드해서 벤치만 다시 (빌드 5~10분 → 로드 1초)
+trtexec --loadEngine=yolo11n_int8.engine \
+        --dumpProfile --separateProfileRun</code></pre>
+<ul><li><code>.engine</code>(=<code>.plan</code>)은 <strong>직렬화된 바이너리</strong>다. Python에서는 <code>runtime.deserialize_cuda_engine(f.read())</code>로 로드한다.</li><li>🔴 <strong>직렬화 엔진의 이식성:</strong> 엔진은 (a)빌드한 <strong>GPU 아키텍처(SM 버전)</strong>, (b)<strong>TensorRT 버전</strong>, (c)일부 빌드 플래그에 종속적이다. RTX(예: SM 8.9)에서 만든 엔진은 Orin(SM 8.7)에서 로드되지 않는다 → <strong>타깃에서 재빌드</strong>가 원칙. 그래서 CI에서 "엔진을 아티팩트로 굽는" 잡은 <strong>타깃 GPU별로</strong> 돌린다.</li></ul>
+<h4 id="2-b-tensorrt-11x-참고-strongly-typed플래그-제거됨">(2-B) TensorRT 11.x (참고) — strongly-typed(플래그 제거됨)</h4>
+<blockquote class="callout warn">⚠️ <strong>11.x에서는 <code>--fp16/--int8/--best/--bf16/--fp8/--int4/--calib</code>가 전부 제거됐다.</strong> 정밀도는 빌드가 아니라 <strong>모델에 미리 심어서</strong> 결정한다. <strong>이 스터디의 정본은 10.16.x LTS이므로 이 절은 "미래 대비 참고"다.</strong> - <strong>FP16/혼합정밀도</strong>: ModelOpt <strong>AutoCast</strong>로 FP16/BF16 캐스트를 넣은 ONNX를 만든 뒤 빌드. - <strong>INT8</strong>: 실습 4의 ModelOpt PTQ로 <strong>QDQ ONNX</strong>를 만든 뒤 빌드.</blockquote>
+<pre><code class="lang-bash"># 11.x: 정밀도 플래그 없이 빌드 (엔진 정밀도는 입력 ONNX가 결정)
+trtexec --onnx=yolo11n.onnx           --saveEngine=yolo11n_fp32.engine --dumpProfile --separateProfileRun
+trtexec --onnx=yolo11n_autocast.onnx  --saveEngine=yolo11n_fp16.engine --dumpProfile --separateProfileRun
+trtexec --onnx=yolo11n.quant.onnx     --saveEngine=yolo11n_int8.engine --dumpProfile --separateProfileRun</code></pre>
+<blockquote class="callout">📌 <code>--dumpProfile --separateProfileRun --profilingVerbosity=detailed</code>와 <code>--saveEngine/--loadEngine/--timingCacheFile/--memPoolSize</code>는 <strong>10.x·11.x 공통으로 살아있다.</strong> 사라진 건 <strong>정밀도 지정 플래그</strong>뿐이다. 즉 벤치·프로파일·직렬화 워크플로우는 두 버전에서 동일하게 배워두면 된다.</blockquote>
+<h4 id="3-trtexec-출력-전체-해석-이-단계의-핵심">(3) trtexec 출력 전체 해석 (이 단계의 핵심)</h4>
+<p><code>trtexec</code>를 돌리면 마지막에 <strong>Performance summary</strong> 블록이 나온다. 정본 10.16.x의 대표 형태(값은 예시):</p>
+<pre><code class="lang-text">[I] === Performance summary ===
+[I] Throughput: 512.34 qps
+[I] Latency: min = 1.71 ms, max = 2.98 ms, mean = 1.94 ms, median = 1.90 ms,
+             percentile(90%) = 2.11 ms, percentile(95%) = 2.24 ms, percentile(99%) = 2.55 ms
+[I] Enqueue Time: min = 0.42 ms, max = 1.10 ms, mean = 0.55 ms, median = 0.50 ms, ...
+[I] H2D Latency: min = 0.18 ms, mean = 0.21 ms, ...
+[I] GPU Compute Time: min = 1.30 ms, max = 2.40 ms, mean = 1.52 ms, median = 1.48 ms,
+                      percentile(99%) = 2.05 ms
+[I] D2H Latency: min = 0.05 ms, mean = 0.06 ms, ...
+[I] Total Host Walltime: 3.0012 s
+[I] Total GPU Compute Time: 3.0405 s</code></pre>
+<p>각 줄이 <strong>정확히 무엇을 재는가</strong> (NVIDIA <a href="https://docs.nvidia.com/deeplearning/tensorrt/10.16.0/reference/command-line-programs.html">Command-Line Programs</a> 정의):</p>
+<div class="tablewrap"><table><thead><tr><th>항목</th><th>정의</th><th>무엇을 알려주나</th></tr></thead><tbody><tr><td><strong>Throughput (qps)</strong></td><td>(총 추론 수) / <strong>Total Host Walltime</strong>.</td><td>실제 처리량. <strong>1/GPU_Compute_mean보다 크게 낮으면 GPU가 놀고 있다</strong>(호스트 오버헤드/전송 병목).</td></tr><tr><td><strong>Latency (Host Latency)</strong></td><td><strong>H2D + GPU Compute + D2H</strong>. 한 번 추론의 end-to-end.</td><td>전처리 복사까지 포함한 "체감 latency".</td></tr><tr><td><strong>Enqueue Time</strong></td><td>호스트가 추론을 <strong>enqueue</strong>하는 시간(H2D/D2H CUDA API 호출, 호스트 휴리스틱, 커널 런치).</td><td><strong>CPU가 GPU를 못 따라가는지</strong>의 지표. Enqueue &gt; GPU Compute면 <strong>CPU 바운드</strong>(런치 오버헤드). → CUDA Graph 고려.</td></tr><tr><td><strong>H2D Latency</strong></td><td>입력 텐서 <strong>Host→Device</strong> 복사 시간.</td><td>입력이 크거나 PCIe가 느리면 커진다.</td></tr><tr><td><strong>GPU Compute Time</strong></td><td>순수 <strong>커널 실행</strong> 시간(min/max/mean/median/percentile).</td><td><strong>정밀도 비교의 핵심 지표.</strong> FP16/INT8로 줄어드는 건 이 값.</td></tr><tr><td><strong>D2H Latency</strong></td><td>출력 텐서 <strong>Device→Host</strong> 복사 시간.</td><td>출력이 크면(예: seg mask) 커진다.</td></tr><tr><td><strong>Total Host Walltime</strong></td><td>벤치 전체 벽시계 시간.</td><td>Throughput 분모.</td></tr><tr><td><strong>Total GPU Compute Time</strong></td><td>모든 추론의 GPU Compute 합.</td><td>Walltime과 비슷하면 GPU가 꽉 찬 것.</td></tr></tbody></table></div>
+<p><strong>percentile을 왜 보나 (min/median만 보면 안 되는 이유):</strong></p>
+<ul><li><code>percentile(99%) = 2.55 ms</code>는 "<strong>추론의 99%가 2.55 ms 안에 끝난다</strong>"는 뜻. 나머지 1%는 그보다 느리다(꼬리 latency).</li><li>임베디드 실시간 시스템은 <strong>평균이 아니라 최악(꼬리)</strong> 이 마감시한(deadline)을 어기는지가 중요하다. 카메라 30fps면 프레임당 33.3 ms 예산인데, <strong>p99가 예산을 넘으면 100프레임당 1프레임씩 드롭</strong>한다. 그래서 <strong>p90/p99를 deadline과 비교</strong>한다.</li><li>median vs mean: median ≪ mean이면 <strong>가끔 튀는 스파이크</strong>(예: 다른 프로세스와의 GPU 경합, 클럭 스로틀)가 있다는 신호.</li></ul>
+<p><strong>해석 결정 트리(빠른 진단):</strong></p>
+<ol><li><code>Throughput</code>이 <code>1000/GPU_Compute_mean_ms</code>(이론 최대 qps)의 <strong>70% 미만</strong>이면 → GPU가 논다. 원인은 (a)<code>Enqueue Time</code>이 크다(CPU 바운드) 또는 (b)<code>H2D+D2H</code>가 크다(전송 바운드).</li><li><code>Enqueue Time mean &gt; GPU Compute mean</code> → <strong>CPU 런치 오버헤드 병목</strong>. <code>--useCudaGraph</code>로 커널 런치를 묶거나, 배치를 키운다.</li><li><code>H2D + D2H &gt; GPU Compute의 상당 부분</code> → <strong>전송 병목</strong>. 입력 전처리를 GPU로 옮기거나 <code>--noDataTransfer</code>로 순수 compute를 따로 재서 확인.</li><li>위 다 아니고 그냥 <code>GPU Compute</code>가 크다 → <strong>연산 자체가 병목</strong>. <code>--dumpProfile</code>로 어느 레이어인지 찾는다(아래).</li></ol>
+<pre><code class="lang-bash"># trtexec 출력에서 성능 관련 줄만 뽑기
+trtexec --loadEngine=yolo11n_int8.engine --dumpProfile --separateProfileRun 2&gt;&amp;1 \
+  | grep -Ei &quot;Throughput|Latency|Enqueue|GPU Compute|H2D|D2H|Walltime|percentile&quot;
+
+# 순수 GPU compute만 격리(전송 제외)해서 재기 — 전송 병목 여부 판정
+trtexec --loadEngine=yolo11n_int8.engine --noDataTransfer \
+        --dumpProfile --separateProfileRun 2&gt;&amp;1 | grep -Ei &quot;GPU Compute|Throughput&quot;</code></pre>
+<ul><li><code>--noDataTransfer</code> : H2D/D2H를 <strong>끄고</strong> 순수 커널만 잰다. 이걸 켰을 때 Throughput이 크게 오르면 → 아까 병목은 <strong>전송</strong>이었다는 확증.</li><li><code>--useCudaGraph</code> : 반복 추론을 CUDA Graph로 캡처해 <strong>런치 오버헤드를 제거</strong>. Enqueue 바운드일 때 효과.</li><li><code>--useSpinWait</code> : 완료 대기를 sleep 대신 <strong>busy-wait</strong>로. latency 측정의 지터를 줄이지만 CPU를 태운다(측정 정밀도용).</li></ul>
+<h4 id="4---dumpprofile-레이어별-시간-읽는-법">(4) <code>--dumpProfile</code> 레이어별 시간 읽는 법</h4>
+<p><code>--dumpProfile</code>을 켜면 Performance summary 앞/뒤에 <strong>레이어별 프로파일 표</strong>가 나온다(값은 예시):</p>
+<pre><code class="lang-text">[I] === Profile (per layer) ===
+[I]   Layer                                        Time(ms)   Avg(ms)   Time(%)
+[I]   /model.0/conv/Conv + PWN(Sigmoid,Mul)          452.10     0.452     29.8
+[I]   /model.2/m.0/cv2/conv/Conv                     210.44     0.210     13.9
+[I]   /model.9/cv2/conv/Conv                         180.02     0.180     11.9
+[I]   ... (하위 레이어들) ...
+[I]   Total                                         1517.00     1.517    100.0</code></pre>
+<p>읽는 법:</p>
+<ul><li><strong><code>Time(%)</code>가 큰 상위 5개가 병목</strong>이다. 위 예에서 상위 3개가 이미 ~55%. 최적화는 <strong>여기부터</strong> 손댄다.</li><li>레이어 이름의 <strong><code>+</code></strong> 는 <strong>fusion</strong>을 뜻한다. <code>Conv + PWN(Sigmoid,Mul)</code>는 Conv와 SiLU가 한 커널로 합쳐진 것 — TensorRT가 잘 융합했다는 좋은 신호.</li><li><strong>정밀도 검증법:</strong> FP16/INT8 빌드에서 상위 레이어의 <code>Time</code>이 FP32 대비 <strong>안 줄었다면</strong>, 그 레이어가 저정밀 tactic을 <strong>못 골랐다</strong>는 뜻(2.2). <code>--profilingVerbosity=detailed</code>로 tactic 이름을 보면 <code>int8</code>/<code>fp16</code>/<code>imma</code>가 붙었는지 확인할 수 있다. INT8인데 tactic이 <code>float</code>면 그 레이어는 INT8로 안 도는 것 → polygraphy로 추적(실습 2).</li></ul>
+<blockquote class="callout tip">💡 팁: per-layer 표를 CSV로 저장하려면 <code>--exportProfile=prof.json</code>을 함께 준다. JSON을 파싱해 <code>Time(%)</code> 내림차순으로 정렬하면 "Top-N 병목 레이어" 목록이 곧 최적화 백로그가 된다.</blockquote>
+<pre><code class="lang-bash"># 프로파일을 JSON으로 내보내고, 상위 시간 레이어를 뽑기
+trtexec --loadEngine=yolo11n_int8.engine --dumpProfile --separateProfileRun \
+        --exportProfile=yolo11n_int8_prof.json
+python3 - &lt;&lt;&#x27;PY&#x27;
+import json
+p = json.load(open(&quot;yolo11n_int8_prof.json&quot;))
+rows = [r for r in p if &quot;percentage&quot; in r or &quot;averageMs&quot; in r]
+rows.sort(key=lambda r: r.get(&quot;percentage&quot;, 0), reverse=True)
+for r in rows[:8]:
+    print(f&quot;{r.get(&#x27;percentage&#x27;,0):5.1f}%  {r.get(&#x27;averageMs&#x27;,0):7.3f}ms  {r.get(&#x27;name&#x27;,&#x27;&#x27;)[:60]}&quot;)
+PY</code></pre>
+<h4 id="5-map-측정">(5) mAP 측정</h4>
+<p>ultralytics로 각 엔진의 mAP를 COCO val에서 측정한다.</p>
+<pre><code class="lang-bash"># TensorRT 엔진을 직접 검증 (ultralytics가 .engine 로드 지원)
+yolo val model=yolo11n_fp32.engine data=coco.yaml imgsz=640
+yolo val model=yolo11n_fp16.engine data=coco.yaml imgsz=640
+yolo val model=yolo11n_int8.engine data=coco.yaml imgsz=640   # 캘리브레이션된 엔진으로</code></pre>
+<blockquote class="callout warn">⚠️ 주의: <code>coco.yaml</code>/COCO val2017 이미지가 로컬에 있어야 한다(ultralytics가 자동 다운로드 시도). 데이터가 무거우면 <strong>val 부분셋(예: 500장)</strong> 으로 상대 비교만 해도 학습 목적에는 충분하다. mAP는 <strong>절대값보다 FP32 대비 하락폭</strong>을 본다.</blockquote>
+<hr>
+<h3 id="실습-2-polygraphy로-fp32onnx-runtime-vs-int8trt-레이어별-비교-debug-precision-이분탐색">실습 2 — polygraphy로 FP32(ONNX-Runtime) vs INT8(TRT) 레이어별 비교 + <code>debug precision</code> 이분탐색</h3>
+<p>INT8 mAP가 떨어졌을 때 "어느 레이어에서 오차가 폭발하는가"를 찾는다. 3단계로 좁힌다: <strong>(전체 비교) → (레이어별 마킹) → (자동 이분탐색)</strong>.</p>
+<h4 id="a-네트워크-최종-출력만-비교-문제가-있는지-없는지부터">(a) 네트워크 최종 출력만 비교 — 문제가 있는지 없는지부터</h4>
+<pre><code class="lang-bash"># ONNX-Runtime(FP32, golden) vs TensorRT(빌드된 엔진) 최종 출력 비교
+polygraphy run yolo11n.onnx --onnxrt --trt \
+  --save-results golden.json \
+  --atol 1e-2 --rtol 1e-2</code></pre>
+<ul><li><code>--onnxrt</code> : ONNX-Runtime를 <strong>기준(golden)</strong> 으로 실행.</li><li><code>--trt</code> : 같은 입력을 TensorRT로 실행.</li><li><code>--atol/--rtol</code> : 허용 절대/상대 오차. YOLO는 후처리 전 raw 출력이라 <code>1e-2</code> 정도가 현실적. 너무 타이트하면 항상 FAIL이 뜬다.</li><li>결과: 텐서별 <code>PASSED</code>/<code>FAILED</code>와 최대 절대·상대 오차. <strong>여기서 PASS면 굳이 아래로 안 내려가도 된다.</strong></li></ul>
+<h4 id="b-레이어별-비교-어디쯤에서-어긋나는지-대략-잡기">(b) 레이어별 비교 — 어디쯤에서 어긋나는지 대략 잡기</h4>
+<pre><code class="lang-bash"># 모든 텐서를 출력으로 mark 해서 어느 레이어부터 어긋나는지
+#   --trt-outputs/--onnx-outputs mark all → 전 텐서 비교, --fail-fast로 첫 mismatch에서 멈춤
+polygraphy run yolo11n.onnx --onnxrt --trt \
+  --trt-outputs mark all \
+  --onnx-outputs mark all \
+  --atol 1e-2 --rtol 1e-2 \
+  --fail-fast</code></pre>
+<pre><code class="lang-bash"># (참고) 저장한 결과를 나중에 텐서별로 diff
+polygraphy run yolo11n.onnx --onnxrt --save-results onnx_out.json
+polygraphy run yolo11n.onnx --trt    --save-results trt_out.json
+polygraphy data diff onnx_out.json trt_out.json      # 두 결과 텐서별 차이 요약</code></pre>
+<p>읽는 법 &amp; 함정:</p>
+<ul><li><code>FAILED</code>가 <strong>처음 뜨는 텐서</strong>가 "오차가 태어난 곳"에 가깝다. 그 텐서를 만든 레이어가 용의자.</li><li>🔴 <strong>함정:</strong> <code>--trt-outputs mark all</code>을 켜면 <strong>레이어 융합/타이밍/포맷 제약이 달라져</strong> 엔진 자체가 바뀌고, 그 바람에 원래 있던 오차가 <strong>가려지거나 새 오차가 생길 수</strong> 있다(fusion이 깨지면서 정밀도 경로가 달라짐). 그래서 mark all은 "대략 어디쯤"을 잡는 용도이고, 정밀 추적은 (c)의 이분탐색으로 넘어간다.</li><li>custom plugin이 낀 그래프는 ONNX-Runtime에 해당 op가 없어 비교가 안 될 수 있다 → plugin 구간을 제외하고 앞/뒤로 나눠 비교.</li></ul>
+<h4 id="c-polygraphy-debug-precision-몇-번째-레이어까지-고정밀이면-회복되나를-이분탐색">(c) <code>polygraphy debug precision</code> — "몇 번째 레이어까지 고정밀이면 회복되나"를 이분탐색</h4>
+<p>이게 실무의 결정타다. "이 레이어들만 FP16로 남기면 정확도가 산다"를 <strong>자동 이분탐색</strong>으로 찾는다.</p>
+<pre><code class="lang-bash"># 1) golden 입력/출력을 먼저 저장 (FP32 ONNX-Runtime 기준)
+polygraphy run yolo11n.onnx --onnxrt \
+  --save-inputs net_input.json \
+  --save-outputs onnx_res.json
+
+# 2) debug precision: 저정밀(예: fp16) 엔진을 만들되, &quot;앞쪽 N개 레이어를 고정밀로&quot; 올려가며
+#    --check가 통과할 때까지 N을 이분탐색으로 좁힌다
+polygraphy debug precision yolo11n.onnx \
+  --mode bisect \
+  --fp16 \
+  --no-remove-intermediate \
+  --check polygraphy run polygraphy_debug.engine --trt \
+          --load-inputs net_input.json \
+          --load-outputs onnx_res.json \
+          --atol 1e-2 --rtol 1e-2</code></pre>
+<p>작동 방식과 각 인자:</p>
+<ul><li><code>--mode bisect</code> : <strong>이분탐색</strong>. "앞에서 N개 레이어를 고정밀로 올리면 통과"하는 최소 N을 log(레이어수) 번의 시도로 찾는다(<code>linear</code>는 하나씩, 느리지만 확실).</li><li><code>--fp16</code> : 나머지 레이어를 돌릴 <strong>낮은 정밀도</strong>. INT8 문제를 볼 땐 이 자리에 맞는 저정밀 설정을 준다(도구 버전에 따라 저정밀 기준 플래그가 다르니 <code>polygraphy debug precision --help</code>로 확인).</li><li><code>--no-remove-intermediate</code> : 중간 산출물(<code>polygraphy_debug.engine</code>)을 지우지 않고 남겨 <strong>분석</strong>에 쓴다.</li><li><code>--check &lt;cmd&gt;</code> : 각 시도마다 만들어진 <code>polygraphy_debug.engine</code>을 이 명령으로 검증. <strong>exit code 0이면 통과</strong>, 아니면 실패로 본다(정확도를 golden과 비교하는 <code>polygraphy run</code>을 넣는다). 더 세밀한 판정은 <code>--fail-regex &quot;...&quot;</code>로 출력 문자열을 매칭할 수도 있다.</li><li>결과 메시지: <strong><code>To achieve acceptable accuracy, try running the first N layer(s) in higher precision</code></strong> 형태로 나온다. 즉 "앞쪽 N개는 FP16(고정밀)로 두고 나머지를 저정밀로" 하면 통과라는 뜻.</li></ul>
+<blockquote class="callout bad">🔴 <strong>함정(실무에서 자주 막히는 지점):</strong> <code>debug precision</code>이 알려주는 <strong><code>N</code>은 TensorRT 내부 레이어 인덱스</strong>라서, ONNX 노드 이름과 1:1로 안 붙는다(<a href="https://github.com/NVIDIA/TensorRT/issues/4616">TensorRT #4616</a> 참고). N을 ONNX 노드로 되돌리려면 <code>polygraphy inspect model</code>의 레이어 순서, <code>--exportProfile</code>의 레이어 목록, <code>--onnx-outputs mark all</code> 비교를 <strong>교차 대조</strong>해야 한다. 그래서 실전에서는 "정확한 노드"보다 "<strong>앞부분/뒷부분/특정 블록</strong>"이라는 구간 감각을 얻는 데 쓰고, 그 구간을 (b)로 좁혀 확정한다.</blockquote>
+<blockquote class="callout">🔗 이 결과가 <strong>mixed precision 근거</strong>가 된다. "앞쪽 N개(=민감 레이어)를 FP16로 유지"라는 결론을 <a href="03_quantization_theory.html">1단계</a>의 <strong><code>layer_sensitivity.csv</code></strong>(양자화 민감도)와 대조해, 두 근거가 같은 레이어를 가리키면 확신을 갖고 그 레이어만 고정밀로 고정한다(실습 4 참조).</blockquote>
+<hr>
+<h3 id="실습-3-int8-캘리브레이터-직접-구현-tensorrt-10x-iint8entropycalibrator2">실습 3 — INT8 캘리브레이터 직접 구현 (TensorRT 10.x, <code>IInt8EntropyCalibrator2</code>)</h3>
+<blockquote class="callout warn">⚠️ <strong>버전 주의:</strong> <code>IInt8EntropyCalibrator2</code>는 <strong>10.1부터 deprecated</strong>, <strong>11.0에서 관련 경로가 제거</strong>됐다. <strong>정본 10.16.x LTS에서는 여전히 동작</strong>(deprecated 경고만)하며, deprecated API는 2027-03까지 유지된다. 11.x거나 신규 프로젝트라면 실습 4(ModelOpt PTQ/QDQ)로 대체하라. 그래도 "캘리브레이터가 내부에서 뭘 하는가"를 이해하려면 한 번은 짜볼 가치가 있다.</blockquote>
+<p><strong>캘리브레이터가 하는 일(직관):</strong> INT8은 실수 텐서를 정수로 매핑하는데, 그 스케일 <code>s = max_abs / 127</code>을 정하려면 "이 텐서 값이 보통 어디까지 커지나"를 알아야 한다. 캘리브레이터는 <strong>대표 입력 배치를 실제로 흘려보내며 각 텐서의 분포(히스토그램)를 모아</strong> 동적 범위를 추정한다. <code>EntropyCalibrator2</code>는 그 범위를 <strong>KL divergence(정보 손실)를 최소화</strong>하도록 고른다(단순 min/max보다 outlier에 강함). 이 콜백이 배치를 공급하는 게 우리가 짤 코드다.</p>
+<p>최소 구현(파이썬):</p>
+<pre><code class="lang-python"># int8_calibrator.py  (TensorRT 10.x)
+import os
+import numpy as np
+import tensorrt as trt
+import pycuda.driver as cuda
+import pycuda.autoinit  # CUDA 컨텍스트 초기화
+
+class YoloEntropyCalibrator(trt.IInt8EntropyCalibrator2):
+    &quot;&quot;&quot;대표 이미지 배치를 공급해 INT8 동적 범위를 추정한다.&quot;&quot;&quot;
+    def __init__(self, calib_files, input_shape=(1, 3, 640, 640), cache=&quot;calib.cache&quot;):
+        super().__init__()                     # 반드시 부모 생성자 호출
+        self.cache_file = cache
+        self.batch = np.empty(input_shape, dtype=np.float32)
+        self.files = calib_files               # 전처리된 .npy 또는 이미지 경로 리스트
+        self.idx = 0
+        self.d_input = cuda.mem_alloc(self.batch.nbytes)  # 디바이스 버퍼 1개(입력 1개 가정)
+
+    def get_batch_size(self):
+        return self.batch.shape[0]
+
+    def get_batch(self, names):
+        # 데이터가 소진되면 None을 반환해야 캘리브레이션이 끝난다
+        if self.idx &gt;= len(self.files):
+            return None
+        img = np.load(self.files[self.idx]).astype(np.float32)  # 사전 전처리(리사이즈/정규화) 가정
+        self.batch[...] = img
+        cuda.memcpy_htod(self.d_input, self.batch)              # H2D 복사
+        self.idx += 1
+        return [int(self.d_input)]                              # 디바이스 포인터 리스트 반환
+
+    def read_calibration_cache(self):
+        # 캐시가 있으면 재계산 생략 → 빌드 가속 (분포 재수집을 통째로 건너뜀)
+        if os.path.exists(self.cache_file):
+            with open(self.cache_file, &quot;rb&quot;) as f:
+                return f.read()
+        return None
+
+    def write_calibration_cache(self, cache):
+        with open(self.cache_file, &quot;wb&quot;) as f:
+            f.write(cache)</code></pre>
+<p>콜백 4개가 각각 언제 불리나(생명주기):</p>
+<ol><li><code>get_batch_size()</code> → 빌더가 배치 크기 확인(한 번).</li><li><code>get_batch(names)</code> → <strong>소진될 때까지 반복 호출</strong>. <code>names</code>는 입력 텐서 이름 리스트(다중 입력이면 순서대로 포인터를 돌려준다). <code>None</code>을 반환하는 순간 캘리브레이션 종료.</li><li><code>read_calibration_cache()</code> → 빌드 <strong>시작 시</strong> 호출. 캐시가 있으면 2번(데이터 흘리기)을 <strong>통째로 건너뛴다</strong> → 두 번째 빌드부터 매우 빠름.</li><li><code>write_calibration_cache(cache)</code> → 분포 수집이 끝나면 호출. 결과 스케일을 <code>calib.cache</code>로 저장.</li></ol>
+<p>배치 스트림을 여러 장으로 (batch&gt;1) 공급하려면 <code>input_shape=(8,3,640,640)</code>처럼 배치 차원을 키우고, <code>get_batch</code>에서 8장을 쌓아 한 번에 복사한다(GPU 메모리 여유 내에서 배치를 키우면 캘리브레이션이 빨라진다).</p>
+<pre><code class="lang-python"># build_int8.py  — 위 캘리브레이터로 INT8 엔진 빌드 (TensorRT 10.x)
+import glob, tensorrt as trt
+from int8_calibrator import YoloEntropyCalibrator
+
+logger = trt.Logger(trt.Logger.INFO)
+builder = trt.Builder(logger)
+network = builder.create_network(1 &lt;&lt; int(trt.NetworkDefinitionCreationFlag.EXPLICIT_BATCH))
+parser  = trt.OnnxParser(network, logger)
+with open(&quot;yolo11n.onnx&quot;, &quot;rb&quot;) as f:
+    assert parser.parse(f.read()), &quot;ONNX parse 실패&quot;
+
+config = builder.create_builder_config()
+config.set_flag(trt.BuilderFlag.INT8)                          # implicit INT8 활성
+# (선택) workspace 상한 지정 — 큰 모델에서 tactic 탐색 여유 확보
+config.set_memory_pool_limit(trt.MemoryPoolType.WORKSPACE, 2 &lt;&lt; 30)  # 2 GiB
+config.int8_calibrator = YoloEntropyCalibrator(
+    sorted(glob.glob(&quot;calib_data/*.npy&quot;))                      # 500~1000장 권장
+)
+serialized = builder.build_serialized_network(network, config)
+with open(&quot;yolo11n_int8_calib.engine&quot;, &quot;wb&quot;) as f:
+    f.write(serialized)
+print(&quot;INT8 엔진 빌드 완료 → yolo11n_int8_calib.engine&quot;)</code></pre>
+<p>빌드 로그에서 확인할 것:</p>
+<ul><li><code>Calibrated ... using ... entropy</code> 류 메시지가 뜨고, <code>calib.cache</code> 파일이 생성된다.</li><li>로그에 <code>Missing scale and zero-point for tensor ...</code>가 뜨면 → 그 텐서에 스케일이 안 잡힌 것(캘리브 데이터가 그 경로를 안 지났거나 op 미지원). mixed precision으로 그 레이어를 FP16 고정하거나 캘리브 데이터를 보강한다.</li></ul>
+<blockquote class="callout tip">💡 팁: 캘리브레이션 이미지는 <strong>학습/검증 분포를 대표</strong>해야 한다(주간·야간·근접·원거리 골고루). YOLO 계열은 통상 <strong>1000장 이상</strong>을 권장하고, 너무 적으면 mAP가 눈에 띄게 떨어진다. <code>calib.cache</code>가 생기면 다음 빌드부터 재사용된다(데이터·전처리를 바꾸면 캐시를 <strong>지우고</strong> 다시 만들어야 한다 — 안 그러면 옛 스케일을 재사용해 버린다).</blockquote>
+<hr>
+<h3 id="실습-4-tensorrt-model-optimizer로-ptqqat-qdq-onnx-export-10x11x-공통-권장">실습 4 — TensorRT Model Optimizer로 PTQ/QAT + QDQ ONNX export (10.x·11.x 공통, 권장)</h3>
+<blockquote class="callout warn">⚠️ 확인 필요: 아래 명령/인자는 <a href="https://github.com/NVIDIA/Model-Optimizer">NVIDIA Model Optimizer 저장소</a>와 <code>examples/onnx_ptq</code> 예제 기준(2026-07)이다. 자신의 <code>modelopt.__version__</code>에 맞는 README를 재확인하라(인자명은 릴리스마다 소폭 변한다).</blockquote>
+<p><strong>왜 ModelOpt인가:</strong> 실습 3의 캘리브레이터는 <strong>implicit</strong>(엔진 빌드 시 스케일 결정)이라 11.x에서 죽는다. ModelOpt는 <strong>explicit</strong> — 스케일을 계산해 <strong>ONNX 그래프에 Q/DQ 노드로 박아</strong> 준다. 그 QDQ ONNX는 10.x·11.x <strong>양쪽에서 동일하게</strong> 빌드된다. 즉 정본(10.16)에서도 미래(11.x)에서도 안 깨지는 경로다.</p>
+<h4 id="a-onnx-ptq-가장-간단한-경로">(A) ONNX PTQ — 가장 간단한 경로</h4>
+<pre><code class="lang-bash"># 1) 캘리브레이션 데이터를 numpy로 준비 (전처리 완료된 입력 텐서 묶음)
+#    shape 예: (N, 3, 640, 640) float32 → calib.npy 로 저장
+python3 - &lt;&lt;&#x27;PY&#x27;
+import numpy as np, glob
+xs = [np.load(p) for p in sorted(glob.glob(&quot;calib_data/*.npy&quot;))]
+np.save(&quot;calib.npy&quot;, np.stack(xs).astype(&quot;float32&quot;))
+PY
+
+# 2) ONNX 모델에 INT8 PTQ 적용 → Q/DQ 노드가 삽입된 ONNX 출력
+python3 -m modelopt.onnx.quantization \
+    --onnx_path=yolo11n.onnx \
+    --quantize_mode=int8 \
+    --calibration_data=calib.npy \
+    --calibration_method=entropy \
+    --output_path=yolo11n.quant.onnx
+# quantize_mode 대안: fp8, int4 (하드웨어 지원 확인 필요). INT8은 opset&gt;=13 요구(자동 업그레이드).
+# calibration_method: int8/fp8은 entropy(기본)|max, int4는 awq_clip(기본)|rtn_dq 등.</code></pre>
+<p>각 인자:</p>
+<ul><li><code>--quantize_mode=int8</code> : 정본 경로. <code>fp8</code>(Hopper/Ada 이상), <code>int4</code>(가중치 전용, LLM 계열)도 있으나 하드웨어·op 지원을 먼저 확인.</li><li><code>--calibration_data=calib.npy</code> : 대표 입력 텐서 묶음(numpy). YOLO는 전처리(리사이즈/정규화)까지 끝난 <code>(N,3,640,640)</code> float32.</li><li><code>--calibration_method=entropy</code> : INT8 기본. outlier가 심한 activation이 많으면 <code>max</code>가 나을 때도 있으니 둘 다 재본다.</li><li><code>--output_path=yolo11n.quant.onnx</code> : Q/DQ가 삽입된 결과 ONNX. 생략하면 <code>.quant</code> 접미사로 자동 저장.</li></ul>
+<pre><code class="lang-bash"># 3) QDQ ONNX를 TensorRT로 빌드 (엔진이 Q/DQ를 인접 레이어에 fuse → INT8 텐서코어 실행)
+#    10.x(정본): --int8 붙여도 되고 안 붙여도 QDQ가 있으면 INT8 실행. 11.x: 플래그 없이.
+trtexec --onnx=yolo11n.quant.onnx --int8 --saveEngine=yolo11n_int8_qdq.engine \
+        --dumpProfile --separateProfileRun --profilingVerbosity=detailed</code></pre>
+<ul><li>빌드 후 <code>--dumpProfile</code>에서 Conv tactic에 <code>int8</code>/<code>imma</code>가 붙었으면 QDQ가 제대로 fuse된 것. <code>float</code> tactic만 보이면 Q/DQ 배치가 어긋난 것(그 레이어 앞뒤에 Q/DQ가 짝이 안 맞음).</li></ul>
+<h4 id="b-pytorch-qat-qdq-export-정확도-회복이-필요할-때">(B) PyTorch QAT → QDQ export (정확도 회복이 필요할 때)</h4>
+<p><code>modelopt.torch.quantization</code>으로 모델에 fake-quant을 삽입(<code>mtq.quantize</code>)하고 몇 epoch fine-tune한 뒤 ONNX로 export하면, fake-quant이 <strong>Q/DQ 노드로 변환</strong>되어 나온다. 개념 골격:</p>
+<pre><code class="lang-python"># qat_sketch.py  (개념 골격 — 데이터로더/학습 루프는 프로젝트에 맞게)
+import torch
+import modelopt.torch.quantization as mtq
+
+model = load_pretrained_yolo()                 # nn.Module
+
+# 1) 양자화 설정(INT8) 선택 후 fake-quant 삽입 + 캘리브레이션
+def forward_loop(m):
+    for imgs, _ in calib_loader:               # 대표 배치 몇 개
+        m(imgs.cuda())
+model = mtq.quantize(model, mtq.INT8_DEFAULT_CFG, forward_loop)
+
+# 2) 짧게 fine-tune (fake-quant 상태로 몇 epoch) — 정확도 회복
+train_a_few_epochs(model)                      # 기존 학습 루프 재사용, lr 작게
+
+# 3) QDQ가 박힌 ONNX로 export → trtexec로 빌드(위 (A)-3과 동일)
+torch.onnx.export(model, dummy_input, &quot;yolo11n.qat.onnx&quot;, opset_version=13)</code></pre>
+<p>QAT는 PTQ로 회복 안 되는 정밀도 민감 태스크에서 쓴다(2단계 Transformer 양자화와 연결). 구버전 <code>pytorch-quantization</code>도 동일 개념(QDQ export)이지만 ModelOpt로 통합되는 추세다.</p>
+<blockquote class="callout">🔗 <strong>1단계 산출물 연결 (mixed precision 근거):</strong> <a href="03_quantization_theory.html">1단계</a>에서 만든 <strong><code>layer_sensitivity.csv</code></strong> 를 mixed precision 근거로 쓴다. 민감도 상위 레이어(양자화 시 오차가 큰 레이어)는 INT8에서 제외하고 FP16으로 남긴다. 실습 2-(c)의 <code>debug precision</code> 결과("앞쪽 N개를 고정밀로")와 이 CSV가 <strong>같은 레이어를 가리키면</strong> 그 레이어를 고정밀로 고정한다. - 10.x(정본): <code>--precisionConstraints=obey --layerPrecisions=&lt;layer&gt;:fp16</code> 로 특정 레이어 정밀도 고정. - 11.x: 위 플래그가 제거됐으므로, ModelOpt에서 해당 레이어를 <strong>양자화 대상에서 제외</strong>(Q/DQ 미삽입)하거나 AutoCast로 FP16 유지하도록 지정한다. 이렇게 "민감 레이어만 고정밀"로 두는 것이 mixed precision의 실전 형태다. 산출물 <code>mixed_precision_plan.md</code>에 "어느 레이어를, 어떤 근거(sensitivity CSV / debug precision)로, FP16로 남겼고, mAP가 얼마나 회복됐는지"를 적는다.</blockquote>
+<pre><code class="lang-bash"># 10.x: 특정 레이어를 FP16으로 고정하며 INT8 빌드 (mixed precision)
+trtexec --onnx=yolo11n.quant.onnx --int8 --fp16 \
+        --precisionConstraints=obey \
+        --layerPrecisions=/model.9/cv2/conv/Conv:fp16 \
+        --saveEngine=yolo11n_mixed.engine --dumpProfile --separateProfileRun</code></pre>
+<ul><li><code>--precisionConstraints=obey</code> : "내가 지정한 레이어 정밀도를 <strong>반드시 지켜라</strong>"(무시하면 에러). <code>prefer</code>는 "되도록"이라 조용히 무시될 수 있어 검증엔 <code>obey</code>가 낫다.</li><li><code>--layerPrecisions=&lt;name&gt;:fp16</code> : 그 레이어를 FP16으로. 이름은 <code>--profilingVerbosity=detailed</code>의 per-layer 표에서 그대로 복사한다.</li></ul>
+<hr>
+<h3 id="실습-5-dla-파티셔닝-gpu-only-dla-only-하이브리드">실습 5 — DLA 파티셔닝 (GPU-only / DLA-only / 하이브리드)</h3>
+<blockquote class="callout">🟨 <strong>보드 필요 구분:</strong> 아래는 <strong>Orin/Xavier 보드 + TensorRT 10.x(JetPack)에서만</strong> 실행/실측이 의미 있다(DLA 하드웨어 + DLA를 지원하는 TRT 필요). RTX 데스크톱에는 DLA가 없어 <code>--useDLACore</code>가 에러다. <strong>또한 TensorRT 11.0/11.1은 DLA 자체를 지원하지 않는다</strong> — DLA는 정본 10.x 전용 실습이다. <strong>보드가 없으면 이 실습은 개념 학습으로 남기고, 산출물 <code>dla_fallback.md</code>에 '보드 필요 — 미실행'으로 명시</strong>한다.</blockquote>
+<pre><code class="lang-bash"># (a) GPU-only (기준선) — Orin에서
+trtexec --onnx=yolo11n.onnx --fp16 --saveEngine=yolo11n_gpu.engine \
+        --dumpProfile --separateProfileRun
+
+# (b) DLA-only 지향 + GPU fallback 허용 (DLA는 FP16/INT8만)
+trtexec --onnx=yolo11n.onnx --fp16 \
+        --useDLACore=0 --allowGPUFallback \
+        --saveEngine=yolo11n_dla.engine \
+        --dumpProfile --separateProfileRun 2&gt;&amp;1 | tee dla_build.log
+
+# (c) 하이브리드: 위와 동일하되, fallback 레이어를 로그에서 읽어 어떤 op가 GPU로 갔는지 분석</code></pre>
+<ul><li><code>--useDLACore=0</code> : DLA 코어 0에 올린다(Orin은 DLA 코어가 2개, 0/1). DLA는 <strong>FP16/INT8만</strong> 되므로 <code>--fp16</code>(또는 INT8 QDQ)이 필수.</li><li><code>--allowGPUFallback</code> : DLA가 <strong>못 도는 레이어를 GPU로</strong> 떨어뜨려 빌드가 실패하지 않게 한다. 이걸 빼면 미지원 op에서 빌드가 막힌다.</li></ul>
+<p>fallback 레이어 목록 추출:</p>
+<pre><code class="lang-bash"># 빌드 로그에서 DLA로 간 레이어 / GPU로 fallback된 레이어를 구분
+grep -Ei &quot;DLA|GPU|fallback|running on|device&quot; dla_build.log | head -n 80
+
+# 엔진의 레이어별 device 배치를 정밀하게 덤프 (레이어 정보까지)
+trtexec --loadEngine=yolo11n_dla.engine --dumpLayerInfo \
+        --exportLayerInfo=dla_layers.json
+python3 - &lt;&lt;&#x27;PY&#x27;
+import json
+info = json.load(open(&quot;dla_layers.json&quot;))
+layers = info.get(&quot;Layers&quot;, info if isinstance(info, list) else [])
+on_gpu = [l for l in layers if isinstance(l, dict) and &quot;gpu&quot; in str(l).lower()]
+print(f&quot;총 레이어 {len(layers)}개 중 GPU fallback 의심 {len(on_gpu)}개&quot;)
+PY</code></pre>
+<ul><li><code>--dumpLayerInfo</code> / <code>--exportLayerInfo=&lt;json&gt;</code> : 엔진의 레이어별 정보(정밀도·device 등)를 덤프. fallback을 로그 grep보다 정확히 센다.</li></ul>
+<p>읽는 법 &amp; 개선 루프(원본 가이드의 "fallback 0 만들기 = HW-aware redesign 미니 버전"):</p>
+<ol><li>로그/레이어 정보에서 <strong><code>GPU</code> 표시된 레이어 = fallback</strong>. 이들이 전체의 20~30%를 넘으면 DLA 이득이 사라진다.</li><li>fallback을 유발하는 대표 op를 파악한다. DLA 미지원의 대표 사례(2.3):</li><ul><li><strong>attention/MatMul 계열</strong> → DLA 불가(통째로 GPU).</li><li><strong>Softmax</strong> → Xavier 불가(Orin만). Xavier면 이것도 fallback.</li><li><strong>동적 shape</strong> → DLA 불가(min=opt=max 강제).</li><li><strong>큰 커널/stride, grouped/dilated deconv, 특수 activation</strong>(예: 커스텀 activation) → 제약 위반 시 fallback.</li></ul><li>모델을 <strong>DLA 친화 op로 치환</strong>한다(예: 미지원 upsample → 지원되는 resize 형태로, 커스텀 activation → ReLU/LeakyReLU/Clipped ReLU 등 DLA 지원 목록 내로, 동적 shape → 고정 shape). 이게 <strong>HW-aware redesign의 축소판</strong>이다.</li><li>다시 빌드해 fallback이 줄었는지 확인 → <strong>fallback 0</strong>을 목표로 반복. <code>dla_fallback.md</code>에 <strong>치환 전/후 fallback 수와 latency 변화</strong>를 표로 남긴다.</li></ol>
+<blockquote class="callout bad">🔴 함정: fallback을 "허용"만 해두고 방치하면 DLA↔GPU 텐서 복사가 매 레이어 경계마다 생겨 GPU-only보다 느려진다. <strong>DLA는 "쪼개서 조금"이 아니라 "덩어리째 DLA"</strong> 여야 이득이다. 로그에서 DLA subgraph가 <strong>여러 조각으로 쪼개졌으면</strong>(중간중간 GPU가 낌) 경계 복사가 그만큼 늘어난 것 → 그 경계의 op를 없애 subgraph를 하나로 합치는 게 핵심.</blockquote>
+<hr>
+<h3 id="실습-6-custom-plugin-골격-ipluginv3-c-진짜-차별점">실습 6 — Custom Plugin 골격 (IPluginV3, C++) — <em>진짜 차별점</em></h3>
+<blockquote class="callout warn">⚠️ <strong>버전 경계(중요):</strong> TensorRT는 <strong>10부터 <code>IPluginV2</code> 계열을 deprecated</strong>, <strong>11.0에서 <code>IPluginV2</code>/<code>IPluginV2DynamicExt</code>/<code>IPluginCreator</code>/<code>addPluginV2()</code>를 전면 제거</strong>했다(2026-07 기준 확인). <strong>현행 인터페이스는 <code>IPluginV3</code></strong> 이며, <code>IPluginCreatorV3One</code>으로 등록하고 <code>INetworkDefinition::addPluginV3()</code>로 추가한다. 정본 10.16.x에서도 <strong>신규 플러그인은 <code>IPluginV3</code>로 작성</strong>하는 게 맞다(V2는 deprecated). 인터넷의 옛 <code>IPluginV2DynamicExt</code> 예제는 11.x에서 컴파일되지 않으니 <strong><code>IPluginV3</code>로 시작</strong>하라.</blockquote>
+<p><code>IPluginV3</code>는 하나의 모놀리식 클래스가 아니라 <strong>세 capability 인터페이스의 조합</strong>이다. 왜 쪼갰나: 빌드 시에만 필요한 것(형상/타입/포맷)과 런타임에만 필요한 것(커널 실행)을 분리하면, TensorRT가 <strong>필요한 시점에 필요한 인터페이스만</strong> 얻어 갈 수 있다(직렬화된 엔진을 로드할 땐 Build capability가 없어도 됨).</p>
+<div class="tablewrap"><table><thead><tr><th>Capability</th><th>인터페이스</th><th>대표 메서드</th><th>역할</th></tr></thead><tbody><tr><td>Core</td><td><code>IPluginV3OneCore</code></td><td><code>getPluginName</code>, <code>getPluginVersion</code>, <code>getPluginNamespace</code></td><td>식별(레지스트리 키)</td></tr><tr><td>Build</td><td><code>IPluginV3OneBuild</code></td><td><code>getNbOutputs</code>, <code>getOutputShapes</code>, <code>getOutputDataTypes</code>, <code>supportsFormatCombination</code>, <code>getFormatCombinationLimit</code>, <code>configurePlugin</code></td><td>빌드 시 형상/타입/포맷 결정</td></tr><tr><td>Runtime</td><td><code>IPluginV3OneRuntime</code></td><td><code>enqueue</code>, <code>getWorkspaceSize</code>, <code>onShapeChange</code>, <code>attachToContext</code>, <code>getFieldsToSerialize</code></td><td>실제 커널 실행 + 직렬화</td></tr></tbody></table></div>
+<p>메서드별 역할(왜 각각 필요한가):</p>
+<ul><li><code>getOutputShapes(...)</code> : 입력 shape로부터 <strong>출력 shape를 기호(symbolic)로</strong> 계산. 동적 shape에서 출력 크기를 TensorRT가 알아야 버퍼를 잡는다.</li><li><code>getOutputDataTypes(...)</code> : 출력 dtype 결정(보통 입력 dtype 따라감).</li><li><code>supportsFormatCombination(pos, io, ...)</code> : "이 위치(pos)의 텐서가 이 (dtype, 메모리 포맷) 조합을 지원하는가?"를 답한다. 지원하는 조합만 <code>true</code> → TensorRT가 그 안에서 최적을 고른다.</li><li><code>getFormatCombinationLimit()</code> : TensorRT가 tactic당 타이밍할 포맷 조합 <strong>개수 상한</strong>. 기본으로 충분하나, 조합이 많은 플러그인은 늘린다.</li><li><code>configurePlugin(...)</code> : 실제 선택된 입출력 형상/포맷을 통보받아 내부 상태를 준비(빌드 단계).</li><li><code>enqueue(inputDesc, outputDesc, inputs, outputs, workspace, stream)</code> : <strong>핵심.</strong> 실제 CUDA 커널을 이 stream에 launch. 반환 0=성공.</li><li><code>getWorkspaceSize(...)</code> : 커널이 필요로 하는 scratch 메모리 크기. TensorRT가 미리 잡아 <code>enqueue</code>의 <code>workspace</code>로 준다.</li><li><code>onShapeChange(...)</code> : 실행 중 입력 shape가 바뀌면 통보(동적 shape 대응).</li><li><code>attachToContext(...)</code> : 실행 컨텍스트에 붙을 때(예: cuBLAS 핸들 확보) 훅.</li><li><code>getFieldsToSerialize()</code> : 엔진에 <strong>저장할 플러그인 속성</strong>을 반환 → 나중에 <code>createPlugin</code>이 그걸로 복원.</li></ul>
+<p>C++ 골격(예: deformable attention 같은 미지원 op를 위한 최소 형태). <strong>시그니처는 정본 10.16.x <a href="https://docs.nvidia.com/deeplearning/tensorrt/latest/inference-library/plugins-cpp.html">Adding Custom Layers Using the C++ API</a> 기준</strong>:</p>
+<pre><code class="lang-cpp">// DeformAttnPlugin.h  (TensorRT 10.x, IPluginV3)
+#include &lt;NvInfer.h&gt;
+using namespace nvinfer1;
+
+// 세 capability를 한 클래스에서 구현하는 형태
+class DeformAttnPlugin : public IPluginV3, public IPluginV3OneCore,
+                         public IPluginV3OneBuild, public IPluginV3OneRuntime {
+public:
+    // --- IPluginV3: capability 노출 (kBUILD/kRUNTIME 아니면 kCORE) ---
+    IPluginCapability* getCapabilityInterface(PluginCapabilityType type) noexcept override {
+        try {
+            if (type == PluginCapabilityType::kBUILD)   return static_cast&lt;IPluginV3OneBuild*&gt;(this);
+            if (type == PluginCapabilityType::kRUNTIME) return static_cast&lt;IPluginV3OneRuntime*&gt;(this);
+            return static_cast&lt;IPluginV3OneCore*&gt;(this);   // 기본 = Core
+        } catch (...) {}
+        return nullptr;
+    }
+    IPluginV3* clone() noexcept override { return new DeformAttnPlugin(*this); }
+
+    // --- Core: 식별 (레지스트리 키) ---
+    const char* getPluginName()      const noexcept override { return &quot;DeformAttn&quot;; }
+    const char* getPluginVersion()   const noexcept override { return &quot;1&quot;; }
+    const char* getPluginNamespace() const noexcept override { return &quot;&quot;; }
+
+    // --- Build: 출력 개수/형상/타입/지원 포맷 ---
+    int32_t getNbOutputs() const noexcept override { return 1; }
+
+    int32_t getOutputShapes(DimsExprs const* inputs, int32_t nbInputs,
+                            DimsExprs const* shapeInputs, int32_t nbShapeInputs,
+                            DimsExprs* outputs, int32_t nbOutputs,
+                            IExprBuilder&amp; exprBuilder) noexcept override {
+        outputs[0] = inputs[0];          // 예시: 입력과 동일 형상
+        return 0;                        // 0 = 성공
+    }
+    int32_t getOutputDataTypes(DataType* outputTypes, int32_t nbOutputs,
+                               DataType const* inputTypes, int32_t nbInputs) const noexcept override {
+        outputTypes[0] = inputTypes[0];
+        return 0;
+    }
+    bool supportsFormatCombination(int32_t pos, DynamicPluginTensorDesc const* inOut,
+                                   int32_t nbInputs, int32_t nbOutputs) noexcept override {
+        // 예: 모든 입출력이 FP16 + LINEAR일 때만 지원
+        return inOut[pos].desc.type == DataType::kHALF &amp;&amp;
+               inOut[pos].desc.format == TensorFormat::kLINEAR;
+    }
+    int32_t configurePlugin(DynamicPluginTensorDesc const* in, int32_t nbInputs,
+                            DynamicPluginTensorDesc const* out, int32_t nbOutputs) noexcept override {
+        return 0;
+    }
+
+    // --- Runtime: 커널 실행 + workspace + 직렬화 ---
+    int32_t enqueue(PluginTensorDesc const* inputDesc, PluginTensorDesc const* outputDesc,
+                    void const* const* inputs, void* const* outputs,
+                    void* workspace, cudaStream_t stream) noexcept override {
+        // TODO: 여기서 실제 CUDA 커널(deformable attention)을 stream에 launch
+        // launch_deform_attn(inputs[0], outputs[0], inputDesc[0].dims, stream);
+        return 0;                        // 0 = 성공
+    }
+    size_t getWorkspaceSize(DynamicPluginTensorDesc const* inputs, int32_t nbInputs,
+                            DynamicPluginTensorDesc const* outputs, int32_t nbOutputs) const noexcept override {
+        return 0;                        // scratch 필요 없으면 0
+    }
+    int32_t onShapeChange(PluginTensorDesc const* in, int32_t nbInputs,
+                          PluginTensorDesc const* out, int32_t nbOutputs) noexcept override { return 0; }
+    IPluginV3* attachToContext(IPluginResourceContext* context) noexcept override { return clone(); }
+
+    // 엔진에 저장할 속성(없으면 빈 컬렉션). 복원은 Creator의 createPlugin에서.
+    PluginFieldCollection const* getFieldsToSerialize() noexcept override {
+        static PluginFieldCollection fc{0, nullptr};
+        return &amp;fc;
+    }
+};</code></pre>
+<p>플러그인 등록(레지스트리)과 로드:</p>
+<pre><code class="lang-cpp">// DeformAttnCreator.h  — 레지스트리에 등록되는 팩토리
+class DeformAttnCreator : public IPluginCreatorV3One {
+public:
+    const char* getPluginName()      const noexcept override { return &quot;DeformAttn&quot;; }
+    const char* getPluginVersion()   const noexcept override { return &quot;1&quot;; }
+    const char* getPluginNamespace() const noexcept override { return &quot;&quot;; }
+    PluginFieldCollection const* getFieldNames() noexcept override {
+        static PluginFieldCollection fc{0, nullptr};
+        return &amp;fc;                      // 플러그인 attribute 이름 목록
+    }
+    // 빌드/역직렬화 시 TensorRT가 호출해 플러그인 인스턴스를 만든다. phase로 빌드/런타임 구분.
+    IPluginV3* createPlugin(AsciiChar const* name, PluginFieldCollection const* fc,
+                            TensorRTPhase phase) noexcept override {
+        return new DeformAttnPlugin();   // fc에서 attribute를 읽어 생성자에 넘기는 게 일반형
+    }
+};
+
+// 이 매크로 한 줄로 플러그인 레지스트리에 자동 등록된다.
+REGISTER_TENSORRT_PLUGIN(DeformAttnCreator);</code></pre>
+<p>빌드·로드:</p>
+<pre><code class="lang-bash"># .so 로 컴파일 (경로는 환경에 맞게)
+g++ -shared -fPIC -o libdeform_attn.so DeformAttnPlugin.cpp \
+    -I/usr/include/x86_64-linux-gnu -I/usr/local/cuda/include \
+    -L/usr/lib/x86_64-linux-gnu -lnvinfer -L/usr/local/cuda/lib64 -lcudart
+
+# trtexec에서 플러그인 로드하며 빌드/실행
+trtexec --onnx=model_with_deform_attn.onnx \
+        --staticPlugins=./libdeform_attn.so \
+        --saveEngine=model.engine</code></pre>
+<ul><li><code>--staticPlugins=&lt;.so&gt;</code>(구 <code>--plugins</code>) : 빌드/실행 전에 이 공유 라이브러리를 로드해 레지스트리에 플러그인을 등록시킨다. ONNX의 커스텀 op가 이 플러그인으로 해석된다.</li></ul>
+<blockquote class="callout tip">💡 팁: <strong>처음부터 deformable attention을 다 짜지 말고</strong>, "입력을 그대로 통과시키는 identity plugin"을 먼저 등록→빌드→로드까지 성공시켜라. 위 골격에서 <code>enqueue</code>가 입력을 출력으로 <code>cudaMemcpyAsync</code> 복사만 하면 identity다. 빌드 파이프라인이 뚫린 뒤 <code>enqueue</code>의 커널만 교체하면 된다. 전체 예제는 <a href="https://github.com/NVIDIA/TensorRT">TensorRT GitHub</a>의 plugin 샘플과 <a href="https://docs.nvidia.com/deeplearning/tensorrt/latest/inference-library/extending-custom-layers.html">Extending TensorRT with Custom Layers</a>를 참고. ModelOpt 예제도 <code>--staticPlugins</code>로 커스텀 op 플러그인을 로드하는 형태를 보여준다(<a href="https://github.com/NVIDIA/Model-Optimizer/tree/main/examples/onnx_ptq">onnx_ptq 예제</a>).</blockquote>
+<hr>
+<h3 id="실습-7-nsight-systems로-커널-단위-병목-찾기-선택-심화">실습 7 — Nsight Systems로 커널 단위 병목 찾기 (선택, 심화)</h3>
+<p><code>trtexec</code>의 요약 숫자로 "전송 vs 연산" 병목을 판정했다면, Nsight Systems는 그 병목을 <strong>타임라인에서 눈으로</strong> 확인·확정한다.</p>
+<pre><code class="lang-bash"># trtexec 실행을 Nsight Systems로 프로파일 → 커널 타임라인/메모리 복사 확인
+nsys profile -o yolo11n_int8_nsys \
+     --trace=cuda,nvtx,osrt \
+     trtexec --loadEngine=yolo11n_int8.engine --dumpProfile --separateProfileRun --iterations=100
+# 결과 yolo11n_int8_nsys.nsys-rep 를 nsys-ui(GUI)로 열어 커널별 시간·H2D/D2H 복사 확인</code></pre>
+<ul><li><code>--trace=cuda,nvtx,osrt</code> : CUDA 런타임/커널, NVTX 마커(TensorRT가 레이어 이름을 NVTX로 심는다), OS 런타임을 추적.</li><li><code>--iterations=100</code> : 충분한 반복으로 정상 구간(steady state)을 캡처(초기 워밍업 제외).</li></ul>
+<p><strong>타임라인에서 병목 찾는 절차(GUI):</strong></p>
+<ol><li><strong>CUDA HW 행</strong>을 펼쳐 <strong>Kernels 레인</strong>과 <strong>Memory 레인(H2D/D2H)</strong> 을 나란히 본다.</li><li><strong>연산 병목:</strong> 한 프레임 구간에서 Kernels 레인이 빈틈없이 꽉 차 있고 그 안에 <strong>유독 긴 커널 막대</strong>가 있으면, 그 커널이 병목. NVTX 마커로 어느 레이어인지 이름을 확인 → 실습 1-(4)의 per-layer 표와 대조.</li><li><strong>전송 병목:</strong> Memory 레인의 H2D/D2H 막대가 <strong>Kernels 레인과 겹치지 않고</strong>(직렬화되어) compute를 기다리게 만들면, 파이프라인이 전송에 막힌 것. → 입력 전처리를 GPU로 옮기거나(H2D 감소), 출력을 줄이거나, 스트림을 겹쳐 double-buffering.</li><li><strong>런치(CPU) 병목:</strong> CPU(osrt/CUDA API) 행에서 커널 런치 사이 <strong>간격이 크고</strong> GPU가 그 사이 놀면 → Enqueue 바운드. <code>--useCudaGraph</code>로 런치를 묶는다.</li><li><strong>DLA(보드):</strong> DLA 사용 시 DLA 레인과 GPU 레인 사이 <strong>복사 구간</strong>이 반복되면 fallback 경계 문제(실습 5).</li></ol>
+<p>커널 <strong>내부</strong>(warp occupancy, 메모리 병목, register 압박)까지 파려면 Nsight <strong>Compute</strong>(<code>ncu</code>)를 쓴다:</p>
+<pre><code class="lang-bash"># 특정 커널 하나를 깊게 (occupancy/메모리 처리량 등). 커널이 많으므로 -c 로 개수 제한.
+ncu -o yolo11n_ncu -c 20 --set full \
+    trtexec --loadEngine=yolo11n_int8.engine --iterations=1</code></pre>
+<p>읽는 법 요약: 타임라인에서 (1) <strong>memcpy(H2D/D2H)가 compute를 가리는지</strong>(파이프라인 문제), (2) <strong>특정 커널이 비정상적으로 긴지</strong>(그 레이어가 tactic을 잘못 골랐거나 미지원 정밀도), (3) DLA 사용 시 <strong>DLA↔GPU 복사 구간</strong>을 본다.</p>
+<hr>
+<h2 id="5-예시-결과-해석">5) 예시 / 결과 해석</h2>
+<h3 id="51-latencymap-3점-비교표-예시-실제-값은-각자-환경에서-채움">5.1 latency/mAP 3점 비교표 (예시 — 실제 값은 각자 환경에서 채움)</h3>
+<div class="tablewrap"><table><thead><tr><th>정밀도</th><th>엔진</th><th>GPU Compute (mean)</th><th>p99</th><th>상대 속도</th><th>mAP50-95</th><th>FP32 대비</th></tr></thead><tbody><tr><td>FP32</td><td><code>yolo11n_fp32.engine</code></td><td>예: 6.0 ms</td><td>예: 7.1 ms</td><td>1.0x</td><td>예: 0.39</td><td>기준</td></tr><tr><td>FP16</td><td><code>yolo11n_fp16.engine</code></td><td>예: 2.4 ms</td><td>예: 2.9 ms</td><td>~2.5x</td><td>예: 0.389</td><td>~0.001 ↓</td></tr><tr><td>INT8(calib/QDQ)</td><td><code>yolo11n_int8_qdq.engine</code></td><td>예: 1.8 ms</td><td>예: 2.3 ms</td><td>~3.3x</td><td>예: 0.37</td><td>약 0.5~2%p ↓</td></tr></tbody></table></div>
+<p>해석 가이드:</p>
+<ul><li><strong>FP16은 거의 공짜 점심</strong>이다: 속도 크게 상승, 정확도 하락 미미. 임베디드 1차 최적화는 항상 FP16부터.</li><li><strong>INT8의 정확도 하락은 캘리브레이션 품질에 좌우</strong>된다. 문헌상 YOLO 계열 static INT8는 통상 <strong>속도 ~1.5~3.3x</strong>, <strong>mAP50-95 하락 약 0.5~2%p(캘리브레이션·데이터가 나쁘면 3~7%p까지)</strong> 로 보고된다. 하락이 크면 → 캘리브레이션 이미지 수/대표성 점검 → QAT(실습 4B) 고려.</li><li><strong>mean만 보지 말고 p99도 넣어라.</strong> 실시간 시스템은 p99가 프레임 예산(30fps=33.3ms)을 넘는지가 진짜 합격/불합격 기준이다(4-(3) 참조).</li><li>숫자는 GPU(예: RTX)와 Orin이 <strong>절대값이 다르다.</strong> 학습 목적에서는 <strong>정밀도 간 상대 비율</strong>과 <strong>정확도 하락폭</strong>에 집중하라.</li></ul>
+<h3 id="52-trtexec-출력-판독-예시-무엇을-보고-무슨-결론을-내렸나">5.2 trtexec 출력 판독 예시 (무엇을 보고 무슨 결론을 내렸나)</h3>
+<p>가상의 INT8 엔진 출력에서:</p>
+<pre><code class="lang-text">Throughput: 300 qps
+Latency: mean = 3.1 ms, percentile(99%) = 5.8 ms
+Enqueue Time: mean = 3.4 ms
+GPU Compute Time: mean = 1.9 ms
+H2D Latency: mean = 0.9 ms
+D2H Latency: mean = 0.3 ms</code></pre>
+<p>판독:</p>
+<ul><li>이론 최대 qps = 1000/1.9 ≈ <strong>526 qps</strong>인데 실측은 <strong>300 qps</strong> → GPU가 논다(효율 57%).</li><li><code>Enqueue mean(3.4) &gt; GPU Compute mean(1.9)</code> → <strong>CPU 런치 바운드</strong>가 원인. 결론: <code>--useCudaGraph</code>로 런치를 묶거나 배치를 키운다.</li><li><code>H2D(0.9)</code>도 compute의 절반 → 부차적 전송 병목. 전처리를 GPU로 옮기면 추가 이득.</li><li><code>p99(5.8) ≫ mean(3.1)</code> → 꼬리가 김. 다른 프로세스와 GPU 경합 또는 클럭 스로틀 의심 → <code>nvidia-smi -q -d CLOCK</code>으로 스로틀 확인, <code>--useSpinWait</code>로 측정 지터 제거 후 재측정.</li></ul>
+<h3 id="53-polygraphy-레이어-비교-해석-예시">5.3 polygraphy 레이어 비교 해석 (예시)</h3>
+<ul><li>대부분 레이어 PASS인데 <strong>특정 Concat/Sigmoid 직후부터 FAIL</strong>이 시작된다면, 그 앞 레이어(예: outlier가 큰 activation)가 INT8 스케일에 안 맞는 것 → 그 레이어를 FP16으로 고정(mixed precision, <code>layer_sensitivity.csv</code>와 대조).</li><li><code>debug precision --mode bisect</code> 결과가 "<strong>앞쪽 30개 레이어를 고정밀로</strong>"라고 나오면, 그 30개가 대략 backbone 초입(입력 통계가 불안정한 구간)일 확률이 높다. <code>--layerPrecisions</code>로 그 구간만 FP16 고정 후 mAP 재측정 → 회복되면 확정.</li><li>최종 출력만 조금 어긋나는 정도면 mAP 영향이 작을 수 있으니 <strong>실제 mAP로 판단</strong>한다(오차 ≠ 정확도 하락).</li></ul>
+<h3 id="54-dla-결과-해석-보드-시">5.4 DLA 결과 해석 (보드 시)</h3>
+<div class="tablewrap"><table><thead><tr><th>빌드</th><th>실행 위치</th><th>fallback 레이어</th><th>상대 latency</th><th>판단</th></tr></thead><tbody><tr><td>GPU-only</td><td>전부 GPU</td><td>-</td><td>1.0x</td><td>기준</td></tr><tr><td>DLA + fallback 많음</td><td>DLA 일부 + GPU 다수</td><td>예: 35%</td><td>예: 1.2x(느려짐)</td><td>🔴 복사 오버헤드</td></tr><tr><td>DLA 최적화(fallback↓)</td><td>대부분 DLA</td><td>예: 0~5%</td><td>예: 0.9x + GPU 여유</td><td>✅ 전력/GPU 부하 이득</td></tr></tbody></table></div>
+<p>DLA의 진짜 가치는 순수 latency보다 <strong>GPU를 비워 다른 태스크(예: 다중 카메라)를 병렬로 돌릴 수 있다는 것</strong>과 <strong>전력 효율</strong>이다. <code>dla_fallback.md</code>에는 "op 치환 전/후 fallback 수, 그리고 GPU가 얼마나 비었는지(다른 태스크 여유)"를 함께 적으면 포트폴리오로서 강하다.</p>
+<hr>
+<h2 id="6-흔한-오류와-해결-troubleshooting">6) 흔한 오류와 해결 (Troubleshooting)</h2>
+<div class="tablewrap"><table><thead><tr><th>증상</th><th>원인</th><th>해결</th></tr></thead><tbody><tr><td><code>trtexec: unrecognized option &#x27;--int8&#x27;</code></td><td><strong>TensorRT 11.x</strong>(정밀도 플래그 제거됨)</td><td>정본 10.16.x로 맞추거나, 실습 2-B/4로 전환. INT8은 ModelOpt QDQ, FP16은 AutoCast로 모델에 심기</td></tr><tr><td><code>IInt8EntropyCalibrator2</code> import/동작 실패</td><td>11.x에서 제거 / 10.1+ deprecated</td><td>정본 10.16.x에서 사용(경고만), 신규는 ModelOpt PTQ(실습 4A)</td></tr><tr><td>INT8인데 mAP가 폭락</td><td>캘리브레이션 데이터 부족·비대표 / <code>--int8</code>만 주고 캘리브 생략 / 옛 <code>calib.cache</code> 재사용</td><td>대표 이미지 1000장+로 재캘리브(캐시 삭제 후), QDQ/QAT 사용</td></tr><tr><td><code>--fp16</code> 줬는데 여전히 FP32로 빌드됨</td><td>해당 GPU/레이어가 FP16 tactic이 없거나 정밀도 제약이 무시</td><td><code>--profilingVerbosity=detailed</code>로 tactic 확인, <code>--precisionConstraints=obey --layerPrecisions</code>로 강제(10.x) 또는 모델 캐스트(11.x)</td></tr><tr><td><code>no implementation</code> / <code>no tactic</code></td><td>workspace 부족 또는 미지원 포맷</td><td><code>--memPoolSize=workspace:4096</code>로 상한↑, 입력 IO 포맷 조정, 미지원 op면 plugin</td></tr><tr><td>Throughput이 이론치의 절반</td><td>Enqueue 바운드(CPU 런치) 또는 H2D/D2H 병목</td><td>Enqueue&gt;Compute면 <code>--useCudaGraph</code>/배치↑, 전송이면 <code>--noDataTransfer</code>로 확인 후 전처리 GPU 이동</td></tr><tr><td>p99가 mean보다 훨씬 큼</td><td>GPU 경합 / 클럭 스로틀 / 워밍업 미제외</td><td><code>--iterations</code>↑로 steady state, <code>nvidia-smi</code>로 스로틀 확인, <code>--useSpinWait</code></td></tr><tr><td>plugin <code>.so</code>가 옛 <code>IPluginV2</code> 기반이라 11.x에서 링크/등록 실패</td><td>11.0에서 V2 계열 제거</td><td><code>IPluginV3</code>+<code>IPluginCreatorV3One</code>으로 포팅(실습 6)</td></tr><tr><td><code>--useDLACore</code> 무시/에러</td><td>RTX엔 DLA 없음 / <strong>11.x는 DLA 미지원</strong> / JetPack 런타임 문제</td><td>정본 10.x + Orin에서만 실행. JetPack/L4T 버전과 TensorRT DLA 런타임 호환 확인</td></tr><tr><td>DLA 켰는데 GPU-only보다 느림</td><td>fallback 과다로 DLA↔GPU 복사 폭증</td><td><code>--dumpLayerInfo</code>로 fallback 레이어 특정 → 유발 op 치환(실습 5), subgraph를 덩어리로</td></tr><tr><td>polygraphy 비교가 항상 FAIL</td><td>atol/rtol이 너무 타이트 / 동적 shape·전처리 불일치</td><td><code>--atol 1e-2 --rtol 1e-2</code>로 완화, 입력 shape·정규화 동일하게, <code>--save-inputs</code>로 golden 입력 고정</td></tr><tr><td><code>debug precision</code>의 N을 ONNX 노드로 못 붙임</td><td>N은 TRT 내부 레이어 인덱스(노드와 1:1 아님)</td><td><code>inspect model</code>·<code>exportProfile</code>·<code>mark all</code> 교차 대조로 구간 추정, 그 구간을 (b)로 좁힘</td></tr><tr><td>엔진이 다른 장비에서 로드 안 됨</td><td>엔진은 GPU 아키텍처·TRT 버전 종속</td><td>타깃에서 직접 빌드(RTX↔Orin 엔진 호환 불가)</td></tr><tr><td><code>Could not find any implementation for node</code></td><td>그래프에 미지원 op</td><td>op 치환, 또는 custom plugin(실습 6) 작성</td></tr></tbody></table></div>
+<hr>
+<h2 id="7-산출물-deliverables">7) 산출물 (Deliverables)</h2>
+<p>이 단계가 끝나면 다음이 남아야 한다(포트폴리오/면접 근거):</p>
+<ul><li class="task"><label><input type="checkbox" data-k="89f711a805"> <code>latency_accuracy_matrix.csv</code> — FP32/FP16/INT8 × {GPU compute mean, <strong>p99</strong>, throughput, mAP50-95, FP32 대비 하락폭}</label></li><li class="task"><label><input type="checkbox" data-k="043c783d3c"> <code>yolo11n_{fp32,fp16,int8_qdq}.engine</code> — 3점 엔진(빌드 로그 + <code>--exportProfile</code> JSON 포함)</label></li><li class="task"><label><input type="checkbox" data-k="abb1fd9cc8"> <code>trtexec_readout.md</code> — 한 엔진의 Throughput/Latency/Enqueue/GPU Compute/H2D·D2H를 줄별로 해석하고 병목 결론까지 적은 문서(4-(3) 형식)</label></li><li class="task"><label><input type="checkbox" data-k="fec083d067"> <code>polygraphy_diff.md</code> — FP32 vs INT8 레이어별 비교 요약, mismatch 시작 레이어, <code>debug precision</code>의 "앞쪽 N개 고정밀" 결론과 해석</label></li><li class="task"><label><input type="checkbox" data-k="cb66fdb6a7"> <code>calib_data/</code> + <code>calib.cache</code>(10.x) 또는 <code>yolo11n.quant.onnx</code>(ModelOpt) — 캘리브레이션 산출물</label></li><li class="task"><label><input type="checkbox" data-k="4e7dd2f994"> <code>mixed_precision_plan.md</code> — <a href="03_quantization_theory.html">1단계</a> <code>layer_sensitivity.csv</code> + <code>debug precision</code> 결과를 근거로 "어느 레이어를 FP16로 남겼는가"와 그 mAP 회복폭</label></li><li class="task"><label><input type="checkbox" data-k="062d4e1d0d"> (보드 시) <code>dla_fallback.md</code> — GPU-only/DLA/하이브리드 비교표, fallback 레이어 목록(<code>--exportLayerInfo</code>), op 치환 전/후 fallback 수(없으면 '보드 필요 — 미실행'으로 명시)</label></li><li class="task"><label><input type="checkbox" data-k="3120e6e718"> (심화) <code>deform_attn_plugin/</code> — IPluginV3 골격 소스(+Creator+REGISTER) + 빌드된 <code>.so</code>(최소 identity라도)</label></li><li class="task"><label><input type="checkbox" data-k="2652dd2d9e"> (선택) <code>*.nsys-rep</code> — Nsight Systems 타임라인 캡처 1건 + 병목 유형 판정 메모</label></li></ul>
+<hr>
+<h2 id="8-참고-사이트-참고문헌">8) 참고 사이트 &amp; 참고문헌</h2>
+<h3 id="공식-문서-도구">공식 문서 / 도구</h3>
+<ul><li><a href="https://docs.nvidia.com/deeplearning/tensorrt/">NVIDIA TensorRT 문서(전체)</a> — 개발자 가이드·API 레퍼런스 진입점</li><li><a href="https://docs.nvidia.com/deeplearning/tensorrt/latest/getting-started/release-notes-10/10.16.0.html">TensorRT 10.16 Release Notes</a> — <strong>정본 LTS</strong>. deprecated API를 2027-03까지 유지</li><li><a href="https://docs.nvidia.com/deeplearning/tensorrt/latest/getting-started/release-notes.html">TensorRT Release Notes(최신 인덱스)</a> — 버전별 변경·EOL 확인</li><li><a href="https://docs.nvidia.com/deeplearning/tensorrt/10.16.0/reference/command-line-programs.html">Command-Line Programs (trtexec, 10.16)</a> — <strong>trtexec 플래그·성능 지표(Throughput/Latency/Enqueue/GPU Compute/H2D·D2H) 정의</strong></li><li><a href="https://docs.nvidia.com/deeplearning/tensorrt/latest/api/migration/tensorrt-10x-to-11x-trtexec.html">Migrating trtexec from 10.x to 11.x</a> — <strong>제거된 정밀도 플래그(<code>--fp16/--int8/--best/--bf16/--fp8/--int4/--calib</code>)</strong> 목록</li><li><a href="https://github.com/NVIDIA/TensorRT/blob/main/tools/Polygraphy/how-to/debug_accuracy.md">Polygraphy — Debugging Accuracy(how-to)</a> — layerwise 비교·모델 축소 결정 트리</li><li><a href="https://github.com/NVIDIA/TensorRT/tree/main/tools/Polygraphy/examples/cli/debug/02_reducing_failing_onnx_models">Polygraphy debug reduce/precision 예제</a> — <code>--mode bisect/linear</code>, <code>--check</code>, <code>--fail-regex</code> 실사용</li><li><a href="https://github.com/NVIDIA/TensorRT/tree/main/tools/Polygraphy">Polygraphy(도구 루트)</a> — 정확도/레이어 디버깅 도구(2026-07 기준 0.49.x)</li><li><a href="https://docs.nvidia.com/deeplearning/tensorrt/latest/inference-library/extending-custom-layers.html">Extending TensorRT with Custom Layers</a> · <a href="https://docs.nvidia.com/deeplearning/tensorrt/latest/inference-library/plugins-cpp.html">Adding Custom Layers Using the C++ API</a> — <strong>IPluginV3 C++ 시그니처·등록</strong></li><li><a href="https://docs.nvidia.com/deeplearning/tensorrt/10.16.1/_static/python-api/infer/Plugin/IPluginV3.html">IPluginV3 (Python API, 10.16)</a> · <a href="https://docs.nvidia.com/deeplearning/tensorrt/latest/api/migration/tensorrt-10x-to-11x.html">10.x→11.x C++ 마이그레이션</a> — <strong>IPluginV2 제거·IPluginV3 전환</strong></li><li><a href="https://docs.nvidia.com/deeplearning/tensorrt/latest/inference-library/work-with-dla.html">Working with DLA</a> · <a href="https://docs.nvidia.com/deeplearning/tensorrt/latest/inference-library/dla-layer-restrictions.html">DLA Supported Layers and Restrictions</a> — DLA 지원 범위/제약(Softmax Orin 전용, attention 불가, 동적 shape 불가)</li><li><a href="https://github.com/NVIDIA-AI-IOT/jetson_dla_tutorial">jetson_dla_tutorial (NVIDIA-AI-IOT)</a> — Orin DLA 실습 튜토리얼</li><li><a href="https://github.com/NVIDIA/Model-Optimizer">TensorRT Model Optimizer(ModelOpt)</a> · <a href="https://github.com/NVIDIA/Model-Optimizer/tree/main/examples/onnx_ptq">onnx_ptq 예제</a> — PTQ/QAT + QDQ ONNX export (<code>nvidia-modelopt</code>)</li><li><a href="https://nvidia.github.io/Model-Optimizer/reference/generated/modelopt.onnx.quantization.quantize.html">modelopt.onnx.quantization.quantize (API)</a> — <code>--quantize_mode/--calibration_method</code> 등 인자 레퍼런스</li><li><a href="https://nvidia.github.io/Model-Optimizer/reference/0_changelog.html">ModelOpt Changelog</a> — 버전별 인자/기능 변화 확인</li><li><a href="https://docs.ultralytics.com/modes/export">ultralytics Export 문서</a> — YOLO ONNX export 옵션</li><li><a href="https://developer.nvidia.com/nsight-systems">Nsight Systems</a> — 커널 단위 타임라인 프로파일러</li><li><a href="https://github.com/NVIDIA/TensorRT">NVIDIA/TensorRT (GitHub)</a> — 플러그인/샘플 소스</li></ul>
+<h3 id="논문">논문</h3>
+<ul><li>Jacob et al. (2018), <em>Quantization and Training of Neural Networks for Efficient Integer-Arithmetic-Only Inference</em>, arXiv:1712.05877 — INT8 정수 추론의 원조(캘리브레이션/스케일 이해의 기반)</li><li>Nagel et al. (2021), <em>A White Paper on Neural Network Quantization</em>, arXiv:2106.08295 — PTQ/QAT·per-tensor vs per-channel 실전 정리</li><li>Gholami et al. (2021), <em>A Survey of Quantization Methods for Efficient NN Inference</em>, arXiv:2103.13630 — 양자화 기법 서베이</li></ul>
+<blockquote class="callout warn">⚠️ 확인 필요: 위 버전·플래그·API는 <strong>2026-07 기준(정본 TensorRT 10.16.x LTS)</strong> 이다. 특히 (1) <code>modelopt.onnx.quantization</code> 인자명, (2) <code>IPluginV3</code> 세부 메서드 시그니처, (3) Polygraphy <code>debug precision</code> 옵션은 릴리스마다 변할 수 있으니 자신의 설치 버전 문서(<code>--help</code>)로 재확인하라.</blockquote>
+<hr>
+<h2 id="9-다음-단계">9) 다음 단계</h2>
+<p>TensorRT로 NVIDIA 위에서 첫 완주를 마쳤다면, 이제 <strong>하나의 모델을 여러 SoC로</strong> 내보내며 벤더별 op 지원의 벽을 체험할 차례다.</p>
+<p>➡️ <a href="06_multi_soc.html">4단계 — 멀티 SoC (TIDL / QNN / DRP-AI)</a> ⬅️ 이전: <a href="04_transformer_quantization.html">2단계 — Transformer 양자화</a></p><div class="pager"><a class="prev" href="04_transformer_quantization.html"><span class="lbl">← 이전</span>2. Transformer</a><a class="next" href="06_multi_soc.html"><span class="lbl">다음 →</span>4. 멀티SoC</a></div>
+<footer>임베디드 AI 양자화 학습 가이드 · 체크 상태는 브라우저에 저장됩니다(localStorage) · 인쇄/PDF: Ctrl/⌘+P</footer>
+</div>
+<script>var PAGE="05_tensorrt";
+(function(){
+  var KEY='embai:'+PAGE;
+  var boxes=document.querySelectorAll('input[type=checkbox][data-k]');
+  var fill=document.getElementById('fill'), pct=document.getElementById('pct');
+  var saved={};try{saved=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){}
+  function upd(){var d=0;boxes.forEach(function(b){if(b.checked)d++});
+    var p=boxes.length?Math.round(d/boxes.length*100):0;
+    if(fill)fill.style.width=p+'%';
+    if(pct)pct.textContent=boxes.length?(d+' / '+boxes.length+'  ('+p+'%)'):'체크리스트 없음';}
+  boxes.forEach(function(b){var k=b.getAttribute('data-k');
+    if(saved[k])b.checked=true;
+    b.addEventListener('change',function(){saved[k]=b.checked;
+      try{localStorage.setItem(KEY,JSON.stringify(saved))}catch(e){};upd();});});
+  upd();
+})();
+</script>
+</body></html>

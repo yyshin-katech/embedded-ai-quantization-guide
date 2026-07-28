@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>5. 인프라화 (시니어와 갈리는 지점)</title><style>
+:root{--bg:#0f1115;--card:#171a21;--line:#2a2f3a;--tx:#e6e8ec;--dim:#9aa3b2;--acc:#5aa9ff;--ok:#3ecf8e;--warn:#f0b429;--bad:#ff6b6b;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:-apple-system,"Pretendard","Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.75;font-size:16px}
+a{color:var(--acc);text-decoration:none}a:hover{text-decoration:underline}
+.bar{position:sticky;top:0;background:rgba(15,17,21,.96);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);z-index:20}
+.bar-in{max-width:1000px;margin:0 auto;padding:10px 20px;display:flex;align-items:center;gap:14px}
+.bar b{font-size:.9rem;white-space:nowrap}
+.track{flex:1;height:8px;background:#252a34;border-radius:99px;overflow:hidden;min-width:80px}
+.fill{height:100%;width:0;background:linear-gradient(90deg,var(--acc),var(--ok));transition:width .3s}
+.pct{font-size:.82rem;color:var(--dim);min-width:96px;text-align:right;white-space:nowrap}
+.stagenav{border-bottom:1px solid var(--line);background:#12151b}
+.stagenav-in{max-width:1000px;margin:0 auto;padding:8px 20px;display:flex;flex-wrap:wrap;gap:6px}
+.stagenav a{font-size:.76rem;padding:3px 9px;border-radius:99px;background:#1e222b;color:var(--dim)}
+.stagenav a.cur{background:var(--acc);color:#08111f;font-weight:600}
+.wrap{max-width:1000px;margin:0 auto;padding:34px 24px 120px}
+h1{font-size:1.9rem;margin:0 0 20px;letter-spacing:-.02em;border-bottom:2px solid var(--acc);padding-bottom:16px}
+h2{font-size:1.35rem;margin:48px 0 14px;padding-left:12px;border-left:4px solid var(--acc);scroll-margin-top:110px}
+h3{font-size:1.08rem;margin:26px 0 10px;color:var(--acc);scroll-margin-top:110px}
+h4{font-size:1rem;margin:20px 0 8px;color:var(--tx)}
+p,li{color:var(--tx)}
+ul,ol{padding-left:22px}li{margin:6px 0}
+li.task{list-style:none;margin-left:-22px}
+li.task label{cursor:pointer;display:flex;gap:9px;align-items:flex-start}
+li.task input{margin-top:6px;width:16px;height:16px;accent-color:var(--acc);cursor:pointer;flex-shrink:0}
+li.task input:checked ~ *{color:var(--dim)}
+code{background:#20242e;color:#ffd479;padding:2px 6px;border-radius:4px;font-family:"SFMono-Regular",Consolas,monospace;font-size:.86em}
+pre{background:#0b0d11;border:1px solid var(--line);border-radius:8px;padding:15px;overflow-x:auto;font-size:.85rem;line-height:1.55}
+pre code{background:none;color:#c8d3e0;padding:0}
+.tablewrap{overflow-x:auto;margin:16px 0}
+table{width:100%;border-collapse:collapse;font-size:.9rem}
+th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}
+th{background:#1e222b;color:var(--acc);font-weight:600}
+blockquote{margin:16px 0;padding:14px 18px;border-radius:8px;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--acc)}
+blockquote.tip{border-left-color:var(--ok)}
+blockquote.warn{border-left-color:var(--warn)}
+blockquote.bad{border-left-color:var(--bad)}
+hr{border:none;border-top:1px solid var(--line);margin:32px 0}
+.toc{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 18px;margin:8px 0 28px}
+.toc summary{cursor:pointer;color:var(--acc);font-weight:600;font-size:.92rem}
+.toc ul{margin:10px 0 2px;padding-left:18px}
+.toc li{margin:3px 0;font-size:.9rem}
+.toc .l3{padding-left:16px;font-size:.85rem}
+.pager{display:flex;justify-content:space-between;gap:12px;margin:16px 0 0}
+.pager a{flex:1;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 16px;font-size:.9rem}
+.pager a.next{text-align:right}
+.pager .lbl{display:block;font-size:.72rem;color:var(--dim)}
+footer{margin-top:60px;padding-top:18px;border-top:1px solid var(--line);color:var(--dim);font-size:.82rem}
+@media print{body{background:#fff;color:#000}.bar,.stagenav,.pager{display:none}.card,blockquote{background:#f7f7f7;border:1px solid #ccc}pre{background:#f4f4f4}pre code,code{color:#000}h2,h3{color:#000}a{color:#000}th{background:#eee;color:#000}}
+</style></head><body>
+<div class="bar"><div class="bar-in"><b>5. 인프라화 (시니어와 갈리는 지점)</b>
+<div class="track"><div class="fill" id="fill"></div></div>
+<span class="pct" id="pct">0 / 0</span></div></div>
+<div class="stagenav"><div class="stagenav-in"><a class="" href="README.html">홈</a><a class="" href="01_environment_setup.html">0. 환경준비</a><a class="" href="02_deployment_ladder.html">0.5 사다리</a><a class="" href="03_quantization_theory.html">1. 양자화이론</a><a class="" href="04_transformer_quantization.html">2. Transformer</a><a class="" href="05_tensorrt.html">3. TensorRT</a><a class="" href="06_multi_soc.html">4. 멀티SoC</a><a class="cur" href="07_infrastructure.html">5. 인프라화</a><a class="" href="08_capstone.html">캡스톤</a><a class="" href="09_roadmap.html">12주 로드맵</a><a class="" href="10_pitfalls.html">함정 5</a></div></div>
+<div class="wrap"><details class="toc" open><summary>목차</summary><ul><li><a href="#0-이-단계에서-무엇을왜-하는가">0) 이 단계에서 무엇을·왜 하는가</a></li><li class="l3"><a href="#왜-손으로-한-번이-위험한가-재현성의-붕괴">왜 &quot;손으로 한 번&quot;이 위험한가 — 재현성의 붕괴</a></li><li class="l3"><a href="#앞-단계-산출물이-여기로-모인다">앞 단계 산출물이 여기로 모인다</a></li><li><a href="#1-학습-목표-완료-체크리스트">1) 학습 목표 &amp;amp; 완료 체크리스트</a></li><li><a href="#2-배경-이론-개념-벤치-하네스가-왜-추상화여야-하는가">2) 배경 이론 / 개념 — &quot;벤치 하네스&quot;가 왜 추상화여야 하는가</a></li><li class="l3"><a href="#왜-하필-추상-베이스-클래스abc인가-세-가지-대안과의-비교">왜 하필 &quot;추상 베이스 클래스(ABC)&quot;인가 — 세 가지 대안과의 비교</a></li><li class="l3"><a href="#측정-방법론-왜-medianp95이고-왜-warmup인가">측정 방법론 — 왜 median/p95이고, 왜 warmup인가</a></li><li><a href="#3-환경도구-준비">3) 환경·도구 준비</a></li><li class="l3"><a href="#onnxruntime-gpu-1280을-cuda-128에-맞춰-설치하기-함정-주의">onnxruntime-gpu 1.28.0을 CUDA 12.8에 맞춰 설치하기 (함정 주의)</a></li><li><a href="#4-단계별-실습">4) 단계별 실습</a></li><li class="l3"><a href="#4-1-bench-디렉토리-생성">4-1. bench/ 디렉토리 생성</a></li><li class="l3"><a href="#4-2-공통-인터페이스-backendsbasepy">4-2. 공통 인터페이스 backends/base.py</a></li><li class="l3"><a href="#4-3-구체-구현-backendstrtpy-tensorrt">4-3. 구체 구현 backends/trt.py (TensorRT)</a></li><li class="l3"><a href="#4-4-나머지-백엔드-stub-공통-시그니처만-맞춘다">4-4. 나머지 백엔드 stub — 공통 시그니처만 맞춘다</a></li><li class="l3"><a href="#4-5-벤치-설정-configyaml-실행-러너-run_benchpy">4-5. 벤치 설정 config.yaml + 실행 러너 run_bench.py</a></li><li class="l3"><a href="#4-6-reportgeneratepy-md-csv-html-매트릭스-자동-생성">4-6. report/generate.py — md / csv / HTML 매트릭스 자동 생성</a></li><li class="l3"><a href="#4-7-회귀-테스트-teststest_regressionpy-map-1-하락-시-실패-골든-파일-이중화">4-7. 회귀 테스트 tests/test_regression.py — mAP 1% 하락 시 실패 + 골든 파일 이중화</a></li><li class="l3"><a href="#4-8-self-hosted-gpu-runner-등록">4-8. self-hosted GPU runner 등록</a></li><li class="l3"><a href="#4-9-ciyml-커밋마다-벤치-회귀-게이트-캐시-포함">4-9. ci.yml — 커밋마다 벤치 + 회귀 게이트 (캐시 포함)</a></li><li class="l3"><a href="#4-10-선택-실험-추적-도입-여부-mlflow무료-셀프호스팅-vs-wb">4-10. (선택) 실험 추적 도입 여부 — MLflow(무료 셀프호스팅) vs W&amp;amp;B</a></li><li><a href="#5-예시-결과-해석-산출물-3종">5) 예시 / 결과 해석 — 산출물 3종</a></li><li class="l3"><a href="#5-1-성능-매트릭스-자동-생성">5-1. 성능 매트릭스 (자동 생성)</a></li><li class="l3"><a href="#5-2-design_rulesmd-작성-방법론-실제-도출">5-2. design_rules.md — 작성 방법론 + 실제 도출</a></li><li class="l3"><a href="#5-3-decision_logmd-작성-방법론-템플릿">5-3. decision_log.md — 작성 방법론 + 템플릿</a></li><li><a href="#6-흔한-오류와-해결-troubleshooting">6) 흔한 오류와 해결 (Troubleshooting)</a></li><li><a href="#7-산출물deliverables">7) 산출물(Deliverables)</a></li><li><a href="#8-참고-사이트-참고문헌">8) 참고 사이트 &amp;amp; 참고문헌</a></li><li class="l3"><a href="#공식-문서-도구">공식 문서 / 도구</a></li><li class="l3"><a href="#논문">논문</a></li><li><a href="#9-다음-단계">9) 다음 단계</a></li></ul></details><div class="pager"><a class="prev" href="06_multi_soc.html"><span class="lbl">← 이전</span>4. 멀티SoC</a><a class="next" href="08_capstone.html"><span class="lbl">다음 →</span>캡스톤</a></div><h1>5. 인프라화 (시니어와 갈리는 지점)</h1>
+<blockquote class="callout">원본 가이드 매핑: "5단계 — 인프라화" · 예상 소요: 2~3주 (반복 개선 포함) · 선행 조건: <a href="05_tensorrt.html">3단계 TensorRT</a>, <a href="06_multi_soc.html">4단계 멀티 SoC</a> 완료 (각 백엔드로 1회 이상 빌드·측정 경험)</blockquote>
+<blockquote class="callout">정본 버전 스택(이 문서 전체 고정): <strong>CUDA 12.8 · TensorRT 10.16.x LTS(<code>build_serialized_network</code>) · onnxruntime-gpu 1.28.0</strong>. 앞 단계 산출물 이름 고정: <code>layer_sensitivity.csv</code>(1단계), <code>onnx_export_failures.md</code>(2단계).</blockquote>
+<hr>
+<h2 id="0-이-단계에서-무엇을왜-하는가">0) 이 단계에서 무엇을·왜 하는가</h2>
+<p>앞의 1~4단계는 <strong>"내가 손으로 한 번 돌려봤다"</strong> 의 세계다. 이 단계는 <strong>"조직에 시스템을 남긴다"</strong> 의 세계다. 원본 가이드의 표현을 빌리면, 여기가 <strong>혼자 튜닝하는 사람과 시니어가 갈리는 지점</strong>이다.</p>
+<p>무엇이 다른가? 주니어는 "BEVFormer를 Orin에서 INT8로 돌렸더니 12ms 나왔어요"라고 <strong>한 번</strong> 말한다. 시니어는 다음을 <strong>매일 자동으로</strong> 만든다.</p>
+<ul><li><strong>성능 매트릭스</strong>: 모델 × SoC × precision → latency / peak memory / mAP 를 한 장의 표로. 새 모델·새 SoC·새 양자화 옵션이 추가될 때마다 자동 갱신.</li><li><strong>회귀 방지</strong>: 누군가 커밋으로 정확도를 1% 떨어뜨리면 <strong>CI가 빨간불</strong>을 켠다. 사람이 매번 재검증하지 않는다.</li><li><strong>설계 규칙(<code>design_rules.md</code>)</strong>: "이 SoC에서 이 op는 쓰지 마라"를 문서화. 채용 공고(JD)가 명시적으로 요구하는 산출물이다.</li><li><strong>의사결정 로그(decision log)</strong>: "왜 이 레이어만 FP16으로 남겼는가"를 기록. 6개월 뒤의 나와 후임자를 위한 기록.</li></ul>
+<blockquote class="callout tip">💡 팁: 이 단계의 결과물은 면접에서 가장 강력한 무기다. GitHub에 <code>bench/</code> 레포와 <code>design_rules.md</code>를 올려두면, "양자화 해봤어요"가 아니라 "양자화 파이프라인을 운영해봤어요"가 된다. 후자가 시니어 시그널이다.</blockquote>
+<h3 id="왜-손으로-한-번이-위험한가-재현성의-붕괴">왜 "손으로 한 번"이 위험한가 — 재현성의 붕괴</h3>
+<p>주니어의 "12ms"는 재현이 안 된다. 그 수치가 나온 <strong>엔진의 빌드 플래그·TensorRT 버전·드라이버·워크스페이스·클럭 상태·입력 배치</strong>가 어디에도 기록돼 있지 않기 때문이다. 3개월 뒤 같은 명령을 쳐도 다른 숫자가 나오고, 그때는 "왜 느려졌지?"를 처음부터 다시 파야 한다. 인프라화의 본질은 <strong>"수치가 나온 조건 전체를 자동으로 봉인(freeze)해서, 언제 누가 실행해도 같은 숫자가 나오게 만드는 것"</strong> 이다. 이것이 되면 성능은 "느낌"이 아니라 <strong>버전 관리되는 사실(fact)</strong> 이 된다.</p>
+<p>이 관점에서 이 단계의 세 산출물을 다시 읽으면 각각의 존재 이유가 분명해진다.</p>
+<div class="tablewrap"><table><thead><tr><th>산출물</th><th>봉인하는 것</th><th>봉인이 없으면 생기는 사고</th></tr></thead><tbody><tr><td>성능 매트릭스 (<code>report/</code>)</td><td>"어떤 조합이 몇 ms/몇 mAP였는가"</td><td>회의 때마다 숫자가 달라 논쟁만 반복</td></tr><tr><td>회귀 게이트 (<code>ci.yml</code>+<code>tests/</code>)</td><td>"정확도의 하한선(baseline)"</td><td>누군가의 커밋이 조용히 mAP를 깎아도 출시 직전에야 발견</td></tr><tr><td><code>design_rules.md</code> / <code>decision_log.md</code></td><td>"왜 이 구조·이 precision인가"</td><td>후임이 "이거 왜 FP16이지?" 하고 되돌려 사고 재발</td></tr></tbody></table></div>
+<h3 id="앞-단계-산출물이-여기로-모인다">앞 단계 산출물이 여기로 모인다</h3>
+<p>이 단계는 새 작업을 시작하는 게 아니라, <strong>앞 단계의 산출물을 한 시스템으로 묶는</strong> 작업이다.</p>
+<div class="tablewrap"><table><thead><tr><th>출처 단계</th><th>산출물</th><th><code>bench/</code>에서의 역할</th></tr></thead><tbody><tr><td><a href="03_quantization_theory.html">1단계</a></td><td><code>layer_sensitivity.csv</code> (레이어별 양자화 민감도)</td><td><code>design_rules.md</code>의 "FP16 유지 레이어" 근거 + decision log 링크</td></tr><tr><td><a href="04_transformer_quantization.html">2단계</a></td><td><code>onnx_export_failures.md</code> (export 실패 op 목록)</td><td><code>design_rules.md</code>의 ❌ 금지 op 목록의 근거</td></tr><tr><td><a href="06_multi_soc.html">4단계</a></td><td>4-target 결과 (TRT/TIDL/QNN/DRP-AI latency·mem)</td><td><code>report/</code> 성능 매트릭스의 행(row)이 됨</td></tr><tr><td><a href="06_multi_soc.html">3~4단계</a></td><td>FP32 체크포인트 + 캘리브레이션셋</td><td><code>bench/models/</code>, <code>bench/calib/</code>에 고정(freeze)</td></tr></tbody></table></div>
+<blockquote class="callout tip">💡 팁: 위 표의 화살표는 <strong>단방향이 아니다</strong>. <code>report/</code> 매트릭스에서 "int8 mAP -3%p"가 관측되면, 그 원인 레이어를 <code>layer_sensitivity.csv</code>로 되짚어 <code>design_rules.md</code>에 규칙으로 승격시키고, 그 판단을 <code>decision_log.md</code>에 남긴다. 이 되먹임 루프(측정 → 규칙 → 재측정)가 돌기 시작하면 그때부터 "파이프라인을 운영한다"고 말할 수 있다.</blockquote>
+<hr>
+<h2 id="1-학습-목표-완료-체크리스트">1) 학습 목표 &amp; 완료 체크리스트</h2>
+<ul><li class="task"><label><input type="checkbox" data-k="c4b4224c63"> <code>bench/</code> 디렉토리 구조를 만들고 각 하위 폴더의 역할을 설명할 수 있다</label></li><li class="task"><label><input type="checkbox" data-k="5f748d8d09"> <code>backends/</code>의 <strong>공통 인터페이스</strong>(<code>build → run → measure → collect</code>)를 추상 클래스로 정의하고, <code>trt.py</code>로 1개 백엔드를 구현했다</label></li><li class="task"><label><input type="checkbox" data-k="1bf884f7d9"> <code>tidl.py</code>/<code>qnn.py</code>/<code>drpai.py</code>를 <strong>동일 시그니처 stub</strong>으로 채워, 보드 없이도 매트릭스에 '보드필요'로 나타나게 했다</label></li><li class="task"><label><input type="checkbox" data-k="3cc2478e23"> <code>config.yaml</code>(모델 × 타깃 × precision 매트릭스) 스키마를 정의하고 <code>run_bench.py</code> 러너로 조합을 순회했다</label></li><li class="task"><label><input type="checkbox" data-k="c9160bb211"> <code>report/generate.py</code>로 여러 백엔드 결과(JSON)를 수집해 <strong>마크다운 + CSV + HTML 매트릭스</strong>를 자동 생성했다(정렬·하이라이트 포함)</label></li><li class="task"><label><input type="checkbox" data-k="3e9bb2b3da"> <code>ci.yml</code>로 <strong>커밋마다 벤치가 돌고, mAP가 baseline 대비 1% 이상 하락하면 CI가 실패</strong>하도록 만들었다</label></li><li class="task"><label><input type="checkbox" data-k="a59db0584a"> self-hosted GPU runner를 등록(<code>config.sh</code>/<code>svc.sh</code>)하고 워크플로가 그 runner에서 도는 것을 확인했다</label></li><li class="task"><label><input type="checkbox" data-k="fab7f39b02"> <code>pytest-regressions</code> 골든 파일 비교로 회귀 테스트를 이중화했다</label></li><li class="task"><label><input type="checkbox" data-k="f27cd740d9"> <code>design_rules.md</code>를 ✅권장/⚠️주의/❌금지/📏제약 4분류로 작성하고, 각 규칙에 <strong>앞 단계 산출물 근거</strong>를 연결했다</label></li><li class="task"><label><input type="checkbox" data-k="c82c42c027"> <code>decision_log.md</code>에 "왜 이 결정을 했는가" 항목을 최소 3개 기록했다</label></li><li class="task"><label><input type="checkbox" data-k="4c2500e20c"> (선택) MLflow(무료 셀프호스팅) 또는 W&amp;B로 벤치 결과를 실험 추적에 남길지 결정하고 근거를 적었다</label></li></ul>
+<hr>
+<h2 id="2-배경-이론-개념-벤치-하네스가-왜-추상화여야-하는가">2) 배경 이론 / 개념 — "벤치 하네스"가 왜 추상화여야 하는가</h2>
+<p>4개 백엔드(TensorRT / TIDL / QNN / DRP-AI)는 API가 전부 다르다. 각각을 그때그때 스크립트로 돌리면, SoC가 5개·모델이 10개가 되는 순간 조합 폭발(5×10×3 precision = 150 케이스)로 관리 불능이 된다.</p>
+<p>핵심 아이디어는 <strong>"백엔드마다 다른 것"과 "모든 백엔드가 공통으로 하는 것"을 분리</strong>하는 것이다.</p>
+<pre><code>공통 (하네스가 강제):  build(onnx, precision, calib) → run(inputs) → measure() → collect() → {latency, peak_mem, accuracy}
+다른 것 (백엔드가 구현): TRT는 build_serialized_network, TIDL은 compile 옵션, QNN은 context binary ...</code></pre>
+<p>이렇게 하면 <code>report/</code>는 백엔드가 뭐든 <strong>동일한 dict</strong>만 받으면 되고, 새 SoC 추가 = <code>backends/new_soc.py</code> 파일 하나 추가로 끝난다. 이것이 원본 가이드가 말하는 "조직에 남기는 시스템"의 구조적 실체다.</p>
+<h3 id="왜-하필-추상-베이스-클래스abc인가-세-가지-대안과의-비교">왜 하필 "추상 베이스 클래스(ABC)"인가 — 세 가지 대안과의 비교</h3>
+<p>"공통/개별 분리"는 여러 방식으로 구현할 수 있다. 왜 이 가이드는 ABC를 고르는가?</p>
+<div class="tablewrap"><table><thead><tr><th>방식</th><th>장점</th><th>단점</th><th>이 프로젝트 적합성</th></tr></thead><tbody><tr><td>if/elif 분기 (<code>if backend==&quot;trt&quot;: ...</code>)</td><td>파일 1개로 시작 빠름</td><td>백엔드 늘면 함수마다 분기 폭발. <code>collect</code>가 백엔드를 알아야 함</td><td>❌ 조합 폭발과 정면충돌</td></tr><tr><td>덕 타이핑(규약만 문서로)</td><td>상속 없이 유연</td><td>계약 위반이 <strong>런타임</strong>에야 터짐(측정 몇 시간 뒤 크래시)</td><td>△ 팀 커지면 위험</td></tr><tr><td><code>typing.Protocol</code> (구조적)</td><td>상속 불필요, 정적 검사 가능</td><td>"공통 유틸 재사용(<code>_timeit</code>)"을 강제로 물려주기 어려움</td><td>△ 공통 코드 공유가 약함</td></tr><tr><td><strong><code>abc.ABC</code> (명목적)</strong></td><td>미구현 메서드는 <strong>인스턴스화 시점</strong>에 즉시 <code>TypeError</code>. 공통 유틸을 부모에 담아 상속</td><td>상속 트리가 생김(경량)</td><td>✅ "계약을 어기면 벤치 시작 전에 죽는다" + 공통 코드 1곳</td></tr></tbody></table></div>
+<p>핵심은 <strong>실패를 앞당기는 것(fail fast)</strong> 이다. <code>abc.abstractmethod</code>를 안 채운 백엔드는 <code>TIDLBackend()</code>를 호출하는 순간 <code>TypeError: Can&#x27;t instantiate abstract class</code>로 죽는다 — GPU를 3시간 돌린 뒤 리포트 단계에서 <code>AttributeError</code>가 나는 것보다 압도적으로 낫다. 임베디드 벤치는 한 케이스가 수십 분~수시간이라, "일찍 죽는 것"의 가치가 웹 서비스보다 훨씬 크다.</p>
+<h3 id="측정-방법론-왜-medianp95이고-왜-warmup인가">측정 방법론 — 왜 median/p95이고, 왜 warmup인가</h3>
+<p>latency 한 숫자를 뽑는 데도 함정이 많다. 아래는 임베디드 성능 리포팅의 최소 상식이다.</p>
+<ul><li><strong>첫 실행은 버린다(warmup)</strong>: 최초 추론은 CUDA 커널 JIT/캐시 워밍업, cuDNN 알고리즘 탐색, 클럭 램프업이 섞여 2~10배 느리다. warmup을 20회 이상 준 뒤 측정한다.</li><li><strong>평균이 아니라 median/p95</strong>: 평균은 스로틀링·OS 스케줄러 튐 하나에 크게 흔들린다. <strong>median(p50)</strong> 은 대표값, <strong>p95</strong> 는 "최악에 가까운 상황"을 본다. 안전 규격(자동차)에서는 p95/p99를 요구하기도 한다.</li><li><strong>GPU는 반드시 동기화</strong>: <code>execute_async_v3</code>는 비동기다. 스트림 동기화(<code>stream.synchronize()</code>/<code>Context.synchronize()</code>) 없이 시간을 재면 커널 큐잉 시간만 재서 "0.1ms" 같은 거짓 수치가 나온다.</li><li><strong>클럭 고정(선택, 재현성용)</strong>: dGPU는 <code>sudo nvidia-smi -lgc &lt;clock&gt;</code>로, Orin은 <code>jetson_clocks</code>로 클럭을 고정하면 실행 간 분산이 크게 준다. CI 재현성을 높이려면 고려한다.</li></ul>
+<pre><code>평균(mean)  →  워밍업/스로틀 1방에 오염     ✗ 리포트 금지
+p50(median) →  &quot;보통 이 정도&quot;               ✓ 기본값
+p95         →  &quot;나쁠 때도 이 안&quot;            ✓ 안전 마진 판단용</code></pre>
+<hr>
+<h2 id="3-환경도구-준비">3) 환경·도구 준비</h2>
+<p>기본 환경(Ubuntu 22.04 + RTX GPU + CUDA/TensorRT)은 <a href="01_environment_setup.html">1단계</a>·<a href="05_tensorrt.html">3단계</a>에서 이미 갖췄다고 가정한다. 이 단계에서 추가로 필요한 것만 설치한다.</p>
+<pre><code class="lang-bash"># 벤치 하네스 + 리포트 + 테스트 도구 (호스트 또는 venv)
+python3 -m pip install --upgrade \
+  pandas \
+  tabulate \
+  jinja2 \
+  pytest \
+  pytest-regressions \
+  pyyaml
+# pandas             : 성능 매트릭스 집계·피벗
+# tabulate           : DataFrame → 마크다운 표 (df.to_markdown)
+# jinja2             : DataFrame.style → HTML (하이라이트 매트릭스 렌더)
+# pytest             : 회귀 테스트 러너
+# pytest-regressions : 골든 파일(baseline) 비교 (v3.0+ 권장, 2026-07 기준)
+# pyyaml             : bench 설정(config.yaml) 로드</code></pre>
+<blockquote class="callout warn">⚠️ 주의: TensorRT / TIDL / QNN / DRP-AI SDK 자체는 앞 단계에서 설치한 것을 그대로 쓴다. 이 단계는 그 위에 얇은 오케스트레이션 레이어를 얹는 것이다. 새로 SDK를 깔지 않는다.</blockquote>
+<p>TensorRT는 <strong>10.16.x LTS 계열</strong>(2026-07 기준, <a href="https://docs.nvidia.com/deeplearning/tensorrt/latest/_static/python-api/index.html">TensorRT Python API 문서 10.16</a>)을 전제로 한다. 10.x에서는 <code>builder.build_serialized_network(network, config)</code>가 표준 빌드 경로다(8.x의 <code>build_engine</code>+<code>serialize</code>는 불필요).</p>
+<h3 id="onnxruntime-gpu-1280을-cuda-128에-맞춰-설치하기-함정-주의">onnxruntime-gpu 1.28.0을 CUDA 12.8에 맞춰 설치하기 (함정 주의)</h3>
+<p>일부 백엔드 스텁(예: QNN EP)은 onnxruntime로 도는데, <strong>버전-CUDA 조합에서 사고가 잦다.</strong> PyPI의 <code>onnxruntime-gpu</code>는 <strong>1.27부터 기본이 CUDA 13.0</strong> 빌드다. 즉 <code>pip install onnxruntime-gpu==1.28.0</code>을 그냥 하면 CUDA 13 런타임을 기대하는 휠이 깔려, CUDA 12.8 환경에서 <code>LoadLibrary</code>/<code>libcublas</code> 로드 실패가 난다. 정본 스택(CUDA 12.8)을 지키려면 <strong>CUDA 12용 전용 인덱스</strong>에서 받아야 한다.</p>
+<pre><code class="lang-bash"># onnxruntime-gpu 1.28.0을 CUDA 12.x 빌드로 설치 (정본 스택 = CUDA 12.8)
+python3 -m pip install onnxruntime-gpu==1.28.0 \
+  --index-url https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-12/pypi/simple/
+# aiinfra 피드 = Microsoft가 CUDA 12용으로 유지하는 Azure Artifacts 인덱스
+# (PyPI 기본 휠은 1.27+부터 CUDA 13.0 → 12.8 환경에서 로드 실패)</code></pre>
+<pre><code class="lang-python"># 설치 검증: 실제로 CUDA EP가 잡히는지 (예상 출력 포함)
+import onnxruntime as ort
+print(&quot;ort:&quot;, ort.__version__)               # 1.28.0
+print(&quot;providers:&quot;, ort.get_available_providers())
+# 기대: [&#x27;TensorrtExecutionProvider&#x27;, &#x27;CUDAExecutionProvider&#x27;, &#x27;CPUExecutionProvider&#x27;]
+# CUDAExecutionProvider가 없으면 CUDA/드라이버 버전 불일치 → 위 인덱스로 재설치</code></pre>
+<blockquote class="callout bad">🔴 함정 — "onnxruntime-gpu를 설치했는데 CPU로 돈다": <code>get_available_providers()</code>에 <code>CUDAExecutionProvider</code>가 있어도, 세션 생성 시 provider를 명시하지 않으면 CPU로 폴백한다. 반드시 <code>ort.InferenceSession(onnx, providers=[&quot;CUDAExecutionProvider&quot;])</code>처럼 명시하고, 세션 생성 직후 <code>sess.get_providers()</code>로 실제 활성 provider를 확인하라. "설치됨 ≠ 사용됨"이다. (<a href="https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html">ONNX Runtime CUDA EP 문서</a>)</blockquote>
+<hr>
+<h2 id="4-단계별-실습">4) 단계별 실습</h2>
+<h3 id="4-1-bench-디렉토리-생성">4-1. <code>bench/</code> 디렉토리 생성</h3>
+<p>원본 가이드의 구조를 그대로 만든다.</p>
+<pre><code class="lang-bash"># 프로젝트 루트에서 실행
+mkdir -p bench/{models,calib,backends,report,results,tests}
+cd bench
+
+# 뼈대 파일 생성
+touch backends/__init__.py backends/base.py backends/trt.py \
+      backends/tidl.py backends/qnn.py backends/drpai.py
+touch report/generate.py
+touch run_bench.py config.yaml
+touch design_rules.md decision_log.md
+touch tests/__init__.py tests/test_regression.py</code></pre>
+<p>완성된 구조:</p>
+<pre><code>bench/
+├── models/              # 모델 정의 + FP32 체크포인트 (앞 단계에서 freeze)
+│   ├── bevformer.onnx
+│   └── bevformer_fp32.pth
+├── calib/               # 캘리브레이션 데이터셋 — 대표성 확보가 생명 (아래 함정 참고)
+│   └── nuscenes_calib_200.npy
+├── backends/
+│   ├── __init__.py
+│   ├── base.py          # 공통 인터페이스 (추상 클래스) + BenchResult 스키마
+│   ├── trt.py           # TensorRT 구현 (동작)
+│   ├── tidl.py          # TI TIDL stub (공통 시그니처)
+│   ├── qnn.py           # Qualcomm QNN stub (공통 시그니처)
+│   └── drpai.py         # Renesas DRP-AI stub (공통 시그니처)
+├── report/
+│   ├── generate.py      # 결과 수집 → 마크다운/CSV/HTML 매트릭스
+│   ├── matrix.md        # (자동 생성)
+│   ├── matrix.csv       # (자동 생성) — 회귀 baseline의 소스
+│   └── matrix.html      # (자동 생성) — 하이라이트 대시보드
+├── results/             # 각 백엔드가 뱉는 raw JSON (모델×백엔드×precision별)
+├── tests/
+│   ├── __init__.py
+│   ├── test_regression.py   # mAP/latency 회귀 테스트
+│   └── baseline_matrix.csv  # 골든 (git에 커밋)
+├── run_bench.py         # CLI 러너 (config.yaml 순회 → results/*.json)
+├── config.yaml          # 무엇을 × 무엇으로 벤치할지 정의 (모델×타깃×precision)
+├── design_rules.md      # SoC별 설계 규칙 (JD가 요구하는 산출물)
+├── decision_log.md      # &quot;왜 이렇게 결정했는가&quot; 기록
+└── ci.yml               # → .github/workflows/ci.yml 로 심볼릭/복사</code></pre>
+<blockquote class="callout bad">🔴 함정 — 캘리브레이션 데이터셋의 대표성: <code>calib/</code>에 아무 이미지나 200장 넣으면 안 된다. <strong>야간·역광·터널·눈길 등 실제 배포 분포를 대표</strong>해야 PTQ가 제대로 스케일을 잡는다. 낮 시내 주행만 넣으면 야간에서 mAP가 무너진다. 이건 코드 버그가 아니라 데이터 버그라 CI로도 안 잡힌다 — 사람이 큐레이션해야 한다.</blockquote>
+<blockquote class="callout tip">💡 팁 — 대용량 자산은 Git LFS로: <code>models/*.pth</code>, <code>calib/*.npy</code>는 수백 MB~GB다. 일반 git에 넣으면 clone이 지옥이 된다. <code>git lfs track &quot;*.pth&quot; &quot;*.npy&quot; &quot;*.onnx&quot;</code>로 LFS에 넣고, CI checkout에서 <code>lfs: true</code>를 준다(4-8 참고). 단, self-hosted runner에도 <code>git-lfs</code>가 설치돼 있어야 한다.</blockquote>
+<h3 id="4-2-공통-인터페이스-backendsbasepy">4-2. 공통 인터페이스 <code>backends/base.py</code></h3>
+<p>모든 백엔드가 반드시 구현해야 하는 계약(contract)을 추상 클래스로 못 박는다. 계약은 4개다: <strong>build / run / measure / collect</strong>.</p>
+<pre><code class="lang-python"># bench/backends/base.py
+from __future__ import annotations
+import abc
+import json
+import pathlib
+import time
+from dataclasses import dataclass, asdict, field
+
+
+@dataclass
+class BenchResult:
+    &quot;&quot;&quot;모든 백엔드가 반환해야 하는 공통 결과 스키마.
+
+    report/ 와 tests/ 는 이 필드 이름에만 의존한다.
+    필드를 바꾸면 report·회귀테스트·baseline CSV가 전부 영향을 받으므로,
+    스키마 변경은 decision_log에 남긴다.
+    &quot;&quot;&quot;
+    model: str            # 예: &quot;bevformer&quot;
+    soc: str              # 예: &quot;rtx&quot;, &quot;orin&quot;, &quot;tda4vm&quot;, &quot;qcs8550&quot;, &quot;rzv2h&quot;
+    precision: str        # &quot;fp32&quot; | &quot;fp16&quot; | &quot;int8&quot;
+    latency_ms: float     # 대표값(중앙값 권장)
+    peak_mem_mb: float    # 추론 중 peak memory
+    accuracy: float       # mAP 등 (0~1)
+    engine_build_s: float # 빌드 소요(참고용)
+    latency_p95_ms: float = float(&quot;nan&quot;)  # 안전 마진 판단용(선택)
+    trt_version: str = &quot;&quot;                 # 재현성: 어떤 TRT로 뽑았나
+    notes: str = &quot;&quot;                       # 실패/특이사항
+
+    def to_dict(self) -&gt; dict:
+        return asdict(self)
+
+
+class Backend(abc.ABC):
+    &quot;&quot;&quot;모든 SoC 백엔드의 공통 인터페이스.
+
+    새 SoC 추가 = 이 클래스를 상속한 파일 하나 추가.
+    report/ 와 CI는 이 계약에만 의존한다.
+
+    계약(4):
+      build(onnx, precision, calib) -&gt; None   # ONNX를 엔진으로
+      run(inputs) -&gt; np.ndarray                # 1회 추론
+      measure(...) -&gt; BenchResult              # latency/mem/acc 측정
+      collect(result) -&gt; pathlib.Path          # 결과를 results/*.json으로 봉인
+    &quot;&quot;&quot;
+    soc_name: str = &quot;unknown&quot;
+
+    def __init__(self):
+        self._build_s: float = 0.0   # build()가 채운다
+
+    @abc.abstractmethod
+    def build(self, onnx_path: str, precision: str, calib_path: str | None) -&gt; None:
+        &quot;&quot;&quot;ONNX → 백엔드 엔진으로 컴파일/빌드. 빌드 소요를 self._build_s에 저장.&quot;&quot;&quot;
+        ...
+
+    @abc.abstractmethod
+    def run(self, inputs) -&gt; &quot;np.ndarray&quot;:
+        &quot;&quot;&quot;1회 추론. 출력 텐서 반환.&quot;&quot;&quot;
+        ...
+
+    @abc.abstractmethod
+    def measure(self, model: str, precision: str,
+                loader, evaluator, warmup: int = 20, iters: int = 200) -&gt; BenchResult:
+        &quot;&quot;&quot;latency / peak_mem / accuracy 를 측정해 BenchResult로 반환.&quot;&quot;&quot;
+        ...
+
+    # --- collect: 결과를 디스크에 봉인 (모든 백엔드 공통, 오버라이드 불필요) ---
+    def collect(self, result: BenchResult, out_dir: str = &quot;results&quot;) -&gt; pathlib.Path:
+        &quot;&quot;&quot;BenchResult를 results/{model}__{soc}__{precision}.json 으로 저장.
+
+        파일명 규약이 report/·tests/의 파싱 기준이므로 여기서 단일화한다.
+        &quot;&quot;&quot;
+        out = pathlib.Path(out_dir)
+        out.mkdir(exist_ok=True)
+        fn = out / f&quot;{result.model}__{result.soc}__{result.precision}.json&quot;
+        fn.write_text(json.dumps(result.to_dict(), indent=2))
+        return fn
+
+    # --- 공통 유틸 (모든 백엔드가 재사용) ---
+    @staticmethod
+    def _timeit(fn, warmup: int, iters: int) -&gt; tuple[float, float]:
+        &quot;&quot;&quot;(median_ms, p95_ms) 반환. GPU면 각 백엔드가 fn 안에서 동기화를 넣는다.&quot;&quot;&quot;
+        for _ in range(warmup):
+            fn()
+        samples = []
+        for _ in range(iters):
+            t0 = time.perf_counter()
+            fn()
+            samples.append((time.perf_counter() - t0) * 1000.0)
+        samples.sort()
+        median = samples[len(samples) // 2]
+        p95 = samples[min(int(len(samples) * 0.95), len(samples) - 1)]
+        return median, p95</code></pre>
+<blockquote class="callout tip">💡 팁: latency는 <strong>평균이 아니라 중앙값(median) 또는 p95</strong>로 보고하는 게 임베디드 관행이다(2절 참고). <code>_timeit</code>이 median과 p95를 함께 돌려주도록 만들어 두면, 안전 규격 요구가 생겨도 코드 변경 없이 대응된다.</blockquote>
+<blockquote class="callout tip">💡 팁 — <code>collect</code>를 왜 베이스에 두는가: 파일명 규약(<code>model__soc__precision.json</code>)을 <strong>단 한 곳</strong>에 두기 위해서다. 백엔드마다 각자 파일을 쓰면 규약이 미묘하게 어긋나고(<code>_</code> vs <code>-</code>, 순서 뒤바뀜), <code>report/</code>·<code>tests/</code>의 glob 파싱이 조용히 깨진다. 계약의 마지막 단계(collect)를 부모가 소유하면 이 사고가 원천 차단된다.</blockquote>
+<h3 id="4-3-구체-구현-backendstrtpy-tensorrt">4-3. 구체 구현 <code>backends/trt.py</code> (TensorRT)</h3>
+<p>가장 익숙한 TensorRT부터 구현한다. 나머지(tidl/qnn/drpai)는 이 골격을 복사해 각 SDK 호출부만 바꾸면 된다.</p>
+<pre><code class="lang-python"># bench/backends/trt.py
+import numpy as np
+import tensorrt as trt        # TensorRT 10.16.x LTS (2026-07 기준)
+import pycuda.driver as cuda
+import pycuda.autoinit        # noqa: F401  (컨텍스트 자동 초기화)
+import time
+
+from .base import Backend, BenchResult
+
+TRT_LOGGER = trt.Logger(trt.Logger.WARNING)
+
+
+class TRTBackend(Backend):
+    soc_name = &quot;rtx&quot;  # 데스크톱 dGPU. Orin이면 &quot;orin&quot;으로.
+
+    def __init__(self):
+        super().__init__()
+        self.engine = None
+        self.context = None
+
+    def build(self, onnx_path: str, precision: str, calib_path: str | None) -&gt; None:
+        t0 = time.perf_counter()
+        builder = trt.Builder(TRT_LOGGER)
+        # TensorRT 10.x: EXPLICIT_BATCH는 기본이지만 명시해도 무방
+        network = builder.create_network(
+            1 &lt;&lt; int(trt.NetworkDefinitionCreationFlag.EXPLICIT_BATCH)
+        )
+        parser = trt.OnnxParser(network, TRT_LOGGER)
+        with open(onnx_path, &quot;rb&quot;) as f:
+            if not parser.parse(f.read()):
+                msgs = &quot;; &quot;.join(str(parser.get_error(i)) for i in range(parser.num_errors))
+                raise RuntimeError(f&quot;ONNX parse failed: {msgs}&quot;)
+
+        config = builder.create_builder_config()
+        # 워크스페이스: 4GB (RTX 기준, Orin이면 줄일 것)
+        config.set_memory_pool_limit(trt.MemoryPoolType.WORKSPACE, 4 &lt;&lt; 30)
+
+        if precision == &quot;fp16&quot;:
+            config.set_flag(trt.BuilderFlag.FP16)
+        elif precision == &quot;int8&quot;:
+            config.set_flag(trt.BuilderFlag.INT8)
+            # 실제로는 여기서 IInt8Calibrator를 붙인다(calib_path의 npy 사용).
+            # 3단계에서 만든 캘리브레이터를 재사용. 지면상 생략.
+            # config.int8_calibrator = MyCalibrator(calib_path)
+
+        # TensorRT 10.x 표준 빌드 경로
+        serialized = builder.build_serialized_network(network, config)
+        if serialized is None:                       # 10.x는 None 반환으로 실패 표현
+            raise RuntimeError(&quot;build_serialized_network returned None &quot;
+                               &quot;(미지원 op이거나 config 오류 — parser 로그 확인)&quot;)
+
+        runtime = trt.Runtime(TRT_LOGGER)
+        self.engine = runtime.deserialize_cuda_engine(serialized)
+        self.context = self.engine.create_execution_context()
+        self._build_s = time.perf_counter() - t0
+
+    def run(self, inputs: np.ndarray) -&gt; np.ndarray:
+        # 최소 예시: 단일 입력/출력 가정. (실제 BEV 모델은 다중 입력이므로 확장 필요)
+        in_name = self.engine.get_tensor_name(0)
+        out_name = self.engine.get_tensor_name(1)
+        out_shape = tuple(self.context.get_tensor_shape(out_name))
+        out = np.empty(out_shape, dtype=np.float32)
+
+        d_in = cuda.mem_alloc(inputs.nbytes)
+        d_out = cuda.mem_alloc(out.nbytes)
+        cuda.memcpy_htod(d_in, np.ascontiguousarray(inputs))
+        # TensorRT 10.x: name 기반 I/O 주소 설정
+        self.context.set_tensor_address(in_name, int(d_in))
+        self.context.set_tensor_address(out_name, int(d_out))
+        stream = cuda.Stream()
+        self.context.execute_async_v3(stream_handle=stream.handle)
+        stream.synchronize()
+        cuda.memcpy_dtoh(out, d_out)
+        return out
+
+    def measure(self, model, precision, loader, evaluator,
+                warmup=20, iters=200) -&gt; BenchResult:
+        sample = loader.one_batch()  # 대표 입력 1개(latency용)
+
+        def _once():
+            self.run(sample)
+            cuda.Context.synchronize()  # GPU 동기화 필수
+
+        median, p95 = self._timeit(_once, warmup, iters)
+
+        # 정확도: 검증셋 전체를 돌려 evaluator가 mAP 계산
+        preds = [self.run(x) for x in loader.eval_set()]
+        acc = evaluator.compute_map(preds, loader.gts())
+
+        # peak mem: TRT 엔진 디바이스 메모리 크기(근사). Orin에선 tegrastats 병행 권장.
+        peak_mem = self.engine.device_memory_size / (1024 ** 2)
+
+        return BenchResult(
+            model=model, soc=self.soc_name, precision=precision,
+            latency_ms=round(median, 3), latency_p95_ms=round(p95, 3),
+            peak_mem_mb=round(peak_mem, 1), accuracy=round(acc, 4),
+            engine_build_s=round(self._build_s, 1),
+            trt_version=trt.__version__,   # 재현성: 어떤 TRT로 뽑았는지 봉인
+        )</code></pre>
+<blockquote class="callout">✅ 확인됨 (2026-07): <code>execute_async_v3</code> / <code>set_tensor_address</code> / <code>get_tensor_name</code>은 TensorRT 10.x의 name 기반 I/O API가 맞다. 8.x의 bindings 배열 방식은 10.x에서 제거되었다(<a href="https://docs.nvidia.com/deeplearning/tensorrt/latest/api/tensorrt-8x-to-10x-python-api.html">TensorRT 8→10 Python API 마이그레이션</a>). BEV 모델은 입력이 여러 개(멀티뷰 이미지 + intrinsics)이므로 위 단일 I/O 예시를 실제 텐서 수에 맞게 확장해야 한다 — <code>engine.num_io_tensors</code>를 순회하며 <code>engine.get_tensor_mode(name)</code>으로 입력/출력을 구분해 주소를 세팅한다.</blockquote>
+<h3 id="4-4-나머지-백엔드-stub-공통-시그니처만-맞춘다">4-4. 나머지 백엔드 stub — 공통 시그니처만 맞춘다</h3>
+<p>핵심 원칙: <strong>보드가 없어도 CI는 돌아야 한다.</strong> 보드가 필요한 백엔드는 <code>measure</code>에서 죽이지 말고 <code>accuracy=NaN</code> + <code>notes=&quot;board required&quot;</code>를 남긴다. 그러면 매트릭스에 '보드필요'로 회색 표기되고, RTX 결과만으로 회귀 게이트가 성립한다. 세 stub 모두 <strong>base.py의 계약(build/run/measure)을 동일 시그니처로</strong> 구현한다 — 그래야 <code>run_bench.py</code>가 백엔드를 구분하지 않고 순회할 수 있다.</p>
+<pre><code class="lang-python"># bench/backends/tidl.py  (TI TDA4VM — edgeai-tidl-tools)
+from .base import Backend, BenchResult
+
+
+class TIDLBackend(Backend):
+    soc_name = &quot;tda4vm&quot;
+
+    def build(self, onnx_path, precision, calib_path):
+        # edgeai-tidl-tools의 onnxrt/tvm 컴파일 훅. INT8 우선.
+        # 컴파일 아티팩트(artifacts_folder)를 만들고 self._build_s 기록.
+        raise NotImplementedError(&quot;TIDL compile hook — TDA4VM/PC-emulation 필요&quot;)
+
+    def run(self, inputs):
+        raise NotImplementedError
+
+    def measure(self, model, precision, loader, evaluator, warmup=20, iters=200):
+        # 보드/에뮬레이션 없으면 사유 남기고 회색 처리
+        return BenchResult(
+            model=model, soc=self.soc_name, precision=precision,
+            latency_ms=float(&quot;nan&quot;), peak_mem_mb=float(&quot;nan&quot;),
+            accuracy=float(&quot;nan&quot;), engine_build_s=0.0,
+            notes=&quot;board/emulation required (TDA4VM, edgeai-tidl-tools)&quot;,
+        )</code></pre>
+<pre><code class="lang-python"># bench/backends/qnn.py  (Qualcomm QCS8550 — ONNX Runtime QNN EP)
+from .base import Backend, BenchResult
+
+
+class QNNBackend(Backend):
+    soc_name = &quot;qcs8550&quot;
+
+    def build(self, onnx_path, precision, calib_path):
+        # ort.InferenceSession(onnx, providers=[&quot;QNNExecutionProvider&quot;], ...)로
+        # context binary(.bin) 생성/캐시. HTP(NPU) 백엔드 옵션 지정.
+        raise NotImplementedError(&quot;QNN context binary 생성 — QNN SDK/디바이스 필요&quot;)
+
+    def run(self, inputs):
+        raise NotImplementedError
+
+    def measure(self, model, precision, loader, evaluator, warmup=20, iters=200):
+        return BenchResult(
+            model=model, soc=self.soc_name, precision=precision,
+            latency_ms=float(&quot;nan&quot;), peak_mem_mb=float(&quot;nan&quot;),
+            accuracy=float(&quot;nan&quot;), engine_build_s=0.0,
+            notes=&quot;device required (QCS8550, ONNX Runtime QNN EP)&quot;,
+        )</code></pre>
+<pre><code class="lang-python"># bench/backends/drpai.py  (Renesas RZ/V2H — rzv_drp-ai_tvm : feed-forward only)
+from .base import Backend, BenchResult
+
+
+class DRPAIBackend(Backend):
+    soc_name = &quot;rzv2h&quot;
+
+    def build(self, onnx_path, precision, calib_path):
+        # renesas rzv_drp-ai_tvm 컴파일러 호출. INT8 고정.
+        # feed-forward만 지원 → 그래프에 Loop/If 있으면 여기서 실패시켜 CI가 잡게.
+        raise NotImplementedError(&quot;DRP-AI TVM compile hook — 보드 필요&quot;)
+
+    def run(self, inputs):
+        raise NotImplementedError
+
+    def measure(self, model, precision, loader, evaluator, warmup=20, iters=200):
+        return BenchResult(
+            model=model, soc=self.soc_name, precision=precision,
+            latency_ms=float(&quot;nan&quot;), peak_mem_mb=float(&quot;nan&quot;),
+            accuracy=float(&quot;nan&quot;), engine_build_s=0.0,
+            notes=&quot;board required (RZ/V2H, feed-forward only)&quot;,
+        )</code></pre>
+<blockquote class="callout tip">💡 팁: 보드가 없는 SoC는 <strong>에러로 죽이지 말고</strong> <code>notes</code>에 사유를 남기고 매트릭스에서 회색 처리하라. 데스크톱(RTX) 결과만으로도 CI 회귀 테스트는 성립한다. 보드가 도착하면 <code>build</code>/<code>run</code>의 <code>NotImplementedError</code>만 실제 SDK 호출로 채우면 되고, <code>measure</code>/<code>collect</code>/리포트/CI는 <strong>한 줄도 바꿀 필요가 없다.</strong> 이것이 4-2에서 계약을 못 박은 배당금이다.</blockquote>
+<h3 id="4-5-벤치-설정-configyaml-실행-러너-run_benchpy">4-5. 벤치 설정 <code>config.yaml</code> + 실행 러너 <code>run_bench.py</code></h3>
+<p>무엇을 무엇으로 돌릴지 <strong>코드가 아니라 설정</strong>으로 관리한다. <code>config.yaml</code>은 <strong>모델 × 타깃(SoC 백엔드) × precision</strong> 3차원 매트릭스를 선언한다.</p>
+<pre><code class="lang-yaml"># bench/config.yaml
+# 스키마:
+#   models[]:  name, onnx, calib      — 무엇을(모델)
+#   backends[]:                        — 무엇으로(타깃 SoC 백엔드 키)
+#   precisions[]:                      — 어떤 정밀도로
+#   exclude[]: (선택) 특정 조합 제외    — 예: DRP-AI는 fp16 없음
+defaults:
+  warmup: 20
+  iters: 200
+
+models:
+  - name: bevformer
+    onnx: models/bevformer.onnx
+    calib: calib/nuscenes_calib_200.npy
+  # - name: yolox            # 모델 추가 = 여기 한 블록 추가
+  #   onnx: models/yolox.onnx
+  #   calib: calib/coco_calib_200.npy
+
+backends:                    # 이 실행 환경(runner)에서 가능한 것만 켠다
+  - trt                      # 데스크톱/CI: TRT. 보드 백엔드는 label 붙은 runner에서.
+  # - tidl
+  # - qnn
+  # - drpai
+
+precisions: [fp32, fp16, int8]
+
+exclude:                     # 물리적으로 불가능한 조합은 제외 (매트릭스에서 빠짐)
+  - {backend: drpai, precision: fp16}   # DRP-AI는 INT8 고정
+  - {backend: drpai, precision: fp32}
+  - {backend: tidl,  precision: fp32}   # TIDL은 실효 없음(예시)</code></pre>
+<pre><code class="lang-python"># bench/run_bench.py  (CLI 엔트리포인트: config.yaml 순회 → results/*.json)
+import argparse
+import importlib
+import itertools
+import pathlib
+import sys
+import yaml
+
+BACKENDS = {
+    &quot;trt&quot;:   (&quot;backends.trt&quot;,   &quot;TRTBackend&quot;),
+    &quot;tidl&quot;:  (&quot;backends.tidl&quot;,  &quot;TIDLBackend&quot;),
+    &quot;qnn&quot;:   (&quot;backends.qnn&quot;,   &quot;QNNBackend&quot;),
+    &quot;drpai&quot;: (&quot;backends.drpai&quot;, &quot;DRPAIBackend&quot;),
+}
+
+
+def load_backend(key):
+    mod, cls = BACKENDS[key]
+    return getattr(importlib.import_module(mod), cls)()
+
+
+def is_excluded(backend, precision, exclude):
+    for rule in exclude or []:
+        if rule.get(&quot;backend&quot;) == backend and rule.get(&quot;precision&quot;) == precision:
+            return True
+    return False
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument(&quot;--config&quot;, default=&quot;config.yaml&quot;)
+    ap.add_argument(&quot;--only-backend&quot;, default=None,
+                    help=&quot;config를 무시하고 이 백엔드만 (예: CI에서 trt만)&quot;)
+    args = ap.parse_args()
+
+    cfg = yaml.safe_load(open(args.config))
+    d = cfg.get(&quot;defaults&quot;, {})
+    warmup, iters = d.get(&quot;warmup&quot;, 20), d.get(&quot;iters&quot;, 200)
+    exclude = cfg.get(&quot;exclude&quot;, [])
+    backends = [args.only_backend] if args.only_backend else cfg[&quot;backends&quot;]
+
+    # loader/evaluator 는 프로젝트 데이터셋에 맞게 구현(3단계 자산 재사용)
+    from data import Loader, Evaluator  # noqa
+
+    out = pathlib.Path(&quot;results&quot;); out.mkdir(exist_ok=True)
+    n_ok = n_skip = 0
+    # 3중 순회 = 매트릭스의 셀 하나하나
+    for m, prec, bk in itertools.product(cfg[&quot;models&quot;], cfg[&quot;precisions&quot;], backends):
+        if is_excluded(bk, prec, exclude):
+            print(f&quot;skip (excluded): {m[&#x27;name&#x27;]} × {bk} × {prec}&quot;)
+            n_skip += 1
+            continue
+        be = load_backend(bk)
+        try:
+            be.build(m[&quot;onnx&quot;], prec, m.get(&quot;calib&quot;))
+            res = be.measure(m[&quot;name&quot;], prec, Loader(m), Evaluator(),
+                             warmup=warmup, iters=iters)
+        except NotImplementedError as e:
+            # stub 백엔드(보드 없음): 회색 결과로 봉인하고 계속
+            from backends.base import BenchResult
+            res = BenchResult(m[&quot;name&quot;], be.soc_name, prec,
+                              float(&quot;nan&quot;), float(&quot;nan&quot;), float(&quot;nan&quot;), 0.0,
+                              notes=f&quot;not implemented: {e}&quot;)
+        fn = be.collect(res)            # base.py의 공통 collect
+        print(&quot;wrote&quot;, fn)
+        n_ok += 1
+    print(f&quot;done: {n_ok} results, {n_skip} skipped&quot;)
+    return 0 if n_ok else 1
+
+
+if __name__ == &quot;__main__&quot;:
+    sys.exit(main())</code></pre>
+<pre><code class="lang-bash"># 실행 (bench/ 에서)
+python3 run_bench.py
+# → results/bevformer__rtx__fp32.json, ...__fp16.json, ...__int8.json 생성
+
+# CI에서 GPU runner는 TRT만: (config 편집 없이)
+python3 run_bench.py --only-backend trt</code></pre>
+<p>예상 출력:</p>
+<pre><code>wrote results/bevformer__rtx__fp32.json
+wrote results/bevformer__rtx__fp16.json
+wrote results/bevformer__rtx__int8.json
+done: 3 results, 0 skipped</code></pre>
+<blockquote class="callout tip">💡 팁 — <code>itertools.product</code>가 핵심: 모델·precision·백엔드 3중 순회가 한 줄이다. 매트릭스가 커져도 코드는 그대로고 <code>config.yaml</code>만 자란다. "조합을 코드가 아니라 데이터로 관리"하는 것이 조합 폭발을 견디는 유일한 방법이다.</blockquote>
+<h3 id="4-6-reportgeneratepy-md-csv-html-매트릭스-자동-생성">4-6. <code>report/generate.py</code> — md / csv / HTML 매트릭스 자동 생성</h3>
+<p><code>results/</code>의 JSON들을 모아 pandas로 피벗해 <strong>마크다운 + CSV + HTML</strong> 3종을 뱉는다. CSV는 회귀 baseline의 소스, 마크다운은 README/PR용, HTML은 하이라이트가 들어간 대시보드다.</p>
+<pre><code class="lang-python"># bench/report/generate.py
+import glob
+import json
+import pathlib
+import pandas as pd
+
+RESULTS_DIR = &quot;results&quot;
+OUT_DIR = pathlib.Path(&quot;report&quot;)
+
+
+def collect(results_dir: str = RESULTS_DIR) -&gt; pd.DataFrame:
+    &quot;&quot;&quot;results/*.json → 하나의 DataFrame (긴 형식).&quot;&quot;&quot;
+    rows = [json.load(open(p)) for p in sorted(glob.glob(f&quot;{results_dir}/*.json&quot;))]
+    return pd.DataFrame(rows)
+
+
+def _highlight_html(df_long: pd.DataFrame) -&gt; str:
+    &quot;&quot;&quot;HTML 대시보드: precision별 최저 latency를 초록, mAP 하락을 빨강으로.
+
+    pandas Styler는 jinja2를 요구한다(3절에서 설치).
+    &quot;&quot;&quot;
+    lat = df_long.pivot_table(index=[&quot;model&quot;, &quot;soc&quot;], columns=&quot;precision&quot;,
+                              values=&quot;latency_ms&quot;)
+    styler = (
+        lat.style
+        .format(&quot;{:.2f}&quot;)
+        # 각 행(모델·soc)에서 가장 빠른 precision 셀을 초록 하이라이트
+        .highlight_min(axis=1, color=&quot;#c6efce&quot;)
+        .set_caption(&quot;Latency (ms, median) — 행별 최저값 강조&quot;)
+        .set_table_styles([
+            {&quot;selector&quot;: &quot;th&quot;, &quot;props&quot;: [(&quot;background&quot;, &quot;#f2f2f2&quot;),
+                                         (&quot;text-align&quot;, &quot;center&quot;)]},
+            {&quot;selector&quot;: &quot;td&quot;, &quot;props&quot;: [(&quot;text-align&quot;, &quot;right&quot;),
+                                         (&quot;padding&quot;, &quot;4px 10px&quot;)]},
+        ])
+    )
+    return styler.to_html()
+
+
+def main():
+    df = collect()
+    if df.empty:
+        raise SystemExit(&quot;no results/*.json — run_bench.py 먼저 실행&quot;)
+    OUT_DIR.mkdir(exist_ok=True)
+
+    # (1) CSV — 정렬해 저장 (회귀 테스트의 baseline 소스). 정렬은 diff 안정성을 위해.
+    key = [&quot;model&quot;, &quot;soc&quot;, &quot;precision&quot;]
+    df_sorted = df.sort_values(key).reset_index(drop=True)
+    df_sorted.to_csv(OUT_DIR / &quot;matrix.csv&quot;, index=False)
+
+    # (2) 사람이 읽는 피벗: (model,soc) × precision
+    lat = df.pivot_table(index=[&quot;model&quot;, &quot;soc&quot;], columns=&quot;precision&quot;,
+                         values=&quot;latency_ms&quot;)
+    acc = df.pivot_table(index=[&quot;model&quot;, &quot;soc&quot;], columns=&quot;precision&quot;,
+                         values=&quot;accuracy&quot;)
+
+    # (3) Markdown (README/PR 코멘트용)
+    md = [
+        &quot;# 성능 매트릭스 (자동 생성)\n&quot;,
+        f&quot;&gt; 생성: {pd.Timestamp.now():%Y-%m-%d %H:%M} · 총 {len(df)} 케이스 &quot;
+        f&quot;· TRT {df[&#x27;trt_version&#x27;].dropna().unique().tolist()}\n&quot;,
+        &quot;## Latency (ms, median)\n&quot;, lat.round(2).to_markdown(), &quot;\n&quot;,
+        &quot;## Accuracy (mAP)\n&quot;, acc.round(4).to_markdown(), &quot;\n&quot;,
+    ]
+    (OUT_DIR / &quot;matrix.md&quot;).write_text(&quot;\n&quot;.join(md))
+
+    # (4) HTML 대시보드 (하이라이트)
+    (OUT_DIR / &quot;matrix.html&quot;).write_text(_highlight_html(df))
+
+    print(&quot;wrote report/matrix.csv, matrix.md, matrix.html&quot;)
+
+
+if __name__ == &quot;__main__&quot;:
+    main()</code></pre>
+<pre><code class="lang-bash">python3 report/generate.py   # bench/ 에서
+# → report/matrix.csv, report/matrix.md, report/matrix.html</code></pre>
+<p>예상 출력(<code>report/matrix.md</code>):</p>
+<pre><code class="lang-markdown">## Latency (ms, median)
+| (&#x27;model&#x27;,&#x27;soc&#x27;)      |   fp32 |   fp16 |   int8 |
+|:---------------------|-------:|-------:|-------:|
+| (&#x27;bevformer&#x27;,&#x27;rtx&#x27;)  |  41.20 |  18.70 |  12.30 |
+
+## Accuracy (mAP)
+| (&#x27;model&#x27;,&#x27;soc&#x27;)      |   fp32 |   fp16 |   int8 |
+|:---------------------|-------:|-------:|-------:|
+| (&#x27;bevformer&#x27;,&#x27;rtx&#x27;)  | 0.4120 | 0.4100 | 0.3820 |</code></pre>
+<blockquote class="callout tip">💡 팁: <code>to_markdown()</code>과 Styler의 <code>to_html()</code>은 각각 <code>tabulate</code>·<code>jinja2</code>가 있어야 동작한다(3절에서 설치). <strong>CSV는 회귀 테스트의 baseline</strong>, 마크다운은 PR/README, <strong>HTML은 팀 대시보드</strong>(초록=행별 최속, 셀 색으로 한눈에)로 쓴다. <code>sort_values</code>로 CSV를 정렬해 저장하면 결과 순서가 실행마다 안 흔들려 git diff가 깨끗해진다.</blockquote>
+<h3 id="4-7-회귀-테스트-teststest_regressionpy-map-1-하락-시-실패-골든-파일-이중화">4-7. 회귀 테스트 <code>tests/test_regression.py</code> — mAP 1% 하락 시 실패 + 골든 파일 이중화</h3>
+<p>핵심 규칙: <strong>커밋 후 측정한 mAP가 baseline보다 1%p(절대) 이상 낮으면 테스트 실패.</strong> 두 층으로 지킨다 — (A) 임계값 기반 assertion, (B) <code>pytest-regressions</code> 골든 파일 비교.</p>
+<p>먼저 baseline을 한 번 만들어 커밋한다.</p>
+<pre><code class="lang-bash"># 골든(기준) 매트릭스 확정 후 저장 — 이 파일을 git에 커밋
+cp report/matrix.csv tests/baseline_matrix.csv
+git add tests/baseline_matrix.csv</code></pre>
+<pre><code class="lang-python"># bench/tests/test_regression.py
+import glob
+import json
+import pathlib
+import pandas as pd
+import pytest
+
+MAP_DROP_TOLERANCE = 0.01      # 1%p 절대 하락 허용치
+LAT_REGRESS_FACTOR = 1.10      # latency 10% 이상 악화도 경고성 실패(선택)
+
+BASELINE = pathlib.Path(__file__).parent / &quot;baseline_matrix.csv&quot;
+
+
+def _load_current() -&gt; pd.DataFrame:
+    rows = [json.load(open(p)) for p in glob.glob(&quot;results/*.json&quot;)]
+    assert rows, &quot;results/*.json 없음 — 벤치를 먼저 실행하라&quot;
+    return pd.DataFrame(rows)
+
+
+@pytest.fixture(scope=&quot;module&quot;)
+def merged():
+    base = pd.read_csv(BASELINE)
+    cur = _load_current()
+    key = [&quot;model&quot;, &quot;soc&quot;, &quot;precision&quot;]
+    return base.merge(cur, on=key, suffixes=(&quot;_base&quot;, &quot;_cur&quot;))
+
+
+# --- (A) 임계값 기반 회귀 ---
+def test_no_map_regression(merged):
+    &quot;&quot;&quot;mAP가 baseline 대비 1%p 이상 하락한 케이스가 있으면 실패.&quot;&quot;&quot;
+    m = merged.dropna(subset=[&quot;accuracy_base&quot;, &quot;accuracy_cur&quot;]).copy()
+    m[&quot;drop&quot;] = m[&quot;accuracy_base&quot;] - m[&quot;accuracy_cur&quot;]
+    bad = m[m[&quot;drop&quot;] &gt; MAP_DROP_TOLERANCE]
+    assert bad.empty, (
+        &quot;mAP 회귀 감지:\n&quot;
+        + bad[[&quot;model&quot;, &quot;soc&quot;, &quot;precision&quot;,
+               &quot;accuracy_base&quot;, &quot;accuracy_cur&quot;, &quot;drop&quot;]].to_string(index=False)
+    )
+
+
+def test_no_latency_regression(merged):
+    &quot;&quot;&quot;latency가 baseline 대비 10% 이상 악화되면 실패(선택).&quot;&quot;&quot;
+    m = merged.dropna(subset=[&quot;latency_ms_base&quot;, &quot;latency_ms_cur&quot;])
+    bad = m[m[&quot;latency_ms_cur&quot;] &gt; m[&quot;latency_ms_base&quot;] * LAT_REGRESS_FACTOR]
+    assert bad.empty, (
+        &quot;Latency 회귀 감지:\n&quot;
+        + bad[[&quot;model&quot;, &quot;soc&quot;, &quot;precision&quot;,
+               &quot;latency_ms_base&quot;, &quot;latency_ms_cur&quot;]].to_string(index=False)
+    )
+
+
+# --- (B) 골든 파일 비교 (pytest-regressions) ---
+def test_matrix_matches_golden(dataframe_regression):
+    &quot;&quot;&quot;현재 매트릭스를 골든과 통째로 비교. 의도적 변경은 --force-regen으로만 갱신.
+
+    dataframe_regression fixture는 pytest-regressions(v3.0+)가 제공.
+    최초 실행(또는 --force-regen) 시 tests/test_regression/ 아래에
+    골든 파일을 생성하고, 이후엔 그와 비교한다.
+    &quot;&quot;&quot;
+    cur = _load_current().sort_values([&quot;model&quot;, &quot;soc&quot;, &quot;precision&quot;]).reset_index(drop=True)
+    # 부동소수 흔들림 허용치(default_tolerance)로 flaky 방지
+    dataframe_regression.check(
+        cur[[&quot;model&quot;, &quot;soc&quot;, &quot;precision&quot;, &quot;latency_ms&quot;, &quot;accuracy&quot;]],
+        default_tolerance=dict(atol=1e-3, rtol=1e-3),
+    )</code></pre>
+<pre><code class="lang-bash">pytest tests/ -v   # bench/ 에서
+# 골든을 의도적으로 갱신할 때만:
+pytest tests/ --force-regen</code></pre>
+<p>예상 실패 출력:</p>
+<pre><code>FAILED tests/test_regression.py::test_no_map_regression
+AssertionError: mAP 회귀 감지:
+    model soc precision  accuracy_base  accuracy_cur   drop
+bevformer rtx      int8         0.3820        0.3660  0.016</code></pre>
+<blockquote class="callout tip">💡 팁 — 골든 파일 갱신 규율: baseline을 <strong>의도적으로</strong> 바꿀 때(모델 개선 등)만 갱신하고, 커밋 메시지에 사유를 남긴다. 임계값 방식은 <code>baseline_matrix.csv</code>를, 골든 방식은 <code>--force-regen</code>을 쓴다(<a href="https://pypi.org/project/pytest-regressions/">pytest-regressions</a>, v3.0+, 2026-07 기준). 무심코 갱신하는 것이 회귀 방지 시스템을 무력화하는 1번 원인이다. <strong>두 층(A/B)을 같이 두는 이유</strong>: (A)는 "얼마나 나빠지면 실패"라는 정책을, (B)는 "숫자가 조용히 바뀌면 눈에 띄게"라는 감시를 담당한다 — 역할이 다르다.</blockquote>
+<h3 id="4-8-self-hosted-gpu-runner-등록">4-8. self-hosted GPU runner 등록</h3>
+<p>GPU 벤치는 GitHub 클라우드 러너(GPU 없음)에서 못 돈다. <strong>RTX가 달린 우리 데스크톱을 self-hosted runner로 등록</strong>한다.</p>
+<p>먼저 GPU가 보이는지 확인한다.</p>
+<pre><code class="lang-bash">nvidia-smi   # GPU가 보여야 함. 안 보이면 드라이버부터 (1단계 참고)</code></pre>
+<p>레포의 <strong>Settings → Actions → Runners → New self-hosted runner</strong> 에서 나오는 토큰으로 등록한다(아래 버전/토큰은 예시).</p>
+<pre><code class="lang-bash"># 러너 다운로드 (버전은 릴리스 페이지에서 최신 확인, 2026-07 기준 v2.336.0)
+mkdir -p ~/actions-runner &amp;&amp; cd ~/actions-runner
+curl -o actions-runner-linux-x64-2.336.0.tar.gz -L \
+  https://github.com/actions/runner/releases/download/v2.336.0/actions-runner-linux-x64-2.336.0.tar.gz
+tar xzf ./actions-runner-linux-x64-2.336.0.tar.gz
+
+# 등록: --labels 에 gpu 를 꼭 넣어 워크플로가 지목할 수 있게 함
+./config.sh --url https://github.com/&lt;org&gt;/&lt;repo&gt; \
+  --token &lt;RUNNER_TOKEN&gt; \
+  --name &quot;rtx-bench-01&quot; \
+  --labels &quot;self-hosted,linux,x64,gpu&quot; \
+  --work &quot;_work&quot;
+
+# 상시 서비스로 등록(재부팅에도 살아있게)
+sudo ./svc.sh install
+sudo ./svc.sh start
+sudo ./svc.sh status</code></pre>
+<blockquote class="callout warn">⚠️ 주의 — 최소 버전 강제(2026): GitHub는 self-hosted runner의 <strong>최소 버전 강제</strong>를 재개했다. 릴리스 30일 이상 지난 오래된 runner는 job 실행이 거부될 수 있다(<a href="https://github.blog/changelog/2026-06-12-github-actions-minimum-version-enforcement-timeline-for-self-hosted-runners/">GitHub Changelog, 2026-06-12</a>). runner를 <code>svc.sh</code>로 상시 서비스로 돌린 채 <strong>방치</strong>하면 어느 날 CI가 "runner too old"로 멈춘다. 정기적으로 최신 버전으로 재설치(또는 자동 업데이트 유지)하라. 이건 실제로 팀들이 자주 당하는 함정이다.</blockquote>
+<blockquote class="callout warn">⚠️ 주의 — 보안: self-hosted runner는 <strong>private 레포에서만</strong> 쓰는 것이 GitHub 권장이다(<a href="https://docs.github.com/en/actions/how-tos/manage-runners/self-hosted-runners">GitHub Docs</a>). public 레포에서 fork PR이 우리 GPU 머신에서 임의 코드를 실행할 수 있기 때문이다. private 레포이거나, 최소한 fork PR에는 runner를 붙이지 않도록 트리거를 제한하라.</blockquote>
+<blockquote class="callout tip">💡 팁 — Docker 격리: runner 호스트를 더럽히기 싫으면 워크플로 job을 <code>container:</code>로 감싸고 <code>--gpus all</code>을 준다. 이때 호스트에 <code>nvidia-container-toolkit</code>이 설치돼 있어야 한다(<code>sudo apt install -y nvidia-container-toolkit &amp;&amp; sudo systemctl restart docker</code>). (<a href="https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html">NVIDIA Container Toolkit 설치</a>)</blockquote>
+<h3 id="4-9-ciyml-커밋마다-벤치-회귀-게이트-캐시-포함">4-9. <code>ci.yml</code> — 커밋마다 벤치 + 회귀 게이트 (캐시 포함)</h3>
+<pre><code class="lang-yaml"># .github/workflows/ci.yml
+name: quant-bench-regression
+
+on:
+  push:
+    branches: [main, &quot;feat/**&quot;]
+  pull_request:
+    branches: [main]
+
+# 같은 브랜치에 새 푸시가 오면 이전 실행 취소 (GPU runner 점유 낭비 방지)
+concurrency:
+  group: bench-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  bench:
+    # 위에서 등록한 GPU runner를 지목 (모든 라벨이 매칭돼야 함)
+    runs-on: [self-hosted, linux, x64, gpu]
+    defaults:
+      run:
+        working-directory: bench
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true   # 체크포인트/calib을 Git LFS로 관리하는 경우
+
+      - name: Sanity - GPU visible
+        run: nvidia-smi
+
+      # pip 캐시 (self-hosted에서도 유효 — 의존성 재설치 시간 절약)
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ runner.os }}-${{ hashFiles(&#x27;bench/requirements.txt&#x27;) }}
+          restore-keys: pip-${{ runner.os }}-
+
+      # TRT 엔진 캐시 (빌드가 수 분 걸리므로 계산 그래프 해시로 캐시)
+      - name: Cache TRT engines
+        uses: actions/cache@v4
+        with:
+          path: bench/.trt_cache
+          key: trt-${{ hashFiles(&#x27;bench/models/*.onnx&#x27;) }}-${{ hashFiles(&#x27;bench/config.yaml&#x27;) }}
+
+      - name: Install deps
+        run: |
+          python3 -m pip install --upgrade \
+            pandas tabulate jinja2 pytest pytest-regressions pyyaml
+
+      - name: Run benchmark (build + measure) — GPU runner는 TRT만
+        run: python3 run_bench.py --only-backend trt
+
+      - name: Generate performance matrix (md/csv/html)
+        run: python3 report/generate.py
+
+      - name: Regression gate (mAP drop &gt;1%p fails)
+        run: pytest tests/ -v --maxfail=1
+
+      - name: Upload matrix as artifact
+        if: always()   # 실패해도 매트릭스는 올려서 원인 확인
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-matrix
+          path: |
+            bench/report/matrix.md
+            bench/report/matrix.csv
+            bench/report/matrix.html</code></pre>
+<pre><code class="lang-bash"># 로컬에서 CI가 하는 일을 그대로 재현(푸시 전 검증)
+cd bench &amp;&amp; python3 run_bench.py --only-backend trt \
+  &amp;&amp; python3 report/generate.py &amp;&amp; pytest tests/ -v</code></pre>
+<blockquote class="callout tip">💡 팁: <code>runs-on</code> 배열은 <strong>AND 조건</strong>이다 — 러너가 <code>gpu</code> 라벨을 안 달고 있으면 job이 영원히 대기(pending)한다. 등록 시 <code>--labels</code>와 워크플로의 <code>runs-on</code>을 반드시 일치시켜라(<a href="https://oneuptime.com/blog/post/2026-01-25-github-actions-self-hosted-runners/view">self-hosted runner 설정, oneuptime 2026-01</a>).</blockquote>
+<blockquote class="callout tip">💡 팁 — <code>concurrency</code> + <code>cancel-in-progress</code>: GPU runner는 대개 1대다. 이 블록이 없으면 빠르게 여러 번 푸시할 때 벤치가 큐에 쌓여 몇 시간씩 밀린다. 브랜치별로 "최신 커밋만 벤치"하도록 이전 실행을 취소하면 GPU 점유가 깔끔해진다.</blockquote>
+<h3 id="4-10-선택-실험-추적-도입-여부-mlflow무료-셀프호스팅-vs-wb">4-10. (선택) 실험 추적 도입 여부 — MLflow(무료 셀프호스팅) vs W&amp;B</h3>
+<p><code>results/*.json</code> + git이면 사실 <strong>최소 추적은 이미 된다</strong>(커밋 = 실험 스냅샷). 그 위에 실험 추적 도구를 얹을지는 팀 상황에 따른다.</p>
+<div class="tablewrap"><table><thead><tr><th>항목</th><th>MLflow</th><th>Weights &amp; Biases (W&amp;B)</th></tr></thead><tbody><tr><td>라이선스/비용</td><td>Apache-2.0, <strong>무료·셀프호스팅</strong></td><td>SaaS, 유료(대략 $50/seat/월 수준, 2026 기준)</td></tr><tr><td>설치</td><td><code>pip install mlflow</code> → <code>mlflow ui</code> (localhost:5000)</td><td>클라우드 계정 + <code>pip install wandb</code></td></tr><tr><td>저장</td><td>백엔드 스토어(SQLite/Postgres) + 아티팩트 스토어(로컬/S3) 분리</td><td>W&amp;B 클라우드(또는 self-hosted 엔터프라이즈)</td></tr><tr><td>강점</td><td>로컬 통제·온프렘·규제 환경</td><td>협업 대시보드·시각 비교·sweep·리포트</td></tr><tr><td>임베디드 팀 적합</td><td>사내망/보안 환경에서 무난</td><td>클라우드 반출 가능할 때 편함</td></tr></tbody></table></div>
+<blockquote class="callout">출처: <a href="https://deploybase.ai/articles/mlflow-vs-wandb">MLflow vs W&amp;B 2026 비교</a>, <a href="https://mlflow.org/docs/latest/self-hosting/architecture/tracking-server/">MLflow Tracking Server 문서</a>.</blockquote>
+<p>임베디드/보안 환경(자동차 SoC 프로젝트가 흔히 그렇다)에서는 <strong>MLflow 셀프호스팅</strong>이 무난하다. 아래처럼 벤치 결과를 파라미터·메트릭·아티팩트로 남긴다.</p>
+<pre><code class="lang-python"># bench/report/track_mlflow.py  (선택) — results/*.json을 MLflow에 로깅
+import glob
+import json
+import mlflow
+
+mlflow.set_tracking_uri(&quot;http://127.0.0.1:5000&quot;)   # 사내 서버 IP:5000
+mlflow.set_experiment(&quot;quant-bench&quot;)               # 없으면 자동 생성
+
+for p in glob.glob(&quot;results/*.json&quot;):
+    r = json.load(open(p))
+    if r.get(&quot;accuracy&quot;) != r.get(&quot;accuracy&quot;):     # NaN(보드필요) 케이스는 스킵
+        continue
+    run_name = f&quot;{r[&#x27;model&#x27;]}-{r[&#x27;soc&#x27;]}-{r[&#x27;precision&#x27;]}&quot;
+    with mlflow.start_run(run_name=run_name):
+        # 파라미터: &quot;무엇을 어떻게 돌렸나&quot; (조건)
+        mlflow.log_params({
+            &quot;model&quot;: r[&quot;model&quot;], &quot;soc&quot;: r[&quot;soc&quot;],
+            &quot;precision&quot;: r[&quot;precision&quot;], &quot;trt_version&quot;: r.get(&quot;trt_version&quot;, &quot;&quot;),
+        })
+        # 메트릭: &quot;결과 수치&quot;
+        mlflow.log_metrics({
+            &quot;latency_ms&quot;: r[&quot;latency_ms&quot;],
+            &quot;latency_p95_ms&quot;: r.get(&quot;latency_p95_ms&quot;, float(&quot;nan&quot;)),
+            &quot;peak_mem_mb&quot;: r[&quot;peak_mem_mb&quot;],
+            &quot;mAP&quot;: r[&quot;accuracy&quot;],
+        })
+        # 아티팩트: 결과 산출물 파일 자체
+        mlflow.log_artifact(&quot;report/matrix.csv&quot;)
+        mlflow.log_artifact(&quot;report/matrix.html&quot;)
+        mlflow.log_artifact(p)                      # 이 케이스의 raw json
+print(&quot;logged to MLflow at http://127.0.0.1:5000&quot;)</code></pre>
+<pre><code class="lang-bash"># 셀프호스팅 서버 (사내 서버에서 상시 구동)
+# 백엔드 스토어는 SQLite, 아티팩트는 로컬 디렉토리에 (팀 규모 커지면 Postgres+S3로)
+mlflow server \
+  --backend-store-uri sqlite:///mlflow.db \
+  --default-artifact-root ./mlartifacts \
+  --host 0.0.0.0 --port 5000
+# 대시보드: http://&lt;서버IP&gt;:5000  → run 비교, 메트릭 정렬, 아티팩트 다운로드
+
+# 로깅 실행 (bench/ 에서)
+python3 report/track_mlflow.py</code></pre>
+<blockquote class="callout warn">⚠️ 주의 — LAN 노출 보안(MLflow 3.5.0+): <code>--host 0.0.0.0</code>으로 사내망에 열면, 최신 MLflow는 DNS rebinding/CORS 보호 미들웨어가 기본 활성이라 브라우저 접근이 막힐 수 있다. 사내 IP/호스트를 신뢰 목록에 넣어야 한다(<a href="https://mlflow.org/docs/latest/self-hosting/architecture/tracking-server/">MLflow Tracking Server 문서</a>). 인증 없이 넓은 네트워크에 열지 마라.</blockquote>
+<blockquote class="callout tip">💡 팁: 도입 자체가 목적이 되면 안 된다. <strong>CI 회귀 게이트가 1순위</strong>, 실험 추적은 실험 수가 많아지고 여러 사람이 결과를 비교해야 할 때 붙여라. <code>log_params</code>(조건) / <code>log_metrics</code>(수치) / <code>log_artifact</code>(파일)의 3분할을 지키면, 나중에 "fp16인데 왜 이 커밋만 mAP가 낮지?"를 대시보드에서 정렬 한 번으로 찾는다. 결정을 내렸으면 그 근거를 <code>decision_log.md</code>에 남겨라(그게 이 단계의 정신이다).</blockquote>
+<hr>
+<h2 id="5-예시-결과-해석-산출물-3종">5) 예시 / 결과 해석 — 산출물 3종</h2>
+<h3 id="5-1-성능-매트릭스-자동-생성">5-1. 성능 매트릭스 (자동 생성)</h3>
+<p><code>report/matrix.md</code>의 실제 형태(예시 값):</p>
+<div class="tablewrap"><table><thead><tr><th>model / soc</th><th>precision</th><th>latency(ms)</th><th>peak mem(MB)</th><th>mAP</th></tr></thead><tbody><tr><td>bevformer / rtx</td><td>fp32</td><td>41.2</td><td>3120</td><td>0.412</td></tr><tr><td>bevformer / rtx</td><td>fp16</td><td>18.7</td><td>1980</td><td>0.410</td></tr><tr><td>bevformer / rtx</td><td>int8</td><td>12.3</td><td>1240</td><td>0.382</td></tr><tr><td>bevformer / orin</td><td>int8</td><td>33.5</td><td>980</td><td>0.379</td></tr><tr><td>bevformer / tda4vm</td><td>int8</td><td>71.0</td><td>512</td><td>0.361</td></tr><tr><td>bevformer / rzv2h</td><td>int8</td><td>—</td><td>—</td><td>보드필요</td></tr></tbody></table></div>
+<p>해석 포인트:</p>
+<ul><li><strong>fp16은 mAP 손실 거의 없이 2배↑ 빠름</strong> → 안전한 기본값. "일단 fp16"은 대부분 옳다.</li><li><strong>int8은 mAP 3%p 하락</strong> → 이게 허용 범위인가가 팀의 의사결정 사항이고, 그 판단을 decision log에 남긴다.</li><li><strong>SoC를 내려갈수록</strong>(rtx → orin → tda4vm) latency는 늘고 mem은 준다 → 하드웨어 예산과 정확도의 트레이드오프. 매트릭스는 이 트레이드오프를 <strong>한 화면</strong>에서 논쟁 가능하게 만든다.</li><li><strong>회색(보드필요) 행</strong>도 매트릭스에 남긴다 → "아직 측정 못 함"과 "측정했더니 나쁨"은 다르다. 빈칸이 아니라 명시적 '보드필요'가 정직한 보고다.</li></ul>
+<h3 id="5-2-design_rulesmd-작성-방법론-실제-도출">5-2. <code>design_rules.md</code> — 작성 방법론 + 실제 도출</h3>
+<p><strong>이 파일이 JD가 명시적으로 요구하는 산출물</strong>이다. 하지만 핵심은 4분류 표가 아니라, <strong>각 규칙이 앞 단계 산출물에서 어떻게 도출됐는지</strong>가 추적 가능해야 한다는 것이다.</p>
+<h4 id="작성-방법론-규칙은-의견이-아니라-근거에서-나온다">작성 방법론 (규칙은 "의견"이 아니라 "근거"에서 나온다)</h4>
+<div class="tablewrap"><table><thead><tr><th>규칙의 근거 소스</th><th>무엇을 읽고</th><th>어떤 규칙으로 승격되나</th></tr></thead><tbody><tr><td><code>layer_sensitivity.csv</code> (1단계)</td><td>INT8 시 mAP 하락이 큰 레이어</td><td>→ ⚠️ "이 레이어는 FP16 유지"</td></tr><tr><td><code>onnx_export_failures.md</code> (2단계)</td><td>export/compile에서 죽은 op</td><td>→ ❌ "이 op는 그래프에서 제거"</td></tr><tr><td>4-target 매트릭스 (<code>report/</code>)</td><td>SoC별로 특정 op가 실패/느림</td><td>→ 📏 "이 SoC엔 이 제약" / SoC×규칙 표</td></tr></tbody></table></div>
+<p>즉 <code>design_rules.md</code>를 쓰는 절차는 이렇다:</p>
+<ol><li><code>layer_sensitivity.csv</code>를 mAP-drop 내림차순으로 정렬 → 상위 레이어를 ⚠️(FP16 유지)로.</li><li><code>onnx_export_failures.md</code>의 실패 op를 ❌로, 각 항목에 실패 번호(#3 등)를 인용.</li><li><code>report/matrix.md</code>에서 특정 SoC만 mAP가 유독 낮거나 NaN이면 → 그 SoC의 📏 제약 또는 SoC×규칙 표의 ❌/⚠️로.</li><li>각 규칙 옆에 <strong>근거 파일명·라인/번호</strong>를 병기 → "왜?"에 즉답 가능하게.</li></ol>
+<h4 id="실제-도출-예시">실제 도출 예시</h4>
+<ul><li>⚠️ "Softmax/Attention은 FP16 유지" ← <code>layer_sensitivity.csv</code>에서 cross-attention INT8 시 mAP <strong>-2.8%p</strong>(전체 손실의 70%). → decision_log 2026-07-27 항목으로 링크.</li><li>❌ "grid_sample 금지" ← <code>onnx_export_failures.md #3</code>: TIDL 컴파일 시 grid_sample 크래시. → SoC×규칙 표에서 TIDL/DRP-AI 열이 ❌.</li><li>📏 "DRP-AI feed-forward only" ← 4-target 매트릭스에서 RZ/V2H가 Loop 포함 그래프로 컴파일 실패(보드 로그). </li></ul>
+<h4 id="design_rulesmd-전체-템플릿"><code>design_rules.md</code> (전체 템플릿)</h4>
+<pre><code class="lang-markdown"># design_rules.md — 양자화·배포 설계 규칙
+
+&gt; 근거: layer_sensitivity.csv(1단계), onnx_export_failures.md(2단계), 4-target 성능 매트릭스.
+&gt; 갱신 규율: 규칙 추가/변경 시 decision_log에 근거 링크를 남긴다.
+&gt; 각 규칙 끝의 (근거: ...) 는 추적용 — 리뷰어가 즉시 검증할 수 있어야 한다.
+
+## ✅ 권장 (fuse 가능 · per-channel 양자화 친화)
+- Conv + BN + ReLU 패턴  → fuse 가능, per-channel INT8 안전  (근거: layer_sensitivity.csv, drop&lt;0.2%p)
+- Depthwise-separable Conv → 대부분 백엔드에서 잘 지원
+- ReLU6 / clamp 계열 활성화 → 양자화 범위 안정적
+
+## ⚠️ 주의 (되지만 조건부)
+- LayerNorm       → activation outlier로 INT8 손실 큼. **SmoothQuant 필수**(arXiv:2211.10438)
+- GELU            → 하드웨어에 따라 **LUT 근사**로 대체 필요(정확도 검증할 것)
+- Softmax/Attention → FP16 유지 권장 (근거: layer_sensitivity.csv, cross-attn INT8 -2.8%p)
+
+## ❌ 금지 (백엔드 미지원/불안정 — export 단계에서 제거)
+- grid_sample     → TIDL에서 불안정 (근거: onnx_export_failures.md #3)
+- dynamic shape   → 다수 임베디드 백엔드 미지원. 고정 shape로 export
+- Loop / If (제어흐름) → QNN·DRP-AI 미지원 (근거: 4-target 매트릭스, RZ/V2H 컴파일 실패)
+
+## 📏 제약 (SoC별 하드 리밋)
+- BEV grid 200×200 초과 → SRAM 초과. **128×128 권장** (SoC별 SRAM 확인)
+- DRP-AI(RZ/V2H)  → **feed-forward only**. 모든 노드 입력에 initializer 필요
+- TDA4VM          → workspace/heap 상한 확인, 큰 conv는 분할 필요
+- Orin            → TRT workspace를 dGPU 대비 축소(공유 메모리)
+
+## SoC × 규칙 적용표
+| 규칙 | TensorRT(RTX/Orin) | TIDL(TDA4) | QNN(QCS) | DRP-AI(RZ/V2H) |
+|------|:--:|:--:|:--:|:--:|
+| grid_sample | ⚠️ | ❌ | ⚠️ | ❌ |
+| dynamic shape | ⚠️ | ❌ | ❌ | ❌ |
+| Loop/If | ⚠️ | ❌ | ❌ | ❌ |
+| LayerNorm(SmoothQuant) | ✅ | ⚠️ | ⚠️ | ⚠️ |</code></pre>
+<h3 id="5-3-decision_logmd-작성-방법론-템플릿">5-3. <code>decision_log.md</code> — 작성 방법론 + 템플릿</h3>
+<p>"왜 이 레이어를 FP16으로 남겼는가"를 기록. 미래의 나와 후임이 같은 실수를 반복하지 않게 한다.</p>
+<h4 id="작성-방법론-좋은-로그-미래에-되돌릴-조건이-적혀-있다">작성 방법론 (좋은 로그 = 미래에 "되돌릴 조건"이 적혀 있다)</h4>
+<p>한 항목은 5칸을 채운다: <strong>날짜 / 결정 / 근거(데이터) / 대안과 기각 사유 / 재검토 조건.</strong> 이 중 가장 자주 빠지고 가장 중요한 게 <strong>재검토 조건</strong>이다 — "언제 이 결정을 뒤집을 것인가"가 없으면, 그 결정은 6개월 뒤 "왜 이렇게 돼 있지?"라는 미스터리로 굳는다. 근거 칸에는 반드시 <strong>수치와 출처 파일명</strong>(layer_sensitivity.csv, onnx_export_failures.md #N, 매트릭스 셀)을 적어 <code>design_rules.md</code>와 상호 링크되게 한다.</p>
+<pre><code class="lang-markdown"># decision_log.md — 양자화 의사결정 기록
+
+각 항목: 날짜 / 결정 / 근거(데이터) / 대안과 기각 사유 / 재검토 조건
+
+---
+## 2026-07-27 — Attention 블록을 INT8이 아닌 FP16으로 유지
+- **결정**: BEVFormer의 cross-attention을 FP16으로 남기고 backbone만 INT8.
+- **근거**: layer_sensitivity.csv에서 해당 레이어 INT8 시 mAP -2.8%p (전체 손실의 70% 차지).
+- **대안·기각**: 전체 INT8(mAP 0.382, 목표 0.40 미달) / SmoothQuant 후 INT8(시도했으나 attention은 여전히 -1.9%p) → FP16 혼합이 최선.
+- **재검토 조건**: 타깃 SoC가 INT8 attention을 하드웨어 지원하면 재측정.
+
+---
+## 2026-07-27 — grid_sample 제거, bilinear 수동 구현으로 대체
+- **결정**: BEV projection의 grid_sample을 export 전에 커스텀 op로 치환.
+- **근거**: onnx_export_failures.md #3 — TIDL 컴파일 시 grid_sample에서 크래시.
+- **대안·기각**: 플러그인 작성(유지보수 부담↑, SoC마다 재작성) → 그래프 치환이 이식성 우위.
+- **재검토 조건**: TIDL 릴리스 노트에 grid_sample 정식 지원 명시되면 원복 검토.
+
+---
+## 2026-07-27 — 실험 추적 도구: MLflow 셀프호스팅 채택
+- **결정**: W&amp;B 대신 사내 MLflow(:5000) 사용.
+- **근거**: 데이터 반출 제약(자동차 고객 데이터). 무료·온프렘.
+- **대안·기각**: W&amp;B(대시보드 우수하나 SaaS·비용·데이터 반출) → 규제 환경에서 부적합.
+- **재검토 조건**: 팀 확장·외부 협업 시 재평가.</code></pre>
+<blockquote class="callout tip">💡 팁 — 로그와 규칙의 연결: <code>decision_log.md</code>의 결정이 일반화되면 <code>design_rules.md</code>의 규칙으로 <strong>승격</strong>시킨다(예: "이 모델의 attention"이 "attention 계열 전반"으로). 반대로 규칙에 예외가 생기면 그 예외를 로그에 남긴다. 두 문서가 서로를 인용하며 자라는 것이 건강한 상태다.</blockquote>
+<hr>
+<h2 id="6-흔한-오류와-해결-troubleshooting">6) 흔한 오류와 해결 (Troubleshooting)</h2>
+<div class="tablewrap"><table><thead><tr><th>증상</th><th>원인</th><th>해결</th></tr></thead><tbody><tr><td>CI job이 영원히 <code>Queued/pending</code></td><td><code>runs-on</code> 라벨과 runner <code>--labels</code> 불일치</td><td>두 곳의 라벨을 정확히 일치. <code>gpu</code> 라벨 누락이 흔함</td></tr><tr><td>CI가 <code>runner version too old</code>로 거부</td><td>2026 최소 버전 강제 + 오래된 self-hosted runner</td><td>runner를 최신(v2.336.0대)으로 재설치. 자동 업데이트 유지</td></tr><tr><td>runner에서 <code>nvidia-smi: command not found</code></td><td>드라이버 미설치 / PATH 문제</td><td>호스트에 NVIDIA 드라이버 설치, 재부팅 (<a href="01_environment_setup.html">1단계</a>)</td></tr><tr><td>container job에서 GPU 안 보임</td><td><code>--gpus all</code> 없음 / toolkit 미설치</td><td>워크플로에 <code>options: --gpus all</code>, 호스트에 <code>nvidia-container-toolkit</code></td></tr><tr><td><code>df.to_markdown()</code>에서 ImportError</td><td><code>tabulate</code> 미설치</td><td><code>pip install tabulate</code></td></tr><tr><td><code>Styler.to_html()</code>에서 ImportError</td><td><code>jinja2</code> 미설치</td><td><code>pip install jinja2</code></td></tr><tr><td><code>onnxruntime-gpu</code> 설치했는데 CPU로만 돔</td><td>CUDA 13 기본 휠을 CUDA 12.8에 설치 / provider 미지정</td><td>CUDA 12 인덱스로 재설치(3절), 세션에 <code>providers=[...]</code> 명시</td></tr><tr><td>회귀 테스트가 baseline 없다고 실패</td><td><code>tests/baseline_matrix.csv</code> 미커밋</td><td>첫 골든 매트릭스를 만들어 커밋</td></tr><tr><td><code>dataframe_regression</code> fixture 없음</td><td><code>pytest-regressions</code> 미설치</td><td><code>pip install pytest-regressions</code> (v3.0+)</td></tr><tr><td>mAP가 매 실행마다 미세하게 흔들려 CI 불안정(flaky)</td><td>시드 미고정 / 비결정적 커널</td><td>eval 시드 고정, latency는 median, tolerance를 소폭(예: atol=1e-3) 여유</td></tr><tr><td>latency가 실행마다 크게 튐</td><td>warmup 부족 / GPU 클럭 변동</td><td>warmup↑, <code>nvidia-smi -lgc</code>로 클럭 고정, median/p95 사용</td></tr><tr><td><code>build_serialized_network</code>가 <code>None</code> 반환</td><td>ONNX에 미지원 op / config 오류</td><td>parser 에러 로그 확인, <code>design_rules.md</code>의 ❌ op가 그래프에 있는지 점검</td></tr><tr><td>GPU runner 1대에 벤치가 계속 밀림</td><td>동시 실행 미제어</td><td><code>ci.yml</code>에 <code>concurrency</code> + <code>cancel-in-progress</code> 추가(4-9)</td></tr><tr><td>fork PR이 self-hosted runner에서 도는 게 불안</td><td>public 레포 + self-hosted 조합</td><td>private 레포로 옮기거나 <code>pull_request</code> 트리거를 신뢰 브랜치로 제한</td></tr></tbody></table></div>
+<blockquote class="callout bad">🔴 함정 — "CI는 초록불인데 실차에서 성능이 다르다": CI는 <strong>캘리브레이션셋의 대표성</strong>과 <strong>평가셋의 대표성</strong>만큼만 믿을 수 있다. 매트릭스가 예쁘게 나와도 calib/eval 분포가 실배포와 다르면 소용없다. 데이터 큐레이션은 자동화의 사각지대다(4-1 함정 참고).</blockquote>
+<blockquote class="callout bad">🔴 함정 — "골든 파일이 조용히 갱신돼 회귀 게이트가 무력화됨": <code>--force-regen</code>이나 <code>baseline_matrix.csv</code> 덮어쓰기를 <strong>아무 커밋에서나</strong> 하면, 정확도가 떨어져도 골든이 함께 내려가 테스트가 영원히 통과한다. 골든 갱신은 별도 PR로 분리하고, 리뷰어가 "왜 갱신하는가"를 decision_log에서 확인하게 하라.</blockquote>
+<hr>
+<h2 id="7-산출물deliverables">7) 산출물(Deliverables)</h2>
+<p>이 단계를 마치면 <strong>레포에 다음이 남아야</strong> 한다(면접·인수인계용 핵심 자산).</p>
+<ul><li class="task"><label><input type="checkbox" data-k="f6c2eaefcd"> <code>bench/</code> 디렉토리 (models/calib/backends/report/tests + config.yaml + run_bench.py)</label></li><li class="task"><label><input type="checkbox" data-k="55464158a1"> <code>backends/base.py</code> (공통 인터페이스 build/run/measure/collect + BenchResult) + <code>backends/trt.py</code> (동작하는 구현 1개 이상)</label></li><li class="task"><label><input type="checkbox" data-k="382260c16d"> <code>backends/{tidl,qnn,drpai}.py</code> (동일 시그니처 stub — 보드 없이도 매트릭스에 '보드필요'로 표기)</label></li><li class="task"><label><input type="checkbox" data-k="773345e773"> <code>config.yaml</code> (모델×타깃×precision 매트릭스 스키마) + <code>run_bench.py</code> (조합 순회 러너)</label></li><li class="task"><label><input type="checkbox" data-k="1bed226526"> <code>report/generate.py</code> → <strong>자동 생성된 <code>report/matrix.md</code> + <code>matrix.csv</code> + <code>matrix.html</code></strong> (성능 매트릭스 ①)</label></li><li class="task"><label><input type="checkbox" data-k="141c819fe3"> <code>.github/workflows/ci.yml</code> (커밋마다 벤치 + mAP 회귀 게이트 + 캐시) + 등록된 self-hosted GPU runner</label></li><li class="task"><label><input type="checkbox" data-k="e8b3e80b8d"> <code>tests/test_regression.py</code> (임계값 + 골든 파일 이중화) + <code>tests/baseline_matrix.csv</code> (골든)</label></li><li class="task"><label><input type="checkbox" data-k="af1c7cd6ea"> <strong><code>design_rules.md</code></strong> (JD가 요구하는 산출물 ②) — ✅/⚠️/❌/📏 4분류 + <strong>각 규칙에 앞 단계 산출물 근거 연결</strong></label></li><li class="task"><label><input type="checkbox" data-k="c50a0bce78"> <strong><code>decision_log.md</code></strong> (산출물 ③) — 근거·재검토 조건 있는 결정 최소 3건</label></li><li class="task"><label><input type="checkbox" data-k="8cb0b96270"> (선택) 실험 추적 도입 여부 결정 + <code>report/track_mlflow.py</code> + <code>decision_log.md</code>에 근거 기록</label></li></ul>
+<blockquote class="callout tip">💡 원본 가이드 핵심 재확인: 산출물 3종 = <strong>① 성능 매트릭스 · ② design_rules.md · ③ decision log</strong>. 이 3개가 "혼자 튜닝한 사람"과 "조직에 시스템을 남긴 사람"을 가른다. 그리고 이 3개는 서로를 인용한다 — 매트릭스가 규칙의 근거가 되고, 규칙 변경이 로그에 남고, 로그가 매트릭스의 특정 셀을 가리킨다.</blockquote>
+<hr>
+<h2 id="8-참고-사이트-참고문헌">8) 참고 사이트 &amp; 참고문헌</h2>
+<h3 id="공식-문서-도구">공식 문서 / 도구</h3>
+<ul><li><a href="https://docs.github.com/en/actions/how-tos/manage-runners/self-hosted-runners">GitHub Actions — Self-hosted runners 관리</a> — 등록·보안·라벨 공식 가이드</li><li><a href="https://github.com/actions/runner/releases">GitHub Actions runner 릴리스</a> — <code>config.sh</code>/<code>svc.sh</code> 최신 버전(2026-07 기준 v2.336.0)</li><li><a href="https://github.blog/changelog/2026-06-12-github-actions-minimum-version-enforcement-timeline-for-self-hosted-runners/">GitHub Changelog — self-hosted runner 최소 버전 강제 타임라인 (2026-06)</a> — 오래된 runner 거부 정책</li><li><a href="https://oneuptime.com/blog/post/2026-01-25-github-actions-self-hosted-runners/view">Self-hosted runner 설정 실전 가이드 (oneuptime, 2026-01)</a> — download→config→svc 흐름</li><li><a href="https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html">NVIDIA Container Toolkit 설치</a> — container job GPU 접근</li><li><a href="https://docs.nvidia.com/deeplearning/tensorrt/latest/_static/python-api/index.html">TensorRT Python API 문서 (10.16)</a> — <code>build_serialized_network</code>/<code>execute_async_v3</code> (2026-07 기준)</li><li><a href="https://docs.nvidia.com/deeplearning/tensorrt/latest/api/tensorrt-8x-to-10x-python-api.html">TensorRT 8→10 Python API 마이그레이션</a> — name 기반 I/O API</li><li><a href="https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html">ONNX Runtime — CUDA Execution Provider</a> — CUDA 버전 호환·provider 명시</li><li><a href="https://onnxruntime.ai/docs/execution-providers/QNN-ExecutionProvider.html">ONNX Runtime — QNN Execution Provider</a> — QNN 백엔드(context binary)</li><li><a href="https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.to_markdown.html">pandas — DataFrame.to_markdown</a> — 매트릭스 마크다운화(tabulate 필요)</li><li><a href="https://pandas.pydata.org/docs/reference/api/pandas.io.formats.style.Styler.to_html.html">pandas — Styler.to_html</a> — HTML 하이라이트 매트릭스(jinja2 필요)</li><li><a href="https://pypi.org/project/pytest-regressions/">pytest-regressions</a> — 골든 파일 회귀(<code>dataframe_regression</code>, <code>--force-regen</code>, v3.0+)</li><li><a href="https://mlflow.org/docs/latest/self-hosting/architecture/tracking-server/">MLflow Tracking Server (셀프호스팅)</a> — <code>log_param</code>/<code>log_metric</code>/<code>log_artifact</code>/<code>mlflow server</code></li><li><a href="https://deploybase.ai/articles/mlflow-vs-wandb">MLflow vs W&amp;B 2026 비교</a> — 실험 추적 도구 선택 근거</li><li>백엔드 SDK: <a href="https://docs.nvidia.com/deeplearning/tensorrt/">TensorRT</a> · <a href="https://github.com/TexasInstruments/edgeai-tidl-tools">edgeai-tidl-tools</a> · <a href="https://onnxruntime.ai/docs/execution-providers/QNN-ExecutionProvider.html">ONNX Runtime QNN EP</a> · <a href="https://github.com/renesas-rz/rzv_drp-ai_tvm">rzv_drp-ai_tvm</a></li></ul>
+<h3 id="논문">논문</h3>
+<ul><li>Xiao et al. (2022), <em>SmoothQuant: Accurate and Efficient Post-Training Quantization for LLMs</em>, arXiv:2211.10438 — <code>design_rules.md</code>의 LayerNorm 규칙 근거</li><li>Gholami et al. (2021), <em>A Survey of Quantization Methods for Efficient NN Inference</em>, arXiv:2103.13630 — 혼합정밀도·민감도 개념 배경</li><li>Nagel et al. (2021), <em>A White Paper on Neural Network Quantization</em>, arXiv:2106.08295 — per-channel/캘리브레이션 배경</li></ul>
+<hr>
+<h2 id="9-다음-단계">9) 다음 단계</h2>
+<p>인프라가 갖춰졌으니, 이제 이 시스템 위에서 <strong>하나의 모델을 처음부터 끝까지</strong> 관통시키는 <a href="08_capstone.html">캡스톤 프로젝트</a>로 넘어간다. 앞선 단계: <a href="06_multi_soc.html">4단계 — 멀티 SoC</a>.</p><div class="pager"><a class="prev" href="06_multi_soc.html"><span class="lbl">← 이전</span>4. 멀티SoC</a><a class="next" href="08_capstone.html"><span class="lbl">다음 →</span>캡스톤</a></div>
+<footer>임베디드 AI 양자화 학습 가이드 · 체크 상태는 브라우저에 저장됩니다(localStorage) · 인쇄/PDF: Ctrl/⌘+P</footer>
+</div>
+<script>var PAGE="07_infrastructure";
+(function(){
+  var KEY='embai:'+PAGE;
+  var boxes=document.querySelectorAll('input[type=checkbox][data-k]');
+  var fill=document.getElementById('fill'), pct=document.getElementById('pct');
+  var saved={};try{saved=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){}
+  function upd(){var d=0;boxes.forEach(function(b){if(b.checked)d++});
+    var p=boxes.length?Math.round(d/boxes.length*100):0;
+    if(fill)fill.style.width=p+'%';
+    if(pct)pct.textContent=boxes.length?(d+' / '+boxes.length+'  ('+p+'%)'):'체크리스트 없음';}
+  boxes.forEach(function(b){var k=b.getAttribute('data-k');
+    if(saved[k])b.checked=true;
+    b.addEventListener('change',function(){saved[k]=b.checked;
+      try{localStorage.setItem(KEY,JSON.stringify(saved))}catch(e){};upd();});});
+  upd();
+})();
+</script>
+</body></html>
