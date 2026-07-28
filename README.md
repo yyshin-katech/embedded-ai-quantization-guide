@@ -83,4 +83,4 @@ python3 .claude/skills/md-to-html/scripts/render.py study_guide
 
 ## 📄 라이선스
 
-아직 라이선스가 설정되지 않았습니다. 공개 재사용을 허용하려면 `LICENSE` 파일(예: MIT/Apache-2.0)을 추가하세요.
+[MIT License](LICENSE) — 문서·코드 모두 자유롭게 사용·복사·수정·배포·재라이선스할 수 있으며, 저작권 고지와 라이선스 문구만 포함하면 됩니다.
