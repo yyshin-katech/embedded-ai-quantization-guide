@@ -6,7 +6,7 @@
 
 > 💡 팁: 이 다섯 개는 "지식 부족"이 아니라 "무심코"에서 온다. 다 알아도 매번 당한다. 그래서 마지막의 [실무 체크리스트](#실무-체크리스트-양자화-전후-반드시-확인)를 프로젝트마다 복사해 쓰길 권한다.
 
-> ⚠️ 정본 버전 스택(2026-07 기준): **CUDA 12.8 / onnxruntime-gpu 1.28.0 / TensorRT 10.16.x LTS / ExecuTorch 1.3.x**. 아래 코드·명령은 이 조합 기준이다. TensorRT는 10.x부터 plugin이 `IPluginV3`로 통일됐고(함정 5), QNN EP는 dynamic shape·Loop/If를 지원하지 않는다(함정 3·4).
+> ⚠️ 정본 버전 스택(2026-07 기준): **CUDA 12.8 / onnx 1.18.0 (IR 11) / onnxruntime-gpu 1.23.2 / TensorRT 10.16.x LTS / ExecuTorch 1.3.x**. 아래 코드·명령은 이 조합 기준이다. ONNX export는 이 스택의 IR 상한 때문에 **opset ≤ 23**을 지킨다([0단계 2절](01_environment_setup.md)). TensorRT는 10.x부터 plugin이 `IPluginV3`로 통일됐고(함정 5), QNN EP는 dynamic shape·Loop/If를 지원하지 않는다(함정 3·4).
 
 ---
 

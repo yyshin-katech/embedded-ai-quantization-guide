@@ -128,11 +128,19 @@ python3 -c "import tensorrt as trt; print(trt.__version__)"   # Python 바인딩
 
 ```bash
 # ultralytics (YOLO export용), onnx, onnxruntime-gpu
-pip install -U ultralytics onnx onnxruntime-gpu
+#    🔴 '-U'로 onnx/onnxruntime-gpu를 통째로 올리지 마라. 0단계에서 못 박은 정본
+#       (onnx 1.18.0 / ORT 1.23.2)이 최신(onnx 1.22.0=IR 13, ORT 1.28.0=CUDA 13)으로
+#       올라가면서 ONNX 로드와 CUDA EP가 동시에 깨진다. 핀을 그대로 유지한다.
+pip install -U ultralytics
+pip install "onnx==1.18.0" "onnxruntime-gpu<1.27"
+#    🔴 onnxscript 필수: torch 2.11의 torch.onnx.export는 기본이 dynamo=True이고 그 경로가
+#       onnxscript를 요구한다(실습 4의 QAT export 등). 없으면 "No module named 'onnxscript'".
+#       onnxscript 0.7.1은 onnx>=1.17만 요구하므로 위 1.18.0 핀은 그대로 유지된다.
+pip install onnxscript
 
 # Polygraphy (정확도/레이어 디버깅) — NVIDIA index 병용
 python3 -m pip install colored polygraphy --extra-index-url https://pypi.ngc.nvidia.com
-polygraphy --version                   # 설치 확인 (2026-07 기준 0.49.x 계열)
+polygraphy --version                   # 설치 확인 (정본 0.50.3, 0단계 실측)
 
 # TensorRT Model Optimizer (QDQ export / PTQ / QAT)
 pip install -U nvidia-modelopt[all]    # import 이름은 modelopt (modelopt.onnx / modelopt.torch)

@@ -2,7 +2,7 @@
 
 > 원본 가이드 매핑: "5단계 — 인프라화" · 예상 소요: 2~3주 (반복 개선 포함) · 선행 조건: [3단계 TensorRT](05_tensorrt.md), [4단계 멀티 SoC](06_multi_soc.md) 완료 (각 백엔드로 1회 이상 빌드·측정 경험)
 
-> 정본 버전 스택(이 문서 전체 고정): **CUDA 12.8 · TensorRT 10.16.x LTS(`build_serialized_network`) · onnxruntime-gpu 1.28.0**. 앞 단계 산출물 이름 고정: `layer_sensitivity.csv`(1단계), `onnx_export_failures.md`(2단계).
+> 정본 버전 스택(이 문서 전체 고정): **CUDA 12.8 · TensorRT 10.16.x LTS(`build_serialized_network`) · onnx 1.18.0 · onnxruntime-gpu 1.23.2**. 앞 단계 산출물 이름 고정: `layer_sensitivity.csv`(1단계), `onnx_export_failures.md`(2단계).
 
 ---
 
@@ -130,25 +130,28 @@ python3 -m pip install --upgrade \
 
 TensorRT는 **10.16.x LTS 계열**(2026-07 기준, [TensorRT Python API 문서 10.16](https://docs.nvidia.com/deeplearning/tensorrt/latest/_static/python-api/index.html))을 전제로 한다. 10.x에서는 `builder.build_serialized_network(network, config)`가 표준 빌드 경로다(8.x의 `build_engine`+`serialize`는 불필요).
 
-### onnxruntime-gpu 1.28.0을 CUDA 12.8에 맞춰 설치하기 (함정 주의)
+### onnxruntime-gpu 1.23.2를 CUDA 12.8에 맞춰 설치하기 (함정 주의)
 
-일부 백엔드 스텁(예: QNN EP)은 onnxruntime로 도는데, **버전-CUDA 조합에서 사고가 잦다.** PyPI의 `onnxruntime-gpu`는 **1.27부터 기본이 CUDA 13.0** 빌드다. 즉 `pip install onnxruntime-gpu==1.28.0`을 그냥 하면 CUDA 13 런타임을 기대하는 휠이 깔려, CUDA 12.8 환경에서 `LoadLibrary`/`libcublas` 로드 실패가 난다. 정본 스택(CUDA 12.8)을 지키려면 **CUDA 12용 전용 인덱스**에서 받아야 한다.
+일부 백엔드 스텁(예: QNN EP)은 onnxruntime로 도는데, **버전-CUDA 조합에서 사고가 잦다.** PyPI의 `onnxruntime-gpu`는 **1.27부터 기본이 CUDA 13.0** 빌드다. 그냥 최신을 깔면 CUDA 13 런타임을 기대하는 휠이 들어와, CUDA 12.8 환경에서 `LoadLibrary`/`libcublas` 로드 실패가 난다. 정본 스택(CUDA 12.8)을 지키려면 **버전 상한 `<1.27`** 을 걸어 PyPI에서 받는다 — Ubuntu 22.04 기본 Python 3.10에서는 이게 **1.23.2**로 해석된다.
 
 ```bash
-# onnxruntime-gpu 1.28.0을 CUDA 12.x 빌드로 설치 (정본 스택 = CUDA 12.8)
-python3 -m pip install onnxruntime-gpu==1.28.0 \
-  --index-url https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/onnxruntime-cuda-12/pypi/simple/
-# aiinfra 피드 = Microsoft가 CUDA 12용으로 유지하는 Azure Artifacts 인덱스
-# (PyPI 기본 휠은 1.27+부터 CUDA 13.0 → 12.8 환경에서 로드 실패)
+# onnxruntime-gpu를 CUDA 12.x 빌드로 설치 (정본 스택 = CUDA 12.8 → ORT 1.23.2)
+python3 -m pip install "onnxruntime-gpu<1.27"
+# 상한 '<1.27'이 CUDA 13 라인을 차단한다. Python 3.10에서는 1.23.2가 마지막 cp310 휠이다.
+#
+# ⚠️ 구 가이드의 aiinfra(Azure Artifacts) CUDA-12 전용 인덱스는 이제 권하지 않는다.
+#    2026-07-31 실측: 그 피드의 stable 최신은 1.19.2에서 멈춰 있어 1.23.x를 받을 수 없다.
+#    자세한 근거는 0단계 3-4절 참조.
 ```
 
 ```python
 # 설치 검증: 실제로 CUDA EP가 잡히는지 (예상 출력 포함)
 import onnxruntime as ort
-print("ort:", ort.__version__)               # 1.28.0
+print("ort:", ort.__version__)               # 1.23.2
 print("providers:", ort.get_available_providers())
 # 기대: ['TensorrtExecutionProvider', 'CUDAExecutionProvider', 'CPUExecutionProvider']
-# CUDAExecutionProvider가 없으면 CUDA/드라이버 버전 불일치 → 위 인덱스로 재설치
+# CUDAExecutionProvider가 없으면 CUDA 13 휠이 깔린 것 → pip install --force-reinstall "onnxruntime-gpu<1.27"
+# 목록에는 있는데 실제 세션이 CPU로 잡히면 libcudnn.so.9 미발견이다 → 0단계 3-4-a 참조
 ```
 
 > 🔴 함정 — "onnxruntime-gpu를 설치했는데 CPU로 돈다": `get_available_providers()`에 `CUDAExecutionProvider`가 있어도, 세션 생성 시 provider를 명시하지 않으면 CPU로 폴백한다. 반드시 `ort.InferenceSession(onnx, providers=["CUDAExecutionProvider"])`처럼 명시하고, 세션 생성 직후 `sess.get_providers()`로 실제 활성 provider를 확인하라. "설치됨 ≠ 사용됨"이다. ([ONNX Runtime CUDA EP 문서](https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html))

@@ -59,7 +59,7 @@ footer{margin-top:60px;padding-top:18px;border-top:1px solid var(--line);color:v
 <blockquote class="callout">원본 가이드 매핑: "12주 로드맵(표: 주차 / 할 일 / 산출물)" · 예상 소요: 12주(주당 8~15시간) · 선행 조건: <a href="01_environment_setup.html">01_environment_setup.md</a> 완료 권장</blockquote>
 <p>이 문서는 앞선 8개 단계 문서(<a href="01_environment_setup.html">01</a>~<a href="08_capstone.html">08</a>)와 다음 <a href="10_pitfalls.html">함정 문서</a>를 <strong>하나의 12주 일정</strong>으로 엮는다. 각 주차는 "무엇을 읽고 → 무엇을 만들고 → 어떻게 완료를 판정하는가"로 구성된다.</p>
 <blockquote class="callout tip">💡 팁: 로드맵은 이론 정리보다 <strong>일정·산출물·완료 판정</strong>이 핵심이므로, stage-guide-writing 규약 중 "2) 배경 이론" 섹션은 생략한다.</blockquote>
-<blockquote class="callout warn">⚠️ 정본 버전 스택(2026-07 기준, 이 스터디의 기준값): <strong>CUDA 12.8 / onnxruntime-gpu 1.28.0 / TensorRT 10.16.x LTS / ExecuTorch 1.3.x</strong>. 이 조합으로 산출물을 재현한다. 상위 버전을 쓰면 op 지원·플러그인 API가 달라질 수 있으니, 다르게 갈 거면 <a href="01_environment_setup.html">01_environment_setup.md</a>의 버전 표를 함께 갱신하라.</blockquote>
+<blockquote class="callout warn">⚠️ 정본 버전 스택(2026-07 기준, 이 스터디의 기준값): <strong>CUDA 12.8 / onnx 1.18.0 (IR 11) / onnxruntime-gpu 1.23.2 / TensorRT 10.16.x LTS / ExecuTorch 1.3.x</strong>. 이 조합으로 산출물을 재현한다. ONNX export는 이 스택의 IR 상한 때문에 <strong>opset ≤ 23</strong>을 지킨다. 상위 버전을 쓰면 op 지원·플러그인 API가 달라질 수 있으니, 다르게 갈 거면 <a href="01_environment_setup.html">01_environment_setup.md</a>의 버전 표를 함께 갱신하라.</blockquote>
 <hr>
 <h2 id="0-이-단계에서-무엇을왜-하는가">0) 이 단계에서 무엇을·왜 하는가</h2>
 <p>임베디드 AI 양자화는 배울 것이 많다: 양자화 이론, Transformer 양자화, TensorRT, 그리고 TIDL/QNN/DRP-AI 같은 이종 SoC까지. 아무 순서로나 건드리면 "이론은 아는데 칩에서 안 돌아가는" 상태에 빠지기 쉽다.</p>
@@ -90,11 +90,11 @@ docker run --rm --gpus all nvidia/cuda:12.8.0-base-ubuntu22.04 nvidia-smi       
 <p>기대 출력 예:</p>
 <pre><code>NVIDIA-SMI ...  Driver Version: 5xx.xx  CUDA Version: 12.8
 2.x.x+cu128 True
-1.28.0 [&#x27;TensorrtExecutionProvider&#x27;, &#x27;CUDAExecutionProvider&#x27;, &#x27;CPUExecutionProvider&#x27;]
+1.23.2 [&#x27;TensorrtExecutionProvider&#x27;, &#x27;CUDAExecutionProvider&#x27;, &#x27;CPUExecutionProvider&#x27;]
 TensorRT 10.16.x.x</code></pre>
 <ul><li><code>torch.cuda.is_available()</code> → <code>True</code></li><li>ORT provider 목록에 <code>CUDAExecutionProvider</code>(및 설치 시 <code>TensorrtExecutionProvider</code>)가 보여야 한다.</li><li><code>tensorrt.__version__</code>이 <code>10.16.x</code>로 나와야 한다(플러그인 API가 여기 묶여 있다).</li></ul>
 <p>하나라도 실패하면 로드맵을 시작하지 말고 <a href="01_environment_setup.html">01_environment_setup.md</a>로 돌아간다.</p>
-<blockquote class="callout warn">⚠️ 주의: onnxruntime-gpu는 PyPI 기본 빌드의 CUDA 계열이 릴리스마다 바뀐다. <strong>정본 스택은 CUDA 12.x 빌드</strong>다. <code>ort.__version__</code>이 <code>1.28.0</code>이라도 CUDA 13 빌드를 깔면 드라이버/런타임이 어긋나 <code>TensorrtExecutionProvider</code>가 안 잡힐 수 있다. provider 목록이 비면 <a href="01_environment_setup.html">01_environment_setup.md</a>의 설치 명령(CUDA 12.x 인덱스)으로 재설치한다. (<a href="https://onnxruntime.ai/docs/install/">ONNX Runtime 설치 문서</a>)</blockquote>
+<blockquote class="callout warn">⚠️ 주의: onnxruntime-gpu는 PyPI 기본 빌드의 CUDA 계열이 릴리스마다 바뀐다. <strong>정본 스택은 CUDA 12.x 빌드(1.23.2)</strong>다. <strong>1.27 이상은 PyPI 기본이 CUDA 13</strong>이라, 그걸 깔면 드라이버/런타임이 어긋나 <code>TensorrtExecutionProvider</code>가 안 잡힐 수 있다. provider 목록이 비면 <a href="01_environment_setup.html">01_environment_setup.md</a>의 설치 명령(<code>pip install &quot;onnxruntime-gpu&lt;1.27&quot;</code>)으로 재설치한다. (<a href="https://onnxruntime.ai/docs/install/">ONNX Runtime 설치 문서</a>)</blockquote>
 <blockquote class="callout warn">⚠️ 주의: 4단계(멀티 SoC)는 실제 보드가 있어야 완료 판정을 통과한다. 보드가 없다면 9~11주는 "컴파일/오프로드 리포트까지"로 범위를 좁히고, 실측 latency는 클라우드 devkit이나 <a href="06_multi_soc.html">06_multi_soc.md</a>에 안내된 에뮬레이터로 대체한다.</blockquote>
 <hr>
 <h2 id="4-단계별-실습-주차별-상세-계획">4) 단계별 실습 — 주차별 상세 계획</h2>
@@ -133,7 +133,7 @@ TensorRT 10.16.x.x</code></pre>
 <ul><li class="task"><label><input type="checkbox" data-k="1eae2ebeda"> <strong>Day 1 (2h)</strong> — ResNet-50(torchvision 사전학습) FP32 정확도 측정(baseline). 검증셋·전처리를 <strong>하나의 함수</strong>로 고정(함정 2 예방).</label></li><li class="task"><label><input type="checkbox" data-k="c6a88e85f9"> <strong>Day 2 (2h)</strong> — ONNX로 export 후 onnxruntime static PTQ로 INT8 양자화(대표성 있는 캘리브 셋 100~500장). <code>QuantFormat.QDQ</code>, <code>per_channel=True</code> 권장.</label></li><li class="task"><label><input type="checkbox" data-k="eaf8f36897"> <strong>Day 3~4 (3~4h)</strong> — <strong>레이어별 민감도 스윕</strong>: 레이어를 하나씩 FP32로 되돌리며(또는 하나씩만 INT8) 정확도 변화를 기록. 자동화 루프로 CSV에 append.</label></li><li class="task"><label><input type="checkbox" data-k="6207f2064e"> <strong>Day 5 (1~2h)</strong> — 민감도 상위 레이어를 FP32로 유지하는 mixed-precision 안 설계 + 그 정확도 재측정.</label></li></ul>
 <p>민감도 스윕 자동화 골격(그대로 확장 가능):</p>
 <pre><code class="lang-python"># sensitivity_sweep.py — 레이어를 하나씩 FP32로 유지하며 top-1 변화를 CSV로 append
-# 실행: python3 sensitivity_sweep.py  (정본 스택: onnxruntime-gpu 1.28.0, CUDA 12.8)
+# 실행: python3 sensitivity_sweep.py  (정본 스택: onnxruntime-gpu 1.23.2, CUDA 12.8)
 import csv
 # baseline_acc, int8_all_acc 는 사전 측정값
 rows = []

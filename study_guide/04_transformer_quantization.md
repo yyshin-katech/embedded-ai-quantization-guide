@@ -19,7 +19,9 @@ Transformer를 INT8로 내리면 **모델이 그냥 깨진다**. mAP가 반토�
 
 > 💡 팁: BEV/Occupancy 인식(자율주행)으로 가면 여기에 `grid_sample`, Deformable Attention, `scatter/gather`, dynamic shape라는 **NPU가 극도로 싫어하는 연산**이 추가된다. 이 단계에서 그 지뢰들을 미리 밟아둔다.
 
-> 📌 이 문서의 정본 버전 스택(모든 명령/표는 이 기준): **CUDA 12.8 · onnxruntime-gpu 1.28.0 · TensorRT 10.16.x LTS · [NVIDIA Model Optimizer](https://github.com/NVIDIA/Model-Optimizer) · ExecuTorch 1.3.x**. 산출물 `onnx_export_failures.md`는 이 문서(2단계)의 실습에서 생성된다.
+> 📌 이 문서의 정본 버전 스택(모든 명령/표는 이 기준): **CUDA 12.8 · onnx 1.18.0 · onnxruntime-gpu 1.23.2 · TensorRT 10.16.x LTS · [NVIDIA Model Optimizer](https://github.com/NVIDIA/Model-Optimizer) · ExecuTorch 1.3.x**. 산출물 `onnx_export_failures.md`는 이 문서(2단계)의 실습에서 생성된다.
+>
+> 🔴 **export 전에 반드시 확인**: 정본 ORT 1.23.2는 **ONNX IR 11 / opset 23까지만** 읽는다(그 상한을 만드는 것이 `onnx==1.18.0` 핀이다 — [0단계 2절](01_environment_setup.md) 참조). 이 문서의 모든 export는 **opset ≤ 23**을 지킨다(실제로는 16~17을 쓴다). `onnx`를 무제한으로 올리면 1.22.0(**IR 13**)이 깔려 export한 모델이 ORT 로드 단계에서 `Unsupported model IR version: 13` 으로 죽는다.
 
 ---
 
@@ -202,12 +204,19 @@ Transformer를 INT8/INT4로 내리는 계보. arXiv ID로 원문 접근(`https:/
 conda create -n tfquant python=3.10 -y
 conda activate tfquant
 
-# 2) PyTorch (CUDA 12.8 빌드) — 2026-07 기준 stable은 2.12.x 계열
+# 2) PyTorch (CUDA 12.8 빌드) — cu128 인덱스의 정본은 torch 2.11.0+cu128 (0단계 실측)
 #    실제 CUDA 버전에 맞는 인덱스 URL은 https://pytorch.org/get-started/locally/ 에서 재확인
 pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
 
-# 3) HuggingFace + ONNX 스택 (onnxruntime-gpu는 정본 1.28.0 고정)
-pip install "transformers>=4.44" "onnx>=1.17" "onnxruntime-gpu==1.28.0" onnxsim
+# 3) HuggingFace + ONNX 스택 (정본: onnx 1.18.0 / onnxruntime-gpu 1.23.2)
+#    🔴 onnx는 반드시 ==1.18.0 (IR 11). 무제한이면 1.22.0(IR 13)이 깔려 ORT 로드가 깨진다.
+#    🔴 ORT는 상한 '<1.27' (1.27+는 PyPI 기본이 CUDA 13) → Python 3.10에서 1.23.2로 해석된다.
+pip install "transformers>=4.44" "onnx==1.18.0" "onnxruntime-gpu<1.27" onnxsim
+#    🔴 onnxscript 필수: torch 2.11의 torch.onnx.export는 기본이 dynamo=True이고 그 경로가
+#       onnxscript를 요구한다. 없으면 아래 4.2의 dynamo=True 시도가 의도한 export 에러가 아니라
+#       "No module named 'onnxscript'"로 죽어서 실습이 성립하지 않는다.
+#       (onnxscript 0.7.1은 onnx>=1.17만 요구 → 위 1.18.0 핀을 건드리지 않는다. 실측 확인)
+pip install onnxscript
 pip install "optimum[onnxruntime]"        # HF 모델 ONNX export/최적화 편의 도구
 pip install pillow requests               # 이미지 로드용
 
@@ -226,7 +235,8 @@ python - <<'PY'
 import torch, onnx, onnxruntime as ort
 print("torch      :", torch.__version__, "| CUDA:", torch.version.cuda, "| avail:", torch.cuda.is_available())
 print("onnx       :", onnx.__version__)
-print("onnxruntime:", ort.__version__)                       # 1.28.0 이어야 함
+print("onnxruntime:", ort.__version__)                       # 1.23.2 이어야 함
+print("onnx IR    :", onnx.IR_VERSION)                       # 11 이어야 함 (ORT 1.23.2의 상한)
 print("providers  :", ort.get_available_providers())          # CUDAExecutionProvider 있어야 함
 PY
 ```
@@ -234,15 +244,16 @@ PY
 예상 출력(환경에 따라 버전 숫자만 다름):
 
 ```
-torch      : 2.12.0+cu128 | CUDA: 12.8 | avail: True
-onnx       : 1.17.0
-onnxruntime: 1.28.0
+torch      : 2.11.0+cu128 | CUDA: 12.8 | avail: True
+onnx       : 1.18.0
+onnxruntime: 1.23.2
+onnx IR    : 11
 providers  : ['TensorrtExecutionProvider', 'CUDAExecutionProvider', 'CPUExecutionProvider']
 ```
 
 > 💡 팁: `torch.onnx.export`는 PyTorch 2.5부터 **`dynamo=True`** 경로(torch.export/FX 기반)가 권장이고, 기존 TorchScript 경로는 legacy다. 다만 **커스텀 op/FakeQuantize export에서는 아직 legacy 경로(`dynamo=False`)가 더 안정적인 경우**가 많다. 실습에서는 **둘 다** 돌려보고 에러를 비교 채집한다.
 
-> ⚠️ 주의: `onnxruntime`와 `onnxruntime-gpu`를 **동시에 설치하면 충돌**한다. GPU 실습에서는 `onnxruntime`를 먼저 `pip uninstall`하고 `onnxruntime-gpu==1.28.0`만 남긴다. `ort.get_available_providers()`에 `CUDAExecutionProvider`가 없으면 CPU 빌드가 잡힌 것이다.
+> ⚠️ 주의: `onnxruntime`와 `onnxruntime-gpu`를 **동시에 설치하면 충돌**한다. GPU 실습에서는 `onnxruntime`를 먼저 `pip uninstall`하고 `onnxruntime-gpu`(정본 1.23.2)만 남긴다. `ort.get_available_providers()`에 `CUDAExecutionProvider`가 없으면 CPU 빌드가 잡힌 것이다.
 
 ---
 
@@ -323,7 +334,7 @@ except Exception as e:
 | 5 | `RuntimeError: Exporting the operator ... with FakeQuantize is not supported` / QDQ 노드 export 실패 | dynamo=True, 양자화 그래프 | dynamo 경로의 QDQ/FakeQuantize export가 아직 불안정 | 양자화 그래프 export는 **legacy(`dynamo=False`)** 로 |
 | 6 | `Type Error: Type 'tensor(int64)' of input parameter ... is invalid` (ORT 로드 시) | 로드/추론 | export는 됐으나 dtype 불일치(예: index가 int64인데 backend가 int32 기대) | `onnxsim`/GraphSurgeon로 cast 삽입, opset 상향 |
 | 7 | `[ShapeInferenceError] ... Dynamic shape ... inference failed` / downstream shape 경고 | 로드/컴파일 | DETR은 입력 H,W 가변 → dynamic axes가 ORT/TRT/NPU에서 문제 | 아래 4.3처럼 **입력 shape 고정** 또는 명시적 `dynamic_axes` |
-| 8 | `In node ... GridSample ... attribute 'align_corners' ...` / opset mismatch | 로드 | export opset과 ORT가 기대하는 opset 속성 불일치 | export opset과 `onnxruntime` 버전(1.28.0)이 지원하는 opset을 맞추기 |
+| 8 | `In node ... GridSample ... attribute 'align_corners' ...` / opset mismatch | 로드 | export opset과 ORT가 기대하는 opset 속성 불일치 | export opset과 `onnxruntime` 버전(정본 1.23.2 → **opset ≤ 23**)이 지원하는 opset을 맞추기 |
 
 > 🔴 함정: "일단 export만 되면 끝"이 아니다. export가 성공해도 **NPU 컴파일 단계에서 다시 깨진다**(4.6, 6절). 그래서 실패 로그를 export/컴파일 **양쪽 모두** 남겨야 design rules가 된다.
 
@@ -512,9 +523,10 @@ git clone https://github.com/DerryHub/BEVFormer_tensorrt
 |------|--------------|-------------------|------|
 | ONNX 표준 opset 16/17 | ✅ `GridSample` | ❌ | 최초 표준화(4D만). DETR/2D BEV엔 충분 |
 | ONNX 표준 opset 20 | ✅ | ✅(스펙에 5D 추가) | 표준상 지원. 런타임 지원은 별개 |
+| **onnxruntime 1.23.2** | ✅ CUDA EP에서 실행 | ⚠️ **CPU로 조용히 fallback** | **정본**. 2026-07-31 실측: 5D는 `CUDA kernel not found in registries for Op type: GridSample` 로그를 남기고 노드가 CPU에 배치된다(에러 없이 느려짐) |
 | onnxruntime 1.26 | ✅(CPU/CUDA/WebGPU) | ❌ | WebGPU GridSample 추가 |
 | onnxruntime 1.27 | ✅ | ✅(CUDA, 볼류메트릭 3D) | CUDA EP에 3D GridSample 추가 |
-| **onnxruntime 1.28.0** | ✅ | ✅(1.27 계승) | **정본**. 좌표 NaN/Inf/범위초과의 int64 cast **hardening** 추가 |
+| onnxruntime 1.28.0 | ✅ | ✅(1.27 계승) | 좌표 NaN/Inf/범위초과의 int64 cast **hardening** 추가. **단 CUDA 13 라인**이라 이 스터디 스택에선 안 씀 |
 | **TensorRT 10.16.x LTS** | ✅ `IGridSampleLayer`(native) | ❌ **rank-4만** | 5D 볼류메트릭은 native 미지원(issue #3890). 5D는 plugin/분해 필요 |
 | NPU(TIDL/QNN/DRP-AI) | 대체로 ❌ 또는 제한적 | ❌ | 미지원 다수. op 치환/분해가 [4단계](06_multi_soc.md) 과제 |
 
@@ -560,7 +572,7 @@ BEVFormer의 심장인 **Multi-Scale Deformable Attention(MSDeformAttn)** 은 �
 | **16, 17** | ✅ | ❌ (`5D volumetric` 에러) | 4D만. DETR/2D BEV엔 충분 |
 | 20+ | ✅ | ✅(표준상) | ONNX 표준에 5D 추가. 런타임 지원은 별개 |
 
-> 런타임 쪽(4.6.1 상세 표 참고): **TensorRT 10.16.x LTS** 는 `GridSample`을 native로 파싱하되 **4D(rank-4)만**(5D 미지원, issue #3890). **onnxruntime 1.27** 에서 CUDA EP에 볼류메트릭(3D) GridSample 추가, **1.28.0**(정본)이 이를 계승+좌표 cast hardening. **NPU(TIDL 등)는 여전히 미지원 다수** → [4단계](06_multi_soc.md)에서 op 치환/분해 필요.
+> 런타임 쪽(4.6.1 상세 표 참고): **TensorRT 10.16.x LTS** 는 `GridSample`을 native로 파싱하되 **4D(rank-4)만**(5D 미지원, issue #3890). **정본 onnxruntime 1.23.2** 는 4D는 CUDA EP에서 돌리지만 **5D는 CUDA 커널이 없어 CPU로 조용히 fallback**한다(실측). CUDA EP의 볼류메트릭(3D) GridSample은 **1.27**에서 추가됐고 1.28.0이 이를 계승했지만, 그 라인은 CUDA 13이라 이 스택에서는 쓰지 않는다 — 즉 **5D는 정본 스택에서 분해/plugin이 사실상 필수**다. **NPU(TIDL 등)는 여전히 미지원 다수** → [4단계](06_multi_soc.md)에서 op 치환/분해 필요.
 
 ### 5.2 precision별 정확도/특성 (해석 틀)
 
@@ -611,8 +623,8 @@ BEVFormer의 심장인 **Multi-Scale Deformable Attention(MSDeformAttn)** 은 �
 
 ````markdown
 # ONNX Export & Quantization Failure Log — DETR / BEVFormer-tiny
-> 환경: Ubuntu 22.04 · RTX ____ · driver ____ · CUDA 12.8 · torch 2.12.x · onnx 1.17.x
->       onnxruntime-gpu 1.28.0 · TensorRT 10.16.x LTS
+> 환경: Ubuntu 22.04 · RTX ____ · driver ____ · CUDA 12.8 · torch 2.11.0+cu128 · onnx 1.18.0 (IR 11)
+>       onnxruntime-gpu 1.23.2 · TensorRT 10.16.x LTS
 > 목적: "무엇이 왜 깨졌고 어떻게 우회했는가" = 재사용 가능한 design rules
 
 ## 요약 표

@@ -6,7 +6,7 @@
 
 > 💡 팁: 로드맵은 이론 정리보다 **일정·산출물·완료 판정**이 핵심이므로, stage-guide-writing 규약 중 "2) 배경 이론" 섹션은 생략한다.
 
-> ⚠️ 정본 버전 스택(2026-07 기준, 이 스터디의 기준값): **CUDA 12.8 / onnxruntime-gpu 1.28.0 / TensorRT 10.16.x LTS / ExecuTorch 1.3.x**. 이 조합으로 산출물을 재현한다. 상위 버전을 쓰면 op 지원·플러그인 API가 달라질 수 있으니, 다르게 갈 거면 [01_environment_setup.md](01_environment_setup.md)의 버전 표를 함께 갱신하라.
+> ⚠️ 정본 버전 스택(2026-07 기준, 이 스터디의 기준값): **CUDA 12.8 / onnx 1.18.0 (IR 11) / onnxruntime-gpu 1.23.2 / TensorRT 10.16.x LTS / ExecuTorch 1.3.x**. 이 조합으로 산출물을 재현한다. ONNX export는 이 스택의 IR 상한 때문에 **opset ≤ 23**을 지킨다. 상위 버전을 쓰면 op 지원·플러그인 API가 달라질 수 있으니, 다르게 갈 거면 [01_environment_setup.md](01_environment_setup.md)의 버전 표를 함께 갱신하라.
 
 ---
 
@@ -75,7 +75,7 @@ docker run --rm --gpus all nvidia/cuda:12.8.0-base-ubuntu22.04 nvidia-smi       
 ```
 NVIDIA-SMI ...  Driver Version: 5xx.xx  CUDA Version: 12.8
 2.x.x+cu128 True
-1.28.0 ['TensorrtExecutionProvider', 'CUDAExecutionProvider', 'CPUExecutionProvider']
+1.23.2 ['TensorrtExecutionProvider', 'CUDAExecutionProvider', 'CPUExecutionProvider']
 TensorRT 10.16.x.x
 ```
 
@@ -85,7 +85,7 @@ TensorRT 10.16.x.x
 
 하나라도 실패하면 로드맵을 시작하지 말고 [01_environment_setup.md](01_environment_setup.md)로 돌아간다.
 
-> ⚠️ 주의: onnxruntime-gpu는 PyPI 기본 빌드의 CUDA 계열이 릴리스마다 바뀐다. **정본 스택은 CUDA 12.x 빌드**다. `ort.__version__`이 `1.28.0`이라도 CUDA 13 빌드를 깔면 드라이버/런타임이 어긋나 `TensorrtExecutionProvider`가 안 잡힐 수 있다. provider 목록이 비면 [01_environment_setup.md](01_environment_setup.md)의 설치 명령(CUDA 12.x 인덱스)으로 재설치한다. ([ONNX Runtime 설치 문서](https://onnxruntime.ai/docs/install/))
+> ⚠️ 주의: onnxruntime-gpu는 PyPI 기본 빌드의 CUDA 계열이 릴리스마다 바뀐다. **정본 스택은 CUDA 12.x 빌드(1.23.2)**다. **1.27 이상은 PyPI 기본이 CUDA 13**이라, 그걸 깔면 드라이버/런타임이 어긋나 `TensorrtExecutionProvider`가 안 잡힐 수 있다. provider 목록이 비면 [01_environment_setup.md](01_environment_setup.md)의 설치 명령(`pip install "onnxruntime-gpu<1.27"`)으로 재설치한다. ([ONNX Runtime 설치 문서](https://onnxruntime.ai/docs/install/))
 
 > ⚠️ 주의: 4단계(멀티 SoC)는 실제 보드가 있어야 완료 판정을 통과한다. 보드가 없다면 9~11주는 "컴파일/오프로드 리포트까지"로 범위를 좁히고, 실측 latency는 클라우드 devkit이나 [06_multi_soc.md](06_multi_soc.md)에 안내된 에뮬레이터로 대체한다.
 
@@ -174,7 +174,7 @@ TensorRT 10.16.x.x
 민감도 스윕 자동화 골격(그대로 확장 가능):
 ```python
 # sensitivity_sweep.py — 레이어를 하나씩 FP32로 유지하며 top-1 변화를 CSV로 append
-# 실행: python3 sensitivity_sweep.py  (정본 스택: onnxruntime-gpu 1.28.0, CUDA 12.8)
+# 실행: python3 sensitivity_sweep.py  (정본 스택: onnxruntime-gpu 1.23.2, CUDA 12.8)
 import csv
 # baseline_acc, int8_all_acc 는 사전 측정값
 rows = []

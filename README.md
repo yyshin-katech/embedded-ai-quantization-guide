@@ -3,6 +3,8 @@
 **AI 모델 양자화 → 임베디드 배포 실전 학습 가이드.** 멀티카메라 Transformer 인식 모델을 INT8 양자화하여 멀티 SoC(NVIDIA Orin/Thor · TI Jacinto · Qualcomm · Renesas RZ/V)에 올려 구동하는 전 과정을, **Ubuntu 22.04 + NVIDIA RTX GPU**에서 "읽고 따라 하면 실제로 실행되는" 단계별 문서로 정리했습니다.
 
 > 모든 버전·링크는 2026-07 기준으로 웹 검증했습니다. 실제 설치 시점엔 각 공식 페이지에서 재확인하세요.
+>
+> ✅ **0단계 환경은 2026-07-31 실제 머신에서 설치·검증 완료**했습니다(Ubuntu 22.04.5 / RTX 3060 / 드라이버 595.84 / `nvcc` 12.8.93). 아래 버전 스택과 [`01_environment_setup.md`](study_guide/01_environment_setup.md)의 예상 출력은 그 **실측값**입니다.
 
 ---
 
@@ -42,9 +44,14 @@
 | 도구 | 버전 | 비고 |
 |---|---|---|
 | CUDA | 12.8 라인 고정 | 12/13 분열 회피 |
-| onnxruntime-gpu | 1.28.0 (CUDA 12 wheel) | PyPI 기본이 1.27+부터 CUDA 13 → 전용 인덱스 사용 |
-| TensorRT | 10.16.x LTS | 11.x는 `--int8/--fp16` 제거(strongly-typed) → 실습 호환 위해 10.x |
-| ExecuTorch | 1.3.x | v1.0 GA(2025-10) 이후 |
+| PyTorch | `torch 2.11.0+cu128` | 기준선 |
+| **onnx** | **`1.18.0` (IR 11)** | 🔴 **반드시 고정.** ORT 1.23.2의 IR 상한이 11 → 최신 onnx(IR 13)는 로드 실패. export 시 opset ≤ 23 |
+| onnxruntime-gpu | **`1.23.2` (CUDA 12)** | `pip install "onnxruntime-gpu<1.27"`. 1.27+는 PyPI 기본이 CUDA 13 |
+| TensorRT | `tensorrt-cu12==10.16.1.11` (10.x LTS) | 11.x는 `--int8/--fp16` 제거(strongly-typed) + CUDA 13 → 실습 호환 위해 10.x |
+| numpy | **`1.26.4` (`numpy<2`)** | `nuscenes-devkit 1.2.0`이 `numpy<2.0.0` 요구 |
+| ExecuTorch | 1.3.x | v1.0 GA(2025-10) 이후. 0단계에선 설치 안 함 |
+
+> ⚠️ 경로 A(호스트 pip)에서는 **`libcudnn.so.9`(cuDNN)와 `libnvinfer.so.10`(TensorRT)를 못 찾아 ONNX Runtime이 조용히 CPU로 fallback**하는 함정이 있습니다(둘 다 CUDA Toolkit deb에는 없고, 각각 venv의 `nvidia-cudnn-cu12`/`tensorrt_libs` 패키지 디렉터리에만 있음). 해결법은 `01_environment_setup.md`의 **3-4-a절**에 있습니다 — 건너뛰지 마세요.
 
 정확한 스택은 [`study_guide/01_environment_setup.md`](study_guide/01_environment_setup.md)를 정본으로 따르세요.
 

@@ -38,7 +38,7 @@
 |----|------|--------|------|------------------|-----------|--------------------------|
 | 1 | **Edge Impulse** | ★☆☆☆☆ | 데이터 or 모델(BYOM) | 노코드로 전 과정 자동화, INT8 자동 양자화, QNN/Hexagon 배포 | 배포 시 (RPi/Arduino/폰), 학습은 클라우드 | `edge-impulse-cli` 최신 |
 | 2 | **LiteRT** (구 TFLite) | ★★☆☆☆ | Keras/TF | PTQ 3종을 **직접** 켠다(`representative_dataset`), 인터프리터 추론 | RPi 있으면 좋음(PC로도 가능) | `ai-edge-litert` 최신 |
-| 3 | **ONNX Runtime** | ★★★☆☆ | PyTorch/TF→ONNX | **EP 교체 한 줄**로 백엔드 스위칭(CPU/CUDA/TensorRT/QNN) | 불필요(RTX PC) | `onnxruntime-gpu` 1.28.0 (CUDA 12 wheel) |
+| 3 | **ONNX Runtime** | ★★★☆☆ | PyTorch/TF→ONNX | **EP 교체 한 줄**로 백엔드 스위칭(CPU/CUDA/TensorRT/QNN) | 불필요(RTX PC) | `onnxruntime-gpu` 1.23.2 (CUDA 12 wheel) + `onnx` 1.18.0 |
 | 4 | **ExecuTorch** | ★★★★☆ | PyTorch | `torch.export` 직행, 미지원 op에서 export 붕괴 체험 | 불필요(PC)~선택(폰/MCU) | `executorch` 1.3.x |
 | 5 | **벤더 툴체인** | ★★★★★ | 벤더별 상이 | 최대 성능·최대 난이도 = **본 가이드 [1~5단계](03_quantization_theory.md)** | 대부분 필요 | (각 단계 문서 참조) |
 
@@ -87,14 +87,15 @@ pip install tensorflow                  # TFLiteConverter(변환기)는 TF 본�
 
 ```bash
 # Lv.3 ONNX Runtime (GPU) — 이 스터디는 CUDA 12.8 스택에 맞춰 CUDA 12 대응 wheel 사용
-#   (2026-07 기준 onnxruntime-gpu 1.28.0. ORT 1.22+부터 GPU 휠은 CUDA 12만 릴리스되므로
-#    기본 wheel이 곧 CUDA 12 빌드다. CUDA 13 스택이라면 별도 인덱스가 필요 — 0단계 참조)
+#   (2026-07 기준 정본은 onnxruntime-gpu 1.23.2. PyPI 기본 wheel은 1.27부터 CUDA 13이므로
+#    상한 '<1.27'로 CUDA 12 라인에 묶는다. onnx도 1.18.0으로 고정해야 ORT의 IR 11 상한과
+#    맞는다 — 무제한 설치는 1.22.0(IR 13)을 깔아 로드가 깨진다. 근거는 0단계 2절 참조)
 conda activate ladder-onnx
 pip install torch torchvision           # PyTorch (CUDA 빌드는 pytorch.org 인덱스 사용)
-pip install onnx onnxruntime-gpu        # ONNX + GPU 런타임(CPU/CUDA/TensorRT EP 포함)
+pip install "onnx==1.18.0" "onnxruntime-gpu<1.27"   # ONNX + GPU 런타임(CPU/CUDA/TensorRT EP 포함)
 python -c "import onnxruntime as ort; print(ort.__version__); print(ort.get_available_providers())"
 # 예상 출력:
-#   1.28.0
+#   1.23.2
 #   ['TensorrtExecutionProvider', 'CUDAExecutionProvider', 'CPUExecutionProvider']
 # ↑ 세 EP가 모두 보이면 OK. CUDA/TensorRT가 없으면 CPU판이 깔린 것 — 6)절 참조.
 ```
@@ -707,7 +708,7 @@ print(f"estimated inference: {est_us/1000:.2f} ms on {device.name}")
 - [LiteRT Post-training integer quantization](https://ai.google.dev/edge/litert/conversion/tensorflow/quantization/post_training_quantization) — full INT8 + `representative_dataset`
 - [LiteRT inference (Interpreter / CompiledModel)](https://developers.google.com/edge/litert/inference) — 추론 API 두 경로
 - [tf.lite.TFLiteConverter API](https://www.tensorflow.org/lite/api_docs/python/tf/lite/TFLiteConverter) — 변환기 레퍼런스
-- [ONNX Runtime 설치](https://onnxruntime.ai/docs/install/) · [Execution Providers](https://onnxruntime.ai/docs/execution-providers/) — EP 교체, `onnxruntime-gpu` 1.28.0(CUDA 12)
+- [ONNX Runtime 설치](https://onnxruntime.ai/docs/install/) · [Execution Providers](https://onnxruntime.ai/docs/execution-providers/) — EP 교체, `onnxruntime-gpu` 1.23.2(CUDA 12)
 - [ONNX Runtime TensorRT EP](https://onnxruntime.ai/docs/execution-providers/TensorRT-ExecutionProvider.html) — `provider_options`, 엔진 캐시, FP16/INT8 · [CUDA EP](https://onnxruntime.ai/docs/execution-providers/CUDA-ExecutionProvider.html) · [QNN EP](https://onnxruntime.ai/docs/execution-providers/QNN-ExecutionProvider.html)
 - [TensorRT 10.16 Release Notes](https://docs.nvidia.com/deeplearning/tensorrt/latest/getting-started/release-notes-10/10.16.0.html) — LTS 라인(2026-03), 정본 버전
 - [ExecuTorch Getting Started](https://docs.pytorch.org/executorch/stable/getting-started.html) · [Export & Lowering](https://docs.pytorch.org/executorch/stable/using-executorch-export.html) · [XNNPACK Backend](https://docs.pytorch.org/executorch/stable/backends-xnnpack.html) — `torch.export`→`.pte`, PT2E 양자화

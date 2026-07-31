@@ -378,7 +378,7 @@ FP 히스토그램(카운트) `hist = [40, 30, 15, 8, 4, 2, 1, 0]` (bin 0이 가
 ```
 KL이 "분포 유사도"를 재는 대신, MSE는 2.1.1의 총오차(rounding+clipping)를 **직접** 재 최소화한다. outlier가 많거나 분포가 비대칭일 때 KL보다 robust한 경우가 있다.
 
-> 💡 **팁**: ONNX Runtime의 `CalibrationMethod`는 `MinMax(0) / Entropy(1) / Percentile(2) / Distribution(3)` 4종을 제공한다(2026-07, ORT 1.28.0 기준 `calibrate.py`). MSE는 ORT에 별도 enum이 없고, **NVIDIA Model Optimizer**(`modelopt`, https://github.com/NVIDIA/Model-Optimizer) 등 다른 툴에서 지원한다. Entropy가 NVIDIA TensorRT의 전통적 기본 캘리브레이터(EntropyCalibrator) 계열과 같은 아이디어다.
+> 💡 **팁**: ONNX Runtime의 `CalibrationMethod`는 `MinMax(0) / Entropy(1) / Percentile(2) / Distribution(3)` 4종을 제공한다(2026-07, 정본 ORT 1.23.2의 `calibrate.py`에서 실측 확인). MSE는 ORT에 별도 enum이 없고, **NVIDIA Model Optimizer**(`modelopt`, https://github.com/NVIDIA/Model-Optimizer) 등 다른 툴에서 지원한다. Entropy가 NVIDIA TensorRT의 전통적 기본 캘리브레이터(EntropyCalibrator) 계열과 같은 아이디어다.
 
 ### 2.5 QAT + STE (Straight-Through Estimator)
 
@@ -504,7 +504,7 @@ cos(W_q, W_true): 0.99..
 
 ## 3) 환경·도구 준비
 
-이론 실습은 x86 PC(RTX GPU)에서 완결. GPU가 없어도 CPU로 실행 가능하나(느림), RTX가 있으면 ONNX Runtime CUDA EP로 평가가 빠르다. 이 스터디의 정본 스택은 **CUDA 12.8 / onnxruntime-gpu 1.28.0 / TensorRT 10.16.x LTS** 다(TensorRT는 3단계에서 사용).
+이론 실습은 x86 PC(RTX GPU)에서 완결. GPU가 없어도 CPU로 실행 가능하나(느림), RTX가 있으면 ONNX Runtime CUDA EP로 평가가 빠르다. 이 스터디의 정본 스택은 **CUDA 12.8 / onnx 1.18.0 / onnxruntime-gpu 1.23.2 / TensorRT 10.16.x LTS** 다(TensorRT는 3단계에서 사용).
 
 ```bash
 # 1) 가상환경 (프로젝트 루트에서)
@@ -514,9 +514,15 @@ python -m pip install --upgrade pip
 # 2) 핵심 패키지 (2026-07 기준 최신 계열)
 #    torch/torchvision: ResNet18 로드 + ONNX export
 #    onnx: 그래프 조작/검증,  onnxruntime-gpu: 정적 양자화 + 평가
-pip install "torch>=2.3" "torchvision>=0.18"            # CUDA 12.x 휠 자동
-pip install "onnx>=1.16" "onnxruntime-gpu==1.28.0"      # 2026-07 기준 정본 버전
-pip install numpy pillow tqdm scipy                      # 데이터/평가/통계 유틸
+#    🔴 torch는 반드시 cu128 인덱스에서 받는다. PyPI 기본 휠은 CUDA 13 라인이라
+#       CUDA 12.8 정본 스택과 섞이면 ORT CUDA EP가 조용히 CPU로 내려앉는다(0단계 2절).
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
+pip install "onnx==1.18.0" "onnxruntime-gpu<1.27"        # 2026-07 기준 정본 버전 (→ onnx 1.18.0 / ORT 1.23.2)
+#    🔴 onnxscript 필수: torch 2.11의 torch.onnx.export는 기본이 dynamo=True이고
+#       그 경로가 onnxscript를 요구한다. 없으면 4.1의 export가 "No module named 'onnxscript'"로 죽는다.
+#       (onnxscript 0.7.1은 onnx>=1.17만 요구하므로 위 1.18.0 핀을 건드리지 않는다 — 실측 확인)
+pip install onnxscript
+pip install "numpy<2" pillow tqdm scipy                  # 데이터/평가/통계 유틸 (numpy는 정본과 동일하게 1.x)
 ```
 
 ```bash
@@ -531,7 +537,9 @@ print("providers  :", ort.get_available_providers())  # CUDAExecutionProvider �
 PY
 ```
 
-> 💡 **팁**: `onnxruntime-gpu`의 정본 버전은 이 스터디 기준 **1.28.0**이다. ⚠️ 단 PyPI 기본 wheel의 CUDA 라인이 1.27부터 CUDA 13으로 바뀌었으므로, 이 스터디의 CUDA 12.8 스택에서는 **CUDA 12 대응 wheel**을 써야 한다(자세한 CUDA 12/13 전환 캐비앗은 [0단계 2·3절](01_environment_setup.md) 참조). CPU만 쓸 거면 `onnxruntime`(GPU 없는 패키지)을 설치한다. 두 패키지를 동시에 설치하지 말 것(충돌).
+> 💡 **팁**: `onnxruntime-gpu`의 정본 버전은 이 스터디 기준 **1.23.2**다. ⚠️ PyPI 기본 wheel의 CUDA 라인이 1.27부터 CUDA 13으로 바뀌었으므로, 이 스터디의 CUDA 12.8 스택에서는 상한 `<1.27`을 걸어 **CUDA 12 대응 wheel**을 받아야 한다(Ubuntu 22.04 기본 Python 3.10에서는 이게 1.23.2로 해석된다). 자세한 CUDA 12/13 전환 캐비앗은 [0단계 2·3절](01_environment_setup.md) 참조. CPU만 쓸 거면 `onnxruntime`(GPU 없는 패키지)을 설치한다. 두 패키지를 동시에 설치하지 말 것(충돌).
+>
+> 🔴 **`onnx`도 반드시 `1.18.0`으로 고정한다.** ORT 1.23.2는 **ONNX IR 11까지만** 읽는데, `pip install onnx`(무제한)는 최신 1.22.0(**IR 13**)을 깔아 `Unsupported model IR version: 13, max supported IR version: 11`로 **모델 로드가 실패**한다. 그래서 아래 4.x의 export는 **opset ≤ 23**을 전제로 한다([0단계 2절](01_environment_setup.md) 참조).
 
 **ImageNet 검증셋 준비**: ImageNet-1k `val`에서 **1000장**만 있으면 된다(캘리브레이션 100~500장 + 평가 1000장). 폴더 구조는 클래스별 서브폴더(`val/n01440764/*.JPEG` …) 형태를 권장. 라이선스상 데이터는 직접 받아야 한다.
 
@@ -893,7 +901,7 @@ fc                             Linear  1000          512000      31.20    0.9994
 | INT8 top-1이 FP32보다 5%p 이상 폭락 | 전처리(mean/std/crop) 불일치, 캘리브 장수 부족 | 평가·캘리브 전처리를 **동일 함수**로 통일, 캘리브 200장↑ |
 | top-1이 0~1%에 가까움 | 라벨 인덱스 매핑 오류 | 먼저 FP32가 ~69%인지 확인(4.4 sanity check), synset 정렬 순서 확인 |
 | `quantize_static`에서 `CalibrationDataReader` 관련 에러 | `get_next()`가 dict/None을 안 돌려줌 | 반환은 `{input_name: ndarray}` 또는 끝에서 `None` |
-| `onnxruntime` GPU인데 CPU만 잡힘 | `onnxruntime`(CPU)와 `onnxruntime-gpu` 혼재 | CPU 패키지 제거 후 `onnxruntime-gpu==1.28.0`만 재설치, `get_available_providers()` 확인 |
+| `onnxruntime` GPU인데 CPU만 잡힘 | `onnxruntime`(CPU)와 `onnxruntime-gpu` 혼재 | CPU 패키지 제거 후 `pip install "onnxruntime-gpu<1.27"`(→ 1.23.2)만 재설치, `get_available_providers()` 확인 |
 | ONNX export 후 `checker` 실패 | opset 불일치/동적축 문제 | `opset_version=17`로 고정, dynamic_axes 재확인 |
 | Entropy 캘리브가 매우 느림/메모리 폭증 | 히스토그램 계산 비용, 캘리브 장수 과다 | 캘리브 장수 축소(100~300장), Percentile로 대체 검토 |
 | Percentile 옵션이 안 먹힘 | 키 이름/버전 차이 | 설치된 `calibrate.py`에서 실제 파라미터명 확인(`CalibPercentile` vs `Percentile`) |

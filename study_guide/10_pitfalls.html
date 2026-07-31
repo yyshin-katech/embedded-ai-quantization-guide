@@ -59,7 +59,7 @@ footer{margin-top:60px;padding-top:18px;border-top:1px solid var(--line);color:v
 <blockquote class="callout">원본 가이드 매핑: "함정 5개" · 예상 소요: 반나절(정독) + 실습 시 하루 · 선행 조건: <a href="03_quantization_theory.html">03</a>~<a href="06_multi_soc.html">06</a> 개념 숙지 권장</blockquote>
 <p>이 문서는 앞선 단계들(<a href="01_environment_setup.html">01</a>~<a href="08_capstone.html">08</a>)과 <a href="09_roadmap.html">12주 로드맵</a>을 관통하는 <strong>5대 실패 패턴</strong>을 정리한다. 각 함정은 <strong>증상 → 원인(수치·메커니즘) → 예방 → 디버깅 절차 → 재현 코드</strong> 순으로, 재현·검증 가능한 코드와 함께 다룬다.</p>
 <blockquote class="callout tip">💡 팁: 이 다섯 개는 "지식 부족"이 아니라 "무심코"에서 온다. 다 알아도 매번 당한다. 그래서 마지막의 <a href="#실무-체크리스트-양자화-전후-반드시-확인">실무 체크리스트</a>를 프로젝트마다 복사해 쓰길 권한다.</blockquote>
-<blockquote class="callout warn">⚠️ 정본 버전 스택(2026-07 기준): <strong>CUDA 12.8 / onnxruntime-gpu 1.28.0 / TensorRT 10.16.x LTS / ExecuTorch 1.3.x</strong>. 아래 코드·명령은 이 조합 기준이다. TensorRT는 10.x부터 plugin이 <code>IPluginV3</code>로 통일됐고(함정 5), QNN EP는 dynamic shape·Loop/If를 지원하지 않는다(함정 3·4).</blockquote>
+<blockquote class="callout warn">⚠️ 정본 버전 스택(2026-07 기준): <strong>CUDA 12.8 / onnx 1.18.0 (IR 11) / onnxruntime-gpu 1.23.2 / TensorRT 10.16.x LTS / ExecuTorch 1.3.x</strong>. 아래 코드·명령은 이 조합 기준이다. ONNX export는 이 스택의 IR 상한 때문에 <strong>opset ≤ 23</strong>을 지킨다(<a href="01_environment_setup.html">0단계 2절</a>). TensorRT는 10.x부터 plugin이 <code>IPluginV3</code>로 통일됐고(함정 5), QNN EP는 dynamic shape·Loop/If를 지원하지 않는다(함정 3·4).</blockquote>
 <hr>
 <h2 id="0-이-단계에서-무엇을왜-하는가">0) 이 단계에서 무엇을·왜 하는가</h2>
 <p>양자화가 실패하는 방식은 대개 <strong>요란하지 않다.</strong> 컴파일도 되고, export도 "성공"이라 뜨고, 에러도 없다. 그런데 특정 상황(야간·터널·역광)에서만 정확도가 무너지거나, 가속기에 올렸는데 오히려 느려진다.</p>

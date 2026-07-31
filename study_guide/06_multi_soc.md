@@ -4,7 +4,7 @@
 > **예상 소요**: 3~4주 (툴체인 3개 × 설치·컴파일·로그 해석)
 > **선행 조건**: [3단계 TensorRT](05_tensorrt.md) 완료. INT8 PTQ/QDQ ONNX 개념 숙지. Docker 사용 가능한 Ubuntu 22.04 + RTX GPU 데스크톱.
 > **실행 환경 원칙**: 세 툴체인 모두 **컴파일·에뮬레이션은 x86_64(이 데스크톱)에서 가능**하고, **실제 타겟 실행만 보드가 필요**하다. 보드 없이도 "컴파일이 되는가 / 얼마나 offload되는가"까지 전부 검증할 수 있다.
-> **정본 버전 스택(이 커리큘럼 공통)**: CUDA 12.8 / onnxruntime-gpu 1.28.0 / TensorRT 10.16.x LTS. **단, 이 단계의 세 벤더 툴은 각자 자체 런타임/버전을 쓴다** — TIDL은 TI가 포크한 onnxruntime, QNN EP는 QAIRT 번들, DRP-AI는 자체 TVM 빌드. 정본 스택은 "2·3단계에서 ONNX를 만든 데스크톱 환경"의 기준이고, 여기서는 그 ONNX를 각 벤더 툴에 넘긴다.
+> **정본 버전 스택(이 커리큘럼 공통)**: CUDA 12.8 / onnx 1.18.0 / onnxruntime-gpu 1.23.2 / TensorRT 10.16.x LTS. **단, 이 단계의 세 벤더 툴은 각자 자체 런타임/버전을 쓴다** — TIDL은 TI가 포크한 onnxruntime, QNN EP는 QAIRT 번들, DRP-AI는 자체 TVM 빌드. 정본 스택은 "2·3단계에서 ONNX를 만든 데스크톱 환경"의 기준이고, 여기서는 그 ONNX를 각 벤더 툴에 넘긴다.
 
 ---
 
@@ -128,7 +128,7 @@ def load_chw(path: str) -> np.ndarray:
 각 백엔드별 설치는 해당 절에서 다룬다. 셋 다 **Docker 또는 전용 SDK**를 쓰므로, 호스트 Python 환경을 오염시키지 않도록 각각 격리하는 것을 권장한다.
 
 > 🔴 **함정 — 세 벤더의 onnxruntime을 한 venv에 섞지 마라**
-> TIDL은 `onnxruntime`을 **TI 포크**(TIDLCompilationProvider/TIDLExecutionProvider 포함)로 덮어쓴다. QNN EP는 표준 `onnxruntime`(+QAIRT)을 쓴다. 3단계에서 쓴 `onnxruntime-gpu 1.28.0`도 또 다른 빌드다. **이 셋을 같은 venv에 pip install하면 서로 덮어써서 "provider를 못 찾음" 에러가 난다.** 반드시 `TIDL(Docker)` / `.qnn` venv / `.drpai` 를 분리하라.
+> TIDL은 `onnxruntime`을 **TI 포크**(TIDLCompilationProvider/TIDLExecutionProvider 포함)로 덮어쓴다. QNN EP는 표준 `onnxruntime`(+QAIRT)을 쓴다. 3단계에서 쓴 `onnxruntime-gpu 1.23.2`도 또 다른 빌드다. **이 셋을 같은 venv에 pip install하면 서로 덮어써서 "provider를 못 찾음" 에러가 난다.** 반드시 `TIDL(Docker)` / `.qnn` venv / `.drpai` 를 분리하라.
 
 ---
 
