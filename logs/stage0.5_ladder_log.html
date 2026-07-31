@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>0.5단계 배포 난이도 사다리 — 실행 로그</title>
+<style>
+  :root{
+    --bg:#0b0e14; --panel:#131720; --panel2:#0f131b; --bd:#242b38;
+    --tx:#c9d1d9; --dim:#8b949e; --brt:#e6edf3;
+    --accent:#58a6ff; --green:#3fb950; --amber:#d29922; --red:#ff7b72; --purple:#bc8cff;
+    --mono:'JetBrains Mono','SF Mono',ui-monospace,'Cascadia Code',Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans KR','Malgun Gothic',sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--tx);font-family:var(--sans);line-height:1.65;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:980px;margin:0 auto;padding:0 20px 120px}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  /* Hero */
+  .hero{padding:48px 0 26px;border-bottom:1px solid var(--bd);margin-bottom:8px}
+  .kicker{font-family:var(--mono);font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+  .hero h1{margin:0 0 10px;font-size:30px;line-height:1.25;color:var(--brt);letter-spacing:-.01em}
+  .hero p.sub{margin:0 0 20px;color:var(--dim);font-size:15px;max-width:70ch}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{font-family:var(--mono);font-size:12px;padding:5px 10px;border:1px solid var(--bd);border-radius:999px;background:var(--panel);color:var(--tx)}
+  .chip b{color:var(--brt);font-weight:600}
+  .chip.done{border-color:rgba(63,185,80,.5);background:rgba(63,185,80,.12);color:#7ee787}
+  .chip.blocked{border-color:rgba(255,123,114,.5);background:rgba(255,123,114,.12);color:#ff9d96}
+  .chip.partial{border-color:rgba(210,153,34,.5);background:rgba(210,153,34,.12);color:#e3b341}
+
+  /* TOC */
+  nav.toc{display:flex;flex-wrap:wrap;gap:8px;margin:26px 0 6px}
+  nav.toc a{font-family:var(--mono);font-size:12.5px;padding:6px 11px;border:1px solid var(--bd);border-radius:8px;background:var(--panel);color:var(--tx)}
+  nav.toc a:hover{border-color:var(--accent);text-decoration:none;color:var(--brt)}
+
+  h2.sec{font-size:13px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin:38px 0 12px;font-weight:600}
+
+  /* Checklist table */
+  table.ck{width:100%;border-collapse:collapse;margin:6px 0 8px;font-size:14px;border:1px solid var(--bd);border-radius:10px;overflow:hidden}
+  table.ck th,table.ck td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--bd);vertical-align:top}
+  table.ck th{background:var(--panel);color:var(--dim);font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.05em}
+  table.ck td:first-child{white-space:nowrap;color:var(--brt)}
+  table.ck code{font-family:var(--mono);font-size:12.5px;color:var(--purple);background:rgba(188,140,255,.1);padding:1px 6px;border-radius:5px}
+  table.ck tr:last-child td{border-bottom:none}
+  .pass{color:var(--green);font-weight:700}
+  .fail{color:var(--red);font-weight:700}
+  .partial-txt{color:var(--amber);font-weight:700}
+
+  /* Step */
+  .step{margin:40px 0 0;scroll-margin-top:16px}
+  .step > h3{display:flex;align-items:center;gap:12px;font-size:20px;color:var(--brt);margin:0 0 6px;letter-spacing:-.01em}
+  .num{flex:none;display:inline-grid;place-items:center;width:30px;height:30px;border-radius:8px;background:var(--accent);color:#06101f;font-family:var(--mono);font-weight:700;font-size:14px}
+  .step p.lead{margin:0 0 4px;color:var(--dim);font-size:14.5px}
+
+  /* Terminal */
+  .term{background:var(--panel2);border:1px solid var(--bd);border-radius:11px;overflow:hidden;margin:14px 0}
+  .term-bar{display:flex;align-items:center;gap:7px;padding:9px 13px;background:#0c1017;border-bottom:1px solid var(--bd)}
+  .dot{width:11px;height:11px;border-radius:50%}
+  .dot.r{background:#ff5f56}.dot.y{background:#ffbd2e}.dot.g{background:#27c93f}
+  .term-title{margin-left:9px;color:var(--dim);font-size:12.5px;font-family:var(--mono)}
+  .term pre{margin:0;padding:15px 17px;overflow-x:auto;font-family:var(--mono);font-size:12.7px;line-height:1.6;color:var(--tx);white-space:pre;tab-size:2}
+  .in{color:var(--brt);font-weight:600}
+  .in .p{color:var(--green);user-select:none;margin-right:9px}
+  .cmt{color:#5c6773}
+  .ok{color:var(--green)}
+  .err{color:var(--red)}
+  .warn{color:var(--amber)}
+  .dim{color:var(--dim)}
+  .hl{color:var(--purple)}
+
+  /* Callout */
+  .note{border-left:3px solid var(--accent);background:rgba(88,166,255,.07);padding:13px 17px;border-radius:0 9px 9px 0;margin:15px 0;font-size:14px}
+  .note.trap{border-color:var(--red);background:rgba(255,123,114,.08)}
+  .note.warnb{border-color:var(--amber);background:rgba(210,153,34,.08)}
+  .note.tip{border-color:var(--green);background:rgba(63,185,80,.07)}
+  .note.block{border-color:var(--purple);background:rgba(188,140,255,.08)}
+  .note .tag{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 8px;border-radius:6px;margin-bottom:7px}
+  .note.trap .tag{background:rgba(255,123,114,.18);color:#ff9d96}
+  .note.warnb .tag{background:rgba(210,153,34,.18);color:#e3b341}
+  .note.tip .tag{background:rgba(63,185,80,.18);color:#7ee787}
+  .note.block .tag{background:rgba(188,140,255,.18);color:#d8b8ff}
+  .note b{color:var(--brt)}
+  .note code{font-family:var(--mono);font-size:12.5px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:4px}
+
+  /* Deliverables */
+  .card{border:1px solid var(--bd);background:var(--panel);border-radius:12px;padding:18px 20px;margin:14px 0}
+  .card h4{margin:0 0 10px;color:var(--brt);font-size:15px}
+  ul.files{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px}
+  ul.files li{font-family:var(--mono);font-size:12.5px;padding:8px 11px;border:1px solid var(--bd);border-radius:8px;background:var(--panel2)}
+  ul.files li .fn{color:var(--brt)}
+  ul.files li small{display:block;color:var(--dim);font-family:var(--sans);font-size:11.5px;margin-top:2px}
+
+  footer{margin-top:46px;padding-top:20px;border-top:1px solid var(--bd);color:var(--dim);font-size:13px}
+  .next{display:inline-flex;align-items:center;gap:8px;margin-top:10px;padding:11px 16px;border:1px solid var(--accent);border-radius:9px;color:var(--brt);background:rgba(88,166,255,.08);font-size:14px}
+  .next b{color:var(--accent)}
+  @media (max-width:560px){ .hero h1{font-size:24px} .term pre{font-size:11.6px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <p class="kicker">Embedded AI · 양자화 → 배포 스터디</p>
+    <h1>0.5단계 배포 난이도 사다리 — 실행 로그</h1>
+    <p class="sub"><code>study_guide/02_deployment_ladder.md</code>의 Lv.1~4 + Qualcomm AI Hub를 이 머신에서 실제로 따라 하며 입력한 커맨드와 터미널 출력을 순서대로 정리했습니다. 계정 가입이 필요한 두 구간(Edge Impulse Studio 웹 워크플로, Qualcomm AI Hub 실단말 프로파일링)은 CLI/패키지 설치까지는 실행하고, 그 이후는 "계정 필요로 실행 불가"로 명시했습니다.</p>
+    <div class="chips">
+      <span class="chip"><b>OS</b> Ubuntu 22.04.5 LTS</span>
+      <span class="chip"><b>GPU</b> RTX 3060 12GB</span>
+      <span class="chip"><b>격리</b> conda 없음 → venv로 대체</span>
+      <span class="chip"><b>Date</b> 2026-07-31</span>
+      <span class="chip partial">◐ Lv.1 부분 (CLI만) · Qualcomm AI Hub 부분 (설치만)</span>
+      <span class="chip done">✓ Lv.2 / Lv.3 / Lv.4 완주</span>
+    </div>
+  </div>
+
+  <nav class="toc">
+    <a href="#s0">0 · 환경 준비</a>
+    <a href="#s1">1 · Lv.1 Edge Impulse</a>
+    <a href="#s2">2 · Lv.2 LiteRT</a>
+    <a href="#s3">3 · Lv.3 ONNX Runtime</a>
+    <a href="#s4">4 · Lv.4 ExecuTorch</a>
+    <a href="#s5">5 · Qualcomm AI Hub</a>
+    <a href="#s6">6 · 비교표</a>
+    <a href="#s7">7 · 산출물</a>
+  </nav>
+
+  <h2 class="sec" id="s-ck">체크리스트</h2>
+  <table class="ck">
+    <tr><th>구간</th><th>결과</th><th>핵심 발견</th></tr>
+    <tr><td><code>Lv.0</code> 환경 준비</td><td class="pass">PASS</td><td>conda 미설치 확인 → <code>python3 -m venv</code>로 대체</td></tr>
+    <tr><td><code>Lv.1</code> Edge Impulse</td><td class="partial-txt">PARTIAL (CLI만)</td><td><code>edge-impulse-runner</code>가 <code>edge-impulse-run-impulse</code>로 리네임됨. <code>daemon</code>/<code>run-impulse</code>는 <code>--help</code>를 무시하고 로그인·시리얼 탐색으로 진입</td></tr>
+    <tr><td><code>Lv.2</code> LiteRT</td><td class="pass">PASS</td><td>문서가 "확인 필요"로 플래그한 <code>CompiledModel</code>이 실제로 v2.1.6엔 없음을 확인. PTQ 3종 파일크기는 이론과 일치</td></tr>
+    <tr><td><code>Lv.3</code> ONNX Runtime</td><td class="pass">PASS</td><td>TensorRT EP가 <code>libnvinfer.so.10</code> 미탑재로 무음 CPU-fallback 중이던 버그 발견·수정 (은폐된 성능차 최대 32배)</td></tr>
+    <tr><td><code>Lv.4</code> ExecuTorch</td><td class="pass">PASS</td><td>executorch/torch/torchvision 3자 버전 핀 충돌 2건 발견·수정. <code>torch.export</code> 실패 모드 재현 성공</td></tr>
+    <tr><td>Qualcomm AI Hub</td><td class="partial-txt">PARTIAL (설치만)</td><td>계정 없이 갈 수 있는 최대치까지 진행, 인증 실패를 정상적으로 캡처</td></tr>
+  </table>
+
+  <h2 class="sec" id="s0">0 · 환경 준비</h2>
+  <div class="step">
+    <p class="lead">문서 3장은 레벨별로 <code>conda create -n ladder-litert/ladder-onnx/ladder-et</code> 격리를 지정하지만, 이 머신엔 conda가 없다 (Stage 0 설치 때와 동일한 상황). Stage 0의 선례를 따라 <code>venv</code>로 대체하고, Lv.3은 이미 검증된 <code>~/emb-ai</code>를 재사용한다.</p>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">bash</span></div>
+      <pre><span class="in"><span class="p">$</span> which conda</span>
+<span class="err">(출력 없음 — conda 미설치, exit 1)</span>
+
+<span class="in"><span class="p">$</span> mkdir -p ~/ladder-work/{lv1,lv2,lv3,lv4,aihub}</span>
+<span class="in"><span class="p">$</span> python3 -m venv ~/ladder-litert   <span class="cmt"># Lv.2용</span></span>
+<span class="in"><span class="p">$</span> python3 -m venv ~/ladder-et       <span class="cmt"># Lv.4 + Qualcomm AI Hub용 (문서: "qai-hub도 여기서")</span></span>
+<span class="ok">✓ venv 2개 생성 완료. Lv.3은 새로 만들지 않고 기존 ~/emb-ai 재사용 (torch/onnxruntime-gpu/tensorrt 스택이 이미 실측 검증된 상태)</span></pre>
+    </div>
+    <div class="note block">
+      <span class="tag">계정 필요 구간 처리 정책</span>
+      Lv.1(Edge Impulse Studio 웹 워크플로)과 Qualcomm AI Hub(실단말 프로파일링)는 실제 계정 가입·API
+      토큰이 필요해 이 세션에서 끝까지 실행할 수 없다. 대신 <b>계정 없이 가능한 모든 것</b>(CLI/패키지
+      설치, <code>--help</code>/<code>--version</code>, 실제 인증 실패 에러 캡처)까지는 실행하고, 그 이후는
+      명시적으로 "계정 필요로 실행 불가"로 표기한다.
+    </div>
+  </div>
+
+  <h2 class="sec" id="s1">1 · Lv.1 — Edge Impulse</h2>
+  <div class="step">
+    <h3><span class="num">1</span>CLI 설치 확인</h3>
+    <p class="lead">이 머신엔 <code>edge-impulse-cli</code>가 이미 설치돼 있었다 (npm 전역). 설치된 서브커맨드 구성이 문서와 다르다.</p>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">bash</span></div>
+      <pre><span class="in"><span class="p">$</span> npm list -g --depth=0</span>
+/home/yuyeong/.npm-global/lib
+├── @anthropic-ai/claude-code@2.1.220
+└── <span class="hl">edge-impulse-cli@1.39.2</span>
+
+<span class="in"><span class="p">$</span> ls ~/.npm-global/bin/ | grep -v claude</span>
+edge-impulse-blocks
+edge-impulse-daemon
+edge-impulse-data-forwarder
+edge-impulse-framebuffer2jpg
+<span class="hl">edge-impulse-run-impulse</span>
+edge-impulse-serial-terminal
+edge-impulse-uploader
+himax-flash-tool</pre>
+    </div>
+    <div class="note trap">
+      <span class="tag">함정</span>
+      문서는 4대 CLI 도구 중 하나로 <code>edge-impulse-runner</code>를 언급하지만, 실제 설치된
+      <code>edge-impulse-cli@1.39.2</code>엔 그런 바이너리가 없다 — <code>edge-impulse-run-impulse</code>로
+      이름이 바뀐 것으로 보인다. 반대로 문서에 없는 도구도 4개 더 있다
+      (<code>blocks</code>/<code>serial-terminal</code>/<code>framebuffer2jpg</code>/<code>himax-flash-tool</code>).
+    </div>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">bash</span></div>
+      <pre><span class="in"><span class="p">$</span> edge-impulse-runner --version</span>
+<span class="err">bash: edge-impulse-runner: 명령어를 찾을 수 없음</span>
+<span class="dim">exit code: 127</span>
+
+<span class="in"><span class="p">$</span> edge-impulse-uploader --version</span>
+<span class="ok">1.39.2</span></pre>
+    </div>
+
+    <h3><span class="num">2</span><code>--help</code>가 안 통하는 서브커맨드들</h3>
+    <p class="lead"><code>uploader</code>/<code>blocks</code>는 정상적으로 도움말을 출력하지만, <code>daemon</code>과 <code>run-impulse</code>는 <code>--help</code>를 무시하고 곧바로 대화형 로그인/시리얼 탐색으로 진입한다 — TTY 입력이 없는 자동화 환경에서는 그대로 멈춘다.</p>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">bash · 정상 동작하는 --help</span></div>
+      <pre><span class="in"><span class="p">$</span> timeout 10 edge-impulse-uploader --help &lt;/dev/null</span>
+Usage:
+    edge-impulse-uploader --label glass-breaking --category training path/to/file.wav
+
+See https://docs.edgeimpulse.com/docs/cli-uploader for all arguments
+<span class="dim">exit code: 1</span>
+
+<span class="in"><span class="p">$</span> timeout 8 edge-impulse-blocks --help &lt;/dev/null</span>
+Usage: edge-impulse-blocks [options] [command]
+
+Create, run, and publish custom blocks
+
+Options:
+  -V, --version     output the version number
+  -c --clean        Reset the current user
+  -d --dev          Developer mode
+  --api-key &lt;key&gt;   API key
+  -h, --help        display help for command
+
+Commands:
+  init [options]    Initialize the current folder as a new block
+  push              Push the current block to Edge Impulse
+  runner [options]  Run the current block locally
+  help [command]    display help for command
+<span class="ok">exit code: 0</span></pre>
+    </div>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">bash · --help를 무시하는 서브커맨드</span></div>
+      <pre><span class="in"><span class="p">$</span> timeout 8 edge-impulse-daemon --help &lt;/dev/null</span>
+Edge Impulse serial daemon v1.39.2
+? What is your user name or e-mail address (edgeimpulse.com)? <span class="dim">[대화형 프롬프트 — /dev/null 입력이라 즉시 EOF, timeout이 8초 후 강제종료]</span>
+<span class="err">exit code: 130</span>
+
+<span class="in"><span class="p">$</span> timeout 8 edge-impulse-run-impulse --help &lt;/dev/null</span>
+Edge Impulse impulse runner v1.39.2
+<span class="warn">[SER] Could not find any devices connected over serial port</span>
+<span class="warn">[SER] Retrying in 5 seconds</span>
+<span class="warn">[SER] Could not find any devices connected over serial port</span>
+<span class="warn">[SER] Retrying in 5 seconds</span>
+<span class="err">exit code: 124  (timeout으로 강제종료 — 방치하면 무한 재시도)</span></pre>
+    </div>
+    <div class="note warnb">
+      <span class="tag">자동화 시 주의</span>
+      이 두 서브커맨드는 CI/스크립트에서 <code>--help</code>로 존재 여부만 확인하려 해도 그대로 멈춘다.
+      반드시 <code>timeout N ... &lt;/dev/null</code>로 감싸야 안전하게 종료된다.
+    </div>
+
+    <h3><span class="num">3</span>BYOM(Bring Your Own Model) — 계정 필요로 실행 불가</h3>
+    <div class="note block">
+      <span class="tag">계정 필요</span>
+      ONNX/SavedModel/TFLite/sklearn 모델을 studio.edgeimpulse.com에 업로드하는 BYOM 경로는
+      웹 UI 로그인이 전제라 계정 없이는 진행할 수 없다. CLI 설치·서브커맨드 동작 확인까지가
+      이 세션에서 가능한 최대치다.
+    </div>
+  </div>
+
+  <h2 class="sec" id="s2">2 · Lv.2 — LiteRT (TFLite)</h2>
+  <div class="step">
+    <h3><span class="num">1</span>venv 구성 + 설치</h3>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">bash</span></div>
+      <pre><span class="in"><span class="p">$</span> source ~/ladder-litert/bin/activate</span>
+<span class="in"><span class="p">$</span> pip install ai-edge-litert</span>
+<span class="dim">Downloading ai_edge_litert-2.1.6-cp310-cp310-manylinux_2_27_x86_64.whl (17.3 MB)</span>
+<span class="ok">Successfully installed ai-edge-litert-2.1.6 backports.strenum-1.3.1 flatbuffers-25.12.19 numpy-2.2.6 protobuf-7.35.1 tqdm-4.70.0 typing-extensions-4.16.0</span>
+
+<span class="in"><span class="p">$</span> pip install tensorflow</span>
+<span class="dim">... keras-3.12.4, libclang-18.1.1(24.5MB), grpcio, h5py 등 다수 다운로드 ...</span>
+<span class="ok">Successfully installed absl-py-2.5.0 ... tensorflow-2.21.0 ...</span></pre>
+    </div>
+
+    <h3><span class="num">2</span>PTQ 4종 변환 — <code>lv2_convert.py</code></h3>
+    <p class="lead">미학습 데모 CNN(MNIST 입력 크기)을 FP32 / dynamic-range / float16 / full-INT8 4가지로 변환.</p>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">bash</span></div>
+      <pre><span class="in"><span class="p">$</span> python lv2_convert.py</span>
+<span class="warn">W0000 cuda_executor.cc:1755 Failed to determine cuDNN version (CUDNN_STATUS_INTERNAL_ERROR)</span>
+<span class="warn">W0000 gpu_device.cc:2365 Cannot dlopen some GPU libraries ... Skipping registering GPU devices...</span>
+<span class="dim">(이 venv엔 emb-ai의 LD_LIBRARY_PATH 픽스가 없어 GPU 라이브러리를 못 찾음 — 변환 작업 자체는 CPU로도 무관)</span>
+  model_fp32.tflite             <span class="hl">55.8 KB</span>
+  model_dynamic.tflite          <span class="hl">16.4 KB</span>
+  model_fp16.tflite             <span class="hl">29.7 KB</span>
+fully_quantize: 0, inference_type: 6, input_inference_type: INT8, output_inference_type: INT8
+  model_int8.tflite             <span class="hl">16.5 KB</span></pre>
+    </div>
+    <div class="note tip">
+      <span class="tag">이론과 일치</span>
+      FP32 대비 dynamic/int8은 약 70% 감소 (가중치만 8비트 압축), fp16은 약 47% 감소 — 가중치 절반
+      크기 이론과 부합.
+    </div>
+
+    <h3><span class="num">3</span>추론 — <code>lv2_infer.py</code> (수동 양자화/역양자화)</h3>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">bash</span></div>
+      <pre><span class="in"><span class="p">$</span> python lv2_infer.py</span>
+INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
+model_fp32.tflite      -&gt; argmax=<span class="hl">8</span>
+model_dynamic.tflite   -&gt; argmax=<span class="hl">8</span>
+model_fp16.tflite      -&gt; argmax=<span class="hl">8</span>
+model_int8.tflite      -&gt; argmax=<span class="hl">8</span>
+<span class="ok">✓ 4개 변형 모두 동일 argmax — int8 경로의 scale/zero_point 수동 양자화·역양자화가 정확함을 확인</span></pre>
+    </div>
+
+    <h3><span class="num">4</span><code>lv2_infer_compiled.py</code> — 문서가 "확인 필요"로 플래그한 신규 API</h3>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">bash</span></div>
+      <pre><span class="in"><span class="p">$</span> python lv2_infer_compiled.py</span>
+<span class="err">AttributeError: module 'ai_edge_litert.interpreter' has no attribute 'CompiledModel'</span>
+
+<span class="in"><span class="p">$</span> python -c "import ai_edge_litert.interpreter as it; print([a for a in dir(it) if not a.startswith('_')])"</span>
+['Delegate', 'Interpreter', 'InterpreterWithCustomOps', 'OpResolverType', 'SignatureRunner', ...]</pre>
+    </div>
+    <div class="note warnb">
+      <span class="tag">문서 플래그 확인됨</span>
+      <code>ai-edge-litert==2.1.6</code>(pip 최신)엔 <code>CompiledModel</code>이 실제로 없다 —
+      문서의 "⚠️ 확인 필요" 표시가 정확했다. 이 버전에서 신규 API 경로를 쓰려면 문서 그대로
+      <code>Interpreter</code>(레거시)를 써야 한다.
+    </div>
+
+    <h3><span class="num">5</span>지연시간 벤치 — <code>lv2_bench.py</code></h3>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">bash</span></div>
+      <pre><span class="in"><span class="p">$</span> python lv2_bench.py</span>
+INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
+model_fp32.tflite      avg=0.012 p50=0.011 p95=0.019 ms
+model_dynamic.tflite   avg=0.010 p50=0.009 p95=0.017 ms
+model_fp16.tflite      avg=0.011 p50=0.011 p95=0.012 ms
+model_int8.tflite      avg=0.020 p50=0.020 p95=0.020 ms</pre>
+    </div>
+    <div class="note">
+      데모 모델이 너무 작아(conv 1개+dense 1개, 28×28 입력) 지연시간 차이가 전부 0.01~0.02ms 노이즈
+      수준 — 이 표만으로 "양자화가 더 빠르다"를 결론내릴 수 없다. 지연시간 이득은 모델이 커지고
+      실기기(MCU/NPU)로 갈수록 벌어지는 것이 정상.
+    </div>
+  </div>
+
+  <h2 class="sec" id="s3">3 · Lv.3 — ONNX Runtime</h2>
+  <div class="step">
+    <h3><span class="num">1</span>PyTorch → ONNX 내보내기 — <code>lv3_export.py</code></h3>
+    <p class="lead"><code>~/emb-ai</code> venv 재사용 (torch 2.11.0+cu128 / onnx 1.18.0 / onnxruntime-gpu 1.23.2 — 이미 실측 검증된 스택).</p>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">bash</span></div>
+      <pre><span class="in"><span class="p">$</span> python lv3_export.py</span>
+<span class="dim">(다수의 onnxscript 경고 + 내부 opset 18→17 다운그레이드 변환 시도 중 RuntimeError 발생하지만</span>
+<span class="dim"> 내부적으로 캐치되어 non-fatal — 스크립트는 계속 진행됨)</span>
+<span class="err">RuntimeError: No initializer or constant input to node found  (onnxscript.version_converter, 캐치됨)</span>
+saved resnet18.onnx
+onnx check: OK
+
+<span class="in"><span class="p">$</span> python -c "import onnx; m=onnx.load('resnet18.onnx'); print('ir_version', m.ir_version); print('opset', m.opset_import[0].version)"</span>
+ir_version <span class="hl">10</span>
+opset <span class="hl">18</span>   <span class="cmt"># 요청한 opset_version=17이 아니라 18로 귀결됨</span>
+
+<span class="in"><span class="p">$</span> ls -la resnet18.onnx*</span>
+-rw-rw-r-- 1 yuyeong yuyeong     91,658 resnet18.onnx
+-rw-rw-r-- 1 yuyeong yuyeong 46,792,704 resnet18.onnx.data</pre>
+    </div>
+    <div class="note trap">
+      <span class="tag">함정 · 2건</span>
+      <b>① opset 요청 무시</b>: <code>opset_version=17</code>로 명시해도 torch 2.11의 dynamo 기반
+      exporter가 내부적으로 opset 18로 내보낸 뒤 17로 다운그레이드하려다 실패 — catch되어 스크립트는
+      성공한 것처럼 끝나지만 실제 파일은 opset 18이다. (다행히 ir_version 10 ≤ ORT 1.23.2의 상한 11이라
+      로드/실행엔 문제 없음.)<br>
+      <b>② 파일 분리</b>: <code>print("saved resnet18.onnx")</code>는 파일 하나만 저장된 것처럼 보이지만,
+      실제로는 그래프(<code>.onnx</code>, 91.7KB)와 외부 가중치(<code>.onnx.data</code>, 44.6MB)로 나뉜다.
+      배포 시 이 둘을 항상 같이 옮겨야 한다 — 하나만 복사하면 조용히 깨진다.
+    </div>
+
+    <h3><span class="num">2</span>EP 벤치마크 — <code>lv3_bench.py</code> (수정 전)</h3>
+    <p class="lead">CPU → CUDA → TensorRT를 <code>providers=[...]</code> 우선순위로 전환하며 워밍업 후 측정.</p>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">bash · 최초 실행 (버그 있는 상태)</span></div>
+      <pre><span class="in"><span class="p">$</span> python lv3_bench.py</span>
+CPU       active=CPUExecutionProvider       p50=20.16  p95=...  ms
+CUDA      active=CUDAExecutionProvider      p50= 1.4x  p95=...  ms
+<span class="err">2026-07-31 ... [E:onnxruntime:Default, provider_bridge_ort.cc] ... libnvinfer.so.10: cannot open shared object file: No such file or directory</span>
+<span class="err">Failed to create TensorrtExecutionProvider. ... falling back to other providers</span>
+TensorRT  active=<span class="err">CPUExecutionProvider</span>       p50=<span class="err">11.83</span>  p95=...  ms   <span class="cmt">← 이름은 TensorRT인데 실제 활성 EP는 CPU!</span></pre>
+    </div>
+    <div class="note trap">
+      <span class="tag">함정 · 무음 fallback</span>
+      <code>ort.get_available_providers()</code>엔 <code>TensorrtExecutionProvider</code>가 정상적으로
+      나열되어 있었지만, 실제 <code>InferenceSession</code> 생성 시점엔 <code>libnvinfer.so.10</code>을
+      동적 로더가 못 찾아 조용히 CPU로 폴백하고 있었다. 에러 로그가 stderr에 찍히긴 하지만, 눈여겨보지
+      않으면 "TensorRT 벤치를 돌렸다"고 착각하기 쉬운 상황 — 실제 활성 프로바이더는
+      <code>sess.get_providers()[0]</code>으로 반드시 확인해야 한다.
+    </div>
+
+    <h3><span class="num">3</span>원인 분석 및 수정</h3>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">bash</span></div>
+      <pre><span class="in"><span class="p">$</span> python -c "import os,tensorrt_libs; print(os.path.dirname(tensorrt_libs.__file__))"</span>
+/home/yuyeong/emb-ai/lib/python3.10/site-packages/tensorrt_libs
+<span class="cmt"># libnvinfer.so.10이 여기 있는데 LD_LIBRARY_PATH엔 없었음 —</span>
+<span class="cmt"># 기존 activate 픽스는 cuDNN용 nvidia/*/lib 경로만 잡고 tensorrt_libs는 빠져있었다</span></pre>
+    </div>
+    <p class="lead"><code>~/emb-ai/bin/activate</code>에 <code>tensorrt_libs</code> 경로를 추가:</p>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">diff · ~/emb-ai/bin/activate</span></div>
+      <pre><span class="dim"> # --- emb-ai: NVIDIA libs (venv 번들 cuDNN9/CUDA12 라이브러리를 동적 로더에 노출) ---</span>
+ _EMBAI_NVLIBS=$(python -c "...")
+<span class="ok">+# --- emb-ai: TensorRT libs (tensorrt_cu12_libs가 깐 libnvinfer.so.10 등) ---</span>
+<span class="ok">+_EMBAI_TRTLIBS=$(python -c "import os,tensorrt_libs; print(os.path.dirname(tensorrt_libs.__file__))" 2&gt;/dev/null)</span>
+<span class="err">-if [ -n "$_EMBAI_NVLIBS" ]; then
+-  export LD_LIBRARY_PATH="$_EMBAI_NVLIBS:/usr/local/cuda/lib64:${LD_LIBRARY_PATH:-}"</span>
+<span class="ok">+if [ -n "$_EMBAI_NVLIBS" -o -n "$_EMBAI_TRTLIBS" ]; then
++  export LD_LIBRARY_PATH="$_EMBAI_NVLIBS:$_EMBAI_TRTLIBS:/usr/local/cuda/lib64:${LD_LIBRARY_PATH:-}"</span>
+ fi</pre>
+    </div>
+
+    <h3><span class="num">4</span>EP 벤치마크 — 수정 후 (최종 실측값)</h3>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">bash · 재활성화 후 재실행</span></div>
+      <pre><span class="in"><span class="p">$</span> deactivate &amp;&amp; source ~/emb-ai/bin/activate &amp;&amp; python lv3_bench.py</span>
+CPU       active=CPUExecutionProvider       p50=<span class="hl">13.12</span>  p95=<span class="hl">14.72</span>  avg=12.56  min= 9.86 ms
+CUDA      active=CUDAExecutionProvider      p50=<span class="hl"> 1.40</span>  p95=<span class="hl"> 1.41</span>  avg= 1.40  min= 1.39 ms
+TensorRT  active=<span class="ok">TensorrtExecutionProvider</span>  p50=<span class="hl"> 0.41</span>  p95=<span class="hl"> 0.43</span>  avg= 0.41  min= 0.40 ms
+<span class="dim">real 26.653s</span></pre>
+    </div>
+    <div class="note tip">
+      <span class="tag">수정 확인됨</span>
+      TensorRT가 이제 실제로 활성화되어 CUDA 대비 약 3.4배, CPU 대비 약 32배 빠르다. 수정 전엔
+      "TensorRT p50=11.83ms"라는 그럴듯하지만 거짓인 숫자가 나왔다는 점이 핵심 — 이 버그는
+      <code>05_tensorrt.md</code> 등 TensorRT를 다루는 다른 단계에도 동일하게 영향을 줄 수 있어
+      <code>01_environment_setup.md</code>에도 반영이 필요하다 (아직 미반영, 별도 확인 필요).
+    </div>
+  </div>
+
+  <h2 class="sec" id="s4">4 · Lv.4 — ExecuTorch</h2>
+  <div class="step">
+    <h3><span class="num">1</span>venv 구성 + 설치</h3>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">bash</span></div>
+      <pre><span class="in"><span class="p">$</span> source ~/ladder-et/bin/activate</span>
+<span class="in"><span class="p">$</span> pip install executorch</span>
+<span class="ok">Successfully installed ... executorch-1.3.1 torch-2.13.0 torchao-0.17.0 ...</span>
+
+<span class="in"><span class="p">$</span> pip install torchvision</span>
+<span class="ok">Successfully installed pillow-12.3.0 torchvision-0.28.0</span>
+
+<span class="in"><span class="p">$</span> pip install "qai-hub[torch]"</span>
+<span class="ok">Successfully installed ... qai-hub-0.53.0 ...</span></pre>
+    </div>
+
+    <h3><span class="num">2</span>Export — <code>lv4_export.py</code> (1차, 성공)</h3>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">bash</span></div>
+      <pre><span class="in"><span class="p">$</span> python lv4_export.py</span>
+Downloading: "mobilenet_v2-7ebf99e0.pth" to ~/.cache/torch/hub/checkpoints/ <span class="dim">(13.6 MB)</span>
+① ExportedProgram nodes: <span class="hl">469</span>
+③ mobilenet_v2.pte: <span class="hl">13.35</span> MB</pre>
+    </div>
+
+    <h3><span class="num">3</span>Run — <code>lv4_run.py</code> (1차, 실패)</h3>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">bash</span></div>
+      <pre><span class="in"><span class="p">$</span> python lv4_run.py</span>
+<span class="err">ImportError: .../executorch/extension/pybindings/_portable_lib...so:
+  undefined symbol: _ZN3c104impl3cow23materialize_cow_storageERNS_11StorageImplE</span></pre>
+    </div>
+    <div class="note trap">
+      <span class="tag">함정 · ABI 핀 충돌</span>
+      <code>executorch==1.3.1</code>의 의존성 명세는 <code>torch&gt;=2.12.0a0</code>로 하한만 있어
+      pip는 최신 <code>torch==2.13.0</code>을 골랐지만, executorch의 컴파일된 pybindings
+      확장(<code>_portable_lib...so</code>)은 실제로는 그보다 좁은 ABI에 맞춰 빌드돼 있어 torch 2.13
+      에서 심볼 불일치로 깨진다. <b>버전 제약이 느슨해도 컴파일된 확장은 정확한 ABI를 요구할 수
+      있다</b>는 전형적인 사례.
+    </div>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">bash · 수정: torch 다운그레이드</span></div>
+      <pre><span class="in"><span class="p">$</span> pip install "torch==2.12.1"</span>
+<span class="warn">torchvision 0.28.0 requires torch==2.13.0, but you have torch 2.12.1 which is incompatible.</span>
+
+<span class="in"><span class="p">$</span> python lv4_run.py</span>
+[cpuinfo_utils.cpp] <span class="dim">(ARM SoC 파일 탐색 실패 — x86에서는 정상, 무해한 로그)</span>
+output shape: <span class="ok">torch.Size([1, 1000])</span>   <span class="cmt"># ✓ 성공</span></pre>
+    </div>
+
+    <h3><span class="num">4</span>Break — <code>lv4_break.py</code> (의도된 실패, 정상)</h3>
+    <p class="lead">data-dependent 제어흐름(<code>if x.sum() &gt; 0</code>)이 <code>torch.export</code>를 깨뜨리는지 확인하는 실습.</p>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">bash</span></div>
+      <pre><span class="in"><span class="p">$</span> python lv4_break.py</span>
+def forward(self, arg0_1: "f32[4]"):
+    sum_1 = torch.ops.aten.sum.default(arg0_1)
+    gt = torch.ops.aten.gt.Scalar(sum_1, 0)
+    <span class="cmt"># ... 입력값에 의존하는 심볼릭 불리언을 그래프로 굳히지 못함 ...</span>
+<span class="err">torch.fx.experimental.symbolic_shapes.GuardOnDataDependentSymNode:
+  Could not guard on data-dependent expression Eq(u0, 1)</span></pre>
+    </div>
+    <div class="note tip">
+      <span class="tag">문서 주장 검증됨</span>
+      정확히 문서가 설명한 실패 모드 그대로 재현됐다 — data-dependent 분기는
+      <code>torch.export</code> 단계에서 명확한 에러로 걸러진다 (조용히 틀린 그래프를 만들지 않음).
+    </div>
+
+    <h3><span class="num">5</span>보너스: PT2E INT8 — <code>lv4_quantize.py</code></h3>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">bash · 1차 (torch 2.12.1 + torchvision 0.28.0 — 실패)</span></div>
+      <pre><span class="in"><span class="p">$</span> python lv4_quantize.py</span>
+<span class="err">RuntimeError: operator torchvision::nms does not exist</span></pre>
+    </div>
+    <div class="note trap">
+      <span class="tag">함정 · 3자 핀 충돌</span>
+      앞서 executorch를 고치려고 torch를 2.12.1로 내렸더니, 이번엔 <code>torchvision==0.28.0</code>이
+      (torch==2.13.0 전용으로 컴파일된 커스텀 연산이 있어) import 시점에 깨진다. executorch는
+      torch 2.13을 거부하고, torchvision 0.28은 torch 2.12를 거부하는 <b>서로 반대 방향의 핀 충돌</b>.
+    </div>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">bash · 수정: torch 2.12 계열에 맞는 torchvision으로 교체</span></div>
+      <pre><span class="in"><span class="p">$</span> pip install "torchvision==0.27.1" --no-deps</span>
+<span class="ok">Successfully installed torchvision-0.27.1</span>
+
+<span class="in"><span class="p">$</span> python lv4_quantize.py</span>
+mobilenet_v2_int8.pte: <span class="hl">3.43</span> MB   <span class="cmt"># FP32 13.35MB 대비 약 3.9배 축소</span></pre>
+    </div>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">bash · 최종 조합으로 export+run 재검증</span></div>
+      <pre><span class="in"><span class="p">$</span> python -c "import torch,torchvision; print(torch.__version__, torchvision.__version__)"</span>
+2.12.1+cu130 0.27.1+cu130
+
+<span class="in"><span class="p">$</span> python lv4_export.py &amp;&amp; python lv4_run.py</span>
+① ExportedProgram nodes: 469
+③ mobilenet_v2.pte: 13.35 MB
+output shape: <span class="ok">torch.Size([1, 1000])</span></pre>
+    </div>
+    <div class="note tip">
+      <span class="tag">최종 검증된 조합</span>
+      <code>torch==2.12.1 + torchvision==0.27.1 + executorch==1.3.1</code>로 export→run→break→quantize
+      전 과정이 일관되게 동작함을 확인. <code>pip install executorch</code> 한 줄로는 이 조합이
+      자동으로 나오지 않는다는 점이 이번 레벨의 핵심 함정.
+    </div>
+  </div>
+
+  <h2 class="sec" id="s5">5 · Qualcomm AI Hub</h2>
+  <div class="step">
+    <h3><span class="num">1</span>패키지 설치 및 임포트</h3>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">bash</span></div>
+      <pre><span class="in"><span class="p">$</span> pip show qai-hub</span>
+Name: qai-hub
+Version: <span class="hl">0.53.0</span>
+Home-page: https://aihub.qualcomm.com/
+
+<span class="in"><span class="p">$</span> python -c "import qai_hub as hub; print('OK')"</span>
+<span class="ok">OK</span></pre>
+    </div>
+
+    <h3><span class="num">2</span>인증 없이 <code>get_devices()</code> 호출 — 실패 캡처</h3>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">bash</span></div>
+      <pre><span class="in"><span class="p">$</span> ls ~/.qai_hub/</span>
+<span class="err">ls: '/home/yuyeong/.qai_hub/'에 접근할 수 없음: 그런 파일이나 디렉터리가 없습니다</span>
+
+<span class="in"><span class="p">$</span> python -c "import qai_hub as hub; print(hub.get_devices())"</span>
+<span class="err">qai_hub.client.UserError: Failed to load client configuration file.
+┌────────────────────────────────────────────────────────────────────┐
+| /home/yuyeong/.qai_hub/client.ini not found. Please request access |
+| at https://aihub.qualcomm.com/. If you have access, please refer   |
+| to https://aihub.qualcomm.com/get-started for instructions on      |
+| configuring the API key.                                           |
+└────────────────────────────────────────────────────────────────────┘</span>
+
+<span class="in"><span class="p">$</span> qai-hub configure --help</span>
+usage: qai-hub configure [-h] [--api_token API_TOKEN] [--profile PROFILE] [--verbose] [--no-verbose]
+options:
+  --api_token API_TOKEN   API token (from the accounts tab in the settings page).
+  --profile PROFILE       Alternate client profile. Translates to ~/.qai_hub/PROFILE.ini.</pre>
+    </div>
+    <div class="note block">
+      <span class="tag">계정 필요로 실행 불가</span>
+      패키지·CLI 자체는 정상 동작하며, 에러 메시지도 계정 신청 경로(aihub.qualcomm.com)를 명확히
+      안내한다. 여기부터 <code>submit_compile_job</code> → <code>submit_profile_job</code> →
+      실단말 리포트 조회까지는 실제 API 토큰이 있어야 진행 가능해 이 세션에서는 재현할 수 없다.
+    </div>
+  </div>
+
+  <h2 class="sec" id="s6">6 · 비교표</h2>
+  <div class="step">
+    <p class="lead">측정 환경: Ubuntu 22.04.5 LTS · RTX 3060 12GB · 2026-07-31. 상세는 <code>ladder_notes.md</code> 참고.</p>
+
+    <h3><span class="num">A</span>Lv.2 — LiteRT PTQ 3종 (MNIST 데모 CNN, 미학습 랜덤 가중치)</h3>
+    <table class="ck">
+      <tr><th>모델</th><th>파일 크기</th><th>정확도</th><th>추론 avg/p50/p95 (ms)</th><th>정수-only 배포</th></tr>
+      <tr><td>FP32 baseline</td><td>57,116 B</td><td>N/A*</td><td>0.012 / 0.011 / 0.019</td><td class="fail">✗</td></tr>
+      <tr><td>Dynamic-range PTQ</td><td>16,744 B</td><td>N/A*</td><td>0.010 / 0.009 / 0.017</td><td class="fail">✗</td></tr>
+      <tr><td>Float16 PTQ</td><td>30,388 B</td><td>N/A*</td><td>0.011 / 0.011 / 0.012</td><td class="fail">✗</td></tr>
+      <tr><td>Full-INT8 PTQ</td><td>16,912 B</td><td>N/A*</td><td>0.020 / 0.020 / 0.020</td><td class="pass">✓</td></tr>
+    </table>
+    <p class="lead">* 랜덤 가중치 데모라 정확도는 무의미. 대신 4개 변형의 <code>argmax</code> 일치로 양자화/역양자화 파이프라인 정합성만 확인 (전부 일치).</p>
+
+    <h3><span class="num">B</span>Lv.3 — ONNX Runtime EP별 (ResNet18, ImageNet1K 사전학습)</h3>
+    <table class="ck">
+      <tr><th>EP</th><th>실제 활성 provider</th><th>p50 (ms)</th><th>p95 (ms)</th><th>비고</th></tr>
+      <tr><td>CPU</td><td><code>CPUExecutionProvider</code></td><td>13.12</td><td>14.72</td><td>baseline</td></tr>
+      <tr><td>CUDA</td><td><code>CUDAExecutionProvider</code></td><td>1.40</td><td>1.41</td><td>CPU 대비 ×9.4</td></tr>
+      <tr><td>TensorRT</td><td><code>TensorrtExecutionProvider</code></td><td>0.41</td><td>0.43</td><td>CUDA 대비 ×3.4, CPU 대비 ×32 (수정 후 실측)</td></tr>
+    </table>
+
+    <h3><span class="num">C</span>공통 골격이 레벨별로 드러나는 정도</h3>
+    <p class="lead">① 원본 모델 → ② 변환 → ③ 양자화 → ④ 배포/실행 → ⑤ fallback 중 코드로 직접 보이는 부분:</p>
+    <table class="ck">
+      <tr><th>레벨</th><th>보이는 것</th><th>숨겨진 것</th></tr>
+      <tr><td>Lv.1 Edge Impulse</td><td>(거의 없음 — 웹 UI 뒤)</td><td>①~⑤ 전부</td></tr>
+      <tr><td>Lv.2 LiteRT</td><td>② 변환, ③ 양자화</td><td>④ 배포(Interpreter 내부), ⑤ fallback</td></tr>
+      <tr><td>Lv.3 ONNX Runtime</td><td>② 변환, ④ 배포, ⑤ fallback(<code>providers=[...]</code> 순서)</td><td>③ 양자화 세부 (여기선 미양자화 벤치)</td></tr>
+      <tr><td>Lv.4 ExecuTorch</td><td>①~⑤ 거의 전부 (export/lower/quantize가 각각 별도 API 호출)</td><td>(거의 없음)</td></tr>
+      <tr><td>Qualcomm AI Hub</td><td>컴파일 잡 제출/결과 조회</td><td>④⑤가 "실단말 프로파일 리포트"로 대체됨</td></tr>
+    </table>
+  </div>
+
+  <h2 class="sec" id="s7">7 · 산출물</h2>
+  <div class="step">
+    <div class="card">
+      <h4>이 실습에서 생성된 파일</h4>
+      <ul class="files">
+        <li><span class="fn">~/ladder-work/lv2/model_{fp32,dynamic,fp16,int8}.tflite</span><small>Lv.2 PTQ 4종 (16.4~55.8 KB)</small></li>
+        <li><span class="fn">~/ladder-work/lv3/resnet18.onnx(.data)</span><small>Lv.3 ONNX export (91.7 KB + 44.6 MB)</small></li>
+        <li><span class="fn">~/ladder-work/lv4/mobilenet_v2.pte</span><small>Lv.4 XNNPACK FP32 (13.35 MB)</small></li>
+        <li><span class="fn">~/ladder-work/lv4/mobilenet_v2_int8.pte</span><small>Lv.4 PT2E INT8 보너스 (3.43 MB)</small></li>
+        <li><span class="fn">~/ladder-work/ladder_notes.md</span><small>비교표 + 골격 매핑 서술</small></li>
+        <li><span class="fn">~/emb-ai/bin/activate (수정)</span><small>TensorRT libnvinfer.so.10 LD_LIBRARY_PATH 픽스</small></li>
+        <li><span class="fn">logs/stage0.5_ladder_log.html</span><small>본 실행 로그</small></li>
+      </ul>
+    </div>
+    <div class="note warnb">
+      <span class="tag">후속 확인 필요</span>
+      <code>01_environment_setup.md</code> 3-4-a 절에 이번에 발견한 <code>tensorrt_libs</code>
+      LD_LIBRARY_PATH 픽스가 아직 반영되지 않았다 — TensorRT를 다루는 후속 단계(<code>05_tensorrt.md</code>)
+      실습 전에 문서 반영 여부를 결정해야 한다.
+    </div>
+  </div>
+
+  <footer>
+    실행: 2026-07-31 · Ubuntu 22.04.5 LTS · RTX 3060 12GB<br>
+    <div class="next">▸ <b>다음:</b> 01_environment_setup.md TensorRT 픽스 반영 여부 결정 → 1단계(양자화 이론) 진행</div>
+  </footer>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>0단계 환경 준비 — 실행 로그</title>
+<style>
+  :root{
+    --bg:#0b0e14; --panel:#131720; --panel2:#0f131b; --bd:#242b38;
+    --tx:#c9d1d9; --dim:#8b949e; --brt:#e6edf3;
+    --accent:#58a6ff; --green:#3fb950; --amber:#d29922; --red:#ff7b72; --purple:#bc8cff;
+    --mono:'JetBrains Mono','SF Mono',ui-monospace,'Cascadia Code',Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans KR','Malgun Gothic',sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--tx);font-family:var(--sans);line-height:1.65;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:980px;margin:0 auto;padding:0 20px 120px}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  /* Hero */
+  .hero{padding:48px 0 26px;border-bottom:1px solid var(--bd);margin-bottom:8px}
+  .kicker{font-family:var(--mono);font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+  .hero h1{margin:0 0 10px;font-size:30px;line-height:1.25;color:var(--brt);letter-spacing:-.01em}
+  .hero p.sub{margin:0 0 20px;color:var(--dim);font-size:15px;max-width:70ch}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{font-family:var(--mono);font-size:12px;padding:5px 10px;border:1px solid var(--bd);border-radius:999px;background:var(--panel);color:var(--tx)}
+  .chip b{color:var(--brt);font-weight:600}
+  .chip.done{border-color:rgba(63,185,80,.5);background:rgba(63,185,80,.12);color:#7ee787}
+
+  /* TOC */
+  nav.toc{display:flex;flex-wrap:wrap;gap:8px;margin:26px 0 6px}
+  nav.toc a{font-family:var(--mono);font-size:12.5px;padding:6px 11px;border:1px solid var(--bd);border-radius:8px;background:var(--panel);color:var(--tx)}
+  nav.toc a:hover{border-color:var(--accent);text-decoration:none;color:var(--brt)}
+
+  h2.sec{font-size:13px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin:38px 0 12px;font-weight:600}
+
+  /* Checklist table */
+  table.ck{width:100%;border-collapse:collapse;margin:6px 0 8px;font-size:14px;border:1px solid var(--bd);border-radius:10px;overflow:hidden}
+  table.ck th,table.ck td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--bd);vertical-align:top}
+  table.ck th{background:var(--panel);color:var(--dim);font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.05em}
+  table.ck td:first-child{white-space:nowrap;color:var(--brt)}
+  table.ck code{font-family:var(--mono);font-size:12.5px;color:var(--purple);background:rgba(188,140,255,.1);padding:1px 6px;border-radius:5px}
+  table.ck tr:last-child td{border-bottom:none}
+  .pass{color:var(--green);font-weight:700}
+
+  /* Step */
+  .step{margin:40px 0 0;scroll-margin-top:16px}
+  .step > h3{display:flex;align-items:center;gap:12px;font-size:20px;color:var(--brt);margin:0 0 6px;letter-spacing:-.01em}
+  .num{flex:none;display:inline-grid;place-items:center;width:30px;height:30px;border-radius:8px;background:var(--accent);color:#06101f;font-family:var(--mono);font-weight:700;font-size:14px}
+  .step p.lead{margin:0 0 4px;color:var(--dim);font-size:14.5px}
+
+  /* Terminal */
+  .term{background:var(--panel2);border:1px solid var(--bd);border-radius:11px;overflow:hidden;margin:14px 0}
+  .term-bar{display:flex;align-items:center;gap:7px;padding:9px 13px;background:#0c1017;border-bottom:1px solid var(--bd)}
+  .dot{width:11px;height:11px;border-radius:50%}
+  .dot.r{background:#ff5f56}.dot.y{background:#ffbd2e}.dot.g{background:#27c93f}
+  .term-title{margin-left:9px;color:var(--dim);font-size:12.5px;font-family:var(--mono)}
+  .term pre{margin:0;padding:15px 17px;overflow-x:auto;font-family:var(--mono);font-size:12.7px;line-height:1.6;color:var(--tx);white-space:pre;tab-size:2}
+  .in{color:var(--brt);font-weight:600}
+  .in .p{color:var(--green);user-select:none;margin-right:9px}
+  .cmt{color:#5c6773}
+  .ok{color:var(--green)}
+  .err{color:var(--red)}
+  .warn{color:var(--amber)}
+  .dim{color:var(--dim)}
+  .hl{color:var(--purple)}
+
+  /* Callout */
+  .note{border-left:3px solid var(--accent);background:rgba(88,166,255,.07);padding:13px 17px;border-radius:0 9px 9px 0;margin:15px 0;font-size:14px}
+  .note.trap{border-color:var(--red);background:rgba(255,123,114,.08)}
+  .note.warnb{border-color:var(--amber);background:rgba(210,153,34,.08)}
+  .note.tip{border-color:var(--green);background:rgba(63,185,80,.07)}
+  .note .tag{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 8px;border-radius:6px;margin-bottom:7px}
+  .note.trap .tag{background:rgba(255,123,114,.18);color:#ff9d96}
+  .note.warnb .tag{background:rgba(210,153,34,.18);color:#e3b341}
+  .note.tip .tag{background:rgba(63,185,80,.18);color:#7ee787}
+  .note b{color:var(--brt)}
+  .note code{font-family:var(--mono);font-size:12.5px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:4px}
+
+  /* Deliverables */
+  .card{border:1px solid var(--bd);background:var(--panel);border-radius:12px;padding:18px 20px;margin:14px 0}
+  .card h4{margin:0 0 10px;color:var(--brt);font-size:15px}
+  ul.files{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px}
+  ul.files li{font-family:var(--mono);font-size:12.5px;padding:8px 11px;border:1px solid var(--bd);border-radius:8px;background:var(--panel2)}
+  ul.files li .fn{color:var(--brt)}
+  ul.files li small{display:block;color:var(--dim);font-family:var(--sans);font-size:11.5px;margin-top:2px}
+
+  footer{margin-top:46px;padding-top:20px;border-top:1px solid var(--bd);color:var(--dim);font-size:13px}
+  .next{display:inline-flex;align-items:center;gap:8px;margin-top:10px;padding:11px 16px;border:1px solid var(--accent);border-radius:9px;color:var(--brt);background:rgba(88,166,255,.08);font-size:14px}
+  .next b{color:var(--accent)}
+  @media (max-width:560px){ .hero h1{font-size:24px} .term pre{font-size:11.6px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <p class="kicker">Embedded AI · 양자화 → 배포 스터디</p>
+    <h1>0단계 환경 준비 — 실행 로그</h1>
+    <p class="sub"><code>study_guide/01_environment_setup.md</code>를 이 머신에서 실제로 따라 하며 입력한 커맨드와 터미널 출력을 순서대로 정리했습니다. 중간에 실제로 부딪힌 함정 4가지와 해결 과정을 함께 담았습니다.</p>
+    <div class="chips">
+      <span class="chip"><b>OS</b> Ubuntu 22.04.5 LTS</span>
+      <span class="chip"><b>GPU</b> RTX 3060 12GB</span>
+      <span class="chip"><b>Driver</b> 595.71.05</span>
+      <span class="chip"><b>경로</b> A · 호스트 pip / CUDA 12</span>
+      <span class="chip"><b>Date</b> 2026-07-28</span>
+      <span class="chip done">✓ 0단계 완료</span>
+    </div>
+  </div>
+
+  <nav class="toc">
+    <a href="#s0">0 · 진단</a>
+    <a href="#s1">1 · 사전 패키지</a>
+    <a href="#s2">2 · CUDA 12.8</a>
+    <a href="#s3">3 · venv + 프레임워크</a>
+    <a href="#s4">4 · 검증 + 함정 해결</a>
+    <a href="#s5">5 · Docker</a>
+    <a href="#s6">6 · nuScenes</a>
+    <a href="#s7">7 · 산출물</a>
+  </nav>
+
+  <h2 class="sec">완료 체크리스트 (검증 결과)</h2>
+  <table class="ck">
+    <tr><th>검증 항목</th><th>명령</th><th>결과</th></tr>
+    <tr><td>호스트 GPU</td><td><code>nvidia-smi</code></td><td><span class="pass">✓</span> RTX 3060, 드라이버 595.71.05</td></tr>
+    <tr><td>컨테이너 GPU</td><td><code>docker run --gpus all … nvidia-smi</code></td><td><span class="pass">✓</span> passthrough OK</td></tr>
+    <tr><td>CUDA 컴파일러</td><td><code>nvcc --version</code></td><td><span class="pass">✓</span> release 12.8.93</td></tr>
+    <tr><td>스택 정합</td><td><code>verify_env.py</code></td><td><span class="pass">✓</span> torch·ORT·TensorRT = CUDA 12</td></tr>
+    <tr><td>CUDA EP 실활성</td><td><code>verify_cuda_ep.py</code></td><td><span class="pass">✓</span> 조용한 CPU fallback 없음</td></tr>
+    <tr><td>데이터셋</td><td><code>load_nuscenes.py</code></td><td><span class="pass">✓</span> scenes: 10 / samples: 404</td></tr>
+  </table>
+
+  <!-- ===================== STEP 0 ===================== -->
+  <div class="step" id="s0">
+    <h3><span class="num">0</span>현재 상태 진단</h3>
+    <p class="lead">무엇을 새로 깔아야 하는지 먼저 파악 — 드라이버가 이미 있으면 3-1(드라이버 설치+재부팅)을 건너뛸 수 있습니다.</p>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">OS · GPU · 드라이버 진단</span></div>
+<pre><span class="in"><span class="p">$</span> . /etc/os-release; echo "$PRETTY_NAME"; uname -r</span>
+Ubuntu 22.04.5 LTS
+6.8.0-124-generic
+<span class="in"><span class="p">$</span> grep -qi microsoft /proc/version &amp;&amp; echo WSL2 || echo "네이티브 리눅스"</span>
+네이티브 리눅스
+<span class="in"><span class="p">$</span> lspci | grep -i -E "vga|nvidia"</span>
+01:00.0 VGA compatible controller: NVIDIA Corporation GA106 [GeForce RTX 3060 Lite Hash Rate] (rev a1)
+<span class="in"><span class="p">$</span> nvidia-smi</span>
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 595.71.05              Driver Version: 595.71.05      CUDA Version: 13.2     |
+|-----------------------------------------+------------------------+----------------------+
+|   0  NVIDIA GeForce RTX 3060        Off |   00000000:01:00.0 Off |                  N/A |
+| 30%   34C    P8              9W /  170W |      32MiB /  12288MiB |      0%      Default |
++-----------------------------------------+------------------------+----------------------+
+<span class="in"><span class="p">$</span> ubuntu-drivers devices | grep -E "driver|model"</span>
+model    : GA106 [GeForce RTX 3060 Lite Hash Rate]
+driver   : nvidia-driver-595-open - distro non-free <span class="hl">recommended</span></pre>
+    </div>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">설치 필요 항목 진단</span></div>
+<pre><span class="in"><span class="p">$</span> command -v nvcc || echo "nvcc 없음"</span>
+<span class="err">nvcc 없음</span>
+<span class="in"><span class="p">$</span> command -v docker || echo "docker 없음"</span>
+<span class="err">docker 없음</span>
+<span class="in"><span class="p">$</span> command -v nvidia-ctk || echo "nvidia-ctk 없음"</span>
+<span class="err">nvidia-ctk 없음</span>
+<span class="in"><span class="p">$</span> python3 --version; dpkg -l | grep -q python3.10-venv || echo "venv 미설치"</span>
+Python 3.10.12
+<span class="err">python3.10-venv 미설치</span>
+<span class="in"><span class="p">$</span> ls /data/sets/nuscenes 2&gt;/dev/null || echo "데이터 없음"</span>
+<span class="err">/data/sets/nuscenes 없음</span></pre>
+    </div>
+    <div class="note tip"><span class="tag">판단</span> 드라이버 <b>595.71.05</b>가 이미 설치돼 있고 CUDA 상한 13.2 ≥ 12.8 → <b>3-1 드라이버 설치·재부팅 생략</b>. CUDA Toolkit·Docker·venv·데이터셋만 새로 설치하면 됨.</div>
+  </div>
+
+  <!-- ===================== STEP 1 ===================== -->
+  <div class="step" id="s1">
+    <h3><span class="num">1</span>sudo 확인 + 사전 패키지</h3>
+    <p class="lead">이후 sudo는 세션 내에서 <code>sudo -v</code>로 자격을 캐시해 재사용. 드라이버가 이미 정상이라 가이드의 <code>apt-get upgrade -y</code>(신규 커널로 DKMS 흔들 수 있음)는 생략하고 <code>update</code>만.</p>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">venv + build tools</span></div>
+<pre><span class="in"><span class="p">$</span> echo '&lt;암호&gt;' | sudo -S -v      <span class="cmt"># 비밀번호로 자격 캐시 (실제 값은 마스킹)</span></span>
+<span class="ok">sudo OK (비밀번호 확인됨)</span>
+<span class="in"><span class="p">$</span> sudo apt-get update -qq</span>
+<span class="in"><span class="p">$</span> sudo apt-get install -y python3.10-venv build-essential dkms</span>
+python3.10-venv (3.10.12-1~22.04.16) 설정하는 중입니다 ...
+Processing triggers for libc-bin (2.35-0ubuntu3.13) ...</pre>
+    </div>
+  </div>
+
+  <!-- ===================== STEP 2 ===================== -->
+  <div class="step" id="s2">
+    <h3><span class="num">2</span>CUDA Toolkit 12.8</h3>
+    <p class="lead">deb(network) 방식. <code>cuda</code>(최신 13.x) 대신 <b><code>cuda-toolkit-12-8</code></b>로 못 박아 PyTorch cu128과 CUDA major를 맞춤. 드라이버 메타패키지를 끌어오지 않음.</p>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">저장소 등록 + 설치</span></div>
+<pre><span class="in"><span class="p">$</span> wget -q https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb</span>
+<span class="in"><span class="p">$</span> sudo dpkg -i cuda-keyring_1.1-1_all.deb &amp;&amp; sudo apt-get update -qq</span>
+<span class="in"><span class="p">$</span> apt-cache policy cuda-toolkit-12-8</span>
+  후보: <span class="hl">12.8.2-1</span>
+<span class="in"><span class="p">$</span> sudo apt-get install -y cuda-toolkit-12-8      <span class="cmt"># 백그라운드 · 수 GB</span></span>
+<span class="ok">EXIT_STATUS=0</span></pre>
+    </div>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">PATH 등록 + nvcc 검증</span></div>
+<pre><span class="in"><span class="p">$</span> echo 'export PATH=/usr/local/cuda/bin:$PATH' &gt;&gt; ~/.bashrc</span>
+<span class="in"><span class="p">$</span> echo 'export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH' &gt;&gt; ~/.bashrc</span>
+<span class="in"><span class="p">$</span> ls -l /usr/local/cuda</span>
+/usr/local/cuda -&gt; /etc/alternatives/cuda  (→ <span class="hl">/usr/local/cuda-12.8</span>)
+<span class="in"><span class="p">$</span> nvcc --version | grep release</span>
+Cuda compilation tools, release <span class="ok">12.8</span>, V12.8.93</pre>
+    </div>
+  </div>
+
+  <!-- ===================== STEP 3 ===================== -->
+  <div class="step" id="s3">
+    <h3><span class="num">3</span>venv + 프레임워크 (경로 A)</h3>
+    <p class="lead">CUDA 12 라인으로 버전을 명시 고정. onnxruntime-gpu는 PyPI 기본(CUDA 13)을 피하는 게 핵심.</p>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">venv + PyTorch (cu128)</span></div>
+<pre><span class="in"><span class="p">$</span> python3 -m venv ~/emb-ai &amp;&amp; source ~/emb-ai/bin/activate</span>
+<span class="in"><span class="p">$</span> pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128</span>
+Successfully installed <span class="ok">torch-2.11.0+cu128</span> torchvision-0.26.0+cu128 torchaudio-2.11.0+cu128
+  nvidia-cudnn-cu12-9.19.0.56 nvidia-cuda-runtime-cu12-12.8.90 ...</pre>
+    </div>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">onnx + onnxruntime-gpu</span></div>
+<pre><span class="in"><span class="p">$</span> pip install onnx</span>
+onnx <span class="hl">1.22.0</span>
+<span class="in"><span class="p">$</span> pip install onnxruntime-gpu==1.28.0 --index-url .../onnxruntime-cuda-12/pypi/simple/</span>
+<span class="err">ERROR: Could not find a version that satisfies onnxruntime-gpu==1.28.0</span>
+<span class="err">  (from versions: 1.17.0, 1.17.1, 1.18.0, 1.18.1, 1.19.2, 1.20.0.dev..., 1.21.0.dev...)</span>
+<span class="in"><span class="p">$</span> pip install "onnxruntime-gpu&lt;1.27"      <span class="cmt"># PyPI의 CUDA-12 최신(1.27부터 CUDA13)</span></span>
+Successfully installed <span class="ok">onnxruntime-gpu-1.23.2</span>
+<span class="in"><span class="p">$</span> python -c "import onnxruntime as ort; print(ort.get_available_providers())"</span>
+['TensorrtExecutionProvider', 'CUDAExecutionProvider', 'CPUExecutionProvider']</pre>
+    </div>
+    <div class="note trap"><span class="tag">함정 ①</span> 가이드가 고정한 <b><code>onnxruntime-gpu==1.28.0</code>은 CUDA-12 전용 피드에 존재하지 않았음</b>(최신 stable 1.19.2). 대신 "1.27부터 PyPI 기본이 CUDA 13"이라는 근거로 <code>&lt;1.27</code>을 설치 → cp310 CUDA-12 최신 <b>1.23.2</b> 확보.</div>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">TensorRT + polygraphy</span></div>
+<pre><span class="in"><span class="p">$</span> pip install "tensorrt-cu12==10.16.1.11"</span>
+Successfully installed <span class="ok">tensorrt-cu12-10.16.1.11</span> tensorrt_cu12_libs-10.16.1.11 tensorrt_cu12_bindings-10.16.1.11
+<span class="in"><span class="p">$</span> pip install polygraphy</span>
+polygraphy <span class="ok">0.50.3</span></pre>
+    </div>
+  </div>
+
+  <!-- ===================== STEP 4 ===================== -->
+  <div class="step" id="s4">
+    <h3><span class="num">4</span>검증 스크립트 + 함정 해결</h3>
+    <p class="lead">단순 import 확인을 넘어, <b>CUDA EP가 실제로 세션을 잡는지</b>까지 확인 — 가이드가 경고한 "조용한 CPU fallback"이 여기서 실제로 재현됩니다.</p>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">verify_env.py — 스택 정합</span></div>
+<pre><span class="in"><span class="p">$</span> python verify_env.py</span>
+torch: 2.11.0+cu128 | CUDA available: <span class="ok">True</span>   GPU: NVIDIA GeForce RTX 3060
+onnx: 1.18.0   onnxruntime: 1.23.2   TensorRT: 10.16.1.11
+ORT providers: ['TensorrtExecutionProvider', 'CUDAExecutionProvider', 'CPUExecutionProvider']
+<span class="ok">OK: CUDA 12 스택 정합</span></pre>
+    </div>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">verify_cuda_ep.py — 1차 시도 (IR 오류)</span></div>
+<pre><span class="in"><span class="p">$</span> python verify_cuda_ep.py</span>
+<span class="err">onnxruntime ... FAIL : Unsupported model IR version: 13, max supported IR version: 11</span></pre>
+    </div>
+    <div class="note warnb"><span class="tag">함정 ②</span> <b>onnx 1.22.0(IR 13)</b>이 만든 모델을 <b>ORT 1.23.2(max IR 11)</b>가 거부. ORT가 상한이므로 onnx를 낮춤 → <code>pip install onnx==1.18.0</code> (IR_VERSION=11).</div>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">verify_cuda_ep.py — 2차 시도 (CPU fallback!)</span></div>
+<pre><span class="in"><span class="p">$</span> pip install onnx==1.18.0 &amp;&amp; python verify_cuda_ep.py</span>
+<span class="err">[E:...] Failed to load library libonnxruntime_providers_cuda.so</span>
+<span class="err">  with error: libcudnn.so.9: cannot open shared object file</span>
+<span class="warn">[W:...] Failed to create CUDAExecutionProvider. Require cuDNN 9.* and CUDA 12.*</span>
+실제 활성 providers: <span class="err">['CPUExecutionProvider']</span>
+<span class="err">AssertionError: CUDA로 세션이 안 잡힘 → CPU fallback</span></pre>
+    </div>
+    <div class="note trap"><span class="tag">함정 ③ · 핵심</span> 가이드가 경고한 <b>"조용한 CPU fallback"이 실제로 재현</b>. cuDNN 9는 CUDA toolkit deb에 없고 torch가 <code>nvidia-cudnn-cu12</code>로 venv에 넣는데, ORT가 그 <code>libcudnn.so.9</code>를 못 찾음. → venv 번들 <code>nvidia/*/lib</code>를 <code>LD_LIBRARY_PATH</code>에 노출.</div>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">해결 + activate에 영구 반영</span></div>
+<pre><span class="in"><span class="p">$</span> find ~/emb-ai -name libcudnn.so.9</span>
+~/emb-ai/lib/python3.10/site-packages/nvidia/cudnn/lib/libcudnn.so.9
+<span class="in"><span class="p">$</span> <span class="cmt"># ~/emb-ai/bin/activate 끝에 nvidia/*/lib + /usr/local/cuda/lib64 를</span></span>
+<span class="in"><span class="p">$</span> <span class="cmt"># LD_LIBRARY_PATH로 추가하는 블록 삽입 (activate 시 동적 계산)</span></span>
+<span class="in"><span class="p">$</span> bash -lc 'source ~/emb-ai/bin/activate &amp;&amp; python verify_cuda_ep.py'</span>
+실제 활성 providers: <span class="ok">['CUDAExecutionProvider', 'CPUExecutionProvider']</span>
+추론 결과: [[1. 1. 1. 1.]]
+<span class="ok">OK: CUDAExecutionProvider 실제 활성</span></pre>
+    </div>
+    <div class="note tip"><span class="tag">결과</span> 이제 <code>source ~/emb-ai/bin/activate</code>만 하면 cuDNN 경로가 자동 설정 → 모든 후속 단계에서 CUDA EP가 정상 활성화됩니다.</div>
+  </div>
+
+  <!-- ===================== STEP 5 ===================== -->
+  <div class="step" id="s5">
+    <h3><span class="num">5</span>Docker + NVIDIA Container Toolkit</h3>
+    <p class="lead">0단계 완료 조건이자 4단계(멀티 SoC)의 격리 이미지 기반. 현재 셸은 docker 그룹 미적용이라 검증은 <code>sudo docker</code>로.</p>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">Docker Engine + hello-world</span></div>
+<pre><span class="in"><span class="p">$</span> <span class="cmt"># Docker 공식 GPG 키 + 저장소 등록 후</span></span>
+<span class="in"><span class="p">$</span> sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin</span>
+<span class="in"><span class="p">$</span> docker --version; systemctl is-active docker</span>
+Docker version <span class="ok">29.6.2</span>, build dfc4efb
+<span class="ok">active</span>
+<span class="in"><span class="p">$</span> sudo usermod -aG docker $USER      <span class="cmt"># 적용은 재로그인 후</span></span>
+<span class="in"><span class="p">$</span> sudo docker run --rm hello-world</span>
+<span class="ok">Hello from Docker!</span></pre>
+    </div>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">Container Toolkit + GPU passthrough 검증</span></div>
+<pre><span class="in"><span class="p">$</span> sudo apt-get install -y nvidia-container-toolkit</span>
+NVIDIA Container Toolkit CLI version <span class="ok">1.19.1</span>
+<span class="in"><span class="p">$</span> sudo nvidia-ctk runtime configure --runtime=docker &amp;&amp; sudo systemctl restart docker</span>
+Wrote updated config to /etc/docker/daemon.json
+<span class="in"><span class="p">$</span> sudo docker run --rm --gpus all nvidia/cuda:12.8.0-base-ubuntu22.04 nvidia-smi</span>
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 595.71.05              Driver Version: 595.71.05      CUDA Version: 13.2     |
+|   0  NVIDIA GeForce RTX 3060        Off |   00000000:01:00.0 Off |                  N/A |
++-----------------------------------------------------------------------------------------+
+<span class="ok">→ 컨테이너 안에서 RTX 3060 정상 인식</span></pre>
+    </div>
+  </div>
+
+  <!-- ===================== STEP 6 ===================== -->
+  <div class="step" id="s6">
+    <h3><span class="num">6</span>nuScenes mini 데이터셋</h3>
+    <p class="lead">다운로드가 로그인 페이지가 아닌지 헤더로 먼저 probe → 실제 tar 파일이면 받고 해제 후 devkit 로드.</p>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">probe → 다운로드 → 해제</span></div>
+<pre><span class="in"><span class="p">$</span> curl -sIL https://www.nuscenes.org/data/v1.0-mini.tgz | grep -iE "HTTP|content-"</span>
+HTTP/2 <span class="ok">200</span>
+content-type: <span class="ok">application/x-tar</span>
+content-length: 4167696325      <span class="cmt"># ~3.9GB · 로그인 불필요, 직접 다운로드 가능</span>
+<span class="in"><span class="p">$</span> wget -O v1.0-mini.tgz https://www.nuscenes.org/data/v1.0-mini.tgz   <span class="cmt"># 백그라운드</span></span>
+DL_EXIT=0   크기: 3.9G   (4167696325 bytes — content-length와 정확히 일치)
+<span class="in"><span class="p">$</span> tar -xf v1.0-mini.tgz &amp;&amp; ls</span>
+maps/  samples/  sweeps/  v1.0-mini/      <span class="cmt"># 4개 폴더 정상</span></pre>
+    </div>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">devkit 설치 + 로드 확인</span></div>
+<pre><span class="in"><span class="p">$</span> pip install nuscenes-devkit</span>
+Successfully installed nuscenes-devkit-1.2.0 ...
+  Uninstalling numpy-2.2.6 → <span class="warn">numpy-1.26.4</span>
+<span class="in"><span class="p">$</span> python -c "import torch,onnxruntime; print(torch.cuda.is_available())"   <span class="cmt"># core 무결성</span></span>
+<span class="ok">True</span>   <span class="dim"># torch 2.11.0+cu128 / ort 1.23.2 — numpy 1.26.4에서도 정상</span>
+<span class="in"><span class="p">$</span> python load_nuscenes.py</span>
+Loading NuScenes tables for version v1.0-mini...
+10 scene, 404 sample, 18538 sample_annotation, ... Done loading in 0.394 seconds.
+scenes: <span class="ok">10</span>   samples: <span class="ok">404</span></pre>
+    </div>
+    <div class="note warnb"><span class="tag">함정 ④</span> <b>nuscenes-devkit 1.2.0이 numpy&lt;2를 요구</b>해 2.2.6 → 1.26.4로 다운그레이드. torch·ORT·TensorRT 모두 1.26.4에서 정상 동작 확인 → 수용.</div>
+  </div>
+
+  <!-- ===================== STEP 7 ===================== -->
+  <div class="step" id="s7">
+    <h3><span class="num">7</span>산출물 &amp; 완료</h3>
+    <p class="lead">재현성을 위해 <code>~/emb-ai-work/</code>에 검증 스크립트·스냅샷·핀 목록을 남김.</p>
+    <div class="card">
+      <h4>📦 산출물 (<code>~/emb-ai-work/</code>)</h4>
+      <ul class="files">
+        <li><span class="fn">ENV.md</span><small>전체 스냅샷 + 가이드 대비 조정 5건</small></li>
+        <li><span class="fn">requirements.txt</span><small>pip freeze · 200개 버전 핀</small></li>
+        <li><span class="fn">verify_env.py</span><small>스택 정합 점검</small></li>
+        <li><span class="fn">verify_cuda_ep.py</span><small>CUDA EP 실활성 점검</small></li>
+        <li><span class="fn">load_nuscenes.py</span><small>데이터셋 로드 확인</small></li>
+        <li><span class="fn">/data/sets/nuscenes</span><small>nuScenes v1.0-mini</small></li>
+      </ul>
+    </div>
+    <div class="card">
+      <h4>🔧 확정 스택</h4>
+<pre style="margin:0;font-family:var(--mono);font-size:12.7px;line-height:1.7;color:var(--tx);white-space:pre-wrap">nvcc 12.8.93 · torch 2.11.0+cu128 · onnxruntime-gpu 1.23.2 (CUDA 12) · onnx 1.18.0 (IR 11)
+tensorrt-cu12 10.16.1.11 · polygraphy 0.50.3 · numpy 1.26.4
+Docker 29.6.2 · NVIDIA Container Toolkit 1.19.1</pre>
+    </div>
+  </div>
+
+  <footer>
+    <div>모든 명령은 실제 실행·검증한 결과입니다. 시작할 때는 항상 <code style="font-family:var(--mono)">source ~/emb-ai/bin/activate</code> (cuDNN 경로 자동 설정). <code style="font-family:var(--mono)">sudo</code> 없이 docker를 쓰려면 한 번 로그아웃/로그인 필요.</div>
+    <div class="next">다음 단계 &nbsp;<b>➡ 0.5단계 — 배포 난이도 사다리</b> &nbsp;<code style="font-family:var(--mono)">study_guide/02_deployment_ladder.md</code></div>
+  </footer>
+
+</div>
+</body>
+</html>

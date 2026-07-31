@@ -4,7 +4,7 @@
 
 > 모든 버전·링크는 2026-07 기준으로 웹 검증했습니다. 실제 설치 시점엔 각 공식 페이지에서 재확인하세요.
 >
-> ✅ **0단계 환경은 2026-07-31 실제 머신에서 설치·검증 완료**했습니다(Ubuntu 22.04.5 / RTX 3060 / 드라이버 595.84 / `nvcc` 12.8.93). 아래 버전 스택과 [`01_environment_setup.md`](study_guide/01_environment_setup.md)의 예상 출력은 그 **실측값**입니다.
+> ✅ **0단계 환경은 2026-07-31 실제 머신에서 설치·검증 완료**했습니다(Ubuntu 22.04.5 / RTX 3060 / 드라이버 595.84 / `nvcc` 12.8.93). 아래 버전 스택과 [`01_environment_setup.md`](study_guide/01_environment_setup.md)의 예상 출력은 그 **실측값**입니다. 실제로 따라 하며 남긴 커맨드·출력·함정 해결 과정은 [`logs/`](logs/)에 있습니다.
 
 ---
 
@@ -64,6 +64,10 @@
 ├── study_guide/            # 학습 가이드 (MD + HTML)
 │   ├── README.md/.html     # 인덱스
 │   └── 01_*.md … 10_*.md   # 단계별 문서 (+ 각 .html)
+├── logs/                   # 실제 머신에서 따라 해본 실행 로그·분석 (HTML)
+│   ├── stage0_setup_log.html        # 0단계 환경 준비 실행 로그
+│   ├── stage0.5_ladder_log.html     # 0.5단계 배포 사다리 Lv.1~4 실행 로그
+│   └── lv2_ptq_deep_dive.html       # PTQ 4종(FP32/dynamic/fp16/INT8) 이론·실측 딥다이브
 ├── guide (1).html          # 원본 기획 문서 (출발점)
 ├── CLAUDE.md               # 제작에 쓰인 하네스 포인터
 └── .claude/                # 에이전트 팀 + 스킬 (제작 하네스)

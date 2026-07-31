@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PTQ 4종 변환 — 이론·실측 딥다이브</title>
+<style>
+  :root{
+    --bg:#0b0e14; --panel:#131720; --panel2:#0f131b; --bd:#242b38;
+    --tx:#c9d1d9; --dim:#8b949e; --brt:#e6edf3;
+    --accent:#58a6ff; --green:#3fb950; --amber:#d29922; --red:#ff7b72; --purple:#bc8cff;
+    --mono:'JetBrains Mono','SF Mono',ui-monospace,'Cascadia Code',Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans KR','Malgun Gothic',sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--tx);font-family:var(--sans);line-height:1.65;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:980px;margin:0 auto;padding:0 20px 120px}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  .hero{padding:48px 0 26px;border-bottom:1px solid var(--bd);margin-bottom:8px}
+  .kicker{font-family:var(--mono);font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+  .hero h1{margin:0 0 10px;font-size:30px;line-height:1.25;color:var(--brt);letter-spacing:-.01em}
+  .hero p.sub{margin:0 0 20px;color:var(--dim);font-size:15px;max-width:74ch}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{font-family:var(--mono);font-size:12px;padding:5px 10px;border:1px solid var(--bd);border-radius:999px;background:var(--panel);color:var(--tx)}
+  .chip b{color:var(--brt);font-weight:600}
+  .chip.done{border-color:rgba(63,185,80,.5);background:rgba(63,185,80,.12);color:#7ee787}
+
+  nav.toc{display:flex;flex-wrap:wrap;gap:8px;margin:26px 0 6px}
+  nav.toc a{font-family:var(--mono);font-size:12.5px;padding:6px 11px;border:1px solid var(--bd);border-radius:8px;background:var(--panel);color:var(--tx)}
+  nav.toc a:hover{border-color:var(--accent);text-decoration:none;color:var(--brt)}
+
+  h2.sec{font-size:13px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin:44px 0 12px;font-weight:600}
+
+  table.ck{width:100%;border-collapse:collapse;margin:10px 0 8px;font-size:13.5px;border:1px solid var(--bd);border-radius:10px;overflow:hidden}
+  table.ck th,table.ck td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--bd);vertical-align:top}
+  table.ck th{background:var(--panel);color:var(--dim);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.05em}
+  table.ck td:first-child{white-space:nowrap;color:var(--brt)}
+  table.ck code{font-family:var(--mono);font-size:12.3px;color:var(--purple);background:rgba(188,140,255,.1);padding:1px 6px;border-radius:5px}
+  table.ck tr:last-child td{border-bottom:none}
+  table.ck.tight td,table.ck.tight th{padding:7px 12px}
+  .pass{color:var(--green);font-weight:700}
+  .fail{color:var(--red);font-weight:700}
+
+  .step{margin:40px 0 0;scroll-margin-top:16px}
+  .step > h3{display:flex;align-items:center;gap:12px;font-size:20px;color:var(--brt);margin:0 0 6px;letter-spacing:-.01em}
+  .num{flex:none;display:inline-grid;place-items:center;width:30px;height:30px;border-radius:8px;background:var(--accent);color:#06101f;font-family:var(--mono);font-weight:700;font-size:14px}
+  .step p.lead{margin:0 0 4px;color:var(--dim);font-size:14.5px}
+  h4.sub{font-size:15.5px;color:var(--brt);margin:26px 0 8px;letter-spacing:-.005em}
+  h4.sub .tag{font-family:var(--mono);font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;margin-right:8px;vertical-align:middle}
+
+  .term{background:var(--panel2);border:1px solid var(--bd);border-radius:11px;overflow:hidden;margin:14px 0}
+  .term-bar{display:flex;align-items:center;gap:7px;padding:9px 13px;background:#0c1017;border-bottom:1px solid var(--bd)}
+  .dot{width:11px;height:11px;border-radius:50%}
+  .dot.r{background:#ff5f56}.dot.y{background:#ffbd2e}.dot.g{background:#27c93f}
+  .term-title{margin-left:9px;color:var(--dim);font-size:12.5px;font-family:var(--mono)}
+  .term pre{margin:0;padding:15px 17px;overflow-x:auto;font-family:var(--mono);font-size:12.7px;line-height:1.6;color:var(--tx);white-space:pre;tab-size:2}
+  .in{color:var(--brt);font-weight:600}
+  .in .p{color:var(--green);user-select:none;margin-right:9px}
+  .cmt{color:#5c6773}
+  .ok{color:var(--green)}
+  .err{color:var(--red)}
+  .warn{color:var(--amber)}
+  .dim{color:var(--dim)}
+  .hl{color:var(--purple)}
+
+  .code{background:var(--panel2);border:1px solid var(--bd);border-radius:11px;overflow:hidden;margin:14px 0}
+  .code .term-bar{background:#0c1017}
+  .code pre{margin:0;padding:15px 17px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.65;color:var(--tx);white-space:pre;tab-size:4}
+  .code .c{color:#5c6773}
+  .code .kw{color:var(--purple)}
+  .code .fn{color:var(--accent)}
+  .code .st{color:#7ee787}
+  .code .nu{color:var(--amber)}
+
+  .note{border-left:3px solid var(--accent);background:rgba(88,166,255,.07);padding:13px 17px;border-radius:0 9px 9px 0;margin:15px 0;font-size:14px}
+  .note.trap{border-color:var(--red);background:rgba(255,123,114,.08)}
+  .note.warnb{border-color:var(--amber);background:rgba(210,153,34,.08)}
+  .note.tip{border-color:var(--green);background:rgba(63,185,80,.07)}
+  .note.ex{border-color:var(--purple);background:rgba(188,140,255,.07)}
+  .note .tag{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 8px;border-radius:6px;margin-bottom:7px}
+  .note.trap .tag{background:rgba(255,123,114,.18);color:#ff9d96}
+  .note.warnb .tag{background:rgba(210,153,34,.18);color:#e3b341}
+  .note.tip .tag{background:rgba(63,185,80,.18);color:#7ee787}
+  .note.ex .tag{background:rgba(188,140,255,.18);color:#d8b9ff}
+  .note b{color:var(--brt)}
+  .note code{font-family:var(--mono);font-size:12.5px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:4px}
+
+  .badge{display:inline-block;font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 7px;border-radius:5px;margin-right:6px}
+  .badge.conf{background:rgba(63,185,80,.18);color:#7ee787}
+  .badge.unconf{background:rgba(210,153,34,.18);color:#e3b341}
+
+  .formula{background:var(--panel2);border:1px solid var(--bd);border-radius:10px;padding:16px 20px;margin:14px 0;font-family:var(--mono);font-size:14.5px;color:var(--brt);overflow-x:auto;text-align:center}
+  .formula .cap{display:block;text-align:left;color:var(--dim);font-family:var(--sans);font-size:12.5px;margin-top:10px}
+
+  .card{border:1px solid var(--bd);background:var(--panel);border-radius:12px;padding:18px 20px;margin:14px 0}
+  .card h4{margin:0 0 10px;color:var(--brt);font-size:15px}
+
+  ol.refs{list-style:none;padding:0;margin:10px 0;counter-reset:ref}
+  ol.refs li{counter-increment:ref;position:relative;padding:10px 14px 10px 44px;margin-bottom:8px;border:1px solid var(--bd);border-radius:9px;background:var(--panel);font-size:13.5px}
+  ol.refs li::before{content:"["counter(ref)"]";position:absolute;left:12px;top:10px;color:var(--accent);font-family:var(--mono);font-weight:700;font-size:12.5px}
+  ol.refs li b{color:var(--brt);display:block;margin-bottom:2px}
+  ol.refs li .meta{color:var(--dim);font-size:12px}
+  ol.refs li.doc::before{color:var(--green)}
+
+  footer{margin-top:46px;padding-top:20px;border-top:1px solid var(--bd);color:var(--dim);font-size:13px}
+  .next{display:inline-flex;align-items:center;gap:8px;margin-top:10px;padding:11px 16px;border:1px solid var(--accent);border-radius:9px;color:var(--brt);background:rgba(88,166,255,.08);font-size:14px}
+  .next b{color:var(--accent)}
+  @media (max-width:560px){ .hero h1{font-size:22px} .term pre,.code pre{font-size:11.4px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <p class="kicker">Embedded AI · 양자화 → 배포 스터디 · 0.5단계 배포 사다리 Lv.2</p>
+    <h1>PTQ 4종 변환 — 이론·실측 딥다이브</h1>
+    <p class="sub"><code>lv2_convert.py</code> 실행 로그를 근거로, <b>FP32 baseline / dynamic-range / float16 / full-INT8</b> 4가지 Post-Training Quantization(PTQ) 기법을 <b>이론</b>(affine quantization 수식, 논문 4편)과 <b>실측</b>(실제 변환된 <code>.tflite</code> 파일에서 직접 뽑아낸 양자화 파라미터·파일 크기·추론시간)으로 대조합니다.</p>
+    <div class="chips">
+      <span class="chip"><b>venv</b> ~/ladder-litert</span>
+      <span class="chip"><b>ai-edge-litert</b> 2.1.6</span>
+      <span class="chip"><b>tensorflow</b> 2.21.0</span>
+      <span class="chip"><b>모델</b> MNIST 소형 CNN (미학습)</span>
+      <span class="chip"><b>Date</b> 2026-07-31</span>
+      <span class="chip done">✓ 4종 변환 성공</span>
+    </div>
+  </div>
+
+  <nav class="toc">
+    <a href="#s0">0 · 실행 로그</a>
+    <a href="#s1">1 · PTQ 공통 이론</a>
+    <a href="#s2">2 · 4갈래 상세</a>
+    <a href="#s3">3 · 실측 결과</a>
+    <a href="#s4">4 · 로그 한 줄씩 해설</a>
+    <a href="#s5">5 · 언제 뭘 쓰나</a>
+    <a href="#s6">6 · 참고문헌</a>
+  </nav>
+
+  <!-- ===================== S0 ===================== -->
+  <div class="step" id="s0">
+    <h3><span class="num">0</span>실행 로그 재현</h3>
+    <p class="lead">사용자가 실제로 돌린 명령과 터미널 출력. 아래 모든 이론·분석은 이 로그와 그 산출물(<code>model_*.tflite</code> 4개)에서 시작합니다.</p>
+
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">python lv2_convert.py</span></div>
+<pre><span class="in"><span class="p">$</span> python lv2_convert.py</span>
+<span class="warn">W0000 cuda_executor.cc:1755 Failed to determine cuDNN version (CUDNN_STATUS_INTERNAL_ERROR)</span>
+<span class="warn">W0000 gpu_device.cc:2365 Cannot dlopen some GPU libraries ... Skipping registering GPU devices...</span>
+<span class="dim">(이 venv엔 emb-ai의 LD_LIBRARY_PATH 픽스가 없어 GPU 라이브러리를 못 찾음 — 변환 작업 자체는 CPU로도 무관)</span>
+  model_fp32.tflite             <span class="ok">55.8 KB</span>
+  model_dynamic.tflite          <span class="ok">16.4 KB</span>
+  model_fp16.tflite             <span class="ok">29.7 KB</span>
+<span class="hl">fully_quantize: 0, inference_type: 6, input_inference_type: INT8, output_inference_type: INT8</span>
+  model_int8.tflite              <span class="ok">16.5 KB</span></pre>
+    </div>
+
+    <p class="lead" style="margin-top:22px">변환에 쓰인 스크립트 전체(<code>~/ladder-work/lv2/lv2_convert.py</code>) — 4개 분기가 한 파일에 나란히 있어서 서로 무엇이 다른지 바로 비교됩니다.</p>
+    <div class="code">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">lv2_convert.py</span></div>
+<pre><span class="c"># 0) 예시 모델 (실제로는 학습된 모델을 로드). MNIST용 소형 CNN.</span>
+model = tf.keras.Sequential([
+    tf.keras.layers.Input((28, 28, 1)),
+    tf.keras.layers.Conv2D(8, 3, activation="relu"),
+    tf.keras.layers.MaxPooling2D(),
+    tf.keras.layers.Flatten(),
+    tf.keras.layers.Dense(10),
+])
+<span class="c"># (학습 생략: 데모용. 실제로는 model.fit(...)으로 학습된 가중치 사용)</span>
+
+<span class="c"># 1) FP32 baseline</span>
+conv = tf.lite.TFLiteConverter.from_keras_model(model)
+save("model_fp32.tflite", conv.convert())
+
+<span class="c"># 2) Dynamic range PTQ — 플래그 하나. representative_dataset 불필요.</span>
+conv = tf.lite.TFLiteConverter.from_keras_model(model)
+conv.optimizations = [tf.lite.Optimize.DEFAULT]              <span class="c"># 가중치만 INT8, activation은 동적</span>
+save("model_dynamic.tflite", conv.convert())
+
+<span class="c"># 3) Float16 PTQ — GPU 친화. representative_dataset 불필요.</span>
+conv = tf.lite.TFLiteConverter.from_keras_model(model)
+conv.optimizations = [tf.lite.Optimize.DEFAULT]
+conv.target_spec.supported_types = [tf.float16]             <span class="c"># 가중치 FP16</span>
+save("model_fp16.tflite", conv.convert())
+
+<span class="c"># 4) Full INT8 PTQ — representative_dataset로 activation 범위 캘리브레이션</span>
+calib_images = np.random.rand(200, 28, 28, 1).astype("float32")  <span class="c"># 데모용 랜덤</span>
+
+def representative_data_gen():
+    for img in tf.data.Dataset.from_tensor_slices(calib_images).batch(1).take(200):
+        yield [img]
+
+conv = tf.lite.TFLiteConverter.from_keras_model(model)
+conv.optimizations = [tf.lite.Optimize.DEFAULT]                       <span class="c"># 양자화 스위치 ON</span>
+conv.representative_dataset = representative_data_gen                  <span class="c"># 캘리브레이션 데이터</span>
+conv.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS_INT8]  <span class="c"># full-INT8 강제</span>
+conv.inference_input_type = tf.int8                                   <span class="c"># 입출력도 정수로</span>
+conv.inference_output_type = tf.int8</pre>
+    </div>
+
+    <div class="note tip">
+      <span class="tag">Note</span>
+      GPU 경고 2줄(<code>cuda_executor</code>/<code>gpu_device</code>)에 대한 사용자의 자체 진단("변환 작업 자체는 CPU로도 무관")은 정확합니다 — 왜 정확한지는 <a href="#s4">§4</a>에서 이 프로젝트의 기존 cuDNN/TensorRT LD_LIBRARY_PATH 픽스와 대조해 설명합니다.
+    </div>
+  </div>
+
+  <!-- ===================== S1 ===================== -->
+  <div class="step" id="s1">
+    <h3><span class="num">1</span>PTQ 공통 이론 — Affine Quantization</h3>
+    <p class="lead">4갈래 모두 결국 같은 수식 위에 있습니다. 무엇을 언제(변환 시점 vs 추론 시점) 양자화하느냐, 그리고 zero-point를 0으로 고정하느냐(symmetric)만 다릅니다.</p>
+
+    <p>이 4가지 변형은 전부 <b>Post-Training Quantization(PTQ)</b> — 학습이 끝난(혹은 이 데모처럼 학습을 생략한) 가중치를 <i>재학습 없이</i> 양자화하는 방식입니다. Nagel et al.(2021)의 정의를 빌리면, PTQ는 "재학습이나 라벨 데이터가 필요 없는, 가벼운 push-button 방식"이고, 그 대안인 Quantization-Aware Training(QAT)은 양자화 오차를 학습 루프에 넣어 정확도를 더 끌어올리지만 비용이 더 큽니다<sup>[4]</sup>. <code>lv2_convert.py</code>엔 <code>model.fit(...)</code>이 아예 없으므로 4개 전부 PTQ입니다.</p>
+
+    <h4 class="sub">균일 affine 양자화 (uniform affine quantization)</h4>
+    <p>Jacob et al.(2018)이 제안한 스킴이 TFLite 정수 커널의 기반입니다<sup>[1]</sup>. 실수(real) 텐서 <code>r</code>을 정수(quantized) 텐서 <code>q</code>로 매핑할 때:</p>
+    <div class="formula">
+      q = clip( round(r / S) + Z ,  q_min, q_max )
+      <span class="cap">역방향(역양자화): r ≈ S × (q − Z)　　S = scale (float32), Z = zero-point (int)</span>
+    </div>
+    <p>이 매핑의 핵심은 — <code>r ≈ S(q−Z)</code>를 행렬곱에 대입해 정리하면, float 곱셈이 <b>int32 누산기(accumulator) 위의 정수 곱셈-누적 + 마지막 한 번의 rescale</b>로 바뀐다는 것입니다. 이게 바로 "정수 전용 하드웨어에서 더 빨리 돈다"는 말의 실체입니다<sup>[1]</sup>.</p>
+
+    <table class="ck tight">
+      <tr><th>구분</th><th>Zero-point</th><th>보통 어디에</th><th>왜</th></tr>
+      <tr><td>Symmetric</td><td><code>Z = 0</code></td><td>가중치(weight)</td><td>정수곱에 zero-point 교차항이 안 붙어 계산이 단순 — Jacob et al.<sup>[1]</sup></td></tr>
+      <tr><td>Asymmetric</td><td><code>Z ≠ 0</code></td><td>활성화(activation)</td><td>ReLU 뒤 값 분포가 0 근처로 치우쳐 있어 비대칭 범위가 정밀도를 아낌 — Gholami et al.<sup>[3]</sup></td></tr>
+    </table>
+
+    <p>또 하나의 축은 <b>스케일을 어느 단위로 따로 두느냐</b>입니다. Krishnamoorthi(2018)의 핵심 결론이 바로 이 부분인데 — <b>가중치는 채널별(per-channel), 활성화는 레이어별(per-layer)</b>로 8비트 양자화하면 다양한 CNN 구조에서 float 대비 정확도 손실이 2% 이내로 좁혀진다는 것입니다<sup>[2]</sup>. per-tensor(레이어 전체가 스케일 하나) 방식은 채널 간 가중치 스케일 편차가 큰 레이어(대표적으로 depthwise conv)에서 정밀도를 크게 잃습니다.</p>
+
+    <div class="note ex">
+      <span class="tag">예시 1 · 실측값으로 본 affine 양자화</span>
+      <p style="margin:0 0 8px">이론이 아니라 <b>이 실습에서 실제로 나온 <code>model_int8.tflite</code></b>를 인터프리터로 열어 직접 읾은 값입니다:</p>
+<pre style="margin:0 0 10px;font-family:var(--mono);font-size:12.3px;color:var(--tx);white-space:pre-wrap">입력 텐서:  scale=0.0039216, zero_point=-128   (float [0,1] → int8 [-128,127])
+출력 텐서:  scale=0.0073905, zero_point=-18    (미학습 Dense(10) 로짓, 비대칭)
+가중치(Dense, per-channel, axis=0, 10개 채널): scale[0..3]=[0.00052183, 0.00052120, 0.00052192, 0.00052207] · zero_point=0 (전부)</pre>
+      <p style="margin:0 0 6px"><b>왜 입력 scale이 정확히 1/255에 가까운가:</b> <code>representative_dataset</code>이 <code>np.random.rand(...)</code>(균등분포 [0,1))라서 캘리브레이션이 찾은 min≈0, max≈1 → <code>S=(1−0)/255=0.0039216</code>, <code>Z=−128</code>(실수 0.0이 정수 −128에 정확히 대응). 이미지 입력을 8비트로 양자화할 때 나오는 정석적인 값입니다.</p>
+      <p style="margin:0 0 6px"><b>왕복 오차 확인</b> — 실수 <code>r=0.2</code>를 위 scale/zero-point로 왕복시키면:</p>
+      <div class="formula" style="margin:8px 0">
+        q = round(0.2 / 0.0039216) + (−128) = round(51.0) − 128 = <b>−77</b>
+        r' = 0.0039216 × (−77 − (−128)) = 0.0039216 × 51 = <b>0.199999...</b>
+        <span class="cap">절대오차 ≈ 7×10⁻⁷ — round-to-nearest의 최대 오차 한계는 이론상 S/2 ≈ 0.00196</span>
+      </div>
+      <p style="margin:0 0 6px"><b>가중치는 왜 채널마다 scale이 다른가(per-channel)</b> — 위 4개 scale이 서로 미세하게 다른 게 바로 Krishnamoorthi(2018)가 말한 per-channel 양자화의 실체입니다<sup>[2]</sup>. 채널 0의 가중치 <code>w=0.01</code>을 그 채널 scale(0.00052183)로 양자화하면 <code>q=round(0.01/0.00052183)=19</code> → 역양자화 <code>19×0.00052183=0.0099148</code>(오차 8.5×10⁻⁵) — zero_point가 전부 0인 것도 이론과 일치(가중치=symmetric).</p>
+      <p style="margin:0">흥미로운 교차검증: <b><code>model_dynamic.tflite</code>의 이 Dense 레이어 per-channel scale은 <code>model_int8.tflite</code>와 완전히 동일</b>합니다. 두 방식 모두 가중치 양자화는 <code>representative_dataset</code>과 무관하게 가중치 텐서 자체의 min/max에서만 계산되기 때문 — 두 변형의 차이는 <b>활성화를 언제 양자화하느냐</b>뿐이라는 걸 실측으로 확인한 셈입니다(<a href="#s2-dyn">§2</a>에서 계속).</p>
+    </div>
+  </div>
+
+  <!-- ===================== S2 ===================== -->
+  <div class="step" id="s2">
+    <h3><span class="num">2</span>4갈래 상세 — 뭘 언제 양자화하는가</h3>
+    <p class="lead">공통 수식은 하나지만, <b>가중치/활성화 각각을 양자화하는지</b>, <b>양자화 시점이 변환 시(static)인지 추론 시(dynamic)인지</b>, <b>캘리브레이션 데이터가 필요한지</b>가 네 갈래를 가릅니다.</p>
+
+    <h4 class="sub"><span class="badge conf" style="background:rgba(139,148,158,.18);color:var(--dim)">0</span>FP32 Baseline</h4>
+    <p>양자화 없음 — 비교 기준선. 파일 크기·정확도·지연시간 모두 나머지 3개를 평가하는 분모 역할만 합니다.</p>
+
+    <h4 class="sub" id="s2-dyn"><span class="badge conf">가중치만 static</span>Dynamic-range 양자화</h4>
+    <p><code>conv.optimizations = [tf.lite.Optimize.DEFAULT]</code> 한 줄. 공식 문서는 이 방식을 이렇게 설명합니다: "활성화는 항상 float로 저장되고, 양자화된 커널을 지원하는 연산에서는 처리 직전에 8비트로 동적으로 양자화되고 처리 후 다시 float로 역양자화된다"<sup>[5]</sup>. 즉:</p>
+    <ul style="font-size:14.5px;color:var(--tx)">
+      <li><b>가중치</b> — 변환 시점에 <i>정적으로</i> int8 양자화 (§1의 per-channel scale이 그 결과)</li>
+      <li><b>활성화</b> — 그래프 메타데이터엔 float로 남아있고, 매 추론마다 해당 연산 바로 앞에서 그 배치의 min/max를 보고 즉석 양자화 → 정수 커널 실행 → 다시 float로 역양자화("hybrid kernel")</li>
+      <li><b><code>representative_dataset</code> 불필요</b> — 활성화 범위를 미리 알 필요가 없으니까</li>
+    </ul>
+    <p>실측 근거: <code>model_dynamic.tflite</code>를 인터프리터로 열면 입력/출력 텐서의 <code>quantization</code> 튜플이 <code>(0.0, 0)</code>으로 나옵니다 — 그래프 I/O가 여전히 float32라는 직접 증거입니다(§1 참고).</p>
+    <div class="note">
+      <span class="tag">Tip</span>
+      크기 4x, 속도는 왜 2-3x뿐인가 — 가중치만 정수라 activation quantize/dequantize 오버헤드가 매 연산마다 붙기 때문. Krishnamoorthi(2018)는 일반 CPU에서 2-3x, 고정소수점 SIMD가 있는 전용 프로세서에서는 최대 10x까지 관측했다고 보고합니다<sup>[2]</sup>.
+    </div>
+
+    <h4 class="sub"><span class="badge conf">가중치만, 16비트</span>Float16 양자화</h4>
+    <p><code>conv.target_spec.supported_types = [tf.float16]</code>만 추가. 가중치를 32비트 float가 아니라 16비트 float로 저장 — 정수 변환이 아니라 <b>부동소수점 정밀도만 반토막</b>내는 방식입니다. 공식 문서: "GPU 같은 일부 하드웨어는 이 축소 정밀도 연산을 네이티브로 수행할 수 있다"<sup>[6]</sup>. 뒤집어 말하면 CPU에는 그 네이티브 fp16 커널이 없는 경우가 많아, 첫 추론 전에 가중치를 다시 fp32로 업샘플링합니다 — <b>저장 공간은 아끼지만 CPU 연산량은 그대로</b>라는 뜻입니다.</p>
+    <ul style="font-size:14.5px;color:var(--tx)">
+      <li><b><code>representative_dataset</code> 불필요</b> — 활성화를 건드리지 않으니까</li>
+      <li>목표: GPU delegate(네이티브 fp16 연산)와 짝을 이룰 때 진짜 이득. CPU 단독이면 크기만 절반</li>
+    </ul>
+    <div class="note tip">
+      <span class="tag">실측과 이론의 교차검증</span>
+      이번 실습은 CPU 인터프리터로만 돌렸으므로(§4의 GPU 미탑재 경고 참고), fp16 모델이 CPU에서 fp32와 거의 같은 지연시간(0.011 vs 0.012ms)을 보인 것<sup>[§3]</sup>은 "CPU에선 연산량 이득이 없다"는 문서 설명과 정확히 들어맞습니다.
+    </div>
+
+    <h4 class="sub"><span class="badge conf">가중치+활성화 모두, static</span>Full-Integer(INT8) 양자화</h4>
+    <p>4갈래 중 유일하게 <code>representative_dataset</code>이 필요합니다 — 활성화 범위를 실행 전에 알아야 정적 scale/zero-point를 정할 수 있기 때문입니다. <code>target_spec.supported_ops = [TFLITE_BUILTINS_INT8]</code>은 단순한 "선호"가 아니라 <b>강제</b>입니다 — 공식 문서: "양자화할 수 없는 연산이 있으면 컨버터가 에러를 던지도록 보장한다"<sup>[7]</sup>. 즉 dynamic-range처럼 지원 안 되는 연산을 조용히 float로 넘기는 게 아니라, <b>변환 자체가 실패</b>합니다 — 이건 두 방식의 실행 철학이 다르다는 뜻이라 §5에서 다시 다룹니다.</p>
+    <div class="note trap">
+      <span class="tag">확인된 표기 차이 · int8 vs uint8</span>
+      공식 문서의 예제 코드는 <code>converter.inference_input_type = tf.uint8</code>를 씁니다<sup>[7]</sup>. 이번 실습 스크립트는 <code>tf.int8</code>을 명시했고, 로그의 <code>input_inference_type: INT8</code>이 정확히 그걸 반영합니다 — <b>오타나 실수가 아니라 둘 다 유효한 선택</b>입니다. int8과 uint8은 zero-point가 정확히 128만큼 어긋난 같은 아핀 매핑의 다른 인코딩일 뿐입니다(<code>uint8 = int8 + 128</code>). 다만 Coral Edge TPU 컴파일러처럼 uint8 입력을 정해놓고 요구하는 특정 타깃이 있어, 문서 예제가 그쪽 관례를 따른 것으로 보입니다 — 이 특정 배경(왜 문서가 uint8을 기본값으로 골랐는지)까지는 이번 조사로 권위 있게 확인하지 못했습니다.
+    </div>
+    <p>목표 하드웨어: 공식 문서는 "Edge TPU 같은 정수 전용 가속기가 요구", "저전력 마이크로컨트롤러가 작아진 모델·빨라진 추론의 수혜자"라고 명시합니다<sup>[7]</sup>. 이 실습에서 정수-only 배포가 가능한 건 이 변형 하나뿐입니다(§3 표의 마지막 열).</p>
+  </div>
+
+  <!-- ===================== S3 ===================== -->
+  <div class="step" id="s3">
+    <h3><span class="num">3</span>실측 결과</h3>
+    <p class="lead"><code>~/ladder-work/ladder_notes.md</code>에 기록된 실측표 — 파일 크기는 <code>lv2_convert.py</code>의 <code>save()</code> 출력, 지연시간은 <code>lv2_bench.py</code>(워밍업 20회 + 200회 반복, all-zero 입력)로 측정했습니다.</p>
+
+    <table class="ck">
+      <tr><th>모델</th><th>파일 크기</th><th>정확도</th><th>추론시간 avg/p50/p95 (ms)</th><th>정수-only 배포</th></tr>
+      <tr><td>FP32 baseline</td><td>57,116 B (55.8 KB)</td><td>N/A*</td><td>0.012 / 0.011 / 0.019</td><td><span class="fail">✗</span> 입출력 float32</td></tr>
+      <tr><td>Dynamic-range PTQ</td><td>16,744 B (16.4 KB)</td><td>N/A*</td><td>0.010 / 0.009 / 0.017</td><td><span class="fail">✗</span> 활성화는 float 유지</td></tr>
+      <tr><td>Float16 PTQ</td><td>30,388 B (29.7 KB)</td><td>N/A*</td><td>0.011 / 0.011 / 0.012</td><td><span class="fail">✗</span> GPU 위주, 정수 아님</td></tr>
+      <tr><td>Full-INT8 PTQ</td><td>16,912 B (16.5 KB)</td><td>N/A*</td><td>0.020 / 0.020 / 0.020</td><td><span class="pass">✓</span> 입출력·가중치·활성화 모두 int8</td></tr>
+    </table>
+    <p style="font-size:13px;color:var(--dim);margin-top:-2px">* 학습을 생략한 랜덤 가중치 데모라 "정확도"는 의미가 없습니다. 대신 4개 변형이 같은 입력에 대해 전부 <code>argmax=8</code>로 일치하는지로 파이프라인 정합성만 확인했습니다(아래 참고).</p>
+
+    <h4 class="sub">크기: 이론값과 얼마나 가까운가</h4>
+    <table class="ck tight">
+      <tr><th>변형</th><th>FP32 대비 실측 비율</th><th>공식 문서 claim</th><th>차이 원인</th></tr>
+      <tr><td>Dynamic-range</td><td><code>57116/16744 ≈ 3.41x</code></td><td>"4x 감소"<sup>[5]</sup></td><td rowspan="2">모델이 작아 flatbuffer 헤더·연산자 메타데이터 같은 비-가중치 오버헤드가 차지하는 비중이 상대적으로 큼 — 이상적인 4x는 가중치가 압도적으로 큰 대형 모델에서의 근사치</td></tr>
+      <tr><td>Full-INT8</td><td><code>57116/16912 ≈ 3.38x</code></td><td>(가중치는 동일 메커니즘)</td></tr>
+      <tr><td>Float16</td><td><code>57116/30388 ≈ 1.88x</code></td><td>"2x 감소"<sup>[6]</sup></td><td>거의 정확히 일치 — fp16은 오버헤드 구조가 단순(캘리브레이션 파라미터 없음)</td></tr>
+    </table>
+    <p>또 하나 눈에 띄는 점: dynamic-range(16,744 B)와 full-INT8(16,912 B)의 파일 크기가 거의 같습니다(차이 168 B, FP32의 0.29%). 이유는 구조적으로 다릅니다 — 가중치 양자화 자체는 §1에서 확인했듯 <b>동일</b>하고, full-INT8만 추가로 각 활성화 텐서의 scale/zero-point 메타데이터를 그래프에 박아 넣는데, 이 모델처럼 레이어가 몇 개뿐이면 그 메타데이터 부피가 무시할 수준이라는 뜻입니다. 레이어가 수백 개인 실제 모델이라면 이 차이가 더 벌어질 수 있습니다.</p>
+
+    <h4 class="sub">지연시간: 이론과 반대로 나온 이유</h4>
+    <div class="note trap">
+      <span class="tag">주목할 실측 결과</span>
+      Full-INT8(0.020ms)이 4개 중 <b>가장 느립니다</b> — "정수 양자화 = 더 빠름"이라는 통상적 기대와 정반대입니다. 원인을 이론으로 짚어보면 세 가지가 겹칩니다.
+    </div>
+    <ol style="font-size:14.5px;color:var(--tx)">
+      <li><b>노이즈 바닥(noise floor)</b> — <code>lv2_bench.py</code>는 <code>time.perf_counter()</code>로 감싼 단일 Python 루프 측정입니다. 값 전체가 0.009~0.020ms 구간에 몰려있는데, 이는 파이썬 인터프리터 디스패치·GIL·타이머 분해능 자체의 오버헤드와 같은 자릿수입니다. <code>ladder_notes.md</code>의 자체 관찰도 동일합니다: "이 정도로 작은 데모 모델·CPU에서는 추론시간 차이가 노이즈 수준".</li>
+      <li><b>연산량이 너무 작음(overhead-bound, not compute-bound)</b> — <code>Conv2D(8, 3×3) → MaxPool → Flatten → Dense(10)</code>은 총 MAC(곱셈-누적) 수가 수천 단위입니다. Jacob et al.(2018)과 Krishnamoorthi(2018)가 보여준 정수 커널의 이득은 MobileNet급(수백만 MAC) 모델, 그리고 고정소수점 SIMD/dot-product 명령이 있는 하드웨어(ARM NEON, x86 VNNI 등)에서 두드러집니다<sup>[1][2]</sup>. 이 데모 크기에서는 quantize/dequantize glue 코드의 오버헤드가 정수 연산 자체의 이득을 상쇄하고도 남습니다.</li>
+      <li><b>구조적으로 처리할 게 더 많음</b> — full-INT8은 입력 양자화 → 정수 연산 → 출력 역양자화까지 매 호출마다 거치는 반면, dynamic-range는 활성화 캐스팅이 연산 내부에만 국한됩니다. 워크로드가 아주 작을 때는 이 추가 경계 처리 비용이 상대적으로 크게 보입니다.</li>
+    </ol>
+    <p>따라서 이 표에서 뽑을 수 있는 결론은 "이 4개 중 어느 게 빠르다"가 아니라 — <b>양자화의 지연시간 이득은 모델 규모와 타깃 하드웨어에 조건부</b>라는 것입니다. 실기기(MCU/NPU)나 더 큰 모델로 갈수록 이 격차는 이론이 예측하는 방향(정수 > float)으로 벌어지는 것이 정상입니다.</p>
+
+    <h4 class="sub">파이프라인 정합성 — argmax 일치 확인</h4>
+    <div class="code">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">lv2_infer.py — 핵심 로직</span></div>
+<pre><span class="c"># INT8 모델이면 입력을 양자화 스케일로 정수화 (역양자화 공식의 역함수)</span>
+if inp["dtype"] == np.int8:
+    scale, zp = inp["quantization"]
+    x = np.round(x / scale + zp).astype(np.int8)
+...
+<span class="c"># 출력이 INT8이면 다시 float로 역양자화</span>
+if out["dtype"] == np.int8:
+    oscale, ozp = out["quantization"]
+    y = (y.astype(np.float32) - ozp) * oscale</pre>
+    </div>
+    <p>4개 변형에 동일한 랜덤 입력을 흘리면 전부 <code>argmax=8</code>로 일치합니다. 가중치가 미학습 랜덤이라 이건 "정확도가 높다"는 뜻이 아니라 — <b>양자화·역양자화 스케일 계산이 파이프라인 전체에서 올바르게 맞물려 있다</b>는 자기 정합성(self-consistency) 체크입니다. 클래스 간 점수 차이가 양자화 오차보다 충분히 크면 사소한 수치 차이는 결정(argmax)을 안 바꾸는게 당연하기도 합니다.</p>
+  </div>
+
+  <!-- ===================== S4 ===================== -->
+  <div class="step" id="s4">
+    <h3><span class="num">4</span>로그 한 줄씩 해설</h3>
+
+    <h4 class="sub">cuDNN / GPU dlopen 경고 2줄</h4>
+    <p>TensorFlow가 프로세스 시작 시 <code>cuda_executor</code>/<code>gpu_device</code> C++ 백엔드로 CUDA 디바이스를 탐색하는데, 이 venv(<code>~/ladder-litert</code>)엔 cuDNN 같은 CUDA 라이브러리가 <code>LD_LIBRARY_PATH</code>에 없어 탐색이 실패하고 경고를 찍습니다. 이 프로젝트의 다른 문서(<code>01_environment_setup.md</code> 3-4-a절)에서 다룬 것과 <b>같은 근본 원인 계열</b>(venv에 묶여 있는 CUDA 관련 라이브러리가 로더 경로 밖에 있음)이지만 <b>결과는 정반대</b>입니다:</p>
+    <table class="ck tight">
+      <tr><th>사례</th><th>영향받는 것</th><th>결과</th></tr>
+      <tr><td><code>~/emb-ai</code> venv, ONNX Runtime CUDA/TensorRT EP</td><td>실제 추론 실행 경로</td><td><span class="fail">치명적</span> — 조용히 CPU로 폴백, 지연시간이 GPU 대비 수 배~수십 배 나빠짐(실측: TensorRT 0.41ms→11.83ms)</td></tr>
+      <tr><td><code>~/ladder-litert</code> venv, 이번 변환 스크립트</td><td>없음 — <code>TFLiteConverter</code>는 그래프 재작성/양자화 파라미터 계산만 수행</td><td><span class="pass">무해</span> — CUDA 커널을 한 번도 호출하지 않는 순수 CPU 작업이라 경고만 찍히고 결과에 영향 없음</td></tr>
+    </table>
+    <p>즉 "같은 클래스의 원인이 어디서는 치명적이고 어디서는 무해하다"는 것 자체가 포인트입니다 — <b>무엇이 GPU를 실제로 쓰는지</b>가 경고의 심각도를 가릅니다. 사용자가 로그에 남긴 자체 진단("변환 작업 자체는 CPU로도 무관")이 정확히 이 구분을 짚은 것입니다.</p>
+
+    <h4 class="sub"><code>fully_quantize: 0, inference_type: 6, ...</code> 라인</h4>
+    <p>
+      <span class="badge conf">확인됨</span>
+      <code>input_inference_type: INT8, output_inference_type: INT8</code>은 스크립트의 <code>conv.inference_input_type = tf.int8</code> / <code>conv.inference_output_type = tf.int8</code> 설정과 정확히 일치하고, §1에서 실측한 입력 텐서의 <code>dtype=int8</code>로도 재확인됩니다.
+    </p>
+    <p>
+      <span class="badge unconf">불확실</span>
+      <code>fully_quantize</code>가 <code>0</code>(false)으로 찍힌 이유와 <code>inference_type: 6</code>이라는 정수 enum이 내부적으로 정확히 무엇을 가리키는지는 이번 조사로 권위 있게 확정하지 못했습니다. 정황상 <code>fully_quantize</code>는 MLIR 양자화기의 파라미터로, "모델 본문뿐 아니라 입출력까지 양자화하는가"를 나타내는 것으로 보이는데 — 구버전 API는 이걸 단일 플래그로 노출했지만, 지금 쓰는 최신 파이썬 API(<code>inference_input_type</code>/<code>inference_output_type</code>을 별도 필드로 설정)에서는 그 경로를 안 타서 <code>0</code>으로 남는 것으로 추정됩니다. 다만 이 추정을 1차 소스로 확정 검증하지는 못했으므로, 이 문단은 <b>추정</b>으로 남깁니다 — 위 두 <code>*_inference_type: INT8</code> 필드만 확정된 사실입니다.
+    </p>
+  </div>
+
+  <!-- ===================== S5 ===================== -->
+  <div class="step" id="s5">
+    <h3><span class="num">5</span>언제 뭘 쓰나</h3>
+    <p class="lead">위 이론·실측을 종합한 실전 선택 가이드입니다 — 구글 공식 문서의 특정 플로우차트를 그대로 옮긴 게 아니라, 이 문서에서 다룬 근거들을 조합한 정리입니다.</p>
+    <table class="ck">
+      <tr><th>상황</th><th>추천</th><th>근거</th></tr>
+      <tr><td>캘리브레이션 데이터가 없거나 준비하기 번거롭다 · 일반 CPU/모바일 배포</td><td><b>Dynamic-range</b></td><td><code>representative_dataset</code> 불필요, 4x 크기·2-3x 속도<sup>[2][5]</sup></td></tr>
+      <tr><td>타깃 기기가 fp16 네이티브 연산 지원(GPU delegate) · 정확도 손실에 민감</td><td><b>Float16</b></td><td>정수 변환이 아니라 정밀도만 축소 — 정확도 손실이 가장 적은 편<sup>[6]</sup></td></tr>
+      <tr><td>Edge TPU / MCU / 정수 전용 NPU 배포 · 배포 가능성이 정확도보다 우선</td><td><b>Full-INT8</b></td><td>유일하게 입출력까지 정수 — 단, 대표 데이터셋 확보 필수, 미지원 연산 있으면 변환 자체가 실패<sup>[7]</sup></td></tr>
+      <tr><td>정확도/성능 기준선 확인, 디버깅</td><td><b>FP32</b></td><td>양자화 오차를 배제한 비교 기준</td></tr>
+      <tr><td>PTQ로도 정확도 손실이 못 참을 수준</td><td><b>QAT로 전환 검토</b></td><td>Nagel et al.: 재학습 루프에 양자화 오차를 넣어 손실을 더 좁힐 수 있음<sup>[4]</sup></td></tr>
+    </table>
+    <div class="note warnb">
+      <span class="tag">Warning</span>
+      이 표는 <b>미학습 데모 모델·CPU 단독·마이크로벤치마크</b> 조건에서 얻은 통찰을 일반화한 것입니다. 실제 모델(수백만 파라미터 이상)과 실기기(MCU/NPU)에서는 §3에서 관측된 "정수가 오히려 느림" 같은 역전 현상이 사라지고, 문서가 말하는 이론적 이득(4x 크기, 2-3x~10x 속도)이 훨씬 더 뚜렷하게 나타나는 것이 정상입니다.
+    </div>
+  </div>
+
+  <!-- ===================== S6 ===================== -->
+  <div class="step" id="s6">
+    <h3><span class="num">6</span>참고문헌</h3>
+    <ol class="refs">
+      <li><b>Jacob, B. et al. (2018) — Quantization and Training of Neural Networks for Efficient Integer-Arithmetic-Only Inference</b><div class="meta">CVPR 2018 · <a href="https://arxiv.org/abs/1712.05877" target="_blank" rel="noopener">arXiv:1712.05877</a> — affine 양자화 수식과 정수 전용 행렬곱 유도의 원 출처</div></li>
+      <li><b>Krishnamoorthi, R. (2018) — Quantizing deep convolutional networks for efficient inference: A whitepaper</b><div class="meta"><a href="https://arxiv.org/abs/1806.08342" target="_blank" rel="noopener">arXiv:1806.08342</a> — per-channel 가중치 양자화, PTQ 정확도/속도 실측 벤치마크(2% 이내 손실, 2-3x~10x 속도)</div></li>
+      <li><b>Gholami, A. et al. (2021) — A Survey of Quantization Methods for Efficient Neural Network Inference</b><div class="meta"><a href="https://arxiv.org/abs/2103.13630" target="_blank" rel="noopener">arXiv:2103.13630</a> — symmetric/asymmetric, uniform/non-uniform 양자화 분류 체계</div></li>
+      <li><b>Nagel, M. et al. (2021) — A White Paper on Neural Network Quantization</b><div class="meta"><a href="https://arxiv.org/abs/2106.08295" target="_blank" rel="noopener">arXiv:2106.08295</a> — PTQ vs QAT 정의 및 캘리브레이션(MinMax/MSE 등) 방법론</div></li>
+      <li class="doc"><b>Post-training dynamic range quantization</b><div class="meta">Google AI Edge / LiteRT 공식 문서 · <a href="https://developers.google.com/edge/litert/conversion/tensorflow/quantization/post_training_quant" target="_blank" rel="noopener">developers.google.com/edge/litert/.../post_training_quant</a></div></li>
+      <li class="doc"><b>Post-training float16 quantization</b><div class="meta">Google AI Edge / LiteRT 공식 문서 · <a href="https://developers.google.com/edge/litert/conversion/tensorflow/quantization/post_training_float16_quant" target="_blank" rel="noopener">developers.google.com/edge/litert/.../post_training_float16_quant</a></div></li>
+      <li class="doc"><b>Post-training integer quantization</b><div class="meta">Google AI Edge / LiteRT 공식 문서 · <a href="https://developers.google.com/edge/litert/conversion/tensorflow/quantization/post_training_integer_quant" target="_blank" rel="noopener">developers.google.com/edge/litert/.../post_training_integer_quant</a></div></li>
+    </ol>
+    <p style="font-size:12.5px;color:var(--dim)">문서 URL은 2026-07 기준입니다. TensorFlow Lite 공식 문서는 <code>ai.google.dev/edge/litert/...</code> → <code>developers.google.com/edge/litert/...</code>로 리브랜딩·리다이렉트되었습니다.</p>
+  </div>
+
+  <footer>
+    <div>이 문서의 실측값은 <code>~/ladder-work/lv2/</code>의 실제 산출물(<code>model_*.tflite</code> 4개, <code>lv2_convert.py</code>/<code>lv2_bench.py</code>/<code>lv2_infer.py</code>)과 <code>~/ladder-work/ladder_notes.md</code>의 측정표를 근거로 합니다. 양자화 파라미터(scale/zero_point)는 이 문서를 작성하며 <code>ai_edge_litert.interpreter.Interpreter</code>로 해당 파일을 직접 열어 재확인했습니다.</div>
+    <div class="next">관련 문서 &nbsp;<b>study_guide/02_deployment_ladder.md</b> — 0.5단계 배포 사다리 Lv.1~4 전체, <b>logs/stage0.5_ladder_log.html</b> — Lv.2~4 전체 실행 로그</div>
+  </footer>
+
+</div>
+</body></html>
