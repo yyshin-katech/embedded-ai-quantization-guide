@@ -4,6 +4,8 @@
 
 이 문서는 앞선 단계들([01](01_environment_setup.md)~[08](08_capstone.md))과 [12주 로드맵](09_roadmap.md)을 관통하는 **5대 실패 패턴**을 정리한다. 각 함정은 **증상 → 원인(수치·메커니즘) → 예방 → 디버깅 절차 → 재현 코드** 순으로, 재현·검증 가능한 코드와 함께 다룬다.
 
+> 💡 이 문서의 함정 1-b와 함정 4의 실측 사례는 **이 스터디의 1단계 실습에서 실제로 밟은 것**이다. 수치·로그 원문은 [1단계 양자화 실습 로그](../logs/stage1_quantization_log.html)에 있고, 본문에서 해당 장으로 링크한다. 측정 환경은 RTX 3060 / ResNet18 / batch=1 p50 / ORT 1.23.2 + TensorRT 10.16.x이며, **정확도는 클래스당 1장짜리 큐레이션 셋에서 잰 것이라 절대값이 부풀려져 있다 — 상대 변화(%p)만 인용한다.**
+
 > 💡 팁: 이 다섯 개는 "지식 부족"이 아니라 "무심코"에서 온다. 다 알아도 매번 당한다. 그래서 마지막의 [실무 체크리스트](#실무-체크리스트-양자화-전후-반드시-확인)를 프로젝트마다 복사해 쓰길 권한다.
 
 > ⚠️ 정본 버전 스택(2026-07 기준): **CUDA 12.8 / onnx 1.18.0 (IR 11) / onnxruntime-gpu 1.23.2 / TensorRT 10.16.x LTS / ExecuTorch 1.3.x**. 아래 코드·명령은 이 조합 기준이다. ONNX export는 이 스택의 IR 상한 때문에 **opset ≤ 23**을 지킨다([0단계 2절](01_environment_setup.md)). TensorRT는 10.x부터 plugin이 `IPluginV3`로 통일됐고(함정 5), QNN EP는 dynamic shape·Loop/If를 지원하지 않는다(함정 3·4).
@@ -25,6 +27,8 @@
 - [ ] 5대 함정의 **증상**을 보고 원인을 추정할 수 있다.
 - [ ] 캘리브레이션 대표성·전처리 일치를 **코드로 검증**할 수 있다.
 - [ ] "export 성공"과 "칩 동작"을 구분하고, offload 비율을 근거로 fallback 여부를 판단할 수 있다.
+- [ ] **"EP가 목록에 있다/결과가 맞다"와 "그 EP가 실제로 그래프를 실행했다"를 구분**하고, 로그와 FP32 대비 latency로 판정할 수 있다(함정 4 실측 사례).
+- [ ] **라이브러리 기본값이 내가 고른 알고리즘을 무력화했는지**를 산출물 비교로 자가진단할 수 있다(함정 1-b).
 - [ ] `polygraphy inspect capability`로 백엔드 미지원 op를 특정할 수 있다.
 - [ ] 양자화 전/후 체크리스트를 프로젝트에 적용할 수 있다.
 
@@ -50,7 +54,7 @@ Static PTQ는 **캘리브레이션 데이터로 activation의 min/max(또는 분
 - 캘리브 셋을 **운영 데이터 분포로 층화 샘플링**(주간/야간/터널/역광/우천 등 조건별 최소 표본 확보).
 - 너무 적은 표본 금지. 이미지 분류 기준 수백 장, batch size 1은 피한다(정확도 저하·시간 증가 사례 다수).
 - 캘리브 셋을 **버전 관리**하고, 어떤 조건이 몇 %인지 매니페스트로 남긴다.
-- entropy(KL) calibrator를 기본으로. 극단 outlier가 소수면 percentile clip(99.9%)로 상한을 살짝 낮춰 오히려 평균 오차를 줄인다.
+- 캘리브 방법(MinMax / entropy(KL) / percentile)은 **모델의 activation 분포를 보고** 고른다. 극단값이 *잡음*이면 clipping(KL·percentile)이 평균 오차를 줄이지만, 극단값이 *실제 특징*이면 자르는 만큼 그대로 손실이다 — 실측에서 ResNet18(post-ReLU activation)은 MinMax가 최적이었고 percentile 99.9는 **−6.2%p**였다([1단계 실습 로그 5장](../logs/stage1_quantization_log.html#s5)). 기본값으로 clipping 계열을 깔지 말고, 바꿨으면 **아래 함정 1-b로 실제로 바뀌었는지부터** 확인하라.
 
 **디버깅 절차**
 1. **조건별로 정확도를 쪼갠다.** "전체 76%"가 아니라 "주간 78% / 야간 61%"를 본다. 조건별로 쪼개지 않으면 이 함정은 절대 안 보인다.
@@ -120,6 +124,102 @@ for layer in calib:
 → `layer1`처럼 초반 레이어에서 초과 비율이 높으면, 그 조건(야간 등) 표본을 캘리브 셋에 넣고 재양자화한다.
 
 > 🔴 함정: "검증셋 정확도 1개 숫자"만 보면 통과한다. **조건별로 쪼갠 정확도**(야간 acc, 역광 acc)를 따로 봐야 이 함정이 드러난다. `over > 0.5%`는 경험칙 임계이니, 정확도 급락과 함께 보라.
+
+### 함정 1-b — 캘리브 데이터는 맞는데, 고른 **캘리브 방법이 실행되지 않은** 경우
+
+> 같은 "scale이 잘못 잡힌다"는 결과지만 **축이 다르다.** 함정 1은 *데이터*가 범위를 못 봐서 생기고, 1-b는 *라이브러리 기본값*이 내가 고른 알고리즘을 무력화해서 생긴다. 데이터를 아무리 손봐도 1-b는 안 고쳐진다.
+
+**증상**
+- `CalibrationMethod`를 바꿔 재양자화했는데 정확도가 **소수점까지 똑같다**(예측 불일치 0장).
+- 그런데 양자화 **시간은 확실히 늘었다** → "무거운 걸 하고 있구나"라고 착각하게 된다. 이게 이 함정이 안 잡히는 이유다.
+- 튜닝 노트에 "entropy 시도 → 개선 없음"이 남고 그 방법이 후보에서 탈락한다. 실제로는 **시도된 적이 없다.**
+
+**원인 — ORT `CalibrationMethod.Entropy`의 탐색 공간 크기가 1**
+
+`EntropyCalibrater`의 기본값은 `num_bins=128`, `num_quantized_bins=128`이다. KL 임계 탐색은 "히스토그램을 어디서 자를까"의 후보들을 훑어 비교하는 알고리즘인데, `get_entropy_threshold`에서 후보 배열이 이렇게 만들어진다.
+
+```python
+# onnxruntime/quantization/calibrate.py — get_entropy_threshold() (ORT 1.23.2)
+zero_bin_index         = num_bins // 2              # 128 // 2 = 64
+num_half_quantized_bin = num_quantized_bins // 2    # 128 // 2 = 64
+kl_divergence = np.zeros(zero_bin_index - num_half_quantized_bin + 1)   # = np.zeros(1)
+```
+
+`num_bins == num_quantized_bins`이면 후보가 **정확히 1개**, 그것도 "자르지 않음(= 전체 범위)"뿐이다. 그건 정의상 MinMax다. 즉 **KL 캘리브레이션은 실행되는 시늉만 하고 MinMax와 같은 답을 낸다.**
+
+> 실측(RTX 3060 / ResNet18 / ORT 1.23.2, 캘리브 200장): activation `scale`·`zero_point`가 **32/32 텐서 전부 1e-12 이내로 동일**, 평가 1000장에서 **예측 불일치 0장**. 그런데 양자화 시간은 **9.0s → 25.1s(2.8배)**. ([1단계 실습 로그 4장](../logs/stage1_quantization_log.html#s4))
+
+**게다가 고치는 경로가 막혀 있다.** `num_bins`를 키우면 되지만, `quantize_static`이 캘리브레이터로 넘기는 `extra_options` 키는 아래 5개 화이트리스트뿐이라 **`num_bins`/`num_quantized_bins`는 전달 자체가 불가능**하다(`create_calibrator`는 받는데 `quantize_static`이 안 넘긴다).
+
+```
+CalibTensorRangeSymmetric · CalibMovingAverage · CalibMovingAverageConstant
+CalibMaxIntermediateOutputs · CalibPercentile
+```
+
+> ⚠️ 이 동작은 **2026-08 기준 onnxruntime `main`에서도 그대로**다 — `EntropyCalibrater`의 기본값은 여전히 `num_bins=128, num_quantized_bins=128`이고, `quantize.py`의 `calib_extra_options_keys`도 위 5개뿐이다. 기본값이 128인 것에 대한 이슈([microsoft/onnxruntime#9597](https://github.com/microsoft/onnxruntime/issues/9597))는 **닫혔지만 기본값은 바뀌지 않았다.** 즉 "ORT를 올리면 해결"이 아니다. ([calibrate.py](https://github.com/microsoft/onnxruntime/blob/main/onnxruntime/python/tools/quantization/calibrate.py), [quantize.py](https://github.com/microsoft/onnxruntime/blob/main/onnxruntime/python/tools/quantization/quantize.py))
+
+**자가진단 — 옵션을 바꾼 두 산출물의 activation scale을 비교한다**
+
+```python
+# compare_scales.py
+# 목적: 캘리브 옵션을 바꾼 두 QDQ 모델의 activation scale/zero_point가 실제로 달라졌는지 확인
+# 실행: python3 compare_scales.py int8_minmax.onnx int8_entropy.onnx
+import sys
+import numpy as np, onnx
+from onnx import numpy_helper
+
+def act_scales(path):
+    m = onnx.load(path)
+    init = {i.name: numpy_helper.to_array(i) for i in m.graph.initializer}
+    out = {}
+    for n in m.graph.node:
+        if n.op_type != "QuantizeLinear" or n.input[0] in init:
+            continue                      # 입력이 상수면 weight QDQ — activation만 본다
+        s = init.get(n.input[1])
+        if s is None:
+            continue
+        z = init.get(n.input[2]) if len(n.input) > 2 else np.zeros(1, np.uint8)
+        out[n.input[0]] = (np.asarray(s).ravel(), np.asarray(z).ravel())   # 양자화 대상 텐서명으로 키
+    return out
+
+a, b = act_scales(sys.argv[1]), act_scales(sys.argv[2])
+common = sorted(set(a) & set(b))
+same = sum(1 for k in common
+           if np.allclose(a[k][0], b[k][0], rtol=0, atol=1e-12)
+           and np.array_equal(a[k][1], b[k][1]))
+print(f"공통 activation 텐서 {len(common)}개 중 scale·zp가 동일한 것: {same}/{len(common)}")
+print("🔴 옵션이 안 먹었다(알고리즘 퇴화 또는 인자 미전달)" if same == len(common)
+      else "✅ 옵션이 실제로 반영됐다")
+```
+
+기대 출력(퇴화한 경우):
+```
+공통 activation 텐서 32개 중 scale·zp가 동일한 것: 32/32
+🔴 옵션이 안 먹었다(알고리즘 퇴화 또는 인자 미전달)
+```
+
+**우회 (정말 KL을 돌려야 한다면)** — `quantize_static`이 걸러버리는 인자를, 그 아래의 `create_calibrator`를 몽키패치해 `extra_options`에 직접 꽂는다. 두 가지를 틀리기 쉽다: (1) `num_bins`는 `create_calibrator`의 **직접 kwarg가 아니라 `extra_options`의 소문자 키**다. (2) `import onnxruntime.quantization.quantize as QZ`는 패키지 `__init__`이 re-export한 **동명의 함수**를 잡아버리므로, `importlib`로 **모듈을** 가져와야 한다.
+
+```python
+import importlib
+QZ = importlib.import_module("onnxruntime.quantization.quantize")   # 모듈을 직접 (함수 아님)
+_orig = QZ.create_calibrator
+
+def _patched(*a, **kw):
+    eo = dict(kw.get("extra_options") or {})
+    eo["num_bins"] = 2048              # 소문자 키 — 화이트리스트를 우회해 직접 주입
+    eo["num_quantized_bins"] = 128     # 탐색 후보 = 1024 − 64 + 1 = 961개
+    kw["extra_options"] = eo
+    return _orig(*a, **kw)
+
+QZ.create_calibrator = _patched
+# 이후 quantize_static(...) 호출 → 로그에 "Number of histogram bins : 2048"이 찍히면 성공
+# 끝나면 QZ.create_calibrator = _orig 로 되돌린다
+```
+
+> ⚠️ 주의: **"고쳤더니 좋아진다"가 아니다.** 실측에서 탐색을 정상화(2048/128)한 Entropy는 오히려 **−10.8%p**로, 퇴화 상태보다 **더 나빴다**(시간도 51.0s). ResNet18의 post-ReLU 극단값은 잡음이 아니라 실제 특징이라, KL이 고르는 임계가 이 모델에선 해롭다. 퇴화를 고치는 것과 정확도가 오르는 것은 별개다.
+
+> 🔴 함정(일반화): **옵션을 바꿨는데 산출물이 비트 단위로 같으면, 그 옵션은 안 먹은 것이다.** 캘리브 방법에 국한된 얘기가 아니다 — `per_channel`, `reduce_range`, opt level, EP provider option 모두 같은 방식으로 조용히 무시될 수 있다. "느려졌으니 뭔가 하고 있다"는 **증거가 아니다**. 옵션을 바꿀 때마다 *바뀌었어야 할 산출물*(scale, initializer 개수, 노드 수, 엔진 크기)을 한 줄이라도 비교하는 습관을 들여라.
 
 ---
 
@@ -318,12 +418,13 @@ NonZero                x1
 
 ## 함정 4 — fallback 지옥 (subgraph가 쪼개지면 FP32보다 느리다)
 
-> 관련 단계: [06_multi_soc.md](06_multi_soc.md)(TIDL/QNN/DRP-AI), [09_roadmap.md](09_roadmap.md) 9~11주(`four_target_matrix.md`)
+> 관련 단계: [03_quantization_theory.md](03_quantization_theory.md)(양자화 dtype 선택), [05_tensorrt.md](05_tensorrt.md)(TRT EP/엔진), [06_multi_soc.md](06_multi_soc.md)(TIDL/QNN/DRP-AI), [09_roadmap.md](09_roadmap.md) 9~11주(`four_target_matrix.md`)
 
 **증상**
 - 가속기(NPU/DSP)에 올렸는데 **오히려 FP32 CPU보다 느리다.**
 - 컴파일 로그에 subgraph가 수십 개로 쪼개짐(예: 20개). 가속기↔CPU를 왔다갔다.
 - profile을 보면 연산 시간보다 **메모리 복사/동기화 시간**이 더 크다.
+- **EP가 provider 목록에 정상으로 잡히고, 세션도 만들어지고, 결과도 정확한데** INT8이 FP32보다 느리다(아래 실측 사례). 실패를 알리는 예외·리턴코드가 **아무것도 없다.**
 
 **원인 (수치·메커니즘)**
 백엔드가 미지원 op를 만나면 그래프를 **여러 subgraph로 분할**하고, 미지원 부분을 CPU/ARM으로 fallback시킨다. 분할이 잦으면 가속기↔호스트 간 **데이터 복사·동기화 오버헤드**가 연산 이득을 잡아먹는다. op 하나가 그래프 중간에서 미지원이면, 앞뒤가 통째로 쪼개진다.
@@ -345,7 +446,8 @@ NonZero                x1
 1. **먼저 offload 비율과 subgraph 개수를 센다.** latency는 그 다음이다.
 2. QNN: VERBOSE 로그에서 각 EP에 할당된 노드 수를 세거나, `disable_cpu_ep_fallback`로 "전부 HTP인지" 강제 확인.
 3. TIDL: 컴파일 로그의 "Runtimes Graphviz"/subgraph 요약에서 C7x vs ARM 분할을 확인.
-4. 판정표(아래)로 "정상/경계/지옥"을 분류하고, 지옥이면 미지원 op 위치를 함정 3 절차로 특정해 앞뒤로 몬다.
+4. TensorRT EP(ONNX Runtime): `sess.get_providers()`는 **등록된** provider를 돌려줄 뿐 실행 여부가 아니다. `log_severity_level`을 2 이하로 **되돌려**(벤치 스크립트가 올려놨을 가능성이 높다) 파서/파티셔닝 에러를 읽고, **같은 모델의 FP32를 같은 EP로 돌린 latency와 비교**한다(아래 실측 사례·`ep_offload_check.py`).
+5. 판정표(아래)로 "정상/경계/지옥"을 분류하고, 지옥이면 미지원 op 위치를 함정 3 절차로 특정해 앞뒤로 몬다.
 
 ```python
 # qnn_partition_check.py — ONNX Runtime EP가 몇 개 노드를 fallback시키는지 확인
@@ -384,6 +486,146 @@ grep -Ei "subgraph|deny|delegate|offload|Unsupported|ARM|C7x" tidl_compile.log
 | > 90% | 1~3 | 정상. 가속기 이득 기대 | 그대로 진행 |
 | 50~90% | 4~10 | 경계. fallback op 위치 점검 | 중앙 미지원 op를 앞/뒤로 이동 |
 | < 50% | > 10 | 🔴 fallback 지옥. FP32보다 느릴 수 있음 | 모델 재설계/화이트리스트 재선정 |
+
+**실측 사례 — TensorRT EP가 INT8 QDQ 그래프를 "0%" 가져간다 (offload 비율의 극단값)**
+
+> 측정 환경: RTX 3060 12GB / ResNet18(torchvision) / batch=1, 100회 p50 / **ORT 1.23.2 + TensorRT 10.16.x** / 캘리브 200장. 정확도는 클래스당 1장짜리 큐레이션 셋(1000장)에서 잰 것이라 FP32 top-1이 공식값(69.76%)보다 높은 78.5%로 부풀려진다 — **절대값은 인용하지 말고 상대 변화(%p)만** 본다. 전 과정: [1단계 실습 로그 8장](../logs/stage1_quantization_log.html#s8)
+
+위 판정표는 NPU/DSP 얘기처럼 보이지만, **데스크톱 GPU + TensorRT EP에서 offload 비율이 0%가 되는 일**이 1단계에서 그대로 재현됐다. [03_quantization_theory.md](03_quantization_theory.md) 4.3의 권장 설정(ORT 기본, `activation_type=QUInt8` 비대칭)으로 만든 INT8 QDQ ONNX를 ONNX Runtime **TensorRT EP**로 돌렸더니:
+
+- `sess.get_providers()`에 `TensorrtExecutionProvider`가 **정상으로 잡히고**, 세션 생성도 성공하고, **출력도 정확하다**(FP32 대비 예측 차이가 통계적으로 유의하지 않음).
+- 그런데 p50이 **3.05 ms** — 같은 모델 FP32를 같은 TRT EP로 돌린 **0.95~1.03 ms보다 3배 느리다.**
+
+로그를 뒤져 보면 진짜 이유가 나온다. **TRT 파서가 그래프를 하나도 못 가져갔다.**
+
+```
+[WARNING] onnxOpImporters.cpp:1695: TensorRT supports QuantizeLinear/DequantizeLinear with
+          UINT8 zero_point only on DLA (version >= 3.16). Defaulting to INT8 instead.
+[WARNING] onnxOpImporters.cpp:1703: For zero_point with type int32 TensorRT will use INT8 instead.
+[ERROR] ITensor::getDimensions: Error Code 4: API Usage Error
+        (conv1.weight_bias_DequantizeLinear: input has type Int32 but must have type
+         FP8, FP4, Int4, or Int8. In checkType at nodeBase.cpp:455)
+[ERROR] ModelImporter.cpp:149: ERROR: In function parseNode:
+        [6] Invalid Node - conv1.weight_bias_DequantizeLinear
+[ERROR] [6] Assertion failed: shiftIsAllZeros(zeroPoint): Non-zero zero point is not supported.
+        ... conv/fc 21개 전부에서 반복
+```
+
+맨 위 두 줄이 이 함정의 **가장 알아보기 쉬운 지문**이다. TRT가 "네 uint8/int32 zero_point는 여기서 못 쓴다"고 **말해 주고 있다.**
+
+> ⚠️ 그런데 왜 못 보고 지나가는가. ORT의 기본 severity는 WARNING이라 이 줄들은 **사실 찍히기는 한다** — 다만 추론 한 번에 WARNING/ERROR가 **400줄 넘게** 쏟아지고(실측: 세션 생성+1회 run에 444줄), 그게 다 지나간 뒤 세션은 **정상 리턴**한다. 실패를 알리는 예외도, 종료 코드도, 요약 한 줄도 없다. 게다가 벤치마크 스크립트는 출력을 깔끔하게 하려고 `so.log_severity_level = 3~4`로 **올려두는 게 관행**이라(1단계의 `check_trt.py`가 실제로 `= 4`였다) 그 순간 진짜로 한 줄도 안 남는다. **"로그에 에러가 없었다"가 아니라 "로그를 안 봤다/꺼놨다"인 경우가 대부분이다.**
+
+**에러는 두 종류인데 원인은 하나다.** 위 로그에는 ① INT32 bias DQ 타입 에러와 ② `shiftIsAllZeros`(non-zero zero-point) assertion이 **같이** 뜬다. 둘 다 ORT 기본 설정에서 나오니 "독립적인 원인이 둘"로 읽기 쉽지만, **2×2 절제 실험**(두 변수를 따로 껐다 켜 본 것)으로 갈라 보면 파싱 성공/실패를 가르는 변수는 **하나뿐**이다:
+
+| # | activation | `QuantizeBias` | INT32 bias DQ | TRT p50 | CUDA p50 | 판정 |
+|---|-----------|----------------|---------------|---------|----------|------|
+| A | `QUInt8` 비대칭 (zp≠0) | `True` | 21개 | 2.99 ms | 1.81 ms | 🔴 폴백 |
+| B | `QUInt8` 비대칭 (zp≠0) | **`False`** | **0개** | 3.07 ms | 1.82 ms | 🔴 **여전히 폴백** |
+| C | `QInt8` 대칭 (zp=0) | `True` | **21개** | **0.52 ms** | 2.14 ms | ✅ **빌드 성공** |
+| D | `QInt8` 대칭 (zp=0) | `False` | 0개 | 0.51 ms | 2.03 ms | ✅ 빌드 성공 |
+
+> 이 표는 위 본문과 **별도 실행**(4개 모델을 한 번에, 워밍업 20 + 측정 60회 p50)이라 절대값이 본문의 100회 측정과 소수점에서 다르다(C 0.52 ↔ 본문 0.55). 여기서 읽을 것은 값이 아니라 **✅/🔴의 배치**다. 재현 스크립트는 [실습 로그 8장](../logs/stage1_quantization_log.html#s8).
+
+B는 INT32 bias DQ를 **0개로 만들어도 실패**하고, C는 **21개가 그대로 남아 있는데도 성공**한다. 즉:
+
+1. **하드 블로커는 ② `zero_point ≠ 0` 하나다.** TensorRT는 Q/DQ에 **대칭(zero_point=0)만** 받는다.
+2. **① INT32 bias DQ 에러는 2차 증상이다.** zero-point 때문에 Q/DQ 융합이 깨지고 나면 bias DQ가 홀로 남아 타입 검사에 걸린다. 융합이 정상이면 TRT는 INT32 bias DQ를 그대로 받아들인다(case C).
+3. 따라서 `"QuantizeBias": False`는 **해법이 아니라 선택적 정리**다. 이것만 켜고 zero-point를 안 고치면 아무것도 달라지지 않는다.
+
+결과적으로 노드를 하나도 못 가져가고 전부 폴백하며, 파티셔닝 오버헤드까지 얹혀 **FP32보다 느려진다.**
+
+> 💡 **일반 교훈:** 에러 메시지가 N개라고 원인이 N개인 건 아니다. 여러 에러가 같이 뜰 때는 **변수를 하나씩만 바꾼 조합을 만들어** 어느 것이 진짜 블로커인지 갈라야 한다. 여기서는 조합 4개를 뽑는 데 몇 분이면 됐고, 그 결과 처방이 "두 군데 고쳐라"에서 "한 군데 고쳐라(+선택적 정리)"로 정확해졌다.
+
+**해결 — 타깃이 TensorRT면 활성화를 대칭 `QInt8`로 뒤집는다**
+
+```python
+# 같은 캘리브 리더·같은 데이터, dtype/대칭성만 바꾼다
+from onnxruntime.quantization import quantize_static, QuantType, QuantFormat, CalibrationMethod
+from calib_reader import ImageNetCalibReader      # 03_quantization_theory.md 4.2의 리더
+
+reader = ImageNetCalibReader("imagenet/val", input_name="input", limit=200)
+
+quantize_static(
+    "resnet18_fp32.onnx", "resnet18_int8_trt_sym.onnx", reader,
+    quant_format=QuantFormat.QDQ,
+    activation_type=QuantType.QInt8,        # ← QUInt8(비대칭) 금지. TRT는 int8 대칭만.
+    weight_type=QuantType.QInt8,
+    per_channel=True,
+    calibrate_method=CalibrationMethod.MinMax,
+    extra_options={
+        "ActivationSymmetric": True,        # ← 이 둘을 "같이" 바꿔야 zero_point=0이 된다.
+                                            #    QUInt8인 채로 이것만 켜면 zp=127이라 여전히 실패.
+        # "QuantizeBias": False,            # 선택. bias INT32 DQ를 없애 그래프를 정리(0.52 → 0.51 ms).
+    },
+)
+```
+
+| 설정 | TRT EP p50 | vs FP32(TRT EP) | top-1 변화(vs FP32) | McNemar p |
+|------|-----------|-----------------|--------------------|-----------|
+| FP32 | 0.95~1.03 ms | 1.00× | — | — |
+| INT8 `QUInt8` 비대칭 (ORT 기본 권장) | **3.05 ms** | **0.34× (느려짐)** | +0.4%p | 0.4795 n.s. |
+| INT8 `QInt8` 대칭 | **0.55 ms** | **1.87×** | −0.4%p | 0.5224 n.s. |
+| INT8 `QInt8` 대칭 + `QuantizeBias=False` | 0.51 ms | 2.02× | −0.4%p | 0.5224 n.s. |
+
+**같은 INT8인데 TensorRT에서 5.5배 차이**(3.05 → 0.55 ms)이고, 정확도 대가는 −0.4%p로 **통계적으로 유의하지 않다**(McNemar p=0.52). 즉 "activation은 비대칭 uint8"은 **x86 CPU/VNNI 한정 권장**이고, 타깃이 TensorRT면 반드시 뒤집어야 한다([05_tensorrt.md](05_tensorrt.md)).
+
+> 💡 참고: 같은 벤치를 다른 EP로 돌리면, ORT **CUDA EP**에서는 INT8이 FP32보다 **31% 느리다**(1.40 → 1.83 ms). CUDA EP에는 QDQ INT8 conv 커널이 없어 DQ로 되돌려 FP로 계산하기 때문이다. GPU에서 INT8 이득을 보려면 TRT EP(또는 `trtexec` 엔진 빌드)가 **필수**다. 반대로 CPU EP에서는 VNNI 없는 i7-6700에서도 13.18 → 7.23 ms(**1.82×**)로 기대대로 빨라졌다.
+
+**진단 스니펫 — 로그 + FP32 대비 latency로 폴백을 잡는다**
+
+```python
+# ep_offload_check.py
+# 목적: EP가 "목록에 있다"가 아니라 "실제로 그래프를 가져갔다"를 로그+latency로 판정
+# 실행: python3 ep_offload_check.py resnet18_fp32.onnx resnet18_int8.onnx
+import sys, time
+import numpy as np, onnxruntime as ort
+
+ort.set_default_logger_severity(2)     # 2=WARNING. 벤치 스크립트가 3~4로 올려놨으면 되돌린다.
+CHAIN = ["TensorrtExecutionProvider", "CUDAExecutionProvider", "CPUExecutionProvider"]
+
+def bench(path, provider, iters=100, warmup=20):
+    so = ort.SessionOptions()
+    so.log_severity_level = 2          # ← 여기서 3~4로 올리는 순간 파서 에러가 사라진다 (0=VERBOSE면 노드 할당까지)
+    providers = CHAIN[CHAIN.index(provider):]                     # 그 EP + 아래쪽 폴백 체인
+    sess = ort.InferenceSession(path, so, providers=providers)
+    inp = sess.get_inputs()[0]
+    shape = [d if isinstance(d, int) else 1 for d in inp.shape]   # dynamic batch → 1
+    x = np.random.randn(*shape).astype(np.float32)
+    for _ in range(warmup):
+        sess.run(None, {inp.name: x})                             # TRT 엔진 빌드/워밍업 포함
+    ts = []
+    for _ in range(iters):
+        t0 = time.perf_counter(); sess.run(None, {inp.name: x}); ts.append((time.perf_counter() - t0) * 1e3)
+    return float(np.percentile(ts, 50)), sess.get_providers()
+
+fp32, int8 = sys.argv[1], sys.argv[2]
+for provider in CHAIN:
+    if provider not in ort.get_available_providers():
+        continue
+    p_fp32, registered = bench(fp32, provider)
+    p_int8, _          = bench(int8,  provider)
+    # 판정: INT8인데 FP32보다 느리면 그 EP가 INT8 그래프를 안 가져간 것(또는 INT8 커널이 없는 것)
+    verdict = f"✅ {p_fp32 / p_int8:.2f}× 가속" if p_int8 < p_fp32 else "🔴 폴백/미가속 의심"
+    print(f"{provider:28s} FP32 p50={p_fp32:6.2f}ms  INT8 p50={p_int8:6.2f}ms  {verdict}")
+    print(f"    등록된 provider(실행 여부 아님): {registered}")
+```
+
+기대 출력 — 폴백 중인 모델(`QUInt8` 비대칭):
+```
+TensorrtExecutionProvider    FP32 p50=  0.95ms  INT8 p50=  3.05ms  🔴 폴백/미가속 의심
+    등록된 provider(실행 여부 아님): ['TensorrtExecutionProvider', 'CUDAExecutionProvider', 'CPUExecutionProvider']
+CUDAExecutionProvider        FP32 p50=  1.40ms  INT8 p50=  1.83ms  🔴 폴백/미가속 의심
+CPUExecutionProvider         FP32 p50= 13.18ms  INT8 p50=  7.23ms  ✅ 1.82× 가속
+```
+고친 모델(`QInt8` 대칭)로 같은 스크립트를 돌리면 첫 줄만 뒤집힌다:
+```
+TensorrtExecutionProvider    FP32 p50=  0.95ms  INT8 p50=  0.51ms  ✅ 1.86× 가속
+```
+→ `TensorrtExecutionProvider`가 목록에 **있는데도** 느리다 = 등록만 됐고 실행은 폴백. 여기서 파서 에러를 읽으면 위의 `Invalid Node` 줄이 나온다.
+
+> ⚠️ 폴백 상태의 **절대값은 믿지 마라.** 폴백이 CUDA EP로 가는지 CPU EP로 가는지(= 어떤 provider를 함께 등록했는지)와 머신 부하에 따라 같은 모델이 3~5 ms대에서 출렁인다. 판정 근거는 값이 아니라 **부호**다 — INT8이 FP32보다 느리면 그 EP는 INT8 그래프를 안 가져간 것이다. 반대로 정상 동작하는 쪽(0.51~0.55 ms)은 재현성이 높다.
+
+> 🔴 함정: **"EP가 목록에 있다 + 결과가 맞다"는 그 EP를 실제로 썼다는 증거가 아니다.** 판정은 반드시 **로그와 latency**로 한다. 이건 0단계에서 겪은 `libnvinfer.so.10` 미탐지 무음 CPU 폴백(p50 11.83 ms = CPU급 → 픽스 후 0.41 ms)과 **같은 계열의 함정**이다([01_environment_setup.md](01_environment_setup.md) 3-4-a, [0.5단계 실습 로그](../logs/stage0.5_ladder_log.html)). 한쪽은 라이브러리를 못 찾아서, 한쪽은 그래프를 못 파싱해서 폴백하지만, **둘 다 예외 없이 정확한 결과를 내면서 조용히 느려진다.** 새 EP를 붙였으면 **첫 측정은 항상 FP32 대비 상대 속도**로 하라.
 
 > 🔴 함정: latency만 보고 "느리네" 하고 끝내지 마라. **먼저 offload 비율과 subgraph 개수**를 보면 원인이 즉시 보인다. "가속기에 30%만 올라갔고 subgraph가 18개"라는 한 줄이, "느림"이라는 막연함을 즉시 진단으로 바꾼다.
 
@@ -442,13 +684,16 @@ compute-sanitizer --tool racecheck ./my_app    # shared memory race
 
 ## 2) 함정 요약표
 
-| # | 함정 | 한 줄 증상 | 첫 번째 확인 | 관련 문서 |
-|---|------|-----------|--------------|-----------|
-| 1 | 캘리브 데이터가 전부 | 특정 조건(야간/역광)만 급락 | 조건별 분리 정확도 + `calib_coverage.py` | [03](03_quantization_theory.md) |
-| 2 | 전처리 불일치 | 에러 없이 정확도만 죽음 | `preprocess_parity.py` 바이트 비교 | [03](03_quantization_theory.md), [05](05_tensorrt.md) |
-| 3 | export ≠ 칩 동작 | 컴파일/실행에서 op 미지원 | `polygraphy inspect capability` | [04](04_transformer_quantization.md), [06](06_multi_soc.md) |
-| 4 | fallback 지옥 | 가속기인데 더 느림 | offload 비율·subgraph 개수 | [06](06_multi_soc.md) |
-| 5 | C++ 회피 | plugin/런타임에서 막힘 | 벤더 IPluginV3 template 빌드 여부 | [05](05_tensorrt.md), [07](07_infrastructure.md) |
+| # | 함정 | 한 줄 증상 | 첫 번째 확인 | 관련 문서 | 실측 사례 |
+|---|------|-----------|--------------|-----------|-----------|
+| 1 | 캘리브 데이터가 전부 | 특정 조건(야간/역광)만 급락 | 조건별 분리 정확도 + `calib_coverage.py` | [03](03_quantization_theory.md) | — |
+| 1-b | 고른 캘리브 방법이 실행 안 됨 | 옵션을 바꿔도 결과가 **똑같은데 시간만 늘어남** | `compare_scales.py` — 두 산출물의 activation scale 비교 | [03](03_quantization_theory.md) | [ORT Entropy 퇴화](../logs/stage1_quantization_log.html#s4) |
+| 2 | 전처리 불일치 | 에러 없이 정확도만 죽음 | `preprocess_parity.py` 바이트 비교 | [03](03_quantization_theory.md), [05](05_tensorrt.md) | — |
+| 3 | export ≠ 칩 동작 | 컴파일/실행에서 op 미지원 | `polygraphy inspect capability` | [04](04_transformer_quantization.md), [06](06_multi_soc.md) | — |
+| 4 | fallback 지옥 | 가속기인데 더 느림 (EP 목록엔 잡히고 결과도 맞음) | offload 비율·subgraph 개수 + **FP32 대비 latency**·`ep_offload_check.py` | [05](05_tensorrt.md), [06](06_multi_soc.md) | [TRT EP 무음 폴백](../logs/stage1_quantization_log.html#s8) |
+| 5 | C++ 회피 | plugin/런타임에서 막힘 | 벤더 IPluginV3 template 빌드 여부 | [05](05_tensorrt.md), [07](07_infrastructure.md) | — |
+
+> 1-b는 6번째 함정이 아니라 **함정 1의 다른 축**이다. 함정 1이 "데이터가 범위를 못 봤다"면 1-b는 "그 데이터로 범위를 정하는 알고리즘이 안 돌았다"이다. 둘 다 최종 증상은 "activation scale이 잘못됐다"로 같아서, scale을 의심하게 되면 두 개를 함께 본다.
 
 ---
 
@@ -465,7 +710,7 @@ compute-sanitizer --tool racecheck ./my_app    # shared memory race
 | - [ ] 학습·캘리브·추론 전처리가 **동일 코드/동일 상수**(mean·std·보간·채널순서·레이아웃) | 분포가 어긋나면 scale이 엉키고 INT8에서 정확도 샘. shape 맞아 에러 없음. | 2 |
 | - [ ] calibration cache가 **현재 전처리로** 생성됨(전처리 바꿨으면 캐시 삭제) | 캐시는 전처리에 종속. 옛 캐시 재사용 시 scale 불일치. | 2 |
 | - [ ] 타깃 백엔드의 **지원 op 목록** 확인, 모델 op가 화이트리스트에 듦 | 미지원 op는 빌드 실패 또는 fallback. export 후가 아니라 설계 시 확인. | 3·4 |
-| - [ ] 타깃 EP의 대칭성 요구를 앎(예: GPU/TRT는 symmetric activation+weight) | EP가 요구하는 양자화 스킴과 안 맞으면 재작업. ([ONNX Runtime 양자화](https://onnxruntime.ai/docs/performance/model-optimizations/quantization.html)) | 3 |
+| - [ ] 타깃 EP의 **양자화 dtype·대칭성** 요구를 앎(x86 CPU/VNNI → `QUInt8` 비대칭 / GPU·TensorRT → `QInt8` 대칭) | 스킴이 안 맞으면 **에러 없이 전부 폴백**한다. 실측: 같은 INT8이 TRT EP에서 3.05 ms vs 0.55 ms(**5.5배**). ([ONNX Runtime 양자화](https://onnxruntime.ai/docs/performance/model-optimizations/quantization.html)) | 3·4 |
 | - [ ] dynamic shape 필요 여부 확정(QNN 등은 dynamic shape 미지원 → 고정 shape export) | dynamic shape가 세션 생성 자체를 막는 백엔드가 있음. | 3 |
 
 ### 양자화 후 (Post-quantization)
@@ -473,13 +718,15 @@ compute-sanitizer --tool racecheck ./my_app    # shared memory race
 | 확인 | 근거(왜) | 함정 |
 |------|----------|------|
 | - [ ] INT8 정확도를 **전체 + 조건별(야간/역광 등)로 분리** 측정 | 전체 한 숫자는 조건별 급락을 숨긴다. | 1 |
+| - [ ] 캘리브레이션 **옵션을 바꿨으면 산출물 scale이 실제로 달라졌는지** 확인(`compare_scales.py`) | 라이브러리 기본값이 알고리즘을 무력화할 수 있다. ORT `Entropy`는 기본값에서 MinMax로 퇴화(scale 32/32 동일, 시간만 2.8배). | 1-b |
 | - [ ] 파이프라인 경계마다 수치 정합성 검증(PyTorch↔ONNX↔백엔드, Polygraphy) | 어느 경계에서 어긋나는지 좁혀야 원인이 잡힘. | 2·3 |
 | - [ ] export 후 **즉시 타깃 컴파일**로 op 지원 확인(`polygraphy inspect capability`, `onnx_export_failures.md`) | 미지원 op를 일찍 알수록 우회 시간이 있다. | 3 |
 | - [ ] **offload 비율·subgraph 개수**를 로그로 확인(가속기 이득이 실제로 나는가) | 가속기에 올렸는데 fallback 지옥이면 FP32보다 느림. | 4 |
+| - [ ] EP/백엔드가 **실제로 그래프를 가져갔는지** 로그(`log_severity_level` ≤ 2로 되돌리고 정독) + **FP32 대비 latency**로 확인 | provider 목록에 잡히고 결과가 정확해도 100% 폴백일 수 있다. 실측: TRT EP 3.05 ms(폴백) vs 0.55 ms(정상). | 4 |
 | - [ ] custom plugin/런타임 통합의 C++ 경로가 빌드·검증됨(compute-sanitizer 통과) | 칩 위 실행은 C++. plugin이 조용히 틀린 값을 낼 수 있음. | 5 |
 | - [ ] 위 결과가 **회귀 하네스**로 자동 재측정됨([09_roadmap.md](09_roadmap.md) 12주) | 한 번 잡은 함정이 다음 커밋에서 되살아나는 걸 막는다. | 전부 |
 
-> 💡 팁: 문제가 생기면 이 순서로 의심하라 — (1) 전처리 일치 → (2) 캘리브 대표성 → (3) op 지원/정합성 → (4) offload 비율. 대부분 상위 두 개에서 잡힌다. 이 순서는 "싸고 흔한 것부터"라서 평균 디버깅 시간이 가장 짧다.
+> 💡 팁: 문제가 생기면 이 순서로 의심하라 — **(0) 내가 지정한 옵션/EP가 실제로 적용됐는지**(산출물 diff·로그) → (1) 전처리 일치 → (2) 캘리브 대표성 → (3) op 지원/정합성 → (4) offload 비율. 대부분 상위 세 개에서 잡힌다. 이 순서는 "싸고 흔한 것부터"라서 평균 디버깅 시간이 가장 짧다. (0)이 맨 앞인 이유는, 그게 틀렸으면 아래 셋을 아무리 고쳐도 안 움직이기 때문이다.
 
 ---
 
@@ -487,6 +734,8 @@ compute-sanitizer --tool racecheck ./my_app    # shared memory race
 
 - [ ] `pitfall_checklist.md` — 위 체크리스트를 프로젝트에 맞춰 채운 사본.
 - [ ] (실습 시) `calib_coverage.py`, `preprocess_parity.py` 실행 결과 로그.
+- [ ] (실습 시) `compare_scales.py` 출력 — 캘리브 옵션별 산출물의 activation scale이 실제로 다른지(함정 1-b).
+- [ ] (실습 시) `ep_offload_check.py` 출력 — EP별 FP32 vs INT8 p50 비교표(함정 4). 폴백을 발견했으면 로그 원문도 함께.
 - [ ] (실습 시) `polygraphy inspect capability --with-partitioning` 리포트(미지원 op 목록).
 - [ ] 발견한 실패 사례를 각 산출물 문서(`onnx_export_failures.md`, `four_target_matrix.md`)에 반영.
 
@@ -498,6 +747,10 @@ compute-sanitizer --tool racecheck ./my_app    # shared memory race
 - [ONNX Runtime 양자화](https://onnxruntime.ai/docs/performance/model-optimizations/quantization.html) — static/dynamic PTQ, 대표성 있는 캘리브, EP별 대칭성 요구.
 - [ONNX Runtime 아키텍처(GetCapability/파티셔닝)](https://onnxruntime.ai/docs/reference/high-level-design.html) — subgraph 분할·CPU fallback 원리.
 - [ONNX Runtime QNN EP](https://onnxruntime.ai/docs/execution-providers/QNN-ExecutionProvider.html) — 지원 op 부분집합, dynamic shape/Loop·If 미지원, `disable_cpu_ep_fallback`.
+- [ONNX Runtime TensorRT EP](https://onnxruntime.ai/docs/execution-providers/TensorRT-ExecutionProvider.html) — TRT EP 등록·provider option·서브그래프 위임(함정 4 실측 사례).
+- [onnxruntime `calibrate.py`](https://github.com/microsoft/onnxruntime/blob/main/onnxruntime/python/tools/quantization/calibrate.py) — `EntropyCalibrater` 기본값 `num_bins=128, num_quantized_bins=128`, `get_entropy_threshold` (함정 1-b의 1차 근거).
+- [onnxruntime `quantize.py`](https://github.com/microsoft/onnxruntime/blob/main/onnxruntime/python/tools/quantization/quantize.py) — `calib_extra_options_keys` 화이트리스트 5개(`num_bins` 전달 불가의 근거).
+- [microsoft/onnxruntime#9597](https://github.com/microsoft/onnxruntime/issues/9597) — `num_quantized_bins` 기본값 128 이슈. **닫혔으나 기본값은 그대로**(2026-08 확인).
 - [NVIDIA TensorRT 문서](https://docs.nvidia.com/deeplearning/tensorrt/) — INT8 calibration, custom plugin. (정본 10.16.x LTS)
 - [TensorRT custom layers(IPluginV3)](https://docs.nvidia.com/deeplearning/tensorrt/latest/inference-library/extending-custom-layers.html) — IPluginV3OneCore/Build/Runtime, IPluginCreatorV3One.
 - [Polygraphy](https://github.com/NVIDIA/TensorRT/tree/main/tools/Polygraphy) — 백엔드 간 수치 정합성 검증.

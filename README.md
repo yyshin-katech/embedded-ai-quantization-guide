@@ -5,6 +5,8 @@
 > 모든 버전·링크는 2026-07 기준으로 웹 검증했습니다. 실제 설치 시점엔 각 공식 페이지에서 재확인하세요.
 >
 > ✅ **0단계 환경은 2026-07-31 실제 머신에서 설치·검증 완료**했습니다(Ubuntu 22.04.5 / RTX 3060 / 드라이버 595.84 / `nvcc` 12.8.93). 아래 버전 스택과 [`01_environment_setup.md`](study_guide/01_environment_setup.md)의 예상 출력은 그 **실측값**입니다. 실제로 따라 하며 남긴 커맨드·출력·함정 해결 과정은 [`logs/`](logs/)에 있습니다.
+>
+> ✅ **0.5단계(배포 사다리)·1단계(양자화 이론)도 2026-08-02 실측 완료**했습니다. 1단계에서는 ORT의 **Entropy 캘리브레이터가 기본값에서 MinMax로 조용히 퇴화**하고, ORT 권장 설정(`QUInt8` 비대칭)으로 만든 INT8 QDQ를 **TensorRT가 파싱조차 못 해 FP32보다 3배 느려지는**(3.05 ms vs 0.95 ms) 무음 폴백을 잡아냈습니다. 그 결과로 [`03`](study_guide/03_quantization_theory.md)·[`05`](study_guide/05_tensorrt.md)·[`10`](study_guide/10_pitfalls.md) 문서를 정정했습니다 — 전 과정은 [`logs/stage1_quantization_log.html`](logs/stage1_quantization_log.html).
 
 ---
 
@@ -67,7 +69,8 @@
 ├── logs/                   # 실제 머신에서 따라 해본 실행 로그·분석 (HTML)
 │   ├── stage0_setup_log.html        # 0단계 환경 준비 실행 로그
 │   ├── stage0.5_ladder_log.html     # 0.5단계 배포 사다리 Lv.1~4 실행 로그
-│   └── lv2_ptq_deep_dive.html       # PTQ 4종(FP32/dynamic/fp16/INT8) 이론·실측 딥다이브
+│   ├── lv2_ptq_deep_dive.html       # PTQ 4종(FP32/dynamic/fp16/INT8) 이론·실측 딥다이브
+│   └── stage1_quantization_log.html # 1단계 양자화 이론 실습 + 문서 정정 10건 근거
 ├── guide (1).html          # 원본 기획 문서 (출발점)
 ├── CLAUDE.md               # 제작에 쓰인 하네스 포인터
 └── .claude/                # 에이전트 팀 + 스킬 (제작 하네스)

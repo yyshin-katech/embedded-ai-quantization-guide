@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>1단계 양자화 이론 — 실행 로그</title>
+<style>
+  :root{
+    --bg:#0b0e14; --panel:#131720; --panel2:#0f131b; --bd:#242b38;
+    --tx:#c9d1d9; --dim:#8b949e; --brt:#e6edf3;
+    --accent:#58a6ff; --green:#3fb950; --amber:#d29922; --red:#ff7b72; --purple:#bc8cff;
+    --mono:'JetBrains Mono','SF Mono',ui-monospace,'Cascadia Code',Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans KR','Malgun Gothic',sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--tx);font-family:var(--sans);line-height:1.65;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:980px;margin:0 auto;padding:0 20px 120px}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  /* Hero */
+  .hero{padding:48px 0 26px;border-bottom:1px solid var(--bd);margin-bottom:8px}
+  .kicker{font-family:var(--mono);font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+  .hero h1{margin:0 0 10px;font-size:30px;line-height:1.25;color:var(--brt);letter-spacing:-.01em}
+  .hero p.sub{margin:0 0 20px;color:var(--dim);font-size:15px;max-width:70ch}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{font-family:var(--mono);font-size:12px;padding:5px 10px;border:1px solid var(--bd);border-radius:999px;background:var(--panel);color:var(--tx)}
+  .chip b{color:var(--brt);font-weight:600}
+  .chip.done{border-color:rgba(63,185,80,.5);background:rgba(63,185,80,.12);color:#7ee787}
+  .chip.blocked{border-color:rgba(255,123,114,.5);background:rgba(255,123,114,.12);color:#ff9d96}
+  .chip.partial{border-color:rgba(210,153,34,.5);background:rgba(210,153,34,.12);color:#e3b341}
+
+  /* TOC */
+  nav.toc{display:flex;flex-wrap:wrap;gap:8px;margin:26px 0 6px}
+  nav.toc a{font-family:var(--mono);font-size:12.5px;padding:6px 11px;border:1px solid var(--bd);border-radius:8px;background:var(--panel);color:var(--tx)}
+  nav.toc a:hover{border-color:var(--accent);text-decoration:none;color:var(--brt)}
+
+  h2.sec{font-size:13px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin:38px 0 12px;font-weight:600}
+
+  /* Checklist table */
+  table.ck{width:100%;border-collapse:collapse;margin:6px 0 8px;font-size:14px;border:1px solid var(--bd);border-radius:10px;overflow:hidden}
+  table.ck th,table.ck td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--bd);vertical-align:top}
+  table.ck th{background:var(--panel);color:var(--dim);font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.05em}
+  table.ck td:first-child{white-space:nowrap;color:var(--brt)}
+  table.ck code{font-family:var(--mono);font-size:12.5px;color:var(--purple);background:rgba(188,140,255,.1);padding:1px 6px;border-radius:5px}
+  table.ck tr:last-child td{border-bottom:none}
+  .pass{color:var(--green);font-weight:700}
+  .fail{color:var(--red);font-weight:700}
+  .partial-txt{color:var(--amber);font-weight:700}
+
+  /* Data table */
+  table.dt{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.3px;border:1px solid var(--bd);border-radius:10px;overflow:hidden;font-family:var(--mono)}
+  table.dt th,table.dt td{padding:8px 12px;text-align:right;border-bottom:1px solid var(--bd)}
+  table.dt th{background:var(--panel);color:var(--dim);font-weight:600;font-size:12px;letter-spacing:.04em;text-align:right}
+  table.dt th:first-child,table.dt td:first-child{text-align:left;color:var(--brt)}
+  table.dt tr:last-child td{border-bottom:none}
+  table.dt tr.hi td{background:rgba(63,185,80,.08)}
+  table.dt tr.lo td{background:rgba(255,123,114,.08)}
+  table.dt tr.base td{background:rgba(88,166,255,.07)}
+  .g{color:var(--green)}.r{color:var(--red)}.a{color:var(--amber)}.p{color:var(--purple)}.d{color:var(--dim)}
+
+  /* Step */
+  .step{margin:40px 0 0;scroll-margin-top:16px}
+  .step > h3{display:flex;align-items:center;gap:12px;font-size:20px;color:var(--brt);margin:0 0 6px;letter-spacing:-.01em}
+  .num{flex:none;display:inline-grid;place-items:center;width:30px;height:30px;border-radius:8px;background:var(--accent);color:#06101f;font-family:var(--mono);font-weight:700;font-size:14px}
+  .step p.lead{margin:0 0 4px;color:var(--dim);font-size:14.5px}
+
+  /* Terminal */
+  .term{background:var(--panel2);border:1px solid var(--bd);border-radius:11px;overflow:hidden;margin:14px 0}
+  .term-bar{display:flex;align-items:center;gap:7px;padding:9px 13px;background:#0c1017;border-bottom:1px solid var(--bd)}
+  .dot{width:11px;height:11px;border-radius:50%}
+  .dot.r{background:#ff5f56}.dot.y{background:#ffbd2e}.dot.g{background:#27c93f}
+  .term-title{margin-left:9px;color:var(--dim);font-size:12.5px;font-family:var(--mono)}
+  .term pre{margin:0;padding:15px 17px;overflow-x:auto;font-family:var(--mono);font-size:12.7px;line-height:1.6;color:var(--tx);white-space:pre;tab-size:2}
+  .in{color:var(--brt);font-weight:600}
+  .in .p{color:var(--green);user-select:none;margin-right:9px}
+  .cmt{color:#5c6773}
+  .ok{color:var(--green)}
+  .err{color:var(--red)}
+  .warn{color:var(--amber)}
+  .dim{color:var(--dim)}
+  .hl{color:var(--purple)}
+
+  /* Callout */
+  .note{border-left:3px solid var(--accent);background:rgba(88,166,255,.07);padding:13px 17px;border-radius:0 9px 9px 0;margin:15px 0;font-size:14px}
+  .note.trap{border-color:var(--red);background:rgba(255,123,114,.08)}
+  .note.warnb{border-color:var(--amber);background:rgba(210,153,34,.08)}
+  .note.tip{border-color:var(--green);background:rgba(63,185,80,.07)}
+  .note.block{border-color:var(--purple);background:rgba(188,140,255,.08)}
+  .note .tag{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 8px;border-radius:6px;margin-bottom:7px}
+  .note.trap .tag{background:rgba(255,123,114,.18);color:#ff9d96}
+  .note.warnb .tag{background:rgba(210,153,34,.18);color:#e3b341}
+  .note.tip .tag{background:rgba(63,185,80,.18);color:#7ee787}
+  .note.block .tag{background:rgba(188,140,255,.18);color:#d8b8ff}
+  .note b{color:var(--brt)}
+  .note code{font-family:var(--mono);font-size:12.5px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:4px}
+
+  /* Deliverables */
+  .card{border:1px solid var(--bd);background:var(--panel);border-radius:12px;padding:18px 20px;margin:14px 0}
+  .card h4{margin:0 0 10px;color:var(--brt);font-size:15px}
+  ul.files{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px}
+  ul.files li{font-family:var(--mono);font-size:12.5px;padding:8px 11px;border:1px solid var(--bd);border-radius:8px;background:var(--panel2)}
+  ul.files li .fn{color:var(--brt)}
+  ul.files li small{display:block;color:var(--dim);font-family:var(--sans);font-size:11.5px;margin-top:2px}
+
+  footer{margin-top:46px;padding-top:20px;border-top:1px solid var(--bd);color:var(--dim);font-size:13px}
+  .next{display:inline-flex;align-items:center;gap:8px;margin-top:10px;padding:11px 16px;border:1px solid var(--accent);border-radius:9px;color:var(--brt);background:rgba(88,166,255,.08);font-size:14px}
+  .next b{color:var(--accent)}
+  @media (max-width:560px){ .hero h1{font-size:24px} .term pre{font-size:11.6px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <p class="kicker">Embedded AI · 양자화 → 배포 스터디</p>
+    <h1>1단계 양자화 이론 — 실행 로그</h1>
+    <p class="sub"><code>study_guide/03_quantization_theory.md</code>의 4.1~4.5 실습과 2.5절 QAT/STE 데모를 이 머신에서 실제로 실행한 기록입니다. 문서의 스크립트를 <b>그대로 돌려본 뒤</b>, 결과가 문서의 예시와 어긋난 지점을 ONNX Runtime 소스까지 파고들어 원인을 규명하고, 추가 실험으로 검증했습니다. 결과적으로 문서의 <b>예시 표 3개가 실측과 반대 방향</b>이라는 점과, 문서의 권장 설정이 <b>TensorRT에서 5.5배 손해</b>를 본다는 점을 찾았습니다.</p>
+    <div class="chips">
+      <span class="chip"><b>OS</b> Ubuntu 22.04.5 LTS</span>
+      <span class="chip"><b>GPU</b> RTX 3060 12GB · 595.84</span>
+      <span class="chip"><b>CPU</b> i7-6700 (VNNI 없음)</span>
+      <span class="chip"><b>venv</b> ~/emb-ai 재사용</span>
+      <span class="chip"><b>Date</b> 2026-08-02</span>
+      <span class="chip done">✓ 4.1~4.5 + 2.5 전 구간 완주</span>
+      <span class="chip partial">◐ ImageNet val → 대체 데이터셋</span>
+    </div>
+  </div>
+
+  <nav class="toc">
+    <a href="#s0">0 · 데이터셋</a>
+    <a href="#s1">1 · ONNX export</a>
+    <a href="#s2">2 · INT8 4종</a>
+    <a href="#s3">3 · top-1 평가</a>
+    <a href="#s4">4 · Entropy 퇴화 추적</a>
+    <a href="#s5">5 · 클리핑 정량화</a>
+    <a href="#s6">6 · layer_sensitivity</a>
+    <a href="#s7">7 · QAT/STE</a>
+    <a href="#s8">8 · latency · TRT 비호환</a>
+    <a href="#s9">9 · 문서 정정 목록</a>
+    <a href="#s10">10 · 산출물</a>
+  </nav>
+
+  <h2 class="sec" id="s-ck">체크리스트</h2>
+  <table class="ck">
+    <tr><th>구간</th><th>결과</th><th>핵심 발견</th></tr>
+    <tr><td>데이터셋</td><td class="partial-txt">대체</td><td>ImageNet val 미보유 → <code>imagenet-sample-images</code>(1000클래스×1장)로 평가, 문서가 가정한 "폴더 정렬 = 클래스 인덱스"가 <b>1000클래스 전부 갖춘 경우에만</b> 성립함을 실측 확인</td></tr>
+    <tr><td><code>4.1</code> ONNX export</td><td class="pass">PASS</td><td>요청한 <code>opset_version=17</code>이 <b>조용히 18로 폴백</b>, 산출물이 <code>.onnx</code>+<code>.onnx.data</code> 2파일. (0단계에서 이미 발견된 dynamo 경로 동작 재확인)</td></tr>
+    <tr><td><code>4.2/4.3</code> INT8 4종</td><td class="pass">PASS</td><td><code>CalibPercentile</code>이 ORT 1.23.2의 정식 키임을 소스에서 확인 → 문서의 <code>⚠️ 확인 필요</code> 해소. 파일 크기 44.6MB → 11.3MB (<b>3.95×</b>)</td></tr>
+    <tr><td><code>4.4</code> top-1 평가</td><td class="fail">문서 예시와 불일치</td><td>Entropy가 MinMax와 <b>예측까지 100% 동일</b>(1000장 중 불일치 0장), Percentile 99.9는 <b>−6.2%p</b>로 붕괴. 문서 5.1 예시 표는 둘 다 MinMax보다 <b>우수</b>하다고 서술</td></tr>
+    <tr><td>원인 추적</td><td class="pass">규명</td><td>ORT 1.23.2 <code>EntropyCalibrater</code> 기본값이 <code>num_bins=128, num_quantized_bins=128</code> → KL 탐색 후보가 <b>정확히 1개</b>가 되어 MinMax로 퇴화. 게다가 이 두 인자는 <code>quantize_static</code>으로 <b>전달 자체가 불가능</b></td></tr>
+    <tr><td><code>4.5</code> 감도 분석</td><td class="pass">PASS</td><td>21개 레이어 SQNR 36.1~41.1 dB. 문서 5.2 예시가 "범인"으로 든 <code>conv1</code>이 실제로는 <b>가장 안전한 레이어</b>. per-channel 이득 평균 <b>7.38 dB(≈1.2비트)</b></td></tr>
+    <tr><td><code>2.5</code> QAT/STE</td><td class="pass">PASS</td><td>STE 있음 loss 14.78→0.0105, 없음 <code>|grad|=0.0000</code>으로 완전 정지 — 대조군으로 STE 작동을 직접 증명. 단 문서의 "예상 출력" step 0 수치는 실측과 다름</td></tr>
+    <tr><td>latency (추가)</td><td class="fail">중대 발견</td><td>문서 권장 설정(<code>QUInt8</code> 비대칭)으로 만든 QDQ를 <b>TensorRT가 파싱 거부</b> → 무음 폴백으로 FP32보다 3배 느림. 대칭 <code>QInt8</code>로 바꾸면 <b>0.55ms(5.5×)</b>, 정확도 손실은 통계적으로 없음</td></tr>
+  </table>
+
+  <div class="note block">
+    <span class="tag">이 로그를 읽는 법</span>
+    문서(<code>03_quantization_theory.md</code>)의 5.1·5.2 표는 본문에 <b>"예시 값 — 환경/데이터셋에 따라
+    다름"</b>이라고 명시돼 있어, 수치가 다른 것 자체는 오류가 아니다. 문제는 <b>부등호의 방향</b>이다.
+    문서는 "Entropy·Percentile &gt; MinMax"라는 <b>정성적 결론</b>을 예시 표로 뒷받침하는데, 이 머신의
+    실측에서는 그 순서가 뒤집혔고, 뒤집힌 이유가 <b>ORT 구현의 기본값</b>이라는 재현 가능한 원인으로
+    설명된다. 아래 4·5장이 그 추적 과정이다.
+  </div>
+
+  <h2 class="sec" id="s0">0 · 데이터셋 확보 — ImageNet이 없다</h2>
+  <div class="step">
+    <p class="lead">문서 3장은 ImageNet-1k <code>val</code> 1000장을 전제하지만 이 머신엔 없고(계정 등록 필요), 있는 건 0단계에서 받은 nuScenes뿐이다. 문서가 대안으로 제시한 Imagenette(10클래스)는 <b>1000클래스 모델의 라벨 인덱스와 맞출 수 없다</b>는 별개 문제가 있어, 클래스당 1장씩 1000클래스를 모두 덮는 <code>imagenet-sample-images</code>를 평가셋으로 골랐다.</p>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">bash</span></div>
+      <pre><span class="in"><span class="p">$</span> ls /data/sets/</span>
+nuscenes                          <span class="cmt"># ImageNet 없음</span>
+
+<span class="in"><span class="p">$</span> git clone --depth 1 https://github.com/EliSchwartz/imagenet-sample-images.git</span>
+<span class="in"><span class="p">$</span> ls imagenet-sample-images/*.JPEG | wc -l</span>
+<span class="ok">1000</span>                              <span class="cmt"># n01440764_tench.JPEG 형식 — synset + 클래스명</span></pre>
+    </div>
+
+    <p class="lead">문서 4.4의 <code>load_labels()</code>는 <b>"폴더명 정렬 순서 = torchvision 클래스 인덱스"</b>를 가정한다. 이 가정이 실제로 맞는지 파일명에 들어 있는 클래스명과 <code>ResNet18_Weights.meta["categories"]</code>를 대조해 검증했다.</p>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">python verify_labels.py</span></div>
+      <pre><span class="in"><span class="p">$</span> python verify_labels.py</span>
+images: 1000
+sorted by synset ? <span class="ok">True</span>
+unique synsets    : <span class="ok">1000</span>
+torchvision cats  : 1000
+name mismatches   : <span class="warn">2</span>
+   idx  134  n02012849  file=crane                        torchvision=crane bird
+   idx  639  n03710721  file=maillot                      torchvision=maillot tank suit</pre>
+    </div>
+    <div class="note tip">
+      <span class="tag">검증 통과</span>
+      불일치 2건은 ImageNet에 동일 단어 클래스가 둘씩 있어(<code>crane</code>=학/기중기,
+      <code>maillot</code>=수영복/타이츠) torchvision이 뒤쪽을 구분해 부른 것뿐 — 매핑 자체는 정확하다.
+      <b>synset 정렬 = torchvision 인덱스</b>가 확인됐으므로 문서의 <code>load_labels()</code>를 그대로 쓸 수 있다.
+    </div>
+    <div class="note trap">
+      <span class="tag">함정 — 문서의 Imagenette 대안이 그대로는 안 된다</span>
+      문서 3장은 "접근이 어려우면 Imagenette(10클래스 서브셋) 등으로 대체하되… 무방하다"고 안내한다.
+      하지만 <code>load_labels()</code>는 <b>폴더를 정렬해 0부터 번호를 매기므로</b>, 10개 폴더만 있으면
+      인덱스가 0~9로 찍힌다. 반면 모델은 1000-way 분류기라 정답 인덱스는 0·217·482·491·497·566·569·571·574·701 이다
+      → <b>top-1이 0%에 가깝게 나온다</b>(문서 6장 트러블슈팅의 "라벨 인덱스 매핑 오류" 증상 그대로).
+      서브셋을 쓰려면 synset을 <b>전체 1000개 목록에서의 위치</b>로 매핑하는 코드가 반드시 추가돼야 한다.
+    </div>
+    <div class="note warnb">
+      <span class="tag">이 데이터셋의 한계 (수치 해석 시 주의)</span>
+      <code>imagenet-sample-images</code>는 클래스마다 <b>대표성 있는 1장</b>을 고른 큐레이션 셋이라,
+      무작위 val 샘플보다 쉽다. 실제로 FP32 top-1이 <b>78.5%</b>로 ResNet18의 공식 ImageNet val
+      정확도(69.76%)보다 높게 나온다. 따라서 <b>절대값은 이 문서 밖으로 인용하면 안 되고</b>,
+      아래 모든 결론은 <b>같은 이미지 집합에서의 상대 비교</b>로만 읽어야 한다
+      (문서 3장도 "top-1 절대값이 아니라 FP32 대비 상대 하락폭을 보는 것이 목적"이라고 못박고 있다).
+    </div>
+
+    <p class="lead">캘리브레이션 200장은 평가셋에서 5장 간격으로 뽑아 <b>200개 서로 다른 클래스</b>를 덮게 했다. 캘리브에 쓴 200장이 평가셋에 포함되는 점을 보정하려고, 모든 평가에서 <b>캘리브에 안 쓴 800장(holdout)</b> 점수를 함께 계산했다 — 아래 3장에서 보듯 둘의 차이는 0.3%p 이내라 결론에 영향이 없다.</p>
+  </div>
+
+  <h2 class="sec" id="s1">1 · 4.1 — ResNet18 → ONNX export</h2>
+  <div class="step">
+    <p class="lead">문서 4.1 스크립트를 <b>한 글자도 고치지 않고</b> 실행했다.</p>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">python export_resnet18.py</span></div>
+      <pre><span class="in"><span class="p">$</span> python export_resnet18.py</span>
+<span class="warn">UserWarning: # 'dynamic_axes' is not recommended when dynamo=True, and may lead to
+'torch._dynamo.exc.UserError: Constraints violated.' Supply the 'dynamic_shapes' argument instead</span>
+<span class="warn">W0802 20:52:31 _compat.py:133] Setting ONNX exporter to use operator set version 18 because the
+requested opset_version 17 is a lower version than we have implementations for.</span>
+The model version conversion is not supported by the onnxscript version converter and fallback is enabled.
+<span class="err">Failed to convert the model to the target version 17 using the ONNX C API. The model was not modified</span>
+<span class="err">RuntimeError: axes_input_to_attribute.h:65: adapt: Assertion `node->hasAttribute(kaxes)` failed:
+No initializer or constant input to node found</span>
+[torch.onnx] Obtain model graph for `ResNet([...]` with `torch.export.export(..., strict=False)`... <span class="ok">✅</span>
+[torch.onnx] Run decompositions... <span class="ok">✅</span>
+[torch.onnx] Translate the graph into ONNX... <span class="ok">✅</span>
+[torch.onnx] Optimize the ONNX graph... <span class="ok">✅</span>
+<span class="ok">saved resnet18_fp32.onnx</span>
+<span class="dim">exit code: 0</span>
+
+<span class="in"><span class="p">$</span> ls -la resnet18_fp32*</span>
+-rw-rw-r-- 1 yuyeong yuyeong    <span class="hl">91843</span> resnet18_fp32.onnx
+-rw-rw-r-- 1 yuyeong yuyeong <span class="hl">46792704</span> resnet18_fp32.onnx.data   <span class="cmt"># 가중치가 별도 파일</span></pre>
+    </div>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">python — 그래프 검증</span></div>
+      <pre><span class="in"><span class="p">$</span> python -c "import onnx; onnx.checker.check_model(onnx.load('resnet18_fp32.onnx')); ..."</span>
+<span class="ok">ONNX OK</span>
+ir_version : <span class="hl">10</span>                        <span class="cmt"># ORT 1.23.2의 상한 11 이내 → 로드 가능</span>
+opset      : [('ai.onnx', <span class="warn">18</span>)]           <span class="cmt"># 요청한 17이 아님</span>
+inputs     : [('input', ['batch', 3, 224, 224])]
+outputs    : [('logits', ['batch', 1000])]
+op counts  : {'Conv': 20, 'Relu': 17, 'Add': 8, 'Shape': 1, 'MaxPool': 1,
+              'ReduceMean': 1, 'Concat': 1, 'Reshape': 1, 'Gemm': 1}
+EP in use  : ['CUDAExecutionProvider', 'CPUExecutionProvider']
+out shape  : (1, 1000)</pre>
+    </div>
+    <div class="note warnb">
+      <span class="tag">재확인 — 0단계에서 이미 발견된 동작</span>
+      <b>에러 트레이스백이 찍히는데도 exit code는 0</b>이다. torch 2.11의 dynamo 익스포터는 opset 18로
+      먼저 만든 뒤 17로 다운컨버트를 시도하고, 실패하면 <b>조용히 18을 그대로 저장</b>한다. 실습 관점에서
+      두 가지가 중요하다 — ① 문서 6장 트러블슈팅의 "<code>opset_version=17</code>로 고정" 처방은
+      torch 2.11에서 <b>실행되지 않는다</b>(요청해도 18이 나옴). 다행히 IR 10이라 ORT 1.23.2가 읽는 데는
+      문제없다. ② 산출물이 <b><code>.onnx</code> + <code>.onnx.data</code> 2파일</b>이라 모델을 옮길 때
+      <code>.data</code>를 빠뜨리면 로드가 깨진다.
+    </div>
+  </div>
+
+  <h2 class="sec" id="s2">2 · 4.2 / 4.3 — 캘리브레이션 리더 + INT8 정적 양자화 4종</h2>
+  <div class="step">
+    <p class="lead">먼저 문서 4.3이 <code>⚠️ 주의</code>로 남겨 둔 항목 — "Percentile 옵션의 키 이름이 ORT 버전에 따라 <code>CalibPercentile</code>인지 <code>Percentile</code>인지 확인하라" — 를 설치된 소스에서 직접 확인했다.</p>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">python — ORT 1.23.2 소스 확인</span></div>
+      <pre><span class="in"><span class="p">$</span> python -c "&lt;quantize.py의 calib_extra_options_keys 추출&gt;"</span>
+=== calib_extra_options_keys ===
+("symmetric",                "CalibTensorRangeSymmetric"),
+("moving_average",           "CalibMovingAverage"),
+("averaging_constant",       "CalibMovingAverageConstant"),
+("max_intermediate_outputs", "CalibMaxIntermediateOutputs"),
+(<span class="hl">"percentile", "CalibPercentile"</span>),          <span class="cmt"># ← 공개 키는 CalibPercentile 이 맞다</span></pre>
+    </div>
+    <div class="note tip">
+      <span class="tag">문서의 ⚠️ 확인 필요 해소</span>
+      ORT 1.23.2에서 공개 키는 <code>CalibPercentile</code>이고 내부적으로 <code>percentile</code>로 매핑된다.
+      <b>문서 4.3의 코드가 쓰는 이름이 정확</b>하다. (다만 이 화이트리스트가 5개뿐이라는 사실이
+      아래 4장의 핵심 단서가 된다.)
+    </div>
+
+    <p class="lead">문서 4.3 스크립트를 <code>CALIB_DIR</code>만 바꿔 실행했다.</p>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">python quantize_ptq.py</span></div>
+      <pre><span class="in"><span class="p">$</span> python quantize_ptq.py</span>
+<span class="ok">saved resnet18_int8_minmax.onnx   (9.0s)</span>
+
+Collecting tensor data and making histogram ...
+Finding optimal threshold for each tensor using 'entropy' algorithm ...
+Number of tensors : 50
+<span class="warn">Number of histogram bins : 128 (The number may increase depends on the data it collects)</span>
+<span class="warn">Number of quantized bins : 128</span>          <span class="cmt"># ← 나중에 이 두 줄이 범인으로 밝혀진다</span>
+<span class="ok">saved resnet18_int8_entropy.onnx   (25.1s)</span>
+
+Collecting tensor data and making histogram ...
+Finding optimal threshold for each tensor using 'percentile' algorithm ...
+Number of histogram bins : 2048
+<span class="hl">Percentile : (0.09999999999999432, 99.9)</span>   <span class="cmt"># CalibPercentile=99.9 가 실제로 먹었다</span>
+<span class="ok">saved resnet18_int8_pct999.onnx   (26.1s)</span>
+
+<span class="ok">saved resnet18_int8_minmax_pertensor.onnx   (6.4s)</span>
+<span class="dim">exit code: 0</span></pre>
+    </div>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">bash · python — 산출물 구조 확인</span></div>
+      <pre><span class="in"><span class="p">$</span> ls -la *.onnx *.onnx.data</span>
+resnet18_fp32.onnx + .onnx.data                  <span class="hl">44.71 MB</span>
+resnet18_int8_minmax.onnx                        <span class="hl">11.32 MB</span>   <span class="cmt"># 3.95× 압축 (이론 4×)</span>
+resnet18_int8_entropy.onnx                       11.32 MB
+resnet18_int8_pct999.onnx                        11.32 MB
+resnet18_int8_minmax_pertensor.onnx              11.25 MB
+
+<span class="in"><span class="p">$</span> python -c "&lt;QDQ 노드/스케일 형태 집계&gt;"</span>
+resnet18_int8_minmax.onnx              Q= 32 DQ= 74 Conv= 20  <span class="ok">vector_scales=42</span>
+resnet18_int8_entropy.onnx             Q= 32 DQ= 74 Conv= 20  <span class="ok">vector_scales=42</span>
+resnet18_int8_pct999.onnx              Q= 32 DQ= 74 Conv= 20  <span class="ok">vector_scales=42</span>
+resnet18_int8_minmax_pertensor.onnx    Q= 32 DQ= 74 Conv= 20  <span class="err">vector_scales=0</span></pre>
+    </div>
+    <div class="note tip">
+      <span class="tag">이론이 그래프로 확인되는 지점</span>
+      <code>per_channel=True</code>일 때 weight scale이 <b>길이&gt;1인 벡터 initializer 42개</b>로 들어가고,
+      <code>per_channel=False</code>면 <b>0개</b>(전부 스칼라)가 된다. 문서 2.2절의
+      "per-channel = 채널마다 scale 하나"가 파일 안에서 그대로 눈에 보인다.
+      파일 크기 3.95×는 FP32→INT8의 4× 이론값에 QDQ 노드/스케일 오버헤드가 붙은 값이다.
+    </div>
+  </div>
+
+  <h2 class="sec" id="s3">3 · 4.4 — top-1 평가 (Wilson CI + McNemar)</h2>
+  <div class="step">
+    <p class="lead">문서 4.4는 Wilson 신뢰구간까지만 계산하는데, 문서 스스로 함정 항목에서 <b>"차이를 강하게 주장하려면 paired(McNemar) 비교를 하라"</b>고 권하므로 그것까지 구현해서 돌렸다. 같은 1000장에 대한 정오답 배열을 모델별로 저장해 두고 짝지어 비교한다.</p>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">python eval_top1.py</span></div>
+      <pre><span class="in"><span class="p">$</span> python eval_top1.py</span>
+eval images : 1000   (캘리브 미사용 holdout: 800)
+
+FP32             top-1 = <span class="ok">78.50%</span>  95% CI [75.85, 80.93]  (n=1000)  | holdout n=800: 78.62%
+INT8 MinMax      top-1 = <span class="ok">78.90%</span>  95% CI [76.26, 81.32]  (n=1000)  | holdout n=800: 79.12%
+INT8 MinMax(PT)  top-1 = <span class="warn">77.70%</span>  95% CI [75.02, 80.17]  (n=1000)  | holdout n=800: 77.88%
+INT8 Entropy     top-1 = <span class="ok">78.90%</span>  95% CI [76.26, 81.32]  (n=1000)  | holdout n=800: 79.12%
+INT8 Pct 99.9    top-1 = <span class="err">72.30%</span>  95% CI [69.44, 74.98]  (n=1000)  | holdout n=800: 72.38%
+
+--- FP32 대비 ---
+INT8 MinMax      +0.40%p   McNemar: FP32만맞음=  7 INT8만맞음= 11  p=0.4795  → <span class="dim">유의하지 않음</span>
+INT8 MinMax(PT)  -0.80%p   McNemar: FP32만맞음= 21 INT8만맞음= 13  p=0.2299  → <span class="dim">유의하지 않음</span>
+INT8 Entropy     +0.40%p   McNemar: FP32만맞음=  7 INT8만맞음= 11  p=0.4795  → <span class="dim">유의하지 않음</span>
+INT8 Pct 99.9    -6.20%p   McNemar: FP32만맞음= 85 INT8만맞음= 23  p=0.0000  → <span class="err">유의(p&lt;0.05)</span>
+
+--- paired 비교 ---
+INT8 MinMax → INT8 MinMax(PT)  -1.20%p  a만= 23 b만= 11  p=<span class="warn">0.0592</span>  → 유의하지 않음
+INT8 MinMax → INT8 Entropy     +0.00%p  <span class="err">a만=  0 b만=  0</span>  p=1.0000  → 유의하지 않음
+INT8 MinMax → INT8 Pct 99.9    -6.60%p  a만= 88 b만= 22  p=0.0000  → <span class="err">유의(p&lt;0.05)</span></pre>
+    </div>
+    <div class="note trap">
+      <span class="tag">🔴 이상 신호 1 — Entropy가 MinMax와 "완전히" 같다</span>
+      top-1이 같은 정도가 아니라 <b>1000장 전부에 대해 정오답이 한 장도 다르지 않다</b>
+      (<code>a만=0, b만=0</code>). 서로 다른 캘리브레이션 알고리즘이 우연히 이럴 수는 없다 →
+      Entropy가 <b>실제로는 실행되지 않았거나 MinMax와 동일한 임계를 골랐다</b>는 뜻이다. 4장에서 추적한다.
+    </div>
+    <div class="note trap">
+      <span class="tag">🔴 이상 신호 2 — Percentile 99.9가 문서와 반대로 붕괴</span>
+      문서 5.1 예시 표는 Percentile 99.9%를 FP32 대비 <b>−0.5%p</b>(우수)로 제시하지만, 실측은
+      <b>−6.2%p</b>이고 McNemar <code>p&lt;0.0001</code>로 <b>확실히 유의한 열화</b>다. 5장에서 추적한다.
+    </div>
+    <div class="note tip">
+      <span class="tag">문서 함정 항목이 정확했던 부분 — per-channel vs per-tensor</span>
+      per-tensor로 바꾸면 <b>−1.20%p</b>로 문서가 말한 방향(per-channel이 유리)과 일치한다. 다만
+      McNemar <code>p=0.0592</code>로 <b>n=1000에서는 유의 문턱을 아슬아슬하게 못 넘는다</b>.
+      문서 5.1이 "per-channel vs per-tensor(1.5%p)처럼 CI가 갈리는 차이만 강하게 주장하라"고 쓴 것은
+      <b>이 실측에서는 과한 표현</b>이다 — 1000장으로는 이 차이조차 단정하기 어렵다.
+      (Wilson CI로 보면 [76.26, 81.32] vs [75.02, 80.17]로 <b>크게 겹친다</b>.)
+    </div>
+    <div class="note">
+      <span class="tag">캘리브/평가 중복 점검</span>
+      캘리브에 쓴 200장을 뺀 holdout 800장 점수는 전 모델에서 전체 1000장 점수와 <b>0.3%p 이내</b>로 같다
+      (예: MinMax 78.90% vs 79.12%). PTQ 캘리브레이션은 라벨을 쓰지 않고 활성값 범위만 잡으므로
+      중복이 결론을 바꾸지 않는다는 것을 수치로 확인했다.
+    </div>
+  </div>
+
+  <h2 class="sec" id="s4">4 · 이상 신호 1 추적 — Entropy(KL)가 MinMax로 퇴화하는 이유</h2>
+  <div class="step">
+    <p class="lead">먼저 두 모델의 activation scale을 그래프에서 직접 꺼내 비교했다. 예측이 같은 게 우연인지, 애초에 같은 스케일이 들어간 건지 가르는 결정적 증거다.</p>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">python compare_scales.py</span></div>
+      <pre><span class="in"><span class="p">$</span> python compare_scales.py</span>
+activation QuantizeLinear 텐서 수: minmax=32 entropy=32 pct999=32  공통=32
+
+minmax vs entropy : scale·zp가 완전히 동일한 텐서 = <span class="err">32/32</span>
+minmax vs pct999  : scale이 완전히 동일한 텐서 = 0/32</pre>
+    </div>
+    <p class="lead"><b>32개 텐서 전부가 1e-12 오차 안에서 동일</b>하다. 우연이 아니라 알고리즘이 같은 답을 낸 것이다. ORT의 엔트로피 캘리브레이터 소스를 열어 봤다.</p>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">onnxruntime/quantization/calibrate.py (ORT 1.23.2)</span></div>
+      <pre><span class="dim">657</span> class EntropyCalibrater(HistogramCalibrater):
+<span class="dim">658</span>     def __init__(self, model_path, op_types_to_calibrate=None, ...,
+<span class="dim">666</span>                  <span class="err">num_bins=128,</span>
+<span class="dim">667</span>                  <span class="err">num_quantized_bins=128,</span>
+<span class="dim">668</span>     ):
+
+    def get_entropy_threshold(self, histogram, num_quantized_bins):
+        hist = histogram[0]
+        num_bins = hist.size                              <span class="cmt"># = 128</span>
+        <span class="hl">zero_bin_index      = num_bins // 2</span>               <span class="cmt"># = 64</span>
+        <span class="hl">num_half_quantized_bin = num_quantized_bins // 2</span>  <span class="cmt"># = 64</span>
+        <span class="hl">kl_divergence = np.zeros(zero_bin_index - num_half_quantized_bin + 1)</span>
+        <span class="cmt">#                        = np.zeros(64 - 64 + 1) = np.zeros(1)  ← 후보가 단 1개</span></pre>
+    </div>
+    <div class="note trap">
+      <span class="tag">🔴 근본 원인 — 탐색 공간의 크기가 1</span>
+      KL 임계 탐색은 "히스토그램을 어디서 자를까"를 여러 후보에 대해 비교하는 알고리즘인데,
+      <code>num_bins == num_quantized_bins == 128</code>이면 후보 배열 길이가
+      <code>64 − 64 + 1 = <b>1</b></code>이 된다. 즉 <b>비교할 후보가 "자르지 않음"(전체 범위) 하나뿐</b>이고,
+      그건 정의상 MinMax다. <b>ORT 1.23.2의 기본값으로 Entropy를 쓰면 KL 캘리브레이션은 실행되는 시늉만
+      하고 MinMax와 똑같은 결과를 낸다</b> — 25초를 더 쓰고서.
+    </div>
+    <p class="lead">그럼 <code>num_bins</code>를 키우면 되는데, <b>그 인자를 <code>quantize_static</code>으로 전달할 방법이 없다</b>. 2장에서 본 화이트리스트 5개에 <code>num_bins</code>/<code>num_quantized_bins</code>가 없기 때문이다(<code>create_calibrator</code>는 받는데, <code>quantize_static</code>이 안 넘겨준다).</p>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">python — create_calibrator는 받지만 도달하지 못하는 인자</span></div>
+      <pre>    elif calibrate_method == CalibrationMethod.Entropy:
+        num_bins           = extra_options.get(<span class="hl">"num_bins"</span>, 128)            <span class="cmt"># 소문자 내부 키</span>
+        num_quantized_bins = extra_options.get(<span class="hl">"num_quantized_bins"</span>, 128)  <span class="cmt"># 소문자 내부 키</span>
+<span class="cmt">    # ↑ 그런데 quantize_static 이 캘리브레이터로 넘기는 키는 아래 5개뿐이라 여기 도달 못 함
+    #   CalibTensorRangeSymmetric / CalibMovingAverage / CalibMovingAverageConstant
+    #   CalibMaxIntermediateOutputs / CalibPercentile</span></pre>
+    </div>
+    <p class="lead">그래서 <code>create_calibrator</code>를 감싸 인자를 주입하고(<code>quantize_extra.py</code>), 탐색 공간을 실제로 열어 Entropy를 <b>제대로</b> 돌려 봤다 — 히스토그램 2048 bin, 양자화 128 bin → 후보 961개.</p>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">python quantize_extra.py entropy</span></div>
+      <pre><span class="in"><span class="p">$</span> python quantize_extra.py entropy</span>
+Finding optimal threshold for each tensor using 'entropy' algorithm ...
+<span class="ok">Number of histogram bins : 2048</span>          <span class="cmt"># 기본 128 → 2048</span>
+<span class="ok">Number of quantized bins : 128</span>
+<span class="ok">saved resnet18_int8_entropy_fixed.onnx   (51.0s)</span></pre>
+    </div>
+    <div class="note warnb">
+      <span class="tag">반전 — "고쳤더니" 더 나빠졌다</span>
+      탐색 공간을 제대로 연 Entropy의 top-1은 <b>67.70%</b>, FP32 대비 <b>−10.80%</b>p로
+      <b>퇴화 상태(78.90%)보다 11.2%p 더 나쁘다</b>. 즉 이 모델·이 캘리브셋에서는
+      <b>KL이 고르는 임계가 MinMax보다 해롭다</b>. 왜인지는 다음 장에서 클리핑 폭으로 설명된다.
+      (부작용으로, ORT 기본값의 "버그처럼 보이는 퇴화"가 이 경우엔 결과적으로 사용자를 구해 준 셈이다.)
+    </div>
+  </div>
+
+  <h2 class="sec" id="s5">5 · 이상 신호 2 추적 — 클리핑을 정량화하면 전부 한 줄로 설명된다</h2>
+  <div class="step">
+    <p class="lead">Percentile을 99.9 / 99.99 / 99.999(ORT 자체 기본값)로 스윕하고, 여섯 변형의 <b>uint8 표현 범위 상한</b>을 텐서별로 뽑아 MinMax 대비 비율로 정리했다. "얼마나 잘라냈는가"를 숫자로 만든 것이다.</p>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">python compare_scales2.py</span></div>
+      <pre>tensor                             minmax    entropy  ent_fixed    pct99.9   pct99.99  pct99.999
+------------------------------------------------------------------------------------------------
+getitem_18                          7.004      7.004      3.092      1.753      2.426      3.224
+getitem_57                         37.275     37.275     18.589     11.158     16.272     22.099
+<span class="dim">input                               2.631      2.631      2.631      2.630      2.630      2.630</span>
+relu_6                              7.295      7.295      1.375      1.831      2.657      3.544
+relu_15                             4.015      4.015      0.806      0.806      1.243      1.680
+view                               13.038     13.038      8.977      6.589      9.340     12.746
+
+=== MinMax 대비 표현범위 상한 비율 (1.0 = 클리핑 없음) ===
+variant           min   median      max     &lt;0.5인 텐서
+minmax          1.000    1.000    1.000        0/32
+entropy         1.000    1.000    1.000        <span class="err">0/32</span>   <span class="cmt">← MinMax와 동일(4장)</span>
+ent_fixed       0.126    0.313    1.000       20/32
+pct99.9         0.201    0.310    1.000       29/32
+pct99.99        0.323    0.466    1.000       20/32
+pct99.999       0.460    0.667    1.000        3/32</pre>
+    </div>
+
+    <p class="lead">이 "잘라낸 정도"를 top-1과 나란히 놓으면 <b>완전한 단조 관계</b>가 나온다.</p>
+    <table class="dt">
+      <tr><th>변형</th><th>범위비율(중앙값)</th><th>top-1</th><th>95% CI</th><th>vs FP32</th><th>McNemar p</th></tr>
+      <tr class="base"><td>FP32 (기준)</td><td>—</td><td>78.50%</td><td>[75.85, 80.93]</td><td>—</td><td>—</td></tr>
+      <tr class="hi"><td>INT8 MinMax</td><td>1.000</td><td>78.90%</td><td>[76.26, 81.32]</td><td class="g">+0.40%p</td><td>0.4795</td></tr>
+      <tr class="hi"><td>INT8 Entropy <span class="d">(ORT 기본)</span></td><td>1.000</td><td>78.90%</td><td>[76.26, 81.32]</td><td class="g">+0.40%p</td><td>0.4795</td></tr>
+      <tr class="hi"><td>INT8 Pct 99.999 <span class="d">(ORT 기본)</span></td><td>0.667</td><td>78.60%</td><td>[75.95, 81.03]</td><td class="g">+0.10%p</td><td>1.0000</td></tr>
+      <tr><td>INT8 Pct 99.99</td><td>0.466</td><td>78.10%</td><td>[75.43, 80.55]</td><td class="a">−0.40%p</td><td>0.5403</td></tr>
+      <tr class="lo"><td>INT8 Pct 99.9 <span class="d">(문서 설정)</span></td><td>0.310</td><td>72.30%</td><td>[69.44, 74.98]</td><td class="r">−6.20%p</td><td class="r">&lt;0.0001</td></tr>
+      <tr class="lo"><td>INT8 Entropy <span class="d">(탐색 정상화)</span></td><td>0.313</td><td>67.70%</td><td>[64.74, 70.53]</td><td class="r">−10.80%p</td><td class="r">&lt;0.0001</td></tr>
+      <tr><td>INT8 MinMax <span class="d">per-tensor</span></td><td>1.000</td><td>77.70%</td><td>[75.02, 80.17]</td><td class="a">−0.80%p</td><td>0.2299</td></tr>
+    </table>
+
+    <div class="note tip">
+      <span class="tag">한 줄 결론</span>
+      <b>ResNet18의 활성값에 대해서는 "자르지 않는 것"이 최선이다.</b> 범위를 얼마나 남겼는지가
+      top-1을 거의 그대로 결정한다(1.00→78.9%, 0.67→78.6%, 0.47→78.1%, 0.31→72.3%/67.7%).
+      MinMax가 이미 최적점이고, Entropy·Percentile은 <b>과하게 자르지만 않으면</b> 비슷해지는 것이지
+      더 나아지지 않는다.
+    </div>
+    <div class="note trap">
+      <span class="tag">🔴 문서 5.1 예시 표는 이 실측과 방향이 반대</span>
+      문서는 "<b>Entropy/Percentile이 MinMax보다 우수</b>한 것은, MinMax가 소수의 outlier 활성값까지 범위에
+      포함시켜 대부분 구간의 해상도를 낭비하는 반면 …"이라고 <b>정성적 결론</b>까지 붙여 서술한다.
+      이 논리는 <b>outlier가 잡음일 때</b>만 성립한다. ResNet18의 post-ReLU 활성에서 큰 값들은
+      잡음이 아니라 <b>실제 특징</b>이라, 잘라내면 그만큼 정확도를 잃는다. 이 주장이 참이 되려면
+      "activation outlier가 소수의 이상치인 모델"(→ 2단계 Transformer가 바로 그 사례다)이라는
+      전제가 명시돼야 한다.
+    </div>
+    <div class="note warnb">
+      <span class="tag">문서의 99.9 선택이 특히 공격적이다</span>
+      ORT <code>PercentileCalibrater</code>의 <b>자체 기본값은 99.999</b>이다(<code>calibrate.py:701</code>).
+      문서가 예시로 쓴 <code>99.9</code>는 그보다 <b>꼬리를 100배 더 자르는</b> 설정이고, 그 결과가
+      −6.2%p다. 반면 ORT 기본값 99.999로 두면 −0.1%p(사실상 무손실)로 문서가 기대한 그림에 가장 가깝다.
+    </div>
+  </div>
+
+  <h2 class="sec" id="s6">6 · 4.5 — layer_sensitivity.csv</h2>
+  <div class="step">
+    <p class="lead">문서 4.5 스크립트에 <b>per-tensor 대조 컬럼 하나만 추가</b>해서 실행했다(per-channel 이득을 dB로 정량화하기 위해). 스키마는 문서 4.5.2를 그대로 지킨다.</p>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">python layer_sensitivity.py</span></div>
+      <pre><span class="in"><span class="p">$</span> python layer_sensitivity.py</span>
+<span class="ok">saved layer_sensitivity.csv  (rows: 21 )</span>
+
+범인 후보 top-5 (SQNR 낮은 순):
+  layer1.0.conv1                 SQNR= 36.15 dB  cos=0.9999  (per-tensor  29.93 dB)
+  layer3.0.conv2                 SQNR= 36.30 dB  cos=0.9999  (per-tensor  30.38 dB)
+  layer2.1.conv1                 SQNR= 36.58 dB  cos=0.9999  (per-tensor  30.72 dB)
+  layer4.0.conv2                 SQNR= 36.71 dB  cos=1.0000  (per-tensor  26.81 dB)
+  layer2.0.conv2                 SQNR= 36.87 dB  cos=0.9999  (per-tensor  30.88 dB)
+
+안전한 쪽 bottom-3:
+  layer3.0.downsample.0          SQNR= 40.53 dB  cos=1.0000  (per-tensor  34.72 dB)
+  layer2.0.downsample.0          SQNR= 40.70 dB  cos=1.0000  (per-tensor  32.02 dB)
+  <span class="hl">conv1                          SQNR= 41.15 dB  cos=1.0000  (per-tensor  35.57 dB)</span>
+
+per-channel 이득: 평균 <span class="ok">7.38 dB</span>  최대 <span class="ok">14.06 dB</span> (layer4.0.downsample.0)
+이론적 INT8 상한(6.02*8) ≈ 48.2 dB / 실측 중앙값 <span class="warn">37.99 dB</span></pre>
+    </div>
+    <div class="note trap">
+      <span class="tag">🔴 문서 5.2 예시와 순위가 반대</span>
+      문서 5.2 예시는 <code>conv1</code>을 <b>22.15 dB로 가장 민감한 "범인"</b>으로 제시하고
+      "첫 conv나 downsample처럼 채널 수가 적거나 dynamic range가 넓은 레이어가 자주 걸린다"고 설명한다.
+      실측에서 <code>conv1</code>은 <b>41.15 dB로 21개 중 가장 안전</b>했고, <code>downsample</code> 3개도
+      모두 상위권(안전)이었다. 채널 수가 적으면 per-channel scale이 <b>덜 공유</b>되므로
+      오히려 유리하다 — 예시가 든 인과가 per-channel 양자화에서는 뒤집힌다.
+    </div>
+    <div class="note tip">
+      <span class="tag">6 dB/bit 법칙이 실측으로 확인되는 지점</span>
+      per-channel이 per-tensor보다 평균 <b>7.38 dB</b> 좋다. 문서 2.5.1의 "1비트 = 약 6.02 dB"로 환산하면
+      <b>약 1.2비트만큼 공짜로 더 정밀</b>해진 것이고, 최대(<code>layer4.0.downsample.0</code>, 14.06 dB)는
+      <b>2.3비트</b>에 해당한다. 8비트에서 2.3비트는 큰 차이이며, 3장에서 잰
+      per-tensor의 top-1 손실 −1.20%p가 그 대가다.
+    </div>
+    <div class="note warnb">
+      <span class="tag">이 모델에서 "범인 레이어"는 사실상 없다</span>
+      21개 레이어가 <b>36.1~41.1 dB의 5 dB 폭</b>에 다 들어가고 코사인 유사도는 전부 ≥0.9998이다.
+      문서 4.5.3의 절대 기준(<code>sqnr_db &lt; 20 dB</code> 또는 <code>cosine &lt; 0.99</code>)에 걸리는 레이어는
+      <b>하나도 없다</b>. 즉 ResNet18 weight는 INT8 per-channel로 균일하게 안전하고,
+      mixed precision으로 되돌릴 후보를 고를 근거가 weight-only 지표에서는 나오지 않는다 →
+      문서 4.5.3이 권한 <b>상대 기준(하위 5~10%)</b>을 써야 하는 이유가 실측으로 드러난 셈이다.
+      (이론 상한 48.2 dB 대비 실측 38 dB의 격차는 weight 분포가 균일분포가 아니라 종 모양이어서
+      max 기준 scale이 범위를 낭비하기 때문이다.)
+    </div>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">layer_sensitivity.csv (앞 6행 · 문서 4.5.2 스키마 + per-tensor 대조 컬럼)</span></div>
+      <pre>layer,type,out_channels,num_params,sqnr_db,cosine,sqnr_db_pertensor
+layer1.0.conv1,Conv2d,64,36864,36.149,0.999879,29.931
+layer3.0.conv2,Conv2d,256,589824,36.302,0.999899,30.384
+layer2.1.conv1,Conv2d,128,147456,36.583,0.999891,30.722
+layer4.0.conv2,Conv2d,512,2359296,36.709,0.999982,26.812
+layer2.0.conv2,Conv2d,128,147456,36.874,0.999899,30.882
+layer4.1.conv2,Conv2d,512,2359296,36.960,0.999993,26.596
+<span class="dim">... (총 21행, sqnr_db 오름차순)</span></pre>
+    </div>
+  </div>
+
+  <h2 class="sec" id="s7">7 · 2.5 — QAT / STE 미니 데모</h2>
+  <div class="step">
+    <p class="lead">문서 2.5.3 스크립트에 <b>STE 없는 대조군</b>을 추가했다. 문서가 "직접 바꿔 확인해보라"고 권한 실험을 같이 돌려야 STE의 효과가 증명되기 때문이다.</p>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">python mini_qat_demo.py</span></div>
+      <pre><span class="in"><span class="p">$</span> python mini_qat_demo.py</span>
+
+### STE 있음 (FakeQuantSTE)
+step   0  loss=<span class="warn">14.7803</span>  |grad|=8.2041
+step  40  loss=<span class="ok">0.0105</span>  |grad|=0.0397
+step  80  loss=0.0108  |grad|=0.0549
+step 120  loss=0.0104  |grad|=0.0371
+step 160  loss=0.0106  |grad|=0.0474
+final loss: <span class="ok">0.0105</span>
+cos(W_q, W_true): <span class="ok">1.0</span>
+
+### STE 없음 (naive torch.round) — 대조군
+step   0  loss=14.7803  |grad|=<span class="err">0.0000</span>
+step  40  loss=<span class="err">14.7803</span>  |grad|=<span class="err">0.0000</span>
+step  80  loss=14.7803  |grad|=0.0000
+step 120  loss=14.7803  |grad|=0.0000
+step 160  loss=14.7803  |grad|=0.0000
+final loss: <span class="err">14.7803</span>
+cos(W_q, W_true): <span class="err">0.0</span></pre>
+    </div>
+    <div class="note tip">
+      <span class="tag">STE 작동 증명</span>
+      대조군은 <b>loss가 소수점 넷째 자리까지 초기값 그대로 얼어붙고</b> <code>|grad|</code>가 정확히
+      <code>0.0000</code>이다 — <code>torch.round</code>의 도함수가 거의 모든 점에서 0이라
+      <b>W가 단 한 번도 갱신되지 않은 것</b>이다. STE를 끼우면 같은 forward(같은 양자화 노이즈)인데도
+      loss가 14.78 → 0.0105로 <b>1400배</b> 줄고 cos가 1.0에 도달한다. 문서 2.5.1의
+      "forward는 계단, backward는 기울기 1의 직선"이 그대로 관측된다.
+    </div>
+    <div class="note warnb">
+      <span class="tag">문서의 "예상 출력" 수치가 실제와 다름</span>
+      문서 2.5.3의 예상 출력은 <code>step 0 loss=1.7… |grad|=2.3…</code>인데 실측은
+      <code>loss=14.7803, |grad|=8.2041</code>이다. 코드상 <code>W=0</code>에서 시작하므로 초기 loss는
+      <code>mean(y²) ≈ ‖W_true‖² ≈ D = 16</code>이어야 하고(<code>D=16</code>, <code>X~N(0,1)</code>),
+      <b>14.78이 이론과 맞는 값</b>이다. 문서의 1.7은 다른 설정에서 나온 수치로 보인다.
+      최종 loss(0.01대)와 cos(0.99↑)는 문서와 일치하므로 <b>결론은 영향 없고 초기값 표기만 정정</b>하면 된다.
+    </div>
+  </div>
+
+  <h2 class="sec" id="s8">8 · (추가) latency — "INT8 = 무조건 빠름"이 아니다, 그리고 TensorRT 비호환</h2>
+  <div class="step">
+    <p class="lead">문서 1단계는 정확도만 다루지만, 양자화를 하는 <b>이유</b>는 속도·크기다. 만든 QDQ 모델이 실제로 빨라지는지 EP별로 재봤다(batch=1, 100회 p50).</p>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">python bench_latency.py</span></div>
+      <pre>model                     EP        actual EP       p50 (ms)  p90 (ms)
+----------------------------------------------------------------------
+FP32                      CPU       CPU                <span class="warn">13.18</span>     14.56
+FP32                      CUDA      CUDA                1.40      1.41
+FP32                      TensorRT  Tensorrt            <span class="ok">0.95</span>      0.96
+INT8 MinMax(per-ch)       CPU       CPU                 <span class="ok">7.23</span>      8.37
+INT8 MinMax(per-ch)       CUDA      CUDA                <span class="err">1.83</span>      1.95
+INT8 MinMax(per-ch)       TensorRT  Tensorrt            <span class="err">3.07</span>      3.39
+INT8 MinMax(per-tensor)   CPU       CPU                 7.47      8.55
+INT8 MinMax(per-tensor)   CUDA      CUDA                1.74      1.79
+INT8 MinMax(per-tensor)   TensorRT  Tensorrt            2.81      3.44</pre>
+    </div>
+    <div class="note trap">
+      <span class="tag">🔴 GPU에서 INT8이 FP32보다 느리다</span>
+      CPU에서는 INT8이 <b>13.18 → 7.23ms (1.82×)</b>로 기대대로 빨라진다(이 CPU는 i7-6700으로
+      <b>AVX512-VNNI가 없는데도</b> 그렇다). 그런데 CUDA EP에서는 <b>1.40 → 1.83ms로 오히려 31% 느리고</b>,
+      TensorRT EP에서는 <b>0.95 → 3.07ms로 3.2배 느리다</b>. 특히 TensorRT 쪽 숫자가 이상하다 —
+      INT8을 가장 잘 쓰는 게 TensorRT여야 하는데.
+    </div>
+    <p class="lead">TensorRT EP의 로그를 켜 보니 <b>그래프를 아예 파싱하지 못하고</b> 있었다.</p>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">TensorRT EP 로그 (log_severity_level=2)</span></div>
+      <pre><span class="err">[ERROR] ITensor::getDimensions: Error Code 4: API Usage Error
+        (conv1.weight_bias_DequantizeLinear: input has type Int32 but must have type
+         FP8, FP4, Int4, or Int8. In checkType at nodeBase.cpp:455)</span>
+<span class="err">[ERROR] ModelImporter.cpp:149: ERROR: In function parseNode:
+        [6] Invalid Node - conv1.weight_bias_DequantizeLinear</span>
+<span class="err">[ERROR] [6] Assertion failed: shiftIsAllZeros(zeroPoint): Non-zero zero point is not supported.</span>
+<span class="dim">        ... 같은 에러가 conv/fc 전부(21개 weight_bias DQ)에 대해 반복</span></pre>
+    </div>
+    <div class="note trap">
+      <span class="tag">🔴 에러는 두 종류 — 그런데 진짜 원인은 하나다</span>
+      <b>①</b> ORT의 QDQ 양자화기는 bias를 <b>INT32</b>로 양자화해 <code>DequantizeLinear</code>을 붙이는데,
+      TensorRT의 ONNX 파서는 <b>INT32 입력 DQ를 받지 않는다</b>.
+      <b>②</b> 문서 4.3의 <code>activation_type=QUInt8</code> + <code>ActivationSymmetric=False</code>
+      (= x86 VNNI 권장 조합)는 <b>zero_point ≠ 0</b>인 비대칭 양자화인데, TensorRT는
+      <b>대칭(zero_point=0)만</b> 받는다.<br>
+      결과적으로 TRT EP는 노드를 하나도 못 가져가고 전부 폴백하며, 그 파티셔닝 오버헤드 때문에
+      <b>FP32보다 3배 느려진다</b>. 0단계의 <code>libnvinfer.so.10</code> 무음 CPU 폴백과 같은 계열
+      — <b>"동작은 하는데 조용히 느려지는"</b> 함정이다.<br><br>
+      처음엔 이 둘을 <b>독립된 원인 2개</b>로 적었는데, 그러면 설명이 안 되는 데이터가 있었다 —
+      아래 대칭 설정 모델(<code>trt_sym</code>)은 <code>QuantizeBias</code>가 기본값 <code>True</code>라
+      <b>INT32 bias DQ를 그대로 갖고도</b> 0.55ms로 잘 빌드됐다. 그래서 빠진 칸을 채워 2×2로 분리했다.
+    </div>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">python ablate_trt_cause.py &amp;&amp; python ablate_trt_check.py</span></div>
+      <pre>case               DQ  int32DQ     act_zp   TRT p50  CUDA p50  판정
+----------------------------------------------------------------------------------
+A_asym_bias        74       21    [0,158]      2.99      1.81  <span class="err">폴백(파싱 실패)</span>
+B_asym_nobias      53        <span class="hl">0</span>    [0,158]      3.07      1.82  <span class="err">폴백(파싱 실패)</span>
+C_sym_bias         91       <span class="hl">21</span>      [0,0]      <span class="ok">0.52</span>      2.14  <span class="ok">TRT 파싱 성공</span>
+D_sym_nobias       70        0      [0,0]      <span class="ok">0.51</span>      2.03  <span class="ok">TRT 파싱 성공</span>
+
+<span class="cmt"># 판정 기준: TRT p50 &lt; CUDA p50 × 0.8 이면 TRT가 실제로 그래프를 가져간 것.
+#            폴백이면 TRT가 CUDA보다 오히려 느리다 — 이게 무음 폴백의 지표.</span></pre>
+    </div>
+    <div class="note tip">
+      <span class="tag">확정 — 하드 블로커는 zero-point 하나뿐</span>
+      <b>B가 실패</b>하므로 INT32 bias DQ를 <b>없애도 소용없고</b>, <b>C가 성공</b>하므로 INT32 bias DQ가
+      <b>있어도 문제없다</b>. 즉 <b>①은 ②로 Q/DQ 융합이 깨진 뒤 홀로 남은 bias DQ가 내는 2차 증상</b>이고,
+      파싱 성공/실패를 가르는 유일한 변수는 <b>activation zero-point가 0인가</b>다.
+      따라서 <code>QuantizeBias=False</code>는 <b>필수가 아니라 선택</b>이다(0.52 → 0.51ms, 오차 범위).<br>
+      한 가지 더: ORT <code>get_qdq_config</code> docstring에 따르면 <code>QUInt8</code>인 채로
+      <code>ActivationSymmetric=True</code>만 켜면 zero-point가 0이 아니라 <b>127</b>이 된다 → 여전히 실패한다.
+      <b><code>activation_type</code>을 <code>QInt8</code>로 함께 바꿔야</b> 하는 이유가 이것이다.
+    </div>
+    <p class="lead">TensorRT가 받는 형태(대칭 <code>QInt8</code>)로 다시 만들어 대조했다. 추가로 <code>QuantizeBias=False</code>로 bias INT32 QDQ를 아예 빼는 변형도 만들었다.</p>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">python quantize_trt.py &amp;&amp; python check_trt.py</span></div>
+      <pre><span class="in"><span class="p">$</span> python quantize_trt.py</span>   <span class="cmt"># activation_type=QInt8, ActivationSymmetric=True</span>
+<span class="ok">saved resnet18_int8_trt_sym.onnx (9.0s)</span>
+<span class="ok">saved resnet18_int8_trt_nobias.onnx (8.3s)</span>   <span class="cmt"># + QuantizeBias=False</span>
+
+<span class="in"><span class="p">$</span> python check_trt.py</span>
+model                                TRT p50  CUDA p50
+------------------------------------------------------
+resnet18_fp32.onnx                      1.03      1.32
+resnet18_int8_minmax.onnx <span class="cmt">(문서 설정)</span>    <span class="err">3.05</span>      1.81
+resnet18_int8_trt_sym.onnx              <span class="ok">0.55</span>      2.09
+resnet18_int8_trt_nobias.onnx           <span class="ok">0.51</span>      1.98</pre>
+    </div>
+    <table class="dt">
+      <tr><th>설정</th><th>TRT p50</th><th>vs FP32(TRT)</th><th>top-1</th><th>vs FP32</th><th>McNemar p</th></tr>
+      <tr class="base"><td>FP32</td><td>1.03 ms</td><td>1.00×</td><td>78.50%</td><td>—</td><td>—</td></tr>
+      <tr class="lo"><td>INT8 <span class="d">QUInt8 비대칭 (문서 4.3)</span></td><td class="r">3.05 ms</td><td class="r">0.34× (느려짐)</td><td>78.90%</td><td class="g">+0.40%p</td><td>0.4795</td></tr>
+      <tr class="hi"><td>INT8 <span class="d">QInt8 대칭 (TRT 권장)</span></td><td class="g">0.55 ms</td><td class="g">1.87×</td><td>78.10%</td><td class="a">−0.40%p</td><td>0.5224</td></tr>
+      <tr class="hi"><td>INT8 <span class="d">QInt8 대칭 + QuantizeBias=False</span></td><td class="g">0.51 ms</td><td class="g">2.02×</td><td>78.10%</td><td class="a">−0.40%p</td><td>0.5224</td></tr>
+    </table>
+    <div class="note tip">
+      <span class="tag">결론 — 같은 INT8인데 TensorRT에서 5.5배 차이</span>
+      <b>3.05ms → 0.55ms</b>. 정확도 대가는 <b>−0.4%p(McNemar p=0.52, 유의하지 않음)</b>로 사실상 없다.
+      즉 "activation은 비대칭 uint8" (문서 2.2·4.3의 권장)은 <b>x86 CPU/VNNI에 한정된 권장</b>이고,
+      <b>타깃이 TensorRT면 반드시 대칭 int8로 뒤집어야 한다</b>. 3단계(<code>05_tensorrt.md</code>)에
+      들어가기 전에 알아야 할 사항이라 1단계 로그에 남긴다.
+    </div>
+    <div class="note">
+      <span class="tag">참고 — CUDA EP는 INT8이 원래 느리다</span>
+      ORT의 CUDA EP에는 QDQ INT8 conv 커널이 없어서 <b>DQ로 되돌려 FP로 계산</b>한다.
+      그래서 INT8 모델이 CUDA EP에서는 항상 QDQ 오버헤드만큼 손해다(1.32 → 1.98~2.09ms).
+      GPU에서 INT8 이득을 보려면 <b>TensorRT EP(또는 trtexec 엔진 빌드)가 필수</b>다.
+    </div>
+  </div>
+
+  <h2 class="sec" id="s9">9 · 문서(<code>03_quantization_theory.md</code>)에 반영할 정정 목록</h2>
+  <div class="step">
+    <p class="lead">이 실습에서 나온, 문서를 고쳐야 할 항목들이다. <b>아직 문서에 반영하지 않았다</b> — 반영 여부는 별도 결정 사항.</p>
+    <table class="ck">
+      <tr><th>위치</th><th>등급</th><th>내용</th></tr>
+      <tr><td>5.1 예시 표 + 해석</td><td class="fail">🔴</td><td>"Entropy/Percentile이 MinMax보다 우수"의 <b>방향이 실측과 반대</b>. ResNet18에서는 MinMax가 최적이고 클리핑이 곧 손실이다. 이 주장이 성립하는 전제(activation outlier가 잡음인 모델 = Transformer)를 명시해야 한다.</td></tr>
+      <tr><td>4.3 코드</td><td class="fail">🔴</td><td><code>CalibrationMethod.Entropy</code>를 <code>quantize_static</code>으로 부르면 ORT 1.23.2에서 <b>MinMax로 퇴화</b>(탐색 후보 1개)한다. 25초를 더 쓰고 같은 결과를 얻는다는 사실과, <code>num_bins</code>가 <code>quantize_static</code>으로 <b>전달 불가</b>라는 점을 명시해야 한다.</td></tr>
+      <tr><td>4.3 코드</td><td class="fail">🔴</td><td><code>percentile=99.9</code>는 ORT 기본값 <b>99.999보다 100배 공격적</b>이라 −6.2%p를 유발한다. 예시 값을 99.999로 바꾸거나 스윕을 권하는 문구가 필요.</td></tr>
+      <tr><td>4.3 / 2.2 권장 dtype</td><td class="fail">🔴</td><td><code>activation=QUInt8</code> 비대칭 권장은 <b>x86 VNNI 한정</b>. TensorRT 타깃이면 <b>activation zero-point≠0</b> 때문에 파싱 자체가 실패해 무음 폴백 → FP32보다 3배 느려진다(2×2 절제로 확정: bias INT32 DQ는 무관). 타깃별 분기 표가 필요(3단계 연결).</td></tr>
+      <tr><td>5.2 예시</td><td class="partial-txt">🟡</td><td><code>conv1</code>을 "가장 민감한 범인"으로 든 예시가 실측에서는 <b>가장 안전한 레이어</b>. per-channel에서는 채널이 적을수록 유리하다는 반대 인과를 반영해야 한다.</td></tr>
+      <tr><td>3장 데이터 대안</td><td class="partial-txt">🟡</td><td>"Imagenette로 대체해도 무방"은 <code>load_labels()</code>의 폴더정렬 가정과 <b>충돌</b>한다(top-1≈0%). synset→1000-class 인덱스 매핑 코드가 함께 제시돼야 한다.</td></tr>
+      <tr><td>6장 트러블슈팅</td><td class="partial-txt">🟡</td><td>"ONNX export 실패 시 <code>opset_version=17</code>로 고정" 처방은 torch 2.11 dynamo 경로에서 <b>실행 불가</b>(항상 18로 폴백). 처방을 <code>opset_version&gt;=18</code> 또는 <code>dynamo=False</code>로 갱신해야 한다.</td></tr>
+      <tr><td>2.5.3 예상 출력</td><td class="pass">🟢</td><td>step 0의 <code>loss=1.7… |grad|=2.3…</code>이 실측 <code>14.7803 / 8.2041</code>과 다름. 이론값도 14.78 쪽이 맞다. 최종 loss·cos는 일치하므로 초기값만 정정.</td></tr>
+      <tr><td>4.3 ⚠️ 확인 필요</td><td class="pass">🟢</td><td><code>CalibPercentile</code> 키명 — <b>ORT 1.23.2에서 정확함을 소스로 확인</b>. ⚠️ 마커를 해소하면 된다.</td></tr>
+      <tr><td>4.4 함정 (표본 수)</td><td class="pass">🟢</td><td>문서의 경고가 <b>실측으로 정확히 재현</b>됨. per-channel vs per-tensor −1.2%p조차 n=1000에서 p=0.0592로 유의하지 않다. 다만 문서가 이 차이를 "CI가 갈리는 차이"의 예로 든 것은 과한 표현이라 완화 필요.</td></tr>
+    </table>
+  </div>
+
+  <h2 class="sec" id="s10">10 · 산출물</h2>
+  <div class="step">
+    <div class="card">
+      <h4>문서 7장이 요구하는 산출물 — 달성 현황</h4>
+      <table class="ck">
+        <tr><th>요구 산출물</th><th>상태</th><th>비고</th></tr>
+        <tr><td><code>resnet18_fp32.onnx</code></td><td class="pass">✔</td><td>opset 18(17 요청 실패) + <code>.onnx.data</code></td></tr>
+        <tr><td>INT8 QDQ 4종</td><td class="pass">✔</td><td>+ 추가 4종(entropy_fixed, pct99.99, pct99.999, TRT 대칭)</td></tr>
+        <tr><td>top-1 비교 + Wilson CI</td><td class="pass">✔</td><td>+ McNemar paired 검정 · holdout 800 교차확인</td></tr>
+        <tr><td><code>layer_sensitivity.csv</code></td><td class="pass">✔</td><td>21행, 4.5.2 스키마 + per-tensor 대조 컬럼</td></tr>
+        <tr><td>QAT/STE 데모 로그</td><td class="pass">✔</td><td>+ STE 없는 대조군으로 <code>|grad|=0</code> 증명</td></tr>
+        <tr><td>논문 3편 요약 메모</td><td class="fail">✘</td><td>미작성 (읽기 과제 — 실습 범위 밖)</td></tr>
+        <tr><td>수식 유도 노트</td><td class="fail">✘</td><td>미작성 (면접 대비 과제 — 실습 범위 밖)</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <h4>이 세션이 남긴 파일 — <code>~/stage1-work/</code></h4>
+      <ul class="files">
+        <li><span class="fn">layer_sensitivity.csv</span><small>정본 산출물 — 2·3단계 입력</small></li>
+        <li><span class="fn">resnet18_fp32.onnx(+.data)</span><small>44.7 MB · opset 18 · IR 10</small></li>
+        <li><span class="fn">resnet18_int8_*.onnx</span><small>INT8 QDQ 8종 · 각 11.3 MB</small></li>
+        <li><span class="fn">ablate_{A,B,C,D}_*.onnx</span><small>2×2 절제용 INT8 4종</small></li>
+        <li><span class="fn">export_resnet18.py</span><small>4.1 (문서 원문 그대로)</small></li>
+        <li><span class="fn">calib_reader.py</span><small>4.2 + torchvision 표준 전처리 대조군</small></li>
+        <li><span class="fn">quantize_ptq.py</span><small>4.3 (문서 원문, CALIB_DIR만 변경)</small></li>
+        <li><span class="fn">quantize_extra.py</span><small>Entropy 퇴화 우회 + percentile 스윕</small></li>
+        <li><span class="fn">quantize_trt.py</span><small>TensorRT 대칭 INT8 변형</small></li>
+        <li><span class="fn">eval_top1.py</span><small>4.4 + McNemar + holdout 채점</small></li>
+        <li><span class="fn">layer_sensitivity.py</span><small>4.5 + per-tensor 대조 컬럼</small></li>
+        <li><span class="fn">mini_qat_demo.py</span><small>2.5.3 + STE 없는 대조군</small></li>
+        <li><span class="fn">compare_scales.py / 2.py</span><small>캘리브별 activation 범위 추출</small></li>
+        <li><span class="fn">bench_latency.py / check_trt.py</span><small>EP별 p50/p90 측정</small></li>
+        <li><span class="fn">ablate_trt_cause.py / _check.py</span><small>TRT 파싱 실패 원인 2×2 절제</small></li>
+        <li><span class="fn">verify_labels.py</span><small>synset↔인덱스 매핑 검증</small></li>
+        <li><span class="fn">eval_hits.npz</span><small>모델별 1000장 정오답 배열(재분석용)</small></li>
+        <li><span class="fn">data/eval1000, data/calib200</span><small>평가 1000장 / 캘리브 200장</small></li>
+      </ul>
+    </div>
+    <div class="note warnb">
+      <span class="tag">후속 확인 필요</span>
+      ① 9장의 정정 목록을 <code>03_quantization_theory.md</code>에 반영할지 결정해야 한다.
+      ② 8장의 TensorRT 대칭 INT8 이슈는 <code>05_tensorrt.md</code>(3단계)와
+      <code>10_pitfalls.md</code>(함정)에도 걸치는 내용이라 반영 위치를 함께 정해야 한다.
+      ③ <code>layer_sensitivity.csv</code>에 "범인 레이어"가 안 잡혔으므로, 2단계 Transformer에서
+      같은 방법론을 쓸 때는 <b>activation 감도(4.5-b)</b>까지 봐야 의미 있는 후보가 나올 가능성이 높다.
+    </div>
+  </div>
+
+  <footer>
+    실행: 2026-08-02 · Ubuntu 22.04.5 LTS · RTX 3060 12GB (드라이버 595.84) · i7-6700<br>
+    스택: torch 2.11.0+cu128 · torchvision 0.26.0+cu128 · onnx 1.18.0 · onnxruntime-gpu 1.23.2 · numpy 1.26.4 (venv <code>~/emb-ai</code>)<br>
+    <div class="next">▸ <b>다음:</b> 9장 정정 목록 반영 여부 결정 → 2단계 <code>04_transformer_quantization.md</code> (Transformer 양자화 지옥)</div>
+  </footer>
+
+</div>
+</body>
+</html>

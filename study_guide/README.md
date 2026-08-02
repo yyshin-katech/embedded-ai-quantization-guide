@@ -5,6 +5,8 @@
 > 원본 기획: `../guide (1).html` (Embedded AI Engineer 실전 학습 가이드 v2)
 > 이 `study_guide/`는 그 단계 구조를 **Ubuntu 22.04 + NVIDIA RTX GPU** 환경에서 실행 가능한 명령어·코드·예시·참고문헌으로 확장한 것입니다.
 
+> ✅ **실측 반영 현황** — `01`(0단계)·`02`(0.5단계)·`03`(1단계)은 실제 머신(Ubuntu 22.04.5 / RTX 3060 12GB / 드라이버 595.84)에서 **끝까지 따라 해보고 그 결과로 문서를 정정**했습니다. 예상 출력·실측 표·함정은 모두 그때 나온 실제 값입니다. 전 과정 로그: [`../logs/`](../logs/) (`stage0_setup_log.html`, `stage0.5_ladder_log.html`, `lv2_ptq_deep_dive.html`, `stage1_quantization_log.html`). 나머지 문서는 웹 검증 기반이며 아직 실행 검증 전입니다.
+
 ---
 
 ## 🎯 이 가이드가 향하는 곳
