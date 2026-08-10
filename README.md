@@ -15,6 +15,7 @@
 ## 🚀 바로 시작
 
 - **가이드 인덱스**: [`study_guide/README.md`](study_guide/README.md) — 여기서 시작하세요.
+- **작업 인수인계**: [`HANDOFF.md`](HANDOFF.md) — 다른 PC에서 이어서 할 때. 어디까지 실측 검증됐고, git에 없는 것(데이터 27GB·venv·작업 스크립트)을 어떻게 확보하며, 진행 중인 **QAT 회복 실험**을 어떻게 재실행하는지. 이전 작업 머신의 GPU 하드웨어 고장(Xid 79) 진단도 포함.
 - **학습 자료 모음**: [`learning_resources.html`](learning_resources.html) — 기초부터 순서대로 볼 수 있는 **사이트 34곳**(가이드 인용 23 + 보강 8, 링크 실측 검증 완료)과 가이드가 인용한 **논문 19편**의 원문 링크. 논문 PDF는 저작권상 재배포하지 않고 `paper/fetch_papers.py`로 받게 했습니다.
 - **HTML로 편하게 보기**(다크 테마 · 진행률 체크박스 · 목차): 저장소를 클론한 뒤 `study_guide/README.html`을 브라우저로 엽니다.
   ```bash
@@ -77,12 +78,16 @@
 │   ├── stage1_real_imagenet_log.html    # 1단계 재실행 — ImageNet val 50,000장 전량
 │   └── stage1_real_imagenet_report.html # 재실행 분석 보고서 + 정정 12건 근거
 ├── learning_resources.html # 학습 사이트 34곳 + 인용 논문 19편 (링크 실측 검증)
+├── experiments/            # 실습에서 파생된 진행 중 실험 (가이드 본문과 별개)
+│   └── qat_recovery/       # QAT 회복 실험 2팔 — 미완, HANDOFF.md §5 참조
 ├── paper/                  # 논문 PDF 받는 스크립트 (PDF 자체는 .gitignore — 재배포 안 함)
+├── HANDOFF.md              # 다른 PC에서 작업 이어받기 (상태·전송 목록·재실행 절차)
 ├── guide (1).html          # 원본 기획 문서 (출발점)
 ├── CLAUDE.md               # 제작에 쓰인 하네스 포인터
 └── .claude/                # 에이전트 팀 + 스킬 (제작 하네스)
     ├── agents/             # guide-author, tech-reviewer
-    └── skills/             # research / writing / review / md-to-html / orchestrator
+    ├── skills/             # research / writing / review / md-to-html / orchestrator
+    └── memory/             # 실측 기록 사본 (sudo 암호 마스킹 처리)
 ```
 
 ---
