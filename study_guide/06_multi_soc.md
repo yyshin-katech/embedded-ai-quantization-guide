@@ -615,7 +615,8 @@ DRP-AI TVM은 **TVM 기반**이라, DRP-AI가 못 맡는 op는 **TVM이 CPU(Arm 
 - [TI edgeai-tidl-tools Releases](https://github.com/TexasInstruments/edgeai-tidl-tools/releases) — SDK 버전↔태그 매핑, 지원 플랫폼(J721E/J721S2/J784S4/J722S/AM62A).
 - [TI edgeai-tidl-tools model_compilation.md](https://github.com/TexasInstruments/edgeai-tidl-tools/blob/master/docs/model_compilation.md) — `tensor_bits`/`accuracy_level`/`calibration_*`/`mixed_precision_factor`/`*_16bit_names_list`/`deny_list` 옵션 정의.
 - [TI edgeai-tidl-tools debugging.md](https://github.com/TexasInstruments/edgeai-tidl-tools/blob/master/docs/debugging.md) — `debug_level`(0~5) 의미, parsing summary(offload vs CPU 노드), 레이어 트레이스 덤프.
-- [TI TIDL 지원 op 문서 (supported_ops_rts_versions.md)](https://github.com/TexasInstruments/edgeai-tidl-tools/blob/master/docs/supported_ops_rts_versions.md) — 가속 가능 op 목록.
+- [TI TIDL 지원 op 문서 (operators.md)](https://github.com/TexasInstruments/edgeai-tidl-tools/blob/master/docs/operators.md) — 가속 가능 op 목록. ⚠️ 구 문서 `docs/supported_ops_rts_versions.md`는 **404다** — 태그 `11_00_08_00`까지는 있었으나(21,683 B) `11_02_16_00` 재편에서 삭제됐다. 이 `operators.md`가 후속 문서(28,756 B, 2026-08-06 실측).
+- [TI TIDL Quantization 문서 (quantization.md)](https://github.com/TexasInstruments/edgeai-tidl-tools/blob/master/docs/quantization.md) — 위 재편에서 신설. PTQ, simple vs advanced 캘리브레이션, advanced bias calibration, histogram 기반 range 수집, 자동/수동 혼합정밀도, QAT, 정확도 가이드라인을 벤더 관점에서 한 문서에 정리.
 - [TI TVM User's Guide (Compiling Models)](https://software-dl.ti.com/codegen/docs/tvm/tvm_tidl_users_guide/compiling.html) — subgraph 파티셔닝/offload 로그 해석.
 - [ONNX Runtime QNN Execution Provider 문서](https://onnxruntime.ai/docs/execution-providers/QNN-ExecutionProvider.html) — `get_qnn_qdq_config`/`qnn_preprocess_model`/provider_options/context binary/미지원 op(Loop·If·동적 shape).
 - [onnxruntime-qnn (GitHub)](https://github.com/onnxruntime/onnxruntime-qnn) — QAIRT EP 패키지·문서.

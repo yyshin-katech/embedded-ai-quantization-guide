@@ -6,13 +6,16 @@
 >
 > ✅ **0단계 환경은 2026-07-31 실제 머신에서 설치·검증 완료**했습니다(Ubuntu 22.04.5 / RTX 3060 / 드라이버 595.84 / `nvcc` 12.8.93). 아래 버전 스택과 [`01_environment_setup.md`](study_guide/01_environment_setup.md)의 예상 출력은 그 **실측값**입니다. 실제로 따라 하며 남긴 커맨드·출력·함정 해결 과정은 [`logs/`](logs/)에 있습니다.
 >
-> ✅ **0.5단계(배포 사다리)·1단계(양자화 이론)도 2026-08-02 실측 완료**했습니다. 1단계에서는 ORT의 **Entropy 캘리브레이터가 기본값에서 MinMax로 조용히 퇴화**하고, ORT 권장 설정(`QUInt8` 비대칭)으로 만든 INT8 QDQ를 **TensorRT가 파싱조차 못 해 FP32보다 3배 느려지는**(3.05 ms vs 0.95 ms) 무음 폴백을 잡아냈습니다. 그 결과로 [`03`](study_guide/03_quantization_theory.md)·[`05`](study_guide/05_tensorrt.md)·[`10`](study_guide/10_pitfalls.md) 문서를 정정했습니다 — 전 과정은 [`logs/stage1_quantization_log.html`](logs/stage1_quantization_log.html).
+> ✅ **0.5단계(배포 사다리)·1단계(양자화 이론)도 2026-08-02 실측 완료**했습니다. 1단계에서는 ORT의 **Entropy 캘리브레이터가 기본값에서 MinMax로 조용히 퇴화**하고(산출 ONNX의 md5까지 동일), ORT 권장 설정(`QUInt8` 비대칭)으로 만든 INT8 QDQ를 **TensorRT가 파싱조차 못 해 FP32보다 3배 느려지는**(3.06 ms vs 0.96 ms) 무음 폴백을 잡아냈습니다 — 전 과정은 [`logs/stage1_quantization_log.html`](logs/stage1_quantization_log.html).
+>
+> 🔁 **2026-08-06, 1단계를 ImageNet val 50,000장 전량으로 재실행**했습니다. 1차는 클래스당 1장 큐레이션 셋(1,000장)이었는데, 전량으로 다시 재니 **절대 top-1이 평균 +9.77%p 부풀려져 있었고, Δ의 부호가 3건·유의성 판정이 5건 뒤집혔습니다**. FP32는 공개 재현값과 **0.05%p** 안에서 만납니다(69.81% vs 69.758%). 여기서 나온 정정 12건을 [`03`](study_guide/03_quantization_theory.md)·[`05`](study_guide/05_tensorrt.md)·[`10`](study_guide/10_pitfalls.md)에 반영했습니다 — **작은 평가셋으로는 나머지 함정을 진단할 수 없다**는 것이 [10단계 함정 0](study_guide/10_pitfalls.md)으로 새로 들어갔습니다. 실행 로그 [`logs/stage1_real_imagenet_log.html`](logs/stage1_real_imagenet_log.html) · 분석 보고서 [`logs/stage1_real_imagenet_report.html`](logs/stage1_real_imagenet_report.html).
 
 ---
 
 ## 🚀 바로 시작
 
 - **가이드 인덱스**: [`study_guide/README.md`](study_guide/README.md) — 여기서 시작하세요.
+- **학습 자료 모음**: [`learning_resources.html`](learning_resources.html) — 기초부터 순서대로 볼 수 있는 **사이트 34곳**(가이드 인용 23 + 보강 8, 링크 실측 검증 완료)과 가이드가 인용한 **논문 19편**의 원문 링크. 논문 PDF는 저작권상 재배포하지 않고 `paper/fetch_papers.py`로 받게 했습니다.
 - **HTML로 편하게 보기**(다크 테마 · 진행률 체크박스 · 목차): 저장소를 클론한 뒤 `study_guide/README.html`을 브라우저로 엽니다.
   ```bash
   git clone https://github.com/yyshin-katech/embedded-ai-quantization-guide.git
@@ -35,7 +38,7 @@
 | 07 | [인프라화](study_guide/07_infrastructure.md) | 5 | `design_rules.md`, 회귀 하네스 |
 | 08 | [캡스톤 프로젝트](study_guide/08_capstone.md) | 캡스톤 | 공개 리포 + 블로그 |
 | 09 | [12주 로드맵](study_guide/09_roadmap.md) | 로드맵 | 학습 스케줄 |
-| 10 | [함정 5개](study_guide/10_pitfalls.md) | 함정 | 실무 체크리스트 |
+| 10 | [함정 5개 (+ 측정의 함정)](study_guide/10_pitfalls.md) | 함정 | 실무 체크리스트 |
 
 각 문서 구조: `왜 → 체크리스트 → 이론 → 환경 → 실습 → 결과해석 → 트러블슈팅 → 산출물 → 참고문헌 → 다음`. 총 ~8,000줄.
 
@@ -70,7 +73,11 @@
 │   ├── stage0_setup_log.html        # 0단계 환경 준비 실행 로그
 │   ├── stage0.5_ladder_log.html     # 0.5단계 배포 사다리 Lv.1~4 실행 로그
 │   ├── lv2_ptq_deep_dive.html       # PTQ 4종(FP32/dynamic/fp16/INT8) 이론·실측 딥다이브
-│   └── stage1_quantization_log.html # 1단계 양자화 이론 실습 + 문서 정정 10건 근거
+│   ├── stage1_quantization_log.html # 1단계 1차 실습(큐레이션 1,000장) + 정정 10건 근거
+│   ├── stage1_real_imagenet_log.html    # 1단계 재실행 — ImageNet val 50,000장 전량
+│   └── stage1_real_imagenet_report.html # 재실행 분석 보고서 + 정정 12건 근거
+├── learning_resources.html # 학습 사이트 34곳 + 인용 논문 19편 (링크 실측 검증)
+├── paper/                  # 논문 PDF 받는 스크립트 (PDF 자체는 .gitignore — 재배포 안 함)
 ├── guide (1).html          # 원본 기획 문서 (출발점)
 ├── CLAUDE.md               # 제작에 쓰인 하네스 포인터
 └── .claude/                # 에이전트 팀 + 스킬 (제작 하네스)

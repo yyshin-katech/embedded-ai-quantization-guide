@@ -26,9 +26,14 @@ ORDER = [
 ]
 
 def slugify(text):
-    t = re.sub(r"<[^>]+>", "", text)              # 태그 제거
-    t = re.sub(r"[^\w가-힣 -]", "", t).strip().lower()
-    t = re.sub(r"[\s]+", "-", t)
+    """GitHub(github-slugger) 규칙과 동일하게 맞춘다.
+    MD 안의 `[..](#앵커)` 크로스 링크는 저자가 GitHub 기준으로 쓰므로,
+    여기서 공백을 접거나 끝을 strip하면(예: `— `→`--`, 끝의 `(★★★☆☆)`→`-`)
+    HTML에서만 링크가 깨진다. 순서: trim → 구두점 제거 → 공백 1개당 하이픈 1개."""
+    t = re.sub(r"<[^>]+>", "", text).strip()      # 태그 제거 + 양끝 공백
+    t = re.sub(r"[\t\n\f\r]", " ", t).lower()
+    t = re.sub(r"[^\w가-힣 -]", "", t)            # 구두점·기호·이모지 제거 (공백은 남김)
+    t = t.replace(" ", "-")                        # 접지 않는다 (GitHub과 동일)
     return t or "sec"
 
 def ckey(label):

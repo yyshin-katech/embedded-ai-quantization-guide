@@ -6,6 +6,8 @@
 > 이 `study_guide/`는 그 단계 구조를 **Ubuntu 22.04 + NVIDIA RTX GPU** 환경에서 실행 가능한 명령어·코드·예시·참고문헌으로 확장한 것입니다.
 
 > ✅ **실측 반영 현황** — `01`(0단계)·`02`(0.5단계)·`03`(1단계)은 실제 머신(Ubuntu 22.04.5 / RTX 3060 12GB / 드라이버 595.84)에서 **끝까지 따라 해보고 그 결과로 문서를 정정**했습니다. 예상 출력·실측 표·함정은 모두 그때 나온 실제 값입니다. 전 과정 로그: [`../logs/`](../logs/) (`stage0_setup_log.html`, `stage0.5_ladder_log.html`, `lv2_ptq_deep_dive.html`, `stage1_quantization_log.html`). 나머지 문서는 웹 검증 기반이며 아직 실행 검증 전입니다.
+>
+> 🔁 **2026-08-06 — `03`(1단계)을 ImageNet val 50,000장 전량으로 재실행**했습니다. 1차 실습은 클래스당 1장 큐레이션 셋(1,000장)이었고, 그 절대 top-1이 **평균 +9.77%p 부풀려져 있었습니다**. 전량 재측정으로 **Δ의 부호 3건·유의성 판정 5건이 뒤집혀** `03`·`05`·`10`을 정정했습니다(새 항목: [10단계 함정 0](10_pitfalls.md) — *평가셋이 작으면 나머지 함정을 진단할 수 없다*). 근거: [`stage1_real_imagenet_log.html`](../logs/stage1_real_imagenet_log.html) · [`stage1_real_imagenet_report.html`](../logs/stage1_real_imagenet_report.html). **이 가이드의 수치를 인용할 때는 큐레이션 셋 값이 아닌 50k 값을 쓰세요.**
 
 ---
 
@@ -42,7 +44,7 @@
 | 07 | [인프라화](07_infrastructure.md) | 5단계 | `bench/` 벤치 하네스, CI 회귀 테스트, design_rules 자동화 | `design_rules.md`, 회귀 하네스 |
 | 08 | [캡스톤 프로젝트](08_capstone.md) | 캡스톤 | nuScenes mini BEV detector를 4개 타깃에 배포·비교 | 공개 리포 + 블로그 5편 |
 | 09 | [12주 로드맵](09_roadmap.md) | 로드맵 | 주차별 상세 계획 + 학습자 유형별 변형 | 학습 스케줄 |
-| 10 | [함정 5개](10_pitfalls.md) | 함정 | 캘리브 대표성·전처리 일치·fallback 지옥 등 + 재현 스니펫 | 실무 체크리스트 |
+| 10 | [함정 5개 (+ 측정의 함정)](10_pitfalls.md) | 함정 | 평가셋 검정력(함정 0)·캘리브 대표성·전처리 일치·fallback 지옥 등 + 재현 스니펫 | 실무 체크리스트 |
 
 ---
 

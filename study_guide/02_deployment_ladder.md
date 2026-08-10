@@ -705,7 +705,7 @@ print(f"estimated inference: {est_us/1000:.2f} ms on {device.name}")
 - [LiteRT (구 TFLite) 공식](https://ai.google.dev/edge/litert) · [ai-edge-litert (PyPI)](https://pypi.org/project/ai-edge-litert/) — 런타임 (2026-07 기준 최신)
 - [LiteRT Post-training dynamic range quantization](https://developers.google.com/edge/litert/conversion/tensorflow/quantization/post_training_quant) — dynamic range(4x, activation float)
 - [LiteRT Post-training float16 quantization](https://developers.google.com/edge/litert/conversion/tensorflow/quantization/post_training_float16_quant) — float16(2x, GPU 타깃)
-- [LiteRT Post-training integer quantization](https://ai.google.dev/edge/litert/conversion/tensorflow/quantization/post_training_quantization) — full INT8 + `representative_dataset`
+- [LiteRT Post-training integer quantization](https://developers.google.com/edge/litert/conversion/tensorflow/quantization/post_training_integer_quant) — full INT8 + `representative_dataset`. ⚠️ 구 링크 `ai.google.dev/…/post_training_quantization`은 **Google OAuth 무한 리다이렉트에 걸린다**(2026-08-06 실측: `accounts.google.com/o/oauth2/…`로 302, `curl: (47) Maximum (50) redirects followed`) — 위 `developers.google.com` 주소를 쓸 것.
 - [LiteRT inference (Interpreter / CompiledModel)](https://developers.google.com/edge/litert/inference) — 추론 API 두 경로
 - [tf.lite.TFLiteConverter API](https://www.tensorflow.org/lite/api_docs/python/tf/lite/TFLiteConverter) — 변환기 레퍼런스
 - [ONNX Runtime 설치](https://onnxruntime.ai/docs/install/) · [Execution Providers](https://onnxruntime.ai/docs/execution-providers/) — EP 교체, `onnxruntime-gpu` 1.23.2(CUDA 12)

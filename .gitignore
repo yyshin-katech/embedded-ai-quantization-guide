@@ -6,6 +6,11 @@ study_guide_prev/
 # Claude Code 로컬 설정 (머신 종속, 커밋 제외)
 .claude/settings.local.json
 
+# 논문 PDF 로컬 사본 (44.7MB, 저작권은 각 저자에게 있음 — 재배포 대신 스크립트로 재현)
+#   paper/fetch_papers.py + papers.py 만 커밋한다. 목록·검증 결과는 learning_resources.html 참조.
+paper/*.pdf
+paper/paper_meta.json
+
 # Python
 __pycache__/
 *.py[cod]

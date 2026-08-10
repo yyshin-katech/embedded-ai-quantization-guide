@@ -16,7 +16,7 @@
 2. **정확도 디버깅은 `polygraphy`가 필수품이다.** "INT8로 바꿨더니 mAP가 떨어졌다"를 레이어 단위로 어디서 깨졌는지 찾는다. 특히 `polygraphy debug precision`으로 **"몇 번째 레이어까지 고정밀로 돌리면 정확도가 회복되는가"를 이분탐색(bisect)** 하는 절차가 실무의 핵심이다.
 3. **DLA와 custom plugin이 진짜 차별점이다.** GPU-only 빌드는 누구나 한다. DLA fallback을 0으로 만들고, 미지원 op를 위한 plugin을 직접 짜는 능력이 임베디드 특화 역량이다.
 
-> 💡 **왜 GPU에서 INT8을 하려면 결국 TensorRT인가 (1단계 실측):** [1단계](03_quantization_theory.md)에서 만든 INT8 QDQ ONNX를 ONNX Runtime **CUDA EP**로 돌리면 FP32보다 **오히려 느리다**(1.40 → 1.83 ms). CUDA EP에는 QDQ INT8 conv 커널이 없어 DQ로 되돌려 FP로 계산하기 때문이다. 같은 모델을 **TensorRT로 제대로 태우면 0.55 ms**(FP32 0.95~1.03 ms 대비 **1.87×**)가 나온다. 즉 **GPU에서 INT8 이득을 보려면 TensorRT 엔진 빌드(또는 TensorRT EP)가 사실상 필수**다 — 이 단계가 존재하는 이유다. 단, **아무 QDQ 모델이나 되는 건 아니다**(2.2.1). *실측: RTX 3060 · ResNet18 · batch=1 · 100회 p50 · ORT 1.23.2. 출처: [1단계 실행 로그 8장](../logs/stage1_quantization_log.html).*
+> 💡 **왜 GPU에서 INT8을 하려면 결국 TensorRT인가 (1단계 실측):** [1단계](03_quantization_theory.md)에서 만든 INT8 QDQ ONNX를 ONNX Runtime **CUDA EP**로 돌리면 FP32보다 **오히려 느리다**(1.33 → 1.81 ms). CUDA EP에는 QDQ INT8 conv 커널이 없어 DQ로 되돌려 FP로 계산하기 때문이다. 같은 모델을 **TensorRT로 제대로 태우면 0.51 ms**(FP32 0.96 ms 대비 **1.86×**)가 나온다. 즉 **GPU에서 INT8 이득을 보려면 TensorRT 엔진 빌드(또는 TensorRT EP)가 사실상 필수**다 — 이 단계가 존재하는 이유다. 단, **아무 QDQ 모델이나 되는 건 아니다**(2.2.1). *실측: RTX 3060 · ResNet18 · batch=1 · 워밍업 20 + 60회 p50 · ORT 1.23.2. 출처: [1단계 실행 로그 8장](../logs/stage1_quantization_log.html) + [재실행 보고서 10절](../logs/stage1_real_imagenet_report.html).*
 
 > ⚠️ **버전 경계 (2026-07 기준, 반드시 먼저 읽을 것)**
 > TensorRT는 2026년 상반기 **11.x**가 나오면서 API가 크게 바뀌었다. 이 단계는 **두 세계**를 다루되, **정본(주 경로)은 10.x LTS**다.
@@ -108,33 +108,48 @@ NVIDIA는 10.1부터 implicit(entropy calibrator)을 deprecated 처리했고, 11
 
 🔴 **무서운 건 에러가 아니라 그 다음이다.** ORT의 TensorRT EP는 파싱에 실패해도 **예외를 던지지 않고 조용히 폴백**한다. 노드를 하나도 못 가져가면서 파티셔닝 오버헤드까지 얹혀 **FP32보다 3배 느려진다** — 즉 **"INT8로 바꿨는데 왜 느리지?"의 정체가 정확도 문제가 아니라 파싱 실패**인 경우가 있다.
 
-| 설정 | TRT p50 | vs FP32(TRT) | top-1 vs FP32 | McNemar p |
-|------|---------|--------------|---------------|-----------|
-| FP32 | 1.03 ms | 1.00× (기준) | — | — |
-| INT8 `QUInt8` 비대칭 (1단계 4.3 기본) | **3.05 ms** | **0.34× (느려짐)** | +0.40%p | 0.4795 |
-| INT8 `QInt8` 대칭 (`ActivationSymmetric=True`) | **0.55 ms** | **1.87×** | −0.40%p | 0.5224 n.s. |
-| INT8 대칭 + `QuantizeBias=False` | **0.51 ms** | **2.02×** | −0.40%p | 0.5224 n.s. |
+| 설정 | TRT p50 | vs FP32(TRT) | top-1 (50k) | Δ vs FP32 | McNemar vs FP32 |
+|------|---------|--------------|-------------|-----------|-----------------|
+| FP32 | 0.96 ms | 1.00× (기준) | 68.74% | — | — |
+| INT8 `QUInt8` 비대칭 (1단계 4.3 기본) | **3.06 ms** | **0.31× (느려짐)** | 68.62% | −0.12%p | p=0.061 n.s. |
+| INT8 `QInt8` 대칭 (`ActivationSymmetric=True`) | **0.51 ms** | **1.86×** | 68.33% | −0.41%p | **p=5.0e-8 유의** |
+| INT8 대칭 + `QuantizeBias=False` | **0.51 ms** | **1.86×** | 68.33% | −0.41%p | **p=5.0e-8 유의** |
 
-> 실측 환경: **RTX 3060 · ResNet18 · batch=1 · 100회 p50 · ORT 1.23.2 TensorRT EP**. top-1은 1000장 큐레이션 셋(FP32 78.50%) 기준의 **상대 비교**이며 ImageNet val 절대값이 아니다. 다른 모델·해상도에 이 배수를 그대로 옮기지 말 것. 원 로그: [1단계 실행 로그 8장](../logs/stage1_quantization_log.html).
+> 실측 환경: **RTX 3060 · ResNet18 · batch=1 · 워밍업 20 + 60회 p50 · ORT 1.23.2 TensorRT EP**. **top-1은 ImageNet val 50,000장 전량**을 동일 전처리 캐시(`squash`)로 평가한 값이고, 짝지어진 표본이라 McNemar를 쓴다. 다른 모델·해상도에 이 배수를 그대로 옮기지 말 것. 원 로그: [1단계 실행 로그 8장](../logs/stage1_quantization_log.html)(메커니즘) + [재실행 보고서 9~10절](../logs/stage1_real_imagenet_report.html)(위 수치).
 
-**같은 INT8인데 설정 하나로 5.5배(3.05 → 0.55 ms) 차이**가 나고, 그 대가인 정확도 −0.4%p는 McNemar p=0.5224로 **통계적으로 유의하지 않다.** 고칠 이유만 있고 안 고칠 이유가 없다.
+**같은 INT8인데 설정 하나로 6배(3.06 → 0.51 ms) 차이**가 난다. 다만 **그 대가는 무료가 아니다.**
+
+🔴 **정정 — 대칭 강제의 정확도 대가는 유의하다.** 1단계 1차 실행(큐레이션 1,000장)에서는 −0.4%p / p=0.5224로 "유의하지 않음"이라고 적었다. **50,000장으로 다시 재니 유의하다**: 비대칭 68.62% → 대칭 68.33%, **−0.29%p, McNemar p=9.2e-5**(FP32 기준으로는 −0.41%p, p=5.0e-8). 1,000장에는 0.3%p를 잡을 검정력이 없었던 것이다([10_pitfalls.md](10_pitfalls.md) 함정 0).
+
+메커니즘은 분명하다 — zero-point를 0으로 묶으면 **post-ReLU처럼 한쪽(≥0)만 쓰는 분포에서 표현 구간의 절반을 버린다.** 비대칭 `QUInt8`은 zero-point를 분포 하단(실측 `[0, 173]`)으로 옮겨 256단계를 전부 양의 영역에 쓰지만, 대칭 `QInt8`은 −128~127 중 실질적으로 0~127만 쓰게 된다. **INT8이 사실상 INT7이 되는 것**이고, 그 대가가 0.29%p다.
+
+그래도 **1.86× 속도를 0.29%p로 사는 거래**이므로 대개 남는 장사다(폴백 상태로 두면 오히려 3배 느리다). 판단 기준:
+
+| 정확도 예산 | 판단 |
+|------------|------|
+| > 1%p 여유 | 고민 없이 대칭으로 뒤집는다. |
+| 0.3~1%p | 대칭으로 가되 **−0.3%p를 예산에 계상**한다. 여유가 빠듯하면 부분 FP16 혼합(2.4)으로 되찾는다. |
+| < 0.3%p | 대칭 PTQ만으로는 예산을 넘길 수 있다. **QAT**([03 6절](03_quantization_theory.md))로 대칭 제약 아래에서 재학습하는 것이 정공법이다. |
+
+즉 **"어차피 유의하지 않으니 공짜"라는 서술은 틀렸다.** 속도를 위해 정확도를 얼마 지불하는지 알고 뒤집어야 한다.
 
 **그런데 "설정 하나"란 정확히 무엇인가 — ①인가 ②인가?** 에러가 두 종류 뜨니 "원인이 둘"로 읽히지만, **2×2 절제 실험**으로 갈라 보면 파싱 성공/실패를 가르는 변수는 **activation zero-point가 0인가** 하나뿐이다.
 
-| case | 설정 | INT32 bias DQ | act zero-point | TRT p50 | CUDA p50 | 판정 |
-|------|------|---------------|----------------|---------|----------|------|
-| A | `QUInt8` 비대칭 + bias 양자화 O | **21개** | `[0, 158]` | 2.99 ms | 1.81 ms | 🔴 폴백(실패) |
-| B | `QUInt8` 비대칭 + bias 양자화 **X** | **0개** | `[0, 158]` | 3.07 ms | 1.82 ms | 🔴 **폴백(실패)** |
-| C | `QInt8` 대칭 + bias 양자화 O | **21개** | `[0, 0]` | **0.52 ms** | 2.14 ms | ✅ **성공** |
-| D | `QInt8` 대칭 + bias 양자화 X | 0개 | `[0, 0]` | 0.51 ms | 2.03 ms | ✅ 성공 |
+| case | 설정 | INT32 bias DQ | act zero-point | TRT p50 | CUDA p50 | top-1 (50k) | 판정 |
+|------|------|---------------|----------------|---------|----------|-------------|------|
+| A | `QUInt8` 비대칭 + bias 양자화 O | **21개** | `[0, 173]` | 3.06 ms | 1.81 ms | 68.62% | 🔴 폴백(실패) |
+| B | `QUInt8` 비대칭 + bias 양자화 **X** | **0개** | `[0, 173]` | 2.97 ms | 1.80 ms | 68.62% | 🔴 **폴백(실패)** |
+| C | `QInt8` 대칭 + bias 양자화 O | **21개** | `[0, 0]` | **0.51 ms** | 2.11 ms | 68.33% | ✅ **성공** |
+| D | `QInt8` 대칭 + bias 양자화 X | 0개 | `[0, 0]` | 0.51 ms | 1.99 ms | 68.33% | ✅ 성공 |
 
-> 판정 기준: **TRT p50 < CUDA p50 × 0.8** 이면 TRT가 실제로 그래프를 가져간 것. 폴백이면 TRT가 CUDA보다 **오히려 느려지는데**(파티셔닝 오버헤드), 그 역전 자체가 무음 폴백의 지표다 — 절대 시간을 몰라도 **두 EP를 나란히 재면 폴백을 잡아낼 수 있다**는 뜻이라, 실무에서 쓸 만한 판정법이다.
-> 실측 환경: RTX 3060 · ResNet18 · batch=1 · **60회 p50** · 같은 캘리브 200장/MinMax/per-channel. 위 표와 별도 실행이라 C(0.52 ms)와 위 표의 0.55 ms는 같은 설정의 재측정 차이다.
+> 판정 기준: **TRT p50 < CUDA p50 × 0.8** 이면 TRT가 실제로 그래프를 가져간 것. 폴백이면 TRT가 CUDA보다 **오히려 느려지는데**(파티셔닝 오버헤드), 그 역전 자체가 무음 폴백의 지표다 — 절대 시간을 몰라도 **두 EP를 나란히 재면 폴백을 잡아낼 수 있다**는 뜻이라, 실무에서 쓸 만한 판정법이다. 단 **GPU를 단독 점유하고 재야** 한다(다른 작업과 병렬로 재면 두 값이 함께 출렁여 판정이 오염된다).
+> 실측 환경: RTX 3060 · ResNet18 · batch=1 · **워밍업 20 + 60회 p50** · 같은 캘리브 200장/MinMax/per-channel. top-1은 ImageNet val 50,000장.
 
 - **B가 실패** → INT32 bias DQ를 **없애도 소용없다.**
 - **C가 성공** → INT32 bias DQ가 **있어도 문제없다.**
 - 따라서 ①은 **②로 Q/DQ 융합이 깨진 뒤 홀로 남은 bias DQ가 내는 2차 증상**이다. 파서는 `DQ(int32 bias) → Conv` 패턴을 통째로 접을 때는 INT32 bias를 받아들이고, 융합이 깨져 DQ가 홀로 남을 때만 타입 검사에 걸린다. **에러 메시지 개수를 원인 개수로 세면 안 된다**는 교훈이기도 하다 — 첫 줄에 뜬 에러(①)를 붙잡고 `QuantizeBias`만 만졌다면 case B에 갇혀 하루를 날렸을 것이다.
-- 실무 처방: **`activation_type=QInt8` + `ActivationSymmetric=True`, 이 하나면 된다.** `QuantizeBias=False`는 **필수가 아니라 선택**이다(0.52 → 0.51 ms, 오차 범위). 구체적인 재양자화 코드와 검증 절차는 **실습 4-(C)** 에 있다.
+- **두 축이 정확도에서도 완전히 분리된다.** `top-1` 열을 보라 — 값이 **대칭/비대칭 축만 따라 움직이고** `QuantizeBias`에는 전혀 반응하지 않는다. 50,000장에서 **C와 D의 예측은 한 장도 다르지 않았고**(0장 불일치), A와 B는 1장만 달랐다. 즉 **`QuantizeBias`는 정확도에 영향이 없다** — 파싱·그래프 정리 관점에서만 논할 옵션이다.
+- 실무 처방: **`activation_type=QInt8` + `ActivationSymmetric=True`, 이 하나면 된다.** `QuantizeBias=False`는 **필수가 아니라 선택**이고(속도 0.51 ms 동일, 정확도 완전 동일), 대칭 전환의 정확도 대가 −0.29%p는 **`QuantizeBias`로 되찾을 수 없다.** 구체적인 재양자화 코드와 검증 절차는 **실습 4-(C)** 에 있다.
 
 > 💡 **ModelOpt QDQ는 왜 이 문제가 없나:** ModelOpt는 *"generates new ONNX models with QDQ nodes **following TensorRT rules**"* 라고 문서에 명시돼 있고, 산출물을 곧바로 `trtexec --onnx=quant.onnx`로 빌드하는 것을 표준 경로로 제시한다([ModelOpt ONNX Quantization](https://nvidia.github.io/Model-Optimizer/guides/_onnx_quantization.html)). 즉 **삽입 규칙 자체가 위 표의 제약(대칭·허용 dtype)에 맞춰져 있다.** 반대로 ORT `quantize_static`은 **기본 타깃이 x86 CPU**라, 같은 QDQ 포맷이라도 TRT가 못 받는 형태를 만들어 낸다. **"QDQ = 공용어"는 포맷 얘기지 호환 보장이 아니다.** 실습 4가 "권장 경로"인 실질적 이유가 이것이다.
 >
@@ -683,7 +698,8 @@ quantize_static(
 ```
 
 - **(a)와 (b)는 한 세트지만, 고치는 원인은 하나다.** ORT의 `ActivationSymmetric=True`는 *"int8·int16이면 zero-point가 0, **uint8·uint16이면 zero-point가 127·32767**"* 로 동작한다(ORT 1.23.2 `quantize.py`의 `get_qdq_config` docstring). 즉 `QUInt8`인 채로 `ActivationSymmetric`만 켜면 zero-point가 **127**이 되어 여전히 `shiftIsAllZeros`에 걸린다. `activation_type`까지 `QInt8`로 바꿔야 비로소 0이 된다 — **두 줄을 함께 바꿔야 하는 이유는 그것 하나뿐**이고, 목표는 어디까지나 `zero_point = 0`이다.
-- **(c) `QuantizeBias: False`는 선택적 정리이지 해법이 아니다.** 기본값 `True`는 bias를 INT32로 양자화하고 DQ를 붙이는데, 이걸 끄면 ResNet18 기준 bias DQ **21개**가 사라진다. 다만 2.2.1의 절제 실험대로 **(a)(b)만으로 이미 빌드가 통과하고**(bias DQ가 21개 남아 있는 채로), (c)를 더해도 RTX 3060·ResNet18·batch=1·p50 기준 0.52 → **0.51 ms**로 **오차 범위**다. 반대로 **(c)만 켜고 (a)(b)를 빼면 여전히 파싱에 실패한다**(절제 실험 case B). 그래프를 깔끔하게 하고 싶을 때 쓰는 옵션으로 보면 된다. 정확도는 (a)(b)와 동일(−0.40%p, p=0.5224).
+- **(c) `QuantizeBias: False`는 선택적 정리이지 해법이 아니다.** 기본값 `True`는 bias를 INT32로 양자화하고 DQ를 붙이는데, 이걸 끄면 ResNet18 기준 bias DQ **21개**가 사라진다. 다만 2.2.1의 절제 실험대로 **(a)(b)만으로 이미 빌드가 통과하고**(bias DQ가 21개 남아 있는 채로), (c)를 더해도 p50은 **0.51 ms로 동일**하다. 반대로 **(c)만 켜고 (a)(b)를 빼면 여전히 파싱에 실패한다**(절제 실험 case B). 그래프를 깔끔하게 하고 싶을 때 쓰는 옵션으로 보면 된다.
+  - **정확도 영향은 "비슷하다"가 아니라 정확히 0이다.** 50,000장에서 (a)(b) 단독(case C)과 (a)(b)+(c)(case D)의 **예측이 한 장도 다르지 않았다**(top-1 68.33% 동일, 0장 불일치). bias를 INT32로 접든 FP로 남기든 TRT가 융합한 뒤의 계산 결과가 같다는 뜻이다. 따라서 **(c)를 정확도 카드로 쓰지 마라** — 대칭 전환으로 잃은 −0.29%p는 (c)로 되찾을 수 없고, 되찾는 방법은 부분 FP16 혼합(2.4)이나 QAT뿐이다.
 - 참고로 ONNX Runtime 공식 문서도 **"quantization on GPU only supports S8S8"**(activation·weight 모두 signed int8)이라고 못 박고 있다([Quantize ONNX models](https://onnxruntime.ai/docs/performance/model-optimizations/quantization.html)). 1단계의 `QUInt8` 권장은 **x86 CPU/VNNI 한정**이다.
 
 빌드 전에 **파싱이 실제로 성공하는지** 먼저 확인한다 — 무음 폴백을 막는 가장 확실한 방법이다.
@@ -728,7 +744,7 @@ grep -Ei "int8|imma" build_int8.log | head
 >       f"{'파싱 성공' if trt < cuda * 0.8 else '🔴 폴백(파싱 실패)'}")
 > ```
 >
-> 실측 예: 폴백 모델 `TRT 2.99 / CUDA 1.81` → 🔴, 고친 모델 `TRT 0.52 / CUDA 2.14` → 파싱 성공. **판정 근거는 절대값이 아니라 두 EP의 대소**다(폴백 상태의 절대값은 3~5 ms대에서 출렁인다). 이 방식으로 2.2.1의 2×2 절제 실험을 그대로 재현할 수 있다.
+> 실측 예: 폴백 모델 `TRT 3.06 / CUDA 1.81` → 🔴, 고친 모델 `TRT 0.51 / CUDA 2.11` → 파싱 성공. **판정 근거는 절대값이 아니라 두 EP의 대소**다(폴백 상태의 절대값은 3~5 ms대에서 출렁인다). 이 방식으로 2.2.1의 2×2 절제 실험을 그대로 재현할 수 있다.
 
 > 🔴 **함정 — ORT TensorRT EP는 파싱에 실패해도 예외를 안 던진다.** `providers=["TensorrtExecutionProvider", ...]`로 세션을 만들면 `get_providers()`에는 TRT가 그대로 보이는데 실제로는 전부 CUDA/CPU로 폴백해 있다. 그래서 **위처럼 `trtexec`로 먼저 빌드해 보는 절차**가 필요하다. 굳이 ORT EP로 가야 한다면 `SessionOptions`에 `log_severity_level=2`를 주고 로그에서 (2)의 문자열을 찾아라. [0단계 3-4-a](01_environment_setup.md)의 `libnvinfer.so.10` 무음 CPU 폴백과 **같은 계열**의 함정이다 — 임베디드에서 "조용히 느려지는" 실패가 "요란하게 죽는" 실패보다 훨씬 비싸다.
 
@@ -1047,7 +1063,7 @@ DLA의 진짜 가치는 순수 latency보다 **GPU를 비워 다른 태스크(�
 | INT8인데 mAP가 폭락 | 캘리브레이션 데이터 부족·비대표 / `--int8`만 주고 캘리브 생략 / 옛 `calib.cache` 재사용 | 대표 이미지 1000장+로 재캘리브(캐시 삭제 후), QDQ/QAT 사용 |
 | `input has type Int32 but must have type FP8, FP4, Int4, or Int8` + `Invalid Node - <name>_bias_DequantizeLinear` | **아래 zero-point 행에서 파생되는 2차 증상.** `zero_point ≠ 0`으로 Q/DQ 융합이 깨진 뒤 **홀로 남은 bias DQ**가 타입 검사에 걸린 것이다. ORT는 `QuantizeBias` 기본 `True`라 bias를 INT32로 양자화해 DQ를 붙이는데, 융합이 정상이면 TRT는 이걸 그대로 받아들인다(절제 실험 case C: bias DQ 21개인 채로 빌드 성공) | **아래 zero-point 행을 먼저 고치고 재시도** — 그것만으로 이 에러도 같이 사라진다. 🔴 `extra_options={"QuantizeBias": False}`는 **이 에러의 해법이 아니다**: bias DQ를 0개로 만들어도 zero-point가 그대로면 여전히 실패·폴백한다(절제 실험 case B). 애초에 ModelOpt PTQ로 QDQ를 만들면 회피 → **2.2.1 / 실습 4-(A)·(C)** |
 | `Assertion failed: shiftIsAllZeros(zeroPoint): Non-zero zero point is not supported` | 비대칭 양자화라 `zero_point ≠ 0`. TRT는 Q/DQ에 **대칭(zp=0)만** 허용 → **이 행이 진짜 하드 블로커다**(2×2 절제 실험으로 확인, 2.2.1) | `activation_type=QuantType.QInt8` **+** `extra_options={"ActivationSymmetric": True}`로 재양자화. 🔴 `QUInt8`인 채로 `ActivationSymmetric`만 켜면 **zp=127**이라 여전히 실패 → **실습 4-(C)** |
-| INT8 QDQ 모델인데 TRT가 **에러 없이 FP32보다 느림** | 파서가 그래프를 통째로 거부 → ORT TensorRT EP가 **무음 폴백**(`get_providers()`엔 TRT가 그대로 보임). 실측 0.95~1.03 → **3.05 ms**(RTX 3060·ResNet18·batch=1·p50) | 같은 ONNX를 `trtexec`로 빌드해 파싱 에러를 눈으로 확인(EP와 달리 에러가 뜬다), ORT면 `log_severity_level=2`. **같은 모델을 CUDA EP로도 재서 TRT가 더 느리면 폴백 확정.** 원인은 십중팔구 위 zero-point 행 → **2.2.1** |
+| INT8 QDQ 모델인데 TRT가 **에러 없이 FP32보다 느림** | 파서가 그래프를 통째로 거부 → ORT TensorRT EP가 **무음 폴백**(`get_providers()`엔 TRT가 그대로 보임). 실측 0.96 → **3.06 ms**(RTX 3060·ResNet18·batch=1·p50) | 같은 ONNX를 `trtexec`로 빌드해 파싱 에러를 눈으로 확인(EP와 달리 에러가 뜬다), ORT면 `log_severity_level=2`. **같은 모델을 CUDA EP로도 재서 TRT가 더 느리면 폴백 확정.** 원인은 십중팔구 위 zero-point 행 → **2.2.1** |
 | `--fp16` 줬는데 여전히 FP32로 빌드됨 | 해당 GPU/레이어가 FP16 tactic이 없거나 정밀도 제약이 무시 | `--profilingVerbosity=detailed`로 tactic 확인, `--precisionConstraints=obey --layerPrecisions`로 강제(10.x) 또는 모델 캐스트(11.x) |
 | `no implementation` / `no tactic` | workspace 부족 또는 미지원 포맷 | `--memPoolSize=workspace:4096`로 상한↑, 입력 IO 포맷 조정, 미지원 op면 plugin |
 | Throughput이 이론치의 절반 | Enqueue 바운드(CPU 런치) 또는 H2D/D2H 병목 | Enqueue>Compute면 `--useCudaGraph`/배치↑, 전송이면 `--noDataTransfer`로 확인 후 전처리 GPU 이동 |

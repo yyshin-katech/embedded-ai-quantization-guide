@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>1단계 재실행 — 진짜 ImageNet val 50,000장</title>
+<style>
+  :root{
+    --bg:#0b0e14; --panel:#131720; --panel2:#0f131b; --bd:#242b38;
+    --tx:#c9d1d9; --dim:#8b949e; --brt:#e6edf3;
+    --accent:#58a6ff; --green:#3fb950; --amber:#d29922; --red:#ff7b72; --purple:#bc8cff;
+    --mono:'JetBrains Mono','SF Mono',ui-monospace,'Cascadia Code',Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans KR','Malgun Gothic',sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--tx);font-family:var(--sans);line-height:1.65;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:980px;margin:0 auto;padding:0 20px 120px}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  /* Hero */
+  .hero{padding:48px 0 26px;border-bottom:1px solid var(--bd);margin-bottom:8px}
+  .kicker{font-family:var(--mono);font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+  .hero h1{margin:0 0 10px;font-size:30px;line-height:1.25;color:var(--brt);letter-spacing:-.01em}
+  .hero p.sub{margin:0 0 20px;color:var(--dim);font-size:15px;max-width:70ch}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{font-family:var(--mono);font-size:12px;padding:5px 10px;border:1px solid var(--bd);border-radius:999px;background:var(--panel);color:var(--tx)}
+  .chip b{color:var(--brt);font-weight:600}
+  .chip.done{border-color:rgba(63,185,80,.5);background:rgba(63,185,80,.12);color:#7ee787}
+  .chip.blocked{border-color:rgba(255,123,114,.5);background:rgba(255,123,114,.12);color:#ff9d96}
+  .chip.partial{border-color:rgba(210,153,34,.5);background:rgba(210,153,34,.12);color:#e3b341}
+
+  /* TOC */
+  nav.toc{display:flex;flex-wrap:wrap;gap:8px;margin:26px 0 6px}
+  nav.toc a{font-family:var(--mono);font-size:12.5px;padding:6px 11px;border:1px solid var(--bd);border-radius:8px;background:var(--panel);color:var(--tx)}
+  nav.toc a:hover{border-color:var(--accent);text-decoration:none;color:var(--brt)}
+
+  h2.sec{font-size:13px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin:38px 0 12px;font-weight:600}
+
+  /* Checklist table */
+  table.ck{width:100%;border-collapse:collapse;margin:6px 0 8px;font-size:14px;border:1px solid var(--bd);border-radius:10px;overflow:hidden}
+  table.ck th,table.ck td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--bd);vertical-align:top}
+  table.ck th{background:var(--panel);color:var(--dim);font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.05em}
+  table.ck td:first-child{white-space:nowrap;color:var(--brt)}
+  table.ck code{font-family:var(--mono);font-size:12.5px;color:var(--purple);background:rgba(188,140,255,.1);padding:1px 6px;border-radius:5px}
+  table.ck tr:last-child td{border-bottom:none}
+  .pass{color:var(--green);font-weight:700}
+  .fail{color:var(--red);font-weight:700}
+  .partial-txt{color:var(--amber);font-weight:700}
+
+  /* Data table */
+  table.dt{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.3px;border:1px solid var(--bd);border-radius:10px;overflow:hidden;font-family:var(--mono)}
+  table.dt th,table.dt td{padding:8px 12px;text-align:right;border-bottom:1px solid var(--bd)}
+  table.dt th{background:var(--panel);color:var(--dim);font-weight:600;font-size:12px;letter-spacing:.04em;text-align:right}
+  table.dt th:first-child,table.dt td:first-child{text-align:left;color:var(--brt)}
+  table.dt tr:last-child td{border-bottom:none}
+  table.dt tr.hi td{background:rgba(63,185,80,.08)}
+  table.dt tr.lo td{background:rgba(255,123,114,.08)}
+  table.dt tr.base td{background:rgba(88,166,255,.07)}
+  .g{color:var(--green)}.r{color:var(--red)}.a{color:var(--amber)}.p{color:var(--purple)}.d{color:var(--dim)}
+
+  /* Step */
+  .step{margin:40px 0 0;scroll-margin-top:16px}
+  .step > h3{display:flex;align-items:center;gap:12px;font-size:20px;color:var(--brt);margin:0 0 6px;letter-spacing:-.01em}
+  .num{flex:none;display:inline-grid;place-items:center;width:30px;height:30px;border-radius:8px;background:var(--accent);color:#06101f;font-family:var(--mono);font-weight:700;font-size:14px}
+  .step p.lead{margin:0 0 4px;color:var(--dim);font-size:14.5px}
+
+  /* Terminal */
+  .term{background:var(--panel2);border:1px solid var(--bd);border-radius:11px;overflow:hidden;margin:14px 0}
+  .term-bar{display:flex;align-items:center;gap:7px;padding:9px 13px;background:#0c1017;border-bottom:1px solid var(--bd)}
+  .dot{width:11px;height:11px;border-radius:50%}
+  .dot.r{background:#ff5f56}.dot.y{background:#ffbd2e}.dot.g{background:#27c93f}
+  .term-title{margin-left:9px;color:var(--dim);font-size:12.5px;font-family:var(--mono)}
+  .term pre{margin:0;padding:15px 17px;overflow-x:auto;font-family:var(--mono);font-size:12.7px;line-height:1.6;color:var(--tx);white-space:pre;tab-size:2}
+  .in{color:var(--brt);font-weight:600}
+  .in .p{color:var(--green);user-select:none;margin-right:9px}
+  .cmt{color:#5c6773}
+  .ok{color:var(--green)}
+  .err{color:var(--red)}
+  .warn{color:var(--amber)}
+  .dim{color:var(--dim)}
+  .hl{color:var(--purple)}
+
+  /* Callout */
+  .note{border-left:3px solid var(--accent);background:rgba(88,166,255,.07);padding:13px 17px;border-radius:0 9px 9px 0;margin:15px 0;font-size:14px}
+  .note.trap{border-color:var(--red);background:rgba(255,123,114,.08)}
+  .note.warnb{border-color:var(--amber);background:rgba(210,153,34,.08)}
+  .note.tip{border-color:var(--green);background:rgba(63,185,80,.07)}
+  .note.block{border-color:var(--purple);background:rgba(188,140,255,.08)}
+  .note .tag{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 8px;border-radius:6px;margin-bottom:7px}
+  .note.trap .tag{background:rgba(255,123,114,.18);color:#ff9d96}
+  .note.warnb .tag{background:rgba(210,153,34,.18);color:#e3b341}
+  .note.tip .tag{background:rgba(63,185,80,.18);color:#7ee787}
+  .note.block .tag{background:rgba(188,140,255,.18);color:#d8b8ff}
+  .note b{color:var(--brt)}
+  .note code{font-family:var(--mono);font-size:12.5px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:4px}
+
+  /* Deliverables */
+  .card{border:1px solid var(--bd);background:var(--panel);border-radius:12px;padding:18px 20px;margin:14px 0}
+  .card h4{margin:0 0 10px;color:var(--brt);font-size:15px}
+  ul.files{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px}
+  ul.files li{font-family:var(--mono);font-size:12.5px;padding:8px 11px;border:1px solid var(--bd);border-radius:8px;background:var(--panel2)}
+  ul.files li .fn{color:var(--brt)}
+  ul.files li small{display:block;color:var(--dim);font-family:var(--sans);font-size:11.5px;margin-top:2px}
+
+  footer{margin-top:46px;padding-top:20px;border-top:1px solid var(--bd);color:var(--dim);font-size:13px}
+  .next{display:inline-flex;align-items:center;gap:8px;margin-top:10px;padding:11px 16px;border:1px solid var(--accent);border-radius:9px;color:var(--brt);background:rgba(88,166,255,.08);font-size:14px}
+  .next b{color:var(--accent)}
+  @media (max-width:560px){ .hero h1{font-size:24px} .term pre{font-size:11.6px} }
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <p class="kicker">실행 로그 · 1단계 (양자화 이론) 재실행</p>
+    <h1>1단계 재실행 — 진짜 ImageNet val 50,000장</h1>
+    <p class="sub">직전 1단계는 클래스당 1장을 뽑은 <b>큐레이션 1,000장</b>으로 돌렸다. 절대 top-1을 읽을 수 없고, 0.1%p 수준 차이를 가릴 검정력도 없었다. 원본 아카이브를 확보해 <b>같은 실험을 50,000장으로 다시</b> 돌린 실행 로그다. 모든 터미널 블록은 <code>~/stage1-work/runlogs/</code>의 실제 출력이다.</p>
+    <div class="chips"><span class="chip "><b>2026-08-04</b></span><span class="chip ">Ubuntu 22.04.5 · RTX 3060 12GB</span><span class="chip ">torch <b>2.11.0+cu128</b></span><span class="chip ">ORT <b>1.23.2</b></span><span class="chip ">TensorRT <b>10.16.1.11</b></span><span class="chip done">val <b>50,000</b>장</span><span class="chip done">평가 <b>14</b>회 × 50k</span><span class="chip blocked">11단계 <b>GPU Xid 79</b>로 중단</span></div>
+    <nav class="toc"><a href="#s0">0 데이터</a><a href="#s1">1 라벨</a><a href="#s2">2 재배치</a><a href="#s3">3 캐시</a><a href="#s4">4 분할</a><a href="#s5">5 재양자화</a><a href="#s6">6 scale</a><a href="#s7">7 평가</a><a href="#s8">8 큐레이션 대비</a><a href="#s9">9 민감도</a><a href="#s10">10 TensorRT</a><a href="#s11">11 QAT</a></nav>
+  </header>
+<h2 class="sec">실행 체크리스트</h2>
+<table class="ck"><thead><tr><th>단계</th><th>작업</th><th>산출물</th><th>결과</th><th>판정 근거</th></tr></thead><tbody><tr><td>0</td><td>진짜 val 50,000장 확보</td><td><code>ILSVRC2012_img_val.tar</code> 6.28 GiB</td><td><span class="pass">완료</span></td><td>MD5 공식값 일치</td></tr><tr><td>1</td><td>라벨 매핑 확보·교차검증</td><td><code>val_synset_map.txt</code></td><td><span class="pass">완료</span></td><td>devkit ↔ Caffe 0건 불일치</td></tr><tr><td>2</td><td>synset 디렉터리 재배치</td><td><code>data/val_full/&lt;wnid&gt;/</code></td><td><span class="pass">완료</span></td><td>1000×50 = 50,000</td></tr><tr><td>3</td><td>전처리 uint8 캐시</td><td><code>squash.npy</code> / <code>tv.npy</code> 각 7.01 GiB</td><td><span class="pass">완료</span></td><td>직접 디코딩과 비트 동일</td></tr><tr><td>4</td><td>캘리브/평가 분할</td><td><code>calib200_idx.npy</code> / <code>calib1000_idx.npy</code></td><td><span class="pass">완료</span></td><td>holdout 49,800 / 49,000</td></tr><tr><td>5</td><td>PTQ 13종 재양자화</td><td><code>models_v2/*.onnx</code></td><td><span class="pass">완료</span></td><td>고유 내용 11개(중복 2건이 곧 결론)</td></tr><tr><td>6</td><td>activation scale 동일성 재확인</td><td><code>runlogs/03_scales.log</code></td><td><span class="pass">완료</span></td><td>Entropy = MinMax 32/32</td></tr><tr><td>7</td><td>50k 전량 top-1 + Wilson + McNemar</td><td><code>eval_hits_v2.npz</code></td><td><span class="pass">완료</span></td><td>14회 평가 · 95% CI 폭 ±0.4%p</td></tr><tr><td>8</td><td>큐레이션 셋 대비 차이 분석</td><td><code>runlogs/08_compare.log</code></td><td><span class="pass">완료</span></td><td>부풀림 +9.77%p · 판정 5건 뒤집힘</td></tr><tr><td>9</td><td>레이어 민감도 (실제 top-1 기준)</td><td><code>layer_sensitivity_v2.csv</code></td><td><span class="pass">완료</span></td><td>21레이어 × 50k 개별 평가</td></tr><tr><td>10</td><td>TensorRT 2×2 절제 재측정</td><td><code>runlogs/07_trt.log</code></td><td><span class="pass">완료</span></td><td>대칭/bias 두 축 독립 검정</td></tr><tr><td>11</td><td>QAT 회복 실험</td><td><code>runlogs/09_qat_clean.log</code></td><td><span class="fail">중단</span></td><td>FP32·PTQ·ep0 학습까지 완료 후 <b>GPU 버스 이탈(Xid 79)</b>로 중단</td></tr></tbody></table>
+<h2 class="sec">1부 — 데이터를 진짜로 만든다</h2>
+<section class="step" id="s0"><h3><span class="num">0</span>원본 val 50,000장 다운로드</h3><p class="lead">직전 실행이 쓴 <b>큐레이션 1,000장</b>은 클래스당 1장을 골라 만든 셋이었다. 절대 top-1을 읽을 수 없고 검정력도 없다. 먼저 원본 아카이브를 확보한다.</p><div class="term"><div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">Synology DSM 공유링크 → 8분할 병렬 다운로드</span></div><pre><span class="in"><span class="p">$</span>$ # 단일 연결 실측 221 KB/s → ETA 9시간. 연결당 스로틀인지 확인</span>
+<span class="in"><span class="p">$</span>$ # 새 SID로 두 번째 연결을 동시에 띄움 → 155 KB/s 추가 (합산 증가) ⇒ 연결당 제한 확정</span>
+<span class="in"><span class="p">$</span>$ bash pget.sh    # 8개 range 요청, 조각별 재시도·이어받기, 병합 전 크기 검증</span>
+기존 wget 조각 재사용: 57327277 B
+part0 완료 (843115520 B)
+part3 완료 (843115520 B)
+part6 완료 (843115520 B)
+part2 완료 (843115520 B)
+part7 완료 (843115520 B)
+part4 완료 (843115520 B)
+part5 완료 (843115520 B)
+part1 완료 (843115520 B)
+MERGE_OK: 6744924160 B
+<span class="in"><span class="p">$</span>$ # 합산 1.19~1.47 MB/s, 약 50분 소요</span></pre></div><div class="term"><div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">무결성 검증 (재확인)</span></div><pre><span class="in"><span class="p">$</span>$ python3 verify_artifacts.py --md5</span>
+<span class="in"><span class="p">$</span>$ ls -l data/imagenet/ILSVRC2012_img_val.tar</span>
+크기        : 6,744,924,160 B  (6.28 GiB)
+기대 크기   : 6,744,924,160 B  → <span class="ok">일치</span> <span class="ok">✅</span>
+<span class="in"><span class="p">$</span>$ md5sum data/imagenet/ILSVRC2012_img_val.tar</span>
+MD5         : 29b22e2961454d5413ddabcf34fc5622   [10s]
+공식 MD5    : 29b22e2961454d5413ddabcf34fc5622
+판정        : <span class="ok">일치</span> <span class="ok">✅</span> — 8조각 재조립이 바이트 단위로 정확
+<span class="in"><span class="p">$</span>$ tar tf data/imagenet/ILSVRC2012_img_val.tar | wc -l</span>
+tar 멤버 수 : 50,000  → 50,000 <span class="ok">일치</span> <span class="ok">✅</span></pre></div><div class="note tip"><span class="tag">왜 8분할인가</span>서버가 <b>연결당</b> 대역폭을 제한하고 있었다. 두 번째 세션을 붙였을 때 첫 세션 속도가 줄지 않고 합산만 늘어난 것이 근거다. 총량 제한이라면 서로 나눠 먹었을 것이다. MD5가 공식값과 일치했으므로 8조각 재조립은 바이트 단위로 정확했다.</div></section>
+<section class="step" id="s1"><h3><span class="num">1</span>라벨 매핑 — 한 출처만 믿지 않는다</h3><p class="lead">val 아카이브에는 라벨이 없다. devkit의 <code>meta.mat</code>(ILSVRC2012_ID→WNID)과 <code>ILSVRC2012_validation_ground_truth.txt</code>로 만들고, <b>독립 출처</b>인 Caffe <code>val.txt</code>와 대조했다.</p><div class="term"><div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">devkit 유도 매핑 ↔ Caffe val.txt 교차검증</span></div><pre>val_synset_map.txt  : 50,000 줄 (devkit meta.mat + ground_truth 유도)
+caffe val.txt       : 50,000 줄 (독립 출처)
+불<span class="ok">일치</span>              : 0 / 50,000  → 0건, 두 출처 완전 <span class="ok">일치</span> <span class="ok">✅</span>
+클래스 수           : 1000
+클래스별 장수       : min=50 max=50  → 전부 50장 <span class="ok">✅</span>
+정렬 WNID 규약      : 0건 위반 → torchvision 0-based 규약 <span class="ok">일치</span> <span class="ok">✅</span></pre></div><div class="note trap"><span class="tag">여기서 틀리면 전부 무의미</span>라벨 인덱스 규약이 어긋나면 top-1이 조용히 낮게 나오고, 그걸 양자화 손실로 오독한다. torchvision 규약은 <b>정렬한 WNID의 0-based 순번</b>이다. 두 출처가 50,000건 전부 일치했고, 정렬 규약 위반도 0건이었다.</div></section>
+<section class="step" id="s2"><h3><span class="num">2</span>synset 디렉터리로 재배치</h3><p class="lead">tar는 50,000장을 한 디렉터리에 평평하게 풀어놓는다. <code>ImageFolder</code> 규약(<code>&lt;wnid&gt;/&lt;file&gt;</code>)으로 옮기고 개수·순서를 검증했다.</p><div class="term"><div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">$ python3 restructure_val.py  (사후 재검증)</span></div><pre>폴더 수     : 1000  → 1000 <span class="ok">일치</span> <span class="ok">✅</span>
+폴더별 장수 : min=50 max=50 합=50,000  → 1000×50=50,000 <span class="ok">✅</span>
+정렬 순서   : sorted(폴더) == devkit 클래스 인덱스 순서 → <span class="ok">일치</span> <span class="ok">✅</span></pre></div></section>
+<section class="step" id="s3"><h3><span class="num">3</span>전처리 uint8 캐시 — 며칠을 96분으로</h3><p class="lead">모델 13종 × 50,000장을 반복 평가한다. JPEG 디코딩이 병목이라 매번 디코딩하면 CPU에 묶인다. <b>decode→resize→crop 직후의 uint8</b>을 저장하면 이후엔 /255·정규화만 남아 GPU 바운드가 된다. PIL resize/crop 출력이 uint8이므로 이 지점까지는 <b>비트 무손실</b>이다.</p><div class="term"><div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">$ python3 prep_cache.py    # 8 프로세스, 2분 36초</span></div><pre>squash .npy  shape=(50000, 224, 224, 3) dtype=uint8  7.01 GiB
+tv     .npy  shape=(50000, 224, 224, 3) dtype=uint8  7.01 GiB
+names.txt   : 50,000 줄   labels.npy: (50000,) int16
+squash  표본 24장 max|캐시-직접| = 0.000e+00  → <span class="ok">비트 동일</span> <span class="ok">✅</span>
+tv      표본 24장 max|캐시-직접| = 0.000e+00  → <span class="ok">비트 동일</span> <span class="ok">✅</span></pre></div><div class="note tip"><span class="tag">두 가지 전처리를 나란히 굽는다</span><code>squash</code> = 문서의 <code>preprocess</code>(종횡비 무시 256×256 resize), <code>tv</code> = torchvision 표준(짧은변 256 bilinear + center crop 224). 문서의 절대값이 공개값보다 낮았던 원인을 이 둘의 차이로 분리하려는 것이다.</div></section>
+<section class="step" id="s4"><h3><span class="num">4</span>캘리브/평가 분할 확정</h3><p class="lead">캘리브 셋은 직전 실행과 <b>같은 방식</b>(5개 클래스마다 1클래스, 그 클래스 첫 장)으로 200장을 뽑아 직접 비교되게 했다. 진짜 데이터라서 처음 가능해진 대조군이 <code>calib1000</code>(전 클래스 1장)이다.</p><div class="term"><div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">$ python3 verify_artifacts.py  (5) 캘리브/평가 분할</span></div><pre>calib200 :   200장  고유 클래스  200개  중복 인덱스 0건
+calib1000:  1000장  고유 클래스 1000개  중복 인덱스 0건
+평가셋   : 50,000장 전량 (캘리브 포함)
+holdout  : 50,000 − 200 = 49,800장 / 50,000 − 1000 = 49,000장 (캘리브 제외 재계산용)
+겹침     : calib200 ⊂ calib1000 → 예 <span class="ok">✅</span> (같은 클래스별 첫 장 규칙)</pre></div></section>
+<h2 class="sec">2부 — 다시 양자화하고, 다시 재본다</h2>
+<section class="step" id="s5"><h3><span class="num">5</span>PTQ 13종 재양자화</h3><p class="lead">직전 모델을 재사용하지 않고 전부 다시 만들었다. 캘리브 입력을 <b>평가와 같은 캐시</b>에서 읽는 <code>CacheCalibReader</code>를 써서 캘리브 전처리 ≠ 평가 전처리로 생기는 오차를 원천 제거했다.</p><div class="term"><div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">$ python3 quantize_v2.py    # 13개 산출, 3분 43초</span></div><pre><span class="in"><span class="p">$</span>$ ls -la models_v2/ &amp;&amp; md5sum models_v2/*.onnx | cut -c1-12,34-</span>
+
+모델                                크기(B)  md5[:12]      비고
+--------------------------------------------------------------------------
+entropy.onnx                 11,869,734  154d3d10ff05  
+entropy_fixed.onnx           11,869,728  22e89e539ce5  
+minmax.onnx                  11,869,734  154d3d10ff05  = entropy.onnx 와 바이트 동일
+minmax_calib1000.onnx        11,869,734  73265276be60  
+minmax_pertensor.onnx        11,793,649  05b56b85069e  
+minmax_tv.onnx               11,869,733  9d3dbdcca07f  
+pct999.onnx                  11,869,738  1412cd97725d  
+pct9999.onnx                 11,869,734  216eab2f0a9d  
+pct99999.onnx                11,869,737  b64ebaa2bd87  
+trt_A_asym_bias.onnx         11,869,734  154d3d10ff05  = entropy.onnx 와 바이트 동일
+trt_B_asym_nobias.onnx       11,815,802  ad4fd6cb8864  
+trt_C_sym_bias.onnx          11,897,383  91103509f54a  
+trt_D_sym_nobias.onnx        11,843,451  8ea576cefe88  
+
+파일 13개 / 고유 내용 11개  → 중복 2건</pre></div><div class="note block"><span class="tag">md5가 먼저 답을 말한다</span><code>minmax.onnx</code>, <code>entropy.onnx</code>, <code>trt_A_asym_bias.onnx</code> <b>세 파일이 md5까지 동일</b>하다. ① ORT의 <code>CalibrationMethod.Entropy</code>는 기본 설정에서 MinMax로 퇴화하고(scale뿐 아니라 파일 전체가 같다), ② ORT 기본값이 곧 '비대칭 QUInt8 + bias 양자화'라서 TRT 케이스 A는 기본 MinMax와 같은 모델이다. 평가를 돌리기 전에 이미 확정되는 사실이다.</div></section>
+<section class="step" id="s6"><h3><span class="num">6</span>activation scale 동일성 — Entropy 퇴화 재현</h3><p class="lead">직전 실행에서 발견한 함정을 진짜 캘리브 데이터로 재확인한다. <code>num_bins</code>는 <code>quantize_static</code>의 화이트리스트 5키 밖이라 전달 자체가 불가하므로, <code>create_calibrator</code>를 몽키패치해 <code>entropy_fixed</code>(2048/128)를 따로 만들었다.</p><div class="term"><div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">$ python3 compare_scales_v2.py</span></div><pre>activation scalar-scale 텐서: 공통 32개 (minmax=32, minmax_pertensor=32, entropy=32 …)
+
+방법                      scale·zp 동일      상한비율 median    0.5배 미만
+minmax                   32/32                1.000       0/32
+minmax_pertensor         32/32                1.000       0/32 ← 비트 단위 동일
+entropy                  32/32                1.000       0/32 ← 비트 단위 동일
+entropy_fixed             1/32                0.313      18/32
+pct999                    0/32                0.323      28/32
+pct9999                   0/32                0.486      19/32
+pct99999                  0/32                0.668       2/32
+minmax_calib1000          4/32                1.126       0/32
+minmax_tv                 2/32                0.996       0/32
+
+--- 텐서별 상한 (minmax 대비) ---
+tensor                                      minmax   ent_fix     p99.9   p99.999
+getitem_12                                  6.2747    4.7095    2.7238    6.2490
+getitem_18                                  5.5570    3.1571    1.7946    3.4352
+getitem_21                                  3.9803    2.1395    1.3068    2.6508
+getitem_27                                  5.1750    2.8755    1.9264    3.5250
+getitem_33                                  5.8993    2.9932    1.6754    4.4583
+getitem_36                                  1.3482    1.0661    0.6832    1.3462
+getitem_42                                  4.9903    3.3303    2.1012    4.3257
+getitem_48                                  5.4934    3.5032    2.0871    3.6016
+getitem_51                                  3.7121    2.5742    1.4533    2.8379
+getitem_57                                 27.6363   18.9667   10.8262   19.8907
+getitem_6                                   4.3238    3.5753    2.2049    3.7496
+input                                       2.6308    2.6308    2.6301    2.6301
+  … 총 32개</pre></div><div class="note trap"><span class="tag">기본값 Entropy는 후보가 1개로 퇴화한다</span><code>num_bins=128</code> 기본값에서 히스토그램 후보가 하나로 줄어 MinMax와 같은 답이 나온다. 즉 문서에서 'Entropy를 써라'고 쓰고 기본 인자로 호출하면 <b>아무 일도 일어나지 않는다</b>. 정상화한 <code>entropy_fixed</code>는 32개 중 1개만 MinMax와 같고, 상단이 중앙값 0.313배로 강하게 클리핑된다.</div></section>
+<section class="step" id="s7"><h3><span class="num">7</span>50,000장 전량 평가 — Wilson CI + McNemar</h3><p class="lead">캐시 덕에 50k 1회가 약 95초다. 14회 평가를 22분에 끝냈다. 같은 이미지에 두 모델을 돌리므로 <b>paired</b> 검정(McNemar)이 맞고, 독립 표본 t검정은 여기서 쓰면 안 된다.</p><div class="term"><div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">$ python3 run_eval_v2.py</span></div><pre>trt_A md5=154d3d10ff05  minmax md5=154d3d10ff05  → 동일 설정, 중복 평가 생략
+
+평가 표본 N=50000  (calib200 holdout=49800, calib1000 holdout=49000)
+
+FP32               top-1 = 68.74%  95%CI [68.33,69.14]  | holdout 68.76% [68.35,69.16]  | squash CUDA  97.4s
+INT8 MinMax        top-1 = 68.62%  95%CI [68.21,69.03]  | holdout 68.63% [68.22,69.04]  | squash CUDA  95.7s
+INT8 MinMax(PT)    top-1 = 68.46%  95%CI [68.05,68.86]  | holdout 68.47% [68.06,68.88]  | squash CUDA  95.5s
+INT8 Entropy       top-1 = 68.62%  95%CI [68.21,69.03]  | holdout 68.63% [68.22,69.04]  | squash CUDA  94.3s
+INT8 Ent(fixed)    top-1 = 59.29%  95%CI [58.86,59.72]  | holdout 59.31% [58.88,59.74]  | squash CUDA  95.0s
+INT8 Pct 99.9      top-1 = 61.91%  95%CI [61.48,62.33]  | holdout 61.92% [61.50,62.35]  | squash CUDA  95.5s
+INT8 Pct 99.99     top-1 = 68.31%  95%CI [67.90,68.71]  | holdout 68.32% [67.91,68.73]  | squash CUDA  94.8s
+INT8 Pct 99.999    top-1 = 68.58%  95%CI [68.17,68.99]  | holdout 68.59% [68.18,69.00]  | squash CUDA  94.6s
+INT8 MM calib1000  top-1 = 68.65%  95%CI [68.25,69.06]  | holdout 68.63% [68.22,69.04]  | squash CUDA  94.2s
+INT8 TRT-sym(C)    top-1 = 68.33%  95%CI [67.92,68.74]  | holdout 68.34% [67.93,68.74]  | squash CUDA  99.8s
+INT8 TRT-sym(D)    top-1 = 68.33%  95%CI [67.92,68.74]  | holdout 68.34% [67.93,68.74]  | squash CUDA  99.1s
+INT8 TRT-asym(B)   top-1 = 68.62%  95%CI [68.22,69.03]  | holdout 68.63% [68.23,69.04]  | squash CUDA  97.8s
+FP32 (tv)          top-1 = 69.81%  95%CI [69.40,70.21]  | holdout 69.82% [69.41,70.22]  | tv     CUDA  89.2s
+INT8 MinMax (tv)   top-1 = 69.67%  95%CI [69.27,70.07]  | holdout 69.69% [69.28,70.09]  | tv     CUDA  92.7s
+
+--- FP32 대비 (같은 전처리끼리) ---
+FP32       → INT8 MinMax         -0.12%p  base만= 510 대상만= 451 chi2=    3.50 p=6.135e-02  <span class="warn">유의하지 않음</span>
+FP32       → INT8 MinMax(PT)     -0.28%p  base만= 835 대상만= 694 chi2=   12.82 p=3.431e-04  유의
+FP32       → INT8 Entropy        -0.12%p  base만= 510 대상만= 451 chi2=    3.50 p=6.135e-02  <span class="warn">유의하지 않음</span>
+FP32       → INT8 Ent(fixed)     -9.45%p  base만=6293 대상만=1568 chi2= 2838.85 p=0.000e+00  유의
+FP32       → INT8 Pct 99.9       -6.83%p  base만=4829 대상만=1414 chi2= 1866.95 p=0.000e+00  유의
+FP32       → INT8 Pct 99.99      -0.43%p  base만= 783 대상만= 566 chi2=   34.59 p=4.079e-09  유의
+FP32       → INT8 Pct 99.999     -0.16%p  base만= 464 대상만= 385 chi2=    7.17 p=7.430e-03  유의
+FP32       → INT8 MM calib1000   -0.09%p  base만= 532 대상만= 489 chi2=    1.73 p=1.887e-01  <span class="warn">유의하지 않음</span>
+FP32       → INT8 TRT-sym(C)     -0.41%p  base만= 803 대상만= 598 chi2=   29.70 p=5.032e-08  유의
+FP32       → INT8 TRT-sym(D)     -0.41%p  base만= 803 대상만= 598 chi2=   29.70 p=5.032e-08  유의
+FP32       → INT8 TRT-asym(B)    -0.12%p  base만= 509 대상만= 451 chi2=    3.38 p=6.582e-02  <span class="warn">유의하지 않음</span>
+FP32 (tv)  → INT8 MinMax (tv)    -0.13%p  base만= 516 대상만= 449 chi2=    4.51 p=3.362e-02  유의
+
+--- paired 비교 ---
+INT8 MinMax        → INT8 MinMax(PT)     -0.16%p  a만= 854 b만= 772 p=4.456e-02  유의
+INT8 MinMax        → INT8 Entropy        +0.00%p  a만=   0 b만=   0 p=1.000e+00  <span class="warn">유의하지 않음</span>
+INT8 MinMax        → INT8 Ent(fixed)     -9.33%p  a만=6252 b만=1586 p=0.000e+00  유의
+INT8 MinMax        → INT8 Pct 99.9       -6.71%p  a만=4764 b만=1408 p=0.000e+00  유의
+INT8 MinMax        → INT8 Pct 99.99      -0.32%p  a만= 750 b만= 592 p=1.822e-05  유의
+INT8 MinMax        → INT8 Pct 99.999     -0.04%p  a만= 462 b만= 442 p=5.274e-01  <span class="warn">유의하지 않음</span>
+INT8 MinMax        → INT8 MM calib1000   +0.03%p  a만= 504 b만= 520 p=6.392e-01  <span class="warn">유의하지 않음</span>
+INT8 MinMax        → INT8 TRT-sym(C)     -0.29%p  a만= 760 b만= 614 p=9.162e-05  유의
+INT8 TRT-sym(C)    → INT8 TRT-sym(D)     +0.00%p  a만=   0 b만=   0 p=1.000e+00  <span class="warn">유의하지 않음</span>
+INT8 MinMax        → INT8 TRT-asym(B)    +0.00%p  a만=   0 b만=   1 p=1.000e+00  <span class="warn">유의하지 않음</span>
+FP32               → FP32 (tv)           +1.07%p  a만=2131 b만=2664 p=1.557e-14  유의
+
+saved eval_hits_v2.npz / top1_counts_v2.json</pre></div></section>
+<section class="step" id="s8"><h3><span class="num">8</span>큐레이션 1,000장 vs 진짜 50,000장</h3><p class="lead">이번 재실행의 핵심 산출이다. 무엇이 유지되고 무엇이 뒤집혔는지 절대값 / Δ 방향 / 유의성 판정 세 층으로 나눠 본다.</p><div class="term"><div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">$ python3 compare_curated_vs_real.py</span></div><pre>큐레이션 셋 n=1000  /  진짜 val n=50000
+
+====================================================================================================
+(1) top-1 절대값 — 큐레이션 셋의 부풀림
+====================================================================================================
+모델                       큐레이션     진짜 val       부풀림           큐레이션 95%CI
+FP32                   78.50%     68.74%    +9.76%p   [75.85, 80.93]
+INT8 MinMax            78.90%     68.62%   +10.28%p   [76.26, 81.32]
+INT8 MinMax(PT)        77.70%     68.46%    +9.24%p   [75.02, 80.17]
+INT8 Entropy           78.90%     68.62%   +10.28%p   [76.26, 81.32]
+INT8 Ent(fixed)        67.70%     59.29%    +8.41%p   [64.74, 70.53]
+INT8 Pct 99.9          72.30%     61.91%   +10.39%p   [69.44, 74.98]
+INT8 Pct 99.99         78.10%     68.31%    +9.79%p   [75.43, 80.55]
+INT8 Pct 99.999        78.60%     68.58%   +10.02%p   [75.95, 81.03]
+
+부풀림: 평균 +9.77%p  범위 [+8.41, +10.39]
+  → 절대값은 큐레이션 셋에서 읽을 수 없다. 부풀림 폭이 모델마다 달라 상수 보정도 불가.
+
+====================================================================================================
+(2) FP32 대비 Δ%p — 결론의 방향·크기 보존 여부
+====================================================================================================
+모델                      큐레이션 Δ       진짜 Δ       차이  방향
+INT8 MinMax             +0.40%p     -0.12%p   -0.52  <span class="err">🔴</span> <span class="err">반대</span>
+INT8 MinMax(PT)         -0.80%p     -0.28%p   +0.52  <span class="ok">일치</span>
+INT8 Entropy            +0.40%p     -0.12%p   -0.52  <span class="err">🔴</span> <span class="err">반대</span>
+INT8 Ent(fixed)        -10.80%p     -9.45%p   +1.35  <span class="ok">일치</span>
+INT8 Pct 99.9           -6.20%p     -6.83%p   -0.63  <span class="ok">일치</span>
+INT8 Pct 99.99          -0.40%p     -0.43%p   -0.03  <span class="ok">일치</span>
+INT8 Pct 99.999         +0.10%p     -0.16%p   -0.26  <span class="ok">일치</span>
+
+====================================================================================================
+(3) 유의성 판정 — n=1000의 검정력 부족이 감췄던 것
+====================================================================================================
+비교                                             큐레이션 p         진짜 p  판정 변화
+FP32 → INT8 MinMax                          4.795e-01    6.135e-02  동일 (<span class="warn">유의하지 않음</span>)
+FP32 → INT8 MinMax(PT)                      2.299e-01    3.431e-04  <span class="err">🔶</span> <span class="warn">유의하지 않음</span> → 유의
+FP32 → INT8 Entropy                         4.795e-01    6.135e-02  동일 (<span class="warn">유의하지 않음</span>)
+FP32 → INT8 Ent(fixed)                      6.527e-17    0.000e+00  동일 (유의)
+FP32 → INT8 Pct 99.9                        4.365e-09    0.000e+00  동일 (유의)
+FP32 → INT8 Pct 99.99                       5.403e-01    4.079e-09  <span class="err">🔶</span> <span class="warn">유의하지 않음</span> → 유의
+FP32 → INT8 Pct 99.999                      1.000e+00    7.430e-03  <span class="err">🔶</span> <span class="warn">유의하지 않음</span> → 유의
+INT8 MinMax → INT8 MinMax(PT)               5.923e-02    4.456e-02  <span class="err">🔶</span> <span class="warn">유의하지 않음</span> → 유의
+INT8 MinMax → INT8 Entropy                  1.000e+00    1.000e+00  동일 (<span class="warn">유의하지 않음</span>)
+INT8 MinMax → INT8 Ent(fixed)               4.412e-18    0.000e+00  동일 (유의)
+INT8 MinMax → INT8 Pct 99.9                 5.736e-10    0.000e+00  동일 (유의)
+INT8 MinMax → INT8 Pct 99.99                9.896e-02    1.822e-05  <span class="err">🔶</span> <span class="warn">유의하지 않음</span> → 유의
+INT8 MinMax → INT8 Pct 99.999               5.050e-01    5.274e-01  동일 (<span class="warn">유의하지 않음</span>)
+
+판정이 바뀐 비교: 5/13
+
+====================================================================================================
+(4) 진짜 데이터에서 처음 가능해진 측정
+====================================================================================================
+INT8 MM calib1000     68.65%  95%CI [68.25, 69.06]
+INT8 TRT-sym(C)       68.33%  95%CI [67.92, 68.74]
+INT8 TRT-sym(D)       68.33%  95%CI [67.92, 68.74]
+INT8 TRT-asym(B)      68.62%  95%CI [68.22, 69.03]
+FP32 (tv)             69.81%  95%CI [69.40, 70.21]
+INT8 MinMax (tv)      69.67%  95%CI [69.27, 70.07]
+
+전처리 효과 (FP32): squash 68.74% → tv 69.81% = +1.07%p
+  torchvision 공개값 69.76% 대비: squash -1.02%p, tv +0.05%p</pre></div></section>
+<h2 class="sec">3부 — 통념을 다시 시험한다</h2>
+<section class="step" id="s9"><h3><span class="num">9</span>레이어 민감도 — SQNR은 예측력이 있는가</h3><p class="lead">21개 Conv/Linear를 하나씩 per-channel 대칭 INT8로 fake-quant하고, 매번 50,000장 top-1을 다시 잰다(레이어당 약 30초 × 21 + 전 레이어 동시).</p><div class="term"><div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">$ python3 layer_sensitivity_v2.py</span></div><pre>/home/yuyeong/stage1-work/layer_sensitivity_v2.py:51: UserWarning: The given NumPy array is not writable, and PyTorch does not support non-writable tensors. This means writing to this tensor will result in undefined behavior. You may want to copy the array to protect its data or make it writable before converting it to a tensor. This type of warning will be suppressed for the rest of this program. (Triggered internally at /pytorch/torch/csrc/utils/tensor_numpy.cpp:213.)
+  x = torch.from_numpy(np.ascontiguousarray(imgs[s:s + BS])).to(DEV)
+대상 레이어 21개, 평가 표본 50000장, device=cuda
+
+FP32 baseline top-1 = 68.75%  (29s / 50k)
+
+  [ 1/21] conv1                    SQNR= 41.15dB  top-1=68.80%  Δ=+0.052%p
+  [ 2/21] layer1.0.conv1           SQNR= 36.15dB  top-1=68.77%  Δ=+0.026%p
+  [ 3/21] layer1.0.conv2           SQNR= 38.23dB  top-1=68.76%  Δ=+0.010%p
+  [ 4/21] layer1.1.conv1           SQNR= 37.52dB  top-1=68.78%  Δ=+0.036%p
+  [ 5/21] layer1.1.conv2           SQNR= 39.00dB  top-1=68.75%  Δ=+0.000%p
+  [ 6/21] layer2.0.conv1           SQNR= 38.50dB  top-1=68.76%  Δ=+0.010%p
+  [ 7/21] layer2.0.conv2           SQNR= 36.87dB  top-1=68.76%  Δ=+0.014%p
+  [ 8/21] layer2.0.downsample.0    SQNR= 40.70dB  top-1=68.76%  Δ=+0.012%p
+  [ 9/21] layer2.1.conv1           SQNR= 36.58dB  top-1=68.75%  Δ=+0.006%p
+  [10/21] layer2.1.conv2           SQNR= 38.42dB  top-1=68.78%  Δ=+0.030%p
+  [11/21] layer3.0.conv1           SQNR= 37.42dB  top-1=68.73%  Δ=-0.020%p
+  [12/21] layer3.0.conv2           SQNR= 36.30dB  top-1=68.79%  Δ=+0.044%p
+  [13/21] layer3.0.downsample.0    SQNR= 40.53dB  top-1=68.75%  Δ=+0.000%p
+  [14/21] layer3.1.conv1           SQNR= 37.07dB  top-1=68.75%  Δ=+0.000%p
+  [15/21] layer3.1.conv2           SQNR= 37.83dB  top-1=68.75%  Δ=+0.006%p
+  [16/21] layer4.0.conv1           SQNR= 37.99dB  top-1=68.75%  Δ=+0.004%p
+  [17/21] layer4.0.conv2           SQNR= 36.71dB  top-1=68.76%  Δ=+0.014%p
+  [18/21] layer4.0.downsample.0    SQNR= 39.77dB  top-1=68.75%  Δ=+0.008%p
+  [19/21] layer4.1.conv1           SQNR= 38.25dB  top-1=68.75%  Δ=+0.008%p
+  [20/21] layer4.1.conv2           SQNR= 36.96dB  top-1=68.75%  Δ=+0.006%p
+  [21/21] fc                       SQNR= 38.30dB  top-1=68.77%  Δ=+0.026%p
+
+전 레이어 weight INT8 동시: top-1=68.70%  Δ=-0.044%p
+개별 낙폭 합계 = +0.292%p → 거의 가산적
+
+SQNR ↔ Δtop-1  Pearson r=+0.064  Spearman ρ=-0.036
+  (SQNR이 높을수록 Δ가 0에 가까워야 예측력이 있다 → 양의 상관을 기대)
+
+SQNR 최저 5개 (대리 지표가 '위험'하다고 말하는 레이어):
+  layer1.0.conv1           SQNR= 36.15dB  실제 Δ=+0.026%p
+  layer3.0.conv2           SQNR= 36.30dB  실제 Δ=+0.044%p
+  layer2.1.conv1           SQNR= 36.58dB  실제 Δ=+0.006%p
+  layer4.0.conv2           SQNR= 36.71dB  실제 Δ=+0.014%p
+  layer2.0.conv2           SQNR= 36.87dB  실제 Δ=+0.014%p
+실제 낙폭 최대 5개 (정답):
+  layer3.0.conv1           SQNR= 37.42dB  실제 Δ=-0.020%p
+  layer3.1.conv1           SQNR= 37.07dB  실제 Δ=+0.000%p
+  layer1.1.conv2           SQNR= 39.00dB  실제 Δ=+0.000%p
+  layer3.0.downsample.0    SQNR= 40.53dB  실제 Δ=+0.000%p
+  layer4.0.conv1           SQNR= 37.99dB  실제 Δ=+0.004%p
+
+saved layer_sensitivity_v2.csv (21 rows)</pre></div><div class="note tip"><span class="tag">이번엔 대리지표가 아니라 실제 top-1</span>직전 실행의 민감도는 weight 공간 SQNR만 봤다 — <b>데이터를 쓰지 않는 대리지표</b>다. 이번엔 한 레이어씩 fake-quant하고 50,000장 top-1을 실제로 재서, 가이드가 혼합정밀도 판단에 쓰라고 한 SQNR이 과제 민감도를 예측하는지 검정한다.</div></section>
+<section class="step" id="s10"><h3><span class="num">10</span>TensorRT 2×2 절제 재측정</h3><p class="lead">에러 메시지가 두 종류라서 원인도 둘이라고 결론내면 틀린다. 대칭/비대칭 축과 bias 양자화 축을 독립으로 끄고 켜서 하드 블로커를 가린다.</p><div class="term"><div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">$ python3 ablate_trt_v2.py</span></div><pre>$ python3 ablate_trt_v2.py 2&gt;&amp;1 | ...
+# TensorRT 파서가 stderr로 쏟은 로그 342 KB → 메시지 종류별로 접었다 (전문: runlogs/07_trt_raw.log)
+
+[×290] onnxOpImporters.cpp:1695: TensorRT supports QuantizeLinear/DequantizeLinear with UINT8 zero_point only on DLA (version &gt;= 3.16). Defaulting to INT8 in …
+[×146] ModelImporter.cpp:140: --- Begin node ---
+[×146] ModelImporter.cpp:141: --- End node ---
+[× 99] ModelImporter.cpp:739: Make sure input val_231 has Int64 binding.
+[× 84] ModelImporter.cpp:149: ERROR: ModelImporter.cpp:506 In function parseNode:
+[× 44] ITensor::getDimensions: Error Code 4: API Usage Error (conv1.weight_bias_DequantizeLinear: input has type Int32 but must have type FP8, FP4, Int4, or  …
+[× 44] ModelImporter.cpp:138: While parsing node number 0 [DequantizeLinear -&gt; "conv1.weight_bias"]:
+[× 42] onnxOpImporters.cpp:1703: For zero_point with type int32 TensorRT will use INT8 instead.
+[× 36] ModelImporter.cpp:149: ERROR: importerUtils.cpp:46 In function checkNotInvalidType:
+[× 32] ITensor::getDimensions: Error Code 4: API Usage Error (layer1.0.conv1.weight_bias_DequantizeLinear: input has type Int32 but must have type FP8, FP4,  …
+[× 32] ModelImporter.cpp:138: While parsing node number 0 [DequantizeLinear -&gt; "layer1.0.conv1.weight_bias"]:
+[× 26] ModelImporter.cpp:149: ERROR: onnxOpImporters.cpp:1738 In function QuantDequantLinearHelper:
+[× 22] ModelImporter.cpp:138: While parsing node number 10 [QuantizeLinear -&gt; "getitem_6_QuantizeLinear_Output"]:
+[× 22] ModelImporter.cpp:138: While parsing node number 0 [DequantizeLinear -&gt; "getitem_6_DequantizeLinear_Output"]:
+[×  8] ITensor::setType: Error Code 3: API Usage Error (Parameter check failed, condition: dataType == outType. UNSUPPORTED_STATESet network output type UInt …
+[×  7] ModelImporter.cpp:138: While parsing node number 0 [DequantizeLinear -&gt; "relu_2_DequantizeLinear_Output/duplicated"]:
+[×  6] ITensor::getDimensions: Error Code 4: API Usage Error (layer2.0.downsample.0.weight_bias_DequantizeLinear: input has type Int32 but must have type FP8 …
+[×  6] ModelImporter.cpp:138: While parsing node number 1 [DequantizeLinear -&gt; "layer2.0.downsample.0.weight_bias"]:
+[×  5] ModelImporter.cpp:994: Make sure output val_231 has Int64 binding.
+[×  2] ITensor::getDimensions: Error Code 4: API Usage Error (fc.bias_DequantizeLinear: input has type Int32 but must have type FP8, FP4, Int4, or Int8. In c …
+[×  2] ModelImporter.cpp:138: While parsing node number 1 [DequantizeLinear -&gt; "fc.bias"]:
+[×  2] ModelImporter.cpp:138: While parsing node number 1 [QuantizeLinear -&gt; "input_QuantizeLinear_Output"]:
+[×  2] ModelImporter.cpp:138: While parsing node number 1 [DequantizeLinear -&gt; "input_DequantizeLinear_Output"]:
+[×  2] ModelImporter.cpp:138: While parsing node number 2 [DequantizeLinear -&gt; "input_DequantizeLinear_Output/duplicated"]:
+[×  2] ModelImporter.cpp:138: While parsing node number 10 [QuantizeLinear -&gt; "logits_QuantizeLinear_Output"]:
+[×  2] ModelImporter.cpp:138: While parsing node number 0 [DequantizeLinear -&gt; "logits"]:
+[×  2] [RemoveDeadLayers] Input Tensor input_DequantizeLinear_Output is unused or used only at compile-time, but is not being removed.
+[×  2] [RemoveDeadLayers] Input Tensor val_231 is unused or used only at compile-time, but is not being removed.
+[×  1] ModelImporter.cpp:138: While parsing node number 0 [DequantizeLinear -&gt; "max_pool2d_DequantizeLinear_Output/duplicated"]:
+
+EP 목록: ['Tensorrt', 'CUDA', 'CPU']
+FP32 기준선: TRT p50=0.96 ms  CUDA p50=1.33 ms
+case               DQ  int32DQ     act_zp   TRT p50  CUDA p50  vs FP32  판정
+--------------------------------------------------------------------------------------------
+A_asym_bias        74       21    [0,173]      3.06      1.81    0.31x  <span class="err">🔴</span> <span class="err">폴백</span>(파싱 <span class="err">실패</span>)
+B_asym_nobias      53        0    [0,173]      2.97      1.80    0.32x  <span class="err">🔴</span> <span class="err">폴백</span>(파싱 <span class="err">실패</span>)
+C_sym_bias         91       21      [0,0]      0.51      2.11    1.86x  <span class="ok">✅</span> TRT 파싱 <span class="ok">성공</span>
+D_sym_nobias       70        0      [0,0]      0.51      1.99    1.86x  <span class="ok">✅</span> TRT 파싱 <span class="ok">성공</span></pre></div></section>
+<section class="step" id="s11"><h3><span class="num">11</span>QAT 회복 실험 — GPU 하드웨어 오류로 중단</h3><p class="lead">가이드 2.5절은 STE로 gradient가 통과하는지만 합성 텐서로 보여준다. 진짜 val이 생겼으니 'QAT가 PTQ 손실을 되찾는다'는 주장 자체를 측정할 수 있다. 기준선 두 개와 1 에폭 학습까지 진행된 뒤 <b>GPU가 PCI 버스에서 이탈</b>했다.</p><div class="term"><div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">$ python3 qat_recovery.py</span></div><pre>학습 40000장 / 평가 10000장 (서로소 확인 <span class="ok">✅</span>), device=cuda
+
+(1) FP32                     top-1 = 68.52%
+(2) PTQ (fake-quant, 학습 없음) top-1 = 68.46%  Δ=-0.06%p
+    ep0 step    0/416  loss=1.5088
+    ep0 step  100/416  loss=1.2948
+    ep0 step  200/416  loss=1.2953
+    ep0 step  300/416  loss=1.2833
+    ep0 step  400/416  loss=1.2924
+Traceback (most recent call last):
+  File "/home/yuyeong/stage1-work/qat_recovery.py", line 202, in &lt;module&gt;
+    main()
+  File "/home/yuyeong/stage1-work/qat_recovery.py", line 191, in main
+    t1 = evaluate(lambda x: qforward(qat, x), imgs, labels, ev, mean, std).mean() * 100
+  File "/home/yuyeong/emb-ai/lib/python3.10/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+    return func(*args, **kwargs)
+  File "/home/yuyeong/stage1-work/qat_recovery.py", line 128, in evaluate
+    hits[s:s + len(sel)] = fwd(x).argmax(1).cpu().numpy() == labels[sel]
+  File "/home/yuyeong/stage1-work/qat_recovery.py", line 191, in &lt;lambda&gt;
+    t1 = evaluate(lambda x: qforward(qat, x), imgs, labels, ev, mean, std).mean() * 100
+  File "/home/yuyeong/stage1-work/qat_recovery.py", line 109, in qforward
+    x = m.q_layer1(m.layer1(x)); x = m.q_layer2(m.layer2(x))
+  File "/home/yuyeong/emb-ai/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1779, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/yuyeong/emb-ai/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1790, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/yuyeong/stage1-work/qat_recovery.py", line 65, in forward
+    if torch.isnan(self.lo):
+torch.AcceleratorError: CUDA error: unspecified launch failure
+Search for `cudaErrorLaunchFailure' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.
+CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+
+
+─── 커널 로그 (journalctl -k) ───
+NVRM: Xid (PCI:0000:01:00): 79, GPU has fallen off the bus.
+NVRM: GPU 0000:01:00.0: GPU has fallen off the bus.
+NVRM: Xid (PCI:0000:01:00): 154, GPU recovery action changed from 0x0 (None) to 0x2 (Node Reboot Required)
+
+$ lspci -nn | grep -i nvidia
+01:00.0 VGA compatible controller [0300]: NVIDIA Corporation GA106 [GeForce RTX 3060 Lite Hash Rate] [10de:2504] (rev ff)
+01:00.1 Audio device [0403]: NVIDIA Corporation Device [10de:228e] (rev ff)
+$ nvidia-smi
+Unable to determine the device handle for GPU0: 0000:01:00.0: Unknown Error
+No devices were found</pre></div><div class="note trap"><span class="tag">스크립트 버그가 아니라 하드웨어 이벤트</span><b>Xid 79 (GPU has fallen off the bus)</b> + <b>Xid 154 (Node Reboot Required)</b>. <code>lspci</code>가 <code>rev ff</code>를 보고하는 것은 PCI 설정 공간 읽기가 전부 1로 돌아온다는 뜻 — 장치가 응답하지 않는다. 드라이버 모듈 재적재로는 복구되지 않고 <b>재부팅이 필요</b>하다. 직전까지의 측정(0~10단계)은 모두 정상 종료되어 결과가 보존돼 있다.</div><div class="note warnb"><span class="tag">실험 설계의 한계 (재실행 시에도 유효)</span>ImageNet <b>train split이 없다</b>. 그래서 val을 클래스당 40장 학습 / 10장 평가로 서로소 분할해 파인튜닝했다. 평가셋 누수는 없지만 val 분포로 학습한 모델이므로 <b>절대 top-1을 문헌값과 비교하면 안 된다</b>. 읽을 것은 FP32→PTQ→QAT의 상대 관계뿐이다.</div></section>
+<h2 class="sec">산출물</h2>
+<div class="card"><h4>데이터 · 캐시 (<code>~/stage1-work/data/</code>, 비커밋)</h4><ul class="files"><li><span class="fn">imagenet/ILSVRC2012_img_val.tar</span><small>6.28 GiB · MD5 검증</small></li><li><span class="fn">labels/val_synset_map.txt</span><small>50,000줄 · 2출처 교차검증</small></li><li><span class="fn">val_full/&lt;wnid&gt;/</span><small>1000 폴더 × 50장</small></li><li><span class="fn">cache/squash.npy</span><small>7.01 GiB · 문서 전처리</small></li><li><span class="fn">cache/tv.npy</span><small>7.01 GiB · torchvision 표준</small></li><li><span class="fn">cache/calib{200,1000}_idx.npy</span><small>캘리브 인덱스</small></li></ul></div><div class="card"><h4>스크립트 · 결과 (<code>~/stage1-work/</code>)</h4><ul class="files"><li><span class="fn">prep_cache.py</span><small>캐시 굽기 + 분할 확정</small></li><li><span class="fn">eval_fast.py</span><small>캐시 기반 평가 · Wilson · McNemar</small></li><li><span class="fn">quantize_v2.py</span><small>PTQ 13종 + num_bins 몽키패치</small></li><li><span class="fn">run_eval_v2.py</span><small>50k × 14회 평가</small></li><li><span class="fn">compare_curated_vs_real.py</span><small>큐레이션 대비 차이</small></li><li><span class="fn">layer_sensitivity_v2.py</span><small>실제 top-1 기반 민감도</small></li><li><span class="fn">ablate_trt_v2.py</span><small>TRT 2×2 절제</small></li><li><span class="fn">qat_recovery.py</span><small>QAT 회복 실험</small></li><li><span class="fn">verify_artifacts.py</span><small>산출물 사후 재검증</small></li><li><span class="fn">eval_hits_v2.npz</span><small>모델별 50k 정답 마스크</small></li><li><span class="fn">layer_sensitivity_v2.csv</span><small>21레이어 SQNR ↔ Δtop-1</small></li><li><span class="fn">runlogs/*.log</span><small>이 문서의 원본 출력</small></li></ul></div>
+  <footer>실행 로그 · 2026-08-04 · <code>~/stage1-work/</code> · 분석과 문서 정정 목록은 <a href="stage1_real_imagenet_report.html">분석 보고서</a>에 있다.<div class="next"><b>다음</b> 정정 반영 → <code>study_guide/03_quantization_theory.md</code></div></footer>
+</div>
+</body>
+</html>
