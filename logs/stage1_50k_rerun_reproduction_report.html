@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>1단계 50k 재실행 — 재현 검증 보고서 (RTX 3080)</title>
+<style>
+:root{--bg:#0b0e14;--panel:#131720;--panel2:#0f131b;--bd:#242b38;--tx:#c9d1d9;--dim:#8b949e;--brt:#e6edf3;--accent:#58a6ff;--green:#3fb950;--amber:#d29922;--red:#ff7b72;--purple:#bc8cff;--mono:'JetBrains Mono','SF Mono',ui-monospace,'Cascadia Code',Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans KR','Malgun Gothic',sans-serif}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:var(--sans);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:980px;margin:0 auto;padding:0 20px 120px}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+.hero{padding:48px 0 26px;border-bottom:1px solid var(--bd);margin-bottom:8px}
+.kicker{font-family:var(--mono);font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+.hero h1{margin:0 0 10px;font-size:30px;line-height:1.25;color:var(--brt);letter-spacing:-.01em}
+.hero p.sub{margin:0 0 20px;color:var(--dim);font-size:15px;max-width:74ch}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font-family:var(--mono);font-size:12px;padding:5px 10px;border:1px solid var(--bd);border-radius:999px;background:var(--panel);color:var(--tx)}
+.chip b{color:var(--brt);font-weight:600}
+.chip.done{border-color:rgba(63,185,80,.5);background:rgba(63,185,80,.12);color:#7ee787}
+.chip.blocked{border-color:rgba(255,123,114,.5);background:rgba(255,123,114,.12);color:#ff9d96}
+.chip.partial{border-color:rgba(210,153,34,.5);background:rgba(210,153,34,.12);color:#e3b341}
+nav.toc{display:flex;flex-wrap:wrap;gap:8px;margin:26px 0 6px}
+nav.toc a{font-family:var(--mono);font-size:12.5px;padding:6px 11px;border:1px solid var(--bd);border-radius:8px;background:var(--panel);color:var(--tx)}
+nav.toc a:hover{border-color:var(--accent);color:var(--brt);text-decoration:none}
+h2.sec{font-size:13px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin:40px 0 12px;font-weight:600;border-top:1px solid var(--bd);padding-top:26px}
+.step{margin:26px 0 0;scroll-margin-top:16px}
+.step>h3{display:flex;align-items:center;gap:12px;font-size:19px;color:var(--brt);margin:0 0 6px;letter-spacing:-.01em}
+.num{flex:none;display:inline-grid;place-items:center;width:28px;height:28px;border-radius:8px;background:var(--accent);color:#06101f;font-family:var(--mono);font-weight:700;font-size:13px}
+.step p.lead{margin:0 0 4px;color:var(--dim);font-size:14.5px}
+table.dt{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.3px;border:1px solid var(--bd);border-radius:10px;overflow:hidden;font-family:var(--mono)}
+table.dt th,table.dt td{padding:8px 12px;text-align:right;border-bottom:1px solid var(--bd)}
+table.dt th{background:var(--panel);color:var(--dim);font-weight:600;font-size:12px;letter-spacing:.04em}
+table.dt th:first-child,table.dt td:first-child{text-align:left;color:var(--brt)}
+table.dt tr:last-child td{border-bottom:none}
+table.dt tr.hi td{background:rgba(63,185,80,.08)}
+table.dt tr.lo td{background:rgba(255,123,114,.08)}
+table.dt tr.base td{background:rgba(88,166,255,.07)}
+.g{color:var(--green)}.r{color:var(--red)}.a{color:var(--amber)}.p{color:var(--purple)}.d{color:var(--dim)}
+table.kv{width:100%;border-collapse:collapse;margin:12px 0;font-size:13.5px;border:1px solid var(--bd);border-radius:10px;overflow:hidden}
+table.kv th,table.kv td{padding:9px 13px;text-align:left;border-bottom:1px solid var(--bd);vertical-align:top}
+table.kv th{background:var(--panel);color:var(--dim);font-weight:600;width:34%;font-size:12.5px}
+table.kv td{font-family:var(--mono);font-size:12.7px;color:var(--tx)}
+table.kv tr:last-child td,table.kv tr:last-child th{border-bottom:none}
+.term{background:var(--panel2);border:1px solid var(--bd);border-radius:11px;overflow:hidden;margin:14px 0}
+.term-bar{display:flex;align-items:center;gap:7px;padding:9px 13px;background:#0c1017;border-bottom:1px solid var(--bd)}
+.dot{width:11px;height:11px;border-radius:50%}.dot.r{background:#ff5f56}.dot.y{background:#ffbd2e}.dot.g{background:#27c93f}
+.term-title{margin-left:9px;color:var(--dim);font-size:12.5px;font-family:var(--mono)}
+.term pre{margin:0;padding:15px 17px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.62;color:var(--tx);white-space:pre;tab-size:2}
+.in{color:var(--brt);font-weight:600}.in .p{color:var(--green);user-select:none;margin-right:9px}
+.cmt{color:#5c6773}.ok{color:var(--green)}.err{color:var(--red)}.warn{color:var(--amber)}.dim{color:var(--dim)}.hl{color:var(--purple)}
+.note{border-left:3px solid var(--accent);background:rgba(88,166,255,.07);padding:13px 17px;border-radius:0 9px 9px 0;margin:15px 0;font-size:14px}
+.note.trap{border-color:var(--red);background:rgba(255,123,114,.08)}
+.note.warnb{border-color:var(--amber);background:rgba(210,153,34,.08)}
+.note.tip{border-color:var(--green);background:rgba(63,185,80,.07)}
+.note.block{border-color:var(--purple);background:rgba(188,140,255,.08)}
+.note .tag{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 8px;border-radius:6px;margin-bottom:7px}
+.note.trap .tag{background:rgba(255,123,114,.18);color:#ff9d96}
+.note.warnb .tag{background:rgba(210,153,34,.18);color:#e3b341}
+.note.tip .tag{background:rgba(63,185,80,.18);color:#7ee787}
+.note.block .tag{background:rgba(188,140,255,.18);color:#d8b8ff}
+.note b{color:var(--brt)}.note code{font-family:var(--mono);font-size:12.5px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:4px}
+.chartwrap{border:1px solid var(--bd);background:var(--panel2);border-radius:12px;padding:18px 18px 10px;margin:16px 0}
+.chartwrap .ct{font-family:var(--mono);font-size:12.5px;color:var(--brt);margin:0 0 4px}
+.chartwrap .cs{font-size:12.5px;color:var(--dim);margin:0 0 12px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin:10px 2px 2px;font-size:12px;color:var(--dim);font-family:var(--mono)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:11px;height:11px;border-radius:3px;display:inline-block}
+.statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:14px 0}
+.stat{border:1px solid var(--bd);background:var(--panel);border-radius:11px;padding:15px 16px}
+.stat .k{font-family:var(--mono);font-size:11.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em}
+.stat .v{font-size:23px;color:var(--brt);font-weight:700;margin-top:5px;letter-spacing:-.01em}
+.stat .n{font-size:12px;color:var(--dim);margin-top:3px}
+.stat.ok .v{color:#7ee787}.stat.warn .v{color:#e3b341}
+footer{margin-top:46px;padding-top:20px;border-top:1px solid var(--bd);color:var(--dim);font-size:13px}
+.next{display:block;margin-top:12px;padding:12px 16px;border:1px solid var(--bd);border-radius:9px;color:var(--tx);background:var(--panel);font-size:13.6px}
+.next b{color:var(--accent)}
+@media (max-width:560px){.hero h1{font-size:23px}.term pre{font-size:11.4px}.stat .v{font-size:20px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <p class="kicker">실행 보고서 · 1단계 50k 재실행 · 이관 머신 재현</p>
+    <h1>1단계 50,000장 재실행 — 재현 검증 보고서</h1>
+    <p class="sub">GPU가 고장난 이전 머신(RTX 3060)에서 넘겨받은 작업을, 새로 확보한 <b>ImageNet val 50,000장</b>으로 이 머신(RTX 3080)에서 처음부터 다시 돌렸다. 전처리 캐시 → INT8 13종 생성 → 14회 50k 평가까지 전 과정의 <b>명령·터미널 출력·데이터</b>를 기록하고, 이관 baseline과 <b>per-image 예측 배열(70만 건)</b>을 대조했다. 이어 남은 1단계 심화 분석 <b>3종</b>(활성 스케일 · TensorRT 2×2 절제 · 레이어 민감도)까지 재실행해 문서 결론을 재확인했다.</p>
+    <div class="chips">
+      <span class="chip"><b>2026-08-14</b></span>
+      <span class="chip done">val <b>50,000</b>장</span>
+      <span class="chip done">13/14 모델 비트 동일</span>
+      <span class="chip partial">calib1000 <b>+14</b>장</span>
+      <span class="chip done">심화 <b>3종</b> 재현 ✅</span>
+      <span class="chip done">전부 <b>CUDA EP</b></span>
+      <span class="chip">RTX 3080 · ORT 1.23.2</span>
+    </div>
+    <nav class="toc">
+      <a href="#s1">1 요약·판정</a><a href="#s2">2 환경·무결성</a><a href="#s3">3 명령·출력</a>
+      <a href="#s4">4 결과 데이터</a><a href="#s5">5 재현 대조</a><a href="#s6">6 문서값 재확인</a>
+      <a href="#s7">7 calib1000</a><a href="#s8">8 활성 스케일</a><a href="#s9">9 TRT 2×2</a>
+      <a href="#s10">10 레이어 민감도</a><a href="#s11">11 산출물·다음</a>
+    </nav>
+  </header>
+
+  <h2 class="sec" id="s1">1 · 한 화면 요약과 판정</h2>
+  <div class="statgrid">
+    <div class="stat ok"><div class="k">재현 판정</div><div class="v">13 / 14</div><div class="n">모델이 baseline과 비트 단위 동일</div></div>
+    <div class="stat ok"><div class="k">FP32 top-1 (tv)</div><div class="v">69.81%</div><div class="n">공개값 69.758% 대비 +0.05%p</div></div>
+    <div class="stat warn"><div class="k">유일한 차이</div><div class="v">42장</div><div class="n">INT8 MM calib1000 · 0.084%</div></div>
+    <div class="stat"><div class="k">총 예측 대조</div><div class="v">700k</div><div class="n">14모델 × 50k · flip 42장</div></div>
+  </div>
+  <table class="dt"><thead><tr><th>검증 축</th><th>baseline (RTX 3060)</th><th>이번 재실행 (RTX 3080)</th><th>판정</th></tr></thead><tbody>
+    <tr class="hi"><td>모델 13/14 예측 배열</td><td>기준</td><td>flip 0장</td><td><span class="g">비트 동일 ✅</span></td></tr>
+    <tr class="lo"><td>INT8 MM calib1000</td><td>34327 (68.65%)</td><td>34341 (68.68%)</td><td><span class="a">+14장 / 42장 flip</span></td></tr>
+    <tr><td>calib1000 판정(MinMax 대비)</td><td>+0.06%p · p=0.36 · n.s.</td><td>+0.06%p · p=0.36 · n.s.</td><td><span class="g">결론 불변 ✅</span></td></tr>
+    <tr class="hi"><td>실행 프로바이더</td><td>CUDA EP</td><td>CUDA EP (14/14)</td><td><span class="g">무음 폴백 없음 ✅</span></td></tr>
+    <tr class="hi"><td>버전 스택</td><td>ORT 1.23.2 / onnx 1.18.0</td><td>ORT 1.23.2 / onnx 1.18.0</td><td><span class="g">동일 ✅</span></td></tr>
+    <tr><td>평가 총 시간</td><td>1336s</td><td>754s</td><td><span class="g">1.77× 빠름</span></td></tr>
+  </tbody></table>
+  <div class="note block"><span class="tag">판정</span>새 머신·새 val 데이터로 1단계 전체를 재실행해 이관 baseline을 <b>사실상 비트 단위로 재현</b>했다. 14개 모델 중 13개는 50,000장 예측이 <b>한 장도 다르지 않고</b>, 유일한 예외인 <code>INT8 MM calib1000</code>만 42장(<b>0.084%</b>) 달라졌다 — 그마저 방향·유의성 결론은 그대로다. 이 머신에서 1단계가 정상 작동함이 확인됐다.</div>
+
+  <h2 class="sec" id="s2">2 · 실행 환경과 데이터 무결성</h2>
+  <p class="step" style="color:var(--dim);font-size:14.5px;margin:0">이관 스택과 이번 스택은 <b style="color:var(--brt)">완전히 동일</b>하다. 유일한 물리적 차이는 GPU(RTX 3060 12GB → RTX 3080 10GB)다 — 아래 §7에서 calib1000 미세 차이의 유력한 원인이 된다.</p>
+  <table class="kv">
+    <tr><th>머신 / GPU</th><td>Ubuntu 22.04 · <b>NVIDIA RTX 3080 (10GB)</b> · driver 595.84　<span class="d">(baseline: RTX 3060 12GB, GPU Xid-79 고장)</span></td></tr>
+    <tr><th>venv</th><td>~/emb-ai　·　python 3.10.12</td></tr>
+    <tr><th>핵심 스택</th><td>onnxruntime 1.23.2 · onnx 1.18.0 · numpy 1.26.4 · torch 2.11.0+cu128 · torchvision 0.26.0+cu128</td></tr>
+    <tr><th>ORT providers</th><td>Tensorrt · <b>CUDA</b> · CPU　<span class="d">(평가 14회 전부 CUDAExecutionProvider 활성 — 무음 CPU 폴백 없음)</span></td></tr>
+    <tr><th>val tar 무결성</th><td>MD5 <b>29b22e2961454d5413ddabcf34fc5622</b>　<span class="ok">✅ HANDOFF 레시피와 일치</span></td></tr>
+    <tr><th>재배치 결과</th><td>data/val_full/ = <b>1000</b> 폴더 × 50장 = <b>50,000</b>장　·　정렬 WNID == devkit 인덱스 ✅</td></tr>
+    <tr><th>전처리 캐시</th><td>squash.npy · tv.npy 각 <b>7,526,400,128 B</b> = 50000×224×224×3 uint8 (+헤더)　<span class="d">디코딩 무손실 memmap</span></td></tr>
+    <tr><th>FP32 ONNX</th><td>resnet18_fp32.onnx 91,843 B + .onnx.data 46,792,704 B　<span class="d">(external data, opset 18 — 알려진 거동)</span></td></tr>
+    <tr><th>INT8 산출</th><td>models_v2/ = <b>13</b> 모델 · 각 11.2–11.3 MB (총 148 MB)</td></tr>
+  </table>
+
+  <h2 class="sec" id="s3">3 · 실행한 명령과 터미널 출력</h2>
+  <p class="step" style="color:var(--dim);font-size:14.5px;margin:0 0 4px">5개 스크립트를 순서대로 실행했다. 아래는 실제 명령과 각 단계가 남긴 로그다(반복 WARNING은 <span class="dim">… (×N)</span>으로 접었고, 그 사실을 표시했다).</p>
+  <div class="term"><div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">재실행 명령 시퀀스</span></div><pre><span class="cmt"># 이관 머신(RTX 3080)에서, 새로 만든 val_full 50,000장으로 1단계 파이프라인 전체 재실행</span>
+<span class="in"><span class="p">$</span>source ~/emb-ai/bin/activate</span>
+
+<span class="cmt"># 0) val tar(50k) → synset 폴더 재배치 (라벨 = 정렬 WNID 0-based)</span>
+<span class="in"><span class="p">$</span>python3 restructure_val.py</span>
+<span class="cmt"># 1) 전처리 캐시(squash·tv, 각 7.5GB uint8 memmap) + 캘리브 분할 확정</span>
+<span class="in"><span class="p">$</span>python3 prep_cache.py     2>&1 | tee prep_cache_rerun.log</span>
+<span class="cmt"># 2) torchvision ResNet18(V1) → FP32 ONNX</span>
+<span class="in"><span class="p">$</span>python3 export_resnet18.py</span>
+<span class="cmt"># 3) INT8 13종 생성 (캘리브 방법 7 + 커버리지 + 전처리 + TRT 2×2)</span>
+<span class="in"><span class="p">$</span>python3 quantize_v2.py    2>&1 | tee quantize_v2_rerun.log</span>
+<span class="cmt"># 4) 50,000장 × 14 평가 → top-1 · Wilson CI · McNemar</span>
+<span class="in"><span class="p">$</span>python3 run_eval_v2.py    2>&1 | tee run_eval_v2_rerun.log</span></pre></div>
+
+  <div class="step"><h3><span class="num">1</span>prep_cache.py — 전처리 캐시 + 캘리브 분할</h3>
+  <p class="lead">50k을 squash·tv 두 전처리로 각각 구워 uint8 memmap으로 저장. calib200(200클래스×1장)·calib1000(1000클래스×1장)을 확정하고, 나머지를 holdout으로 둔다.</p>
+  <div class="term"><div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">prep_cache_rerun.log</span></div><pre>라벨 (50000,) 클래스 1000개
+calib200 (200,) (200클래스×1장) / calib1000 (1000,) (1000클래스×1장)
+  → 평가 시 holdout = 이 인덱스를 제외한 나머지
+  squash: 5000/50000
+  squash: 10000/50000
+  squash: 15000/50000
+  squash: 20000/50000
+  squash: 25000/50000
+  squash: 30000/50000
+  squash: 35000/50000
+  squash: 40000/50000
+  squash: 45000/50000
+  squash: 50000/50000
+<span class="ok">squash: 완료 /home/yuyeong/stage1-work/data/cache/squash.npy</span>
+  tv: 5000/50000
+  tv: 10000/50000
+  tv: 15000/50000
+  tv: 20000/50000
+  tv: 25000/50000
+  tv: 30000/50000
+  tv: 35000/50000
+  tv: 40000/50000
+  tv: 45000/50000
+  tv: 50000/50000
+<span class="ok">tv: 완료 /home/yuyeong/stage1-work/data/cache/tv.npy</span></pre></div></div>
+
+  <div class="step"><h3><span class="num">2</span>quantize_v2.py — INT8 13종 생성</h3>
+  <p class="lead">같은 FP32에서 캘리브 방법 7종 + 커버리지(calib1000) + 전처리(tv) + TensorRT 2×2 절제를 굽는다. Entropy 계열만 히스토그램 수집이 있어 오래 걸린다(11–32s), 나머지는 ~2.5s.</p>
+  <div class="term"><div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">quantize_v2_rerun.log</span></div><pre><span class="dim">  … ORT 전처리 WARNING 2줄 (×2)</span>
+FP32: /home/yuyeong/stage1-work/resnet18_fp32.onnx
+<span class="ok">  saved minmax                     (  2.6s)</span>
+<span class="dim">  … ORT 전처리 WARNING 2줄 (×2)</span>
+<span class="ok">  saved minmax_pertensor           (  2.2s)</span>
+<span class="dim">  … ORT 전처리 WARNING 2줄 (×2)</span>
+Collecting tensor data and making histogram ...
+Finding optimal threshold for each tensor using &#x27;entropy&#x27; algorithm ...
+Number of tensors : 50
+Number of histogram bins : 128 (The number may increase depends on the data it collects)
+Number of quantized bins : 128
+<span class="ok">  saved entropy                    ( 11.7s)</span>
+<span class="dim">  … ORT 전처리 WARNING 2줄 (×2)</span>
+Collecting tensor data and making histogram ...
+Finding optimal threshold for each tensor using &#x27;entropy&#x27; algorithm ...
+Number of tensors : 50
+Number of histogram bins : 2048 (The number may increase depends on the data it collects)
+Number of quantized bins : 128
+<span class="ok">  saved entropy_fixed              ( 32.4s)</span>
+<span class="dim">  … ORT 전처리 WARNING 2줄 (×2)</span>
+Collecting tensor data and making histogram ...
+Finding optimal threshold for each tensor using &#x27;percentile&#x27; algorithm ...
+Number of tensors : 50
+Number of histogram bins : 2048
+Percentile : (0.09999999999999432,99.9)
+<span class="ok">  saved pct999                     ( 12.0s)</span>
+<span class="dim">  … ORT 전처리 WARNING 2줄 (×2)</span>
+Collecting tensor data and making histogram ...
+Finding optimal threshold for each tensor using &#x27;percentile&#x27; algorithm ...
+Number of tensors : 50
+Number of histogram bins : 2048
+Percentile : (0.010000000000005116,99.99)
+<span class="ok">  saved pct9999                    ( 12.0s)</span>
+<span class="dim">  … ORT 전처리 WARNING 2줄 (×2)</span>
+Collecting tensor data and making histogram ...
+Finding optimal threshold for each tensor using &#x27;percentile&#x27; algorithm ...
+Number of tensors : 50
+Number of histogram bins : 2048
+Percentile : (0.0010000000000047748,99.999)
+<span class="ok">  saved pct99999                   ( 11.9s)</span>
+<span class="dim">  … ORT 전처리 WARNING 2줄 (×2)</span>
+<span class="ok">  saved minmax_calib1000           ( 10.6s)</span>
+<span class="dim">  … ORT 전처리 WARNING 2줄 (×2)</span>
+<span class="ok">  saved minmax_tv                  (  2.6s)</span>
+<span class="dim">  … ORT 전처리 WARNING 2줄 (×2)</span>
+<span class="ok">  saved trt_A_asym_bias            (  2.5s)</span>
+<span class="dim">  … ORT 전처리 WARNING 2줄 (×2)</span>
+<span class="ok">  saved trt_B_asym_nobias          (  2.5s)</span>
+<span class="dim">  … ORT 전처리 WARNING 2줄 (×2)</span>
+<span class="ok">  saved trt_C_sym_bias             (  2.5s)</span>
+<span class="dim">  … ORT 전처리 WARNING 2줄 (×2)</span>
+<span class="ok">  saved trt_D_sym_nobias           (  2.5s)</span>
+
+생성 목록:
+  entropy.onnx                     11.3 MB
+  entropy_fixed.onnx               11.3 MB
+  minmax.onnx                      11.3 MB
+  minmax_calib1000.onnx            11.3 MB
+  minmax_pertensor.onnx            11.2 MB
+  minmax_tv.onnx                   11.3 MB
+  pct999.onnx                      11.3 MB
+  pct9999.onnx                     11.3 MB
+  pct99999.onnx                    11.3 MB
+  trt_A_asym_bias.onnx             11.3 MB
+  trt_B_asym_nobias.onnx           11.3 MB
+  trt_C_sym_bias.onnx              11.3 MB
+  trt_D_sym_nobias.onnx            11.3 MB</pre></div></div>
+
+  <div class="step"><h3><span class="num">3</span>run_eval_v2.py — 50,000장 × 14 평가 + McNemar</h3>
+  <p class="lead">전량 평가(앞자르기 없음). 짝지어진 표본이므로 FP32 대비·모델 간 비교 모두 McNemar 검정을 쓴다. 괄호 안 두 수는 (base만 맞힘 / 대상만 맞힘) 장수다.</p>
+  <div class="term"><div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">run_eval_v2_rerun.log</span></div><pre><span class="ok">trt_A md5=bf4583531176  minmax md5=bf4583531176  → 동일 설정, 중복 평가 생략</span>
+
+평가 표본 N=50000  (calib200 holdout=49800, calib1000 holdout=49000)
+
+FP32               top-1 = 68.74%  95%CI [68.33,69.14]  | holdout 68.76% [68.35,69.16]  | squash CUDA  52.5s
+<span class="dim">  … QDQ memcpy 안내(정확도 무관) (×1)</span>
+INT8 MinMax        top-1 = 68.62%  95%CI [68.21,69.03]  | holdout 68.63% [68.22,69.04]  | squash CUDA  53.9s
+<span class="dim">  … QDQ memcpy 안내(정확도 무관) (×1)</span>
+INT8 MinMax(PT)    top-1 = 68.46%  95%CI [68.05,68.86]  | holdout 68.47% [68.06,68.88]  | squash CUDA  53.4s
+<span class="dim">  … QDQ memcpy 안내(정확도 무관) (×1)</span>
+INT8 Entropy       top-1 = 68.62%  95%CI [68.21,69.03]  | holdout 68.63% [68.22,69.04]  | squash CUDA  53.4s
+<span class="dim">  … QDQ memcpy 안내(정확도 무관) (×1)</span>
+INT8 Ent(fixed)    top-1 = 59.29%  95%CI [58.86,59.72]  | holdout 59.31% [58.88,59.74]  | squash CUDA  53.3s
+<span class="dim">  … QDQ memcpy 안내(정확도 무관) (×1)</span>
+INT8 Pct 99.9      top-1 = 61.91%  95%CI [61.48,62.33]  | holdout 61.92% [61.50,62.35]  | squash CUDA  53.9s
+<span class="dim">  … QDQ memcpy 안내(정확도 무관) (×1)</span>
+INT8 Pct 99.99     top-1 = 68.31%  95%CI [67.90,68.71]  | holdout 68.32% [67.91,68.73]  | squash CUDA  53.6s
+<span class="dim">  … QDQ memcpy 안내(정확도 무관) (×1)</span>
+INT8 Pct 99.999    top-1 = 68.58%  95%CI [68.17,68.99]  | holdout 68.59% [68.18,69.00]  | squash CUDA  54.0s
+<span class="dim">  … QDQ memcpy 안내(정확도 무관) (×1)</span>
+INT8 MM calib1000  top-1 = 68.68%  95%CI [68.27,69.09]  | holdout 68.66% [68.25,69.07]  | squash CUDA  54.2s
+<span class="dim">  … QDQ memcpy 안내(정확도 무관) (×1)</span>
+INT8 TRT-sym(C)    top-1 = 68.33%  95%CI [67.92,68.74]  | holdout 68.34% [67.93,68.74]  | squash CUDA  56.6s
+<span class="dim">  … QDQ memcpy 안내(정확도 무관) (×1)</span>
+INT8 TRT-sym(D)    top-1 = 68.33%  95%CI [67.92,68.74]  | holdout 68.34% [67.93,68.74]  | squash CUDA  56.1s
+<span class="dim">  … QDQ memcpy 안내(정확도 무관) (×1)</span>
+INT8 TRT-asym(B)   top-1 = 68.62%  95%CI [68.22,69.03]  | holdout 68.63% [68.23,69.04]  | squash CUDA  53.8s
+FP32 (tv)          top-1 = 69.81%  95%CI [69.40,70.21]  | holdout 69.82% [69.41,70.22]  | tv     CUDA  51.7s
+<span class="dim">  … QDQ memcpy 안내(정확도 무관) (×1)</span>
+INT8 MinMax (tv)   top-1 = 69.67%  95%CI [69.27,70.07]  | holdout 69.69% [69.28,70.09]  | tv     CUDA  53.2s
+
+--- FP32 대비 (같은 전처리끼리) ---
+FP32       → INT8 MinMax         -0.12%p  base만= 510 대상만= 451 chi2=    3.50 p=6.135e-02  <span class="dim">유의하지 않음</span>
+FP32       → INT8 MinMax(PT)     -0.28%p  base만= 835 대상만= 694 chi2=   12.82 p=3.431e-04  <span class="ok">유의</span>
+FP32       → INT8 Entropy        -0.12%p  base만= 510 대상만= 451 chi2=    3.50 p=6.135e-02  <span class="dim">유의하지 않음</span>
+FP32       → INT8 Ent(fixed)     -9.45%p  base만=6293 대상만=1568 chi2= 2838.85 p=0.000e+00  <span class="ok">유의</span>
+FP32       → INT8 Pct 99.9       -6.83%p  base만=4829 대상만=1414 chi2= 1866.95 p=0.000e+00  <span class="ok">유의</span>
+FP32       → INT8 Pct 99.99      -0.43%p  base만= 783 대상만= 566 chi2=   34.59 p=4.079e-09  <span class="ok">유의</span>
+FP32       → INT8 Pct 99.999     -0.16%p  base만= 464 대상만= 385 chi2=    7.17 p=7.430e-03  <span class="ok">유의</span>
+FP32       → INT8 MM calib1000   -0.06%p  base만= 520 대상만= 491 chi2=    0.78 p=3.785e-01  <span class="dim">유의하지 않음</span>
+FP32       → INT8 TRT-sym(C)     -0.41%p  base만= 803 대상만= 598 chi2=   29.70 p=5.032e-08  <span class="ok">유의</span>
+FP32       → INT8 TRT-sym(D)     -0.41%p  base만= 803 대상만= 598 chi2=   29.70 p=5.032e-08  <span class="ok">유의</span>
+FP32       → INT8 TRT-asym(B)    -0.12%p  base만= 509 대상만= 451 chi2=    3.38 p=6.582e-02  <span class="dim">유의하지 않음</span>
+FP32 (tv)  → INT8 MinMax (tv)    -0.13%p  base만= 516 대상만= 449 chi2=    4.51 p=3.362e-02  <span class="ok">유의</span>
+
+--- paired 비교 ---
+INT8 MinMax        → INT8 MinMax(PT)     -0.16%p  a만= 854 b만= 772 p=4.456e-02  <span class="ok">유의</span>
+INT8 MinMax        → INT8 Entropy        +0.00%p  a만=   0 b만=   0 p=1.000e+00  <span class="dim">유의하지 않음</span>
+INT8 MinMax        → INT8 Ent(fixed)     -9.33%p  a만=6252 b만=1586 p=0.000e+00  <span class="ok">유의</span>
+INT8 MinMax        → INT8 Pct 99.9       -6.71%p  a만=4764 b만=1408 p=0.000e+00  <span class="ok">유의</span>
+INT8 MinMax        → INT8 Pct 99.99      -0.32%p  a만= 750 b만= 592 p=1.822e-05  <span class="ok">유의</span>
+INT8 MinMax        → INT8 Pct 99.999     -0.04%p  a만= 462 b만= 442 p=5.274e-01  <span class="dim">유의하지 않음</span>
+INT8 MinMax        → INT8 MM calib1000   +0.06%p  a만= 495 b만= 525 p=3.639e-01  <span class="dim">유의하지 않음</span>
+INT8 MinMax        → INT8 TRT-sym(C)     -0.29%p  a만= 760 b만= 614 p=9.162e-05  <span class="ok">유의</span>
+INT8 TRT-sym(C)    → INT8 TRT-sym(D)     +0.00%p  a만=   0 b만=   0 p=1.000e+00  <span class="dim">유의하지 않음</span>
+INT8 MinMax        → INT8 TRT-asym(B)    +0.00%p  a만=   0 b만=   1 p=1.000e+00  <span class="dim">유의하지 않음</span>
+FP32               → FP32 (tv)           +1.07%p  a만=2131 b만=2664 p=1.557e-14  <span class="ok">유의</span>
+
+<span class="ok">saved eval_hits_v2.npz / top1_counts_v2.json</span></pre></div></div>
+
+  <h2 class="sec" id="s4">4 · 50,000장 전량 결과</h2>
+  <p class="step" style="color:var(--dim);font-size:14.5px;margin:0">모든 모델을 동일한 50k·동일 전처리 캐시로 평가했다. Δ는 같은 전처리의 FP32 기준이다.</p>
+  <table class="dt"><thead><tr><th>모델</th><th>top-1</th><th>95% CI (Wilson)</th><th>Δ vs FP32</th><th>전처리</th><th>EP · 시간</th></tr></thead><tbody>
+  <tr class="base"><td>FP32</td><td><b>68.74%</b></td><td class="d">[68.33, 69.14]</td><td>—</td><td class="d">squash</td><td class="d">CUDA · 52.5s</td></tr>
+<tr class="hi"><td>INT8 MinMax</td><td><b>68.62%</b></td><td class="d">[68.21, 69.03]</td><td><span class="r">-0.12%p</span></td><td class="d">squash</td><td class="d">CUDA · 53.9s</td></tr>
+<tr class="hi"><td>INT8 MinMax(PT)</td><td><b>68.46%</b></td><td class="d">[68.05, 68.86]</td><td><span class="r">-0.28%p</span></td><td class="d">squash</td><td class="d">CUDA · 53.4s</td></tr>
+<tr class="hi"><td>INT8 Entropy</td><td><b>68.62%</b></td><td class="d">[68.21, 69.03]</td><td><span class="r">-0.12%p</span></td><td class="d">squash</td><td class="d">CUDA · 53.4s</td></tr>
+<tr class="lo"><td>INT8 Ent(fixed)</td><td><b>59.29%</b></td><td class="d">[58.86, 59.72]</td><td><span class="r">-9.45%p</span></td><td class="d">squash</td><td class="d">CUDA · 53.3s</td></tr>
+<tr class="lo"><td>INT8 Pct 99.9</td><td><b>61.91%</b></td><td class="d">[61.48, 62.33]</td><td><span class="r">-6.83%p</span></td><td class="d">squash</td><td class="d">CUDA · 53.9s</td></tr>
+<tr class="hi"><td>INT8 Pct 99.99</td><td><b>68.31%</b></td><td class="d">[67.90, 68.71]</td><td><span class="r">-0.43%p</span></td><td class="d">squash</td><td class="d">CUDA · 53.6s</td></tr>
+<tr class="hi"><td>INT8 Pct 99.999</td><td><b>68.58%</b></td><td class="d">[68.17, 68.99]</td><td><span class="r">-0.16%p</span></td><td class="d">squash</td><td class="d">CUDA · 54.0s</td></tr>
+<tr class="hi"><td>INT8 MM calib1000</td><td><b>68.68%</b></td><td class="d">[68.27, 69.09]</td><td><span class="r">-0.06%p</span></td><td class="d">squash</td><td class="d">CUDA · 54.2s</td></tr>
+<tr class="hi"><td>INT8 TRT-sym(C)</td><td><b>68.33%</b></td><td class="d">[67.92, 68.74]</td><td><span class="r">-0.41%p</span></td><td class="d">squash</td><td class="d">CUDA · 56.6s</td></tr>
+<tr class="hi"><td>INT8 TRT-sym(D)</td><td><b>68.33%</b></td><td class="d">[67.92, 68.74]</td><td><span class="r">-0.41%p</span></td><td class="d">squash</td><td class="d">CUDA · 56.1s</td></tr>
+<tr class="hi"><td>INT8 TRT-asym(B)</td><td><b>68.62%</b></td><td class="d">[68.22, 69.03]</td><td><span class="r">-0.12%p</span></td><td class="d">squash</td><td class="d">CUDA · 53.8s</td></tr>
+<tr class="base"><td>FP32 (tv)</td><td><b>69.81%</b></td><td class="d">[69.40, 70.21]</td><td><span class="d">+1.07%p</span></td><td class="d">tv</td><td class="d">CUDA · 51.7s</td></tr>
+<tr class=""><td>INT8 MinMax (tv)</td><td><b>69.67%</b></td><td class="d">[69.27, 70.07]</td><td><span class="g">+0.93%p</span></td><td class="d">tv</td><td class="d">CUDA · 53.2s</td></tr>
+  </tbody></table>
+
+  <div class="chartwrap"><p class="ct">그림 A — 모델별 top-1 (50,000장)</p><p class="cs">축 시작 55%. 점선 = FP32 squash 기준선 68.74%. Entropy(정상화)·Pct 99.9만 캘리브 실패로 크게 무너진다.</p><svg viewBox="0 0 920 466" role="img" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;font-family:var(--mono)"><line x1="232.0" y1="16" x2="232.0" y2="436" stroke="#242b38"/><text x="232.0" y="454" fill="#8b949e" font-size="11" text-anchor="middle">55%</text><line x1="425.1" y1="16" x2="425.1" y2="436" stroke="#242b38"/><text x="425.1" y="454" fill="#8b949e" font-size="11" text-anchor="middle">60%</text><line x1="618.2" y1="16" x2="618.2" y2="436" stroke="#242b38"/><text x="618.2" y="454" fill="#8b949e" font-size="11" text-anchor="middle">65%</text><line x1="811.4" y1="16" x2="811.4" y2="436" stroke="#242b38"/><text x="811.4" y="454" fill="#8b949e" font-size="11" text-anchor="middle">70%</text><line x1="762.7" y1="10" x2="762.7" y2="436" stroke="#58a6ff" stroke-width="1.4" stroke-dasharray="4 3"/><text x="762.7" y="8" fill="#58a6ff" font-size="10.5" text-anchor="middle">FP32 68.74%</text><rect x="232.0" y="22" width="530.7" height="18" rx="2.5" fill="#58a6ff" fill-opacity="0.9"/><text x="222" y="35" fill="#e6edf3" font-size="12" text-anchor="end">FP32</text><text x="769.7" y="35" fill="#c9d1d9" font-size="11.5" text-anchor="start">68.74%</text><rect x="232.0" y="52" width="526.1" height="18" rx="2.5" fill="#3fb950" fill-opacity="0.9"/><text x="222" y="65" fill="#e6edf3" font-size="12" text-anchor="end">INT8 MinMax</text><text x="765.1" y="65" fill="#c9d1d9" font-size="11.5" text-anchor="start">68.62%</text><rect x="232.0" y="82" width="519.8" height="18" rx="2.5" fill="#3fb950" fill-opacity="0.9"/><text x="222" y="95" fill="#e6edf3" font-size="12" text-anchor="end">INT8 MinMax(PT)</text><text x="758.8" y="95" fill="#c9d1d9" font-size="11.5" text-anchor="start">68.46%</text><rect x="232.0" y="112" width="526.1" height="18" rx="2.5" fill="#3fb950" fill-opacity="0.9"/><text x="222" y="125" fill="#e6edf3" font-size="12" text-anchor="end">INT8 Entropy</text><text x="765.1" y="125" fill="#c9d1d9" font-size="11.5" text-anchor="start">68.62%</text><rect x="232.0" y="142" width="165.7" height="18" rx="2.5" fill="#ff7b72" fill-opacity="0.9"/><text x="222" y="155" fill="#e6edf3" font-size="12" text-anchor="end">INT8 Ent(fixed)</text><text x="404.7" y="155" fill="#c9d1d9" font-size="11.5" text-anchor="start">59.29%</text><rect x="232.0" y="172" width="266.9" height="18" rx="2.5" fill="#ff7b72" fill-opacity="0.9"/><text x="222" y="185" fill="#e6edf3" font-size="12" text-anchor="end">INT8 Pct 99.9</text><text x="505.9" y="185" fill="#c9d1d9" font-size="11.5" text-anchor="start">61.91%</text><rect x="232.0" y="202" width="513.9" height="18" rx="2.5" fill="#3fb950" fill-opacity="0.9"/><text x="222" y="215" fill="#e6edf3" font-size="12" text-anchor="end">INT8 Pct 99.99</text><text x="752.9" y="215" fill="#c9d1d9" font-size="11.5" text-anchor="start">68.31%</text><rect x="232.0" y="232" width="524.6" height="18" rx="2.5" fill="#3fb950" fill-opacity="0.9"/><text x="222" y="245" fill="#e6edf3" font-size="12" text-anchor="end">INT8 Pct 99.999</text><text x="763.6" y="245" fill="#c9d1d9" font-size="11.5" text-anchor="start">68.58%</text><rect x="232.0" y="262" width="528.5" height="18" rx="2.5" fill="#3fb950" fill-opacity="0.9"/><text x="222" y="275" fill="#e6edf3" font-size="12" text-anchor="end">INT8 MM calib1000</text><text x="767.5" y="275" fill="#c9d1d9" font-size="11.5" text-anchor="start">68.68%</text><rect x="232.0" y="292" width="514.9" height="18" rx="2.5" fill="#3fb950" fill-opacity="0.9"/><text x="222" y="305" fill="#e6edf3" font-size="12" text-anchor="end">INT8 TRT-sym(C)</text><text x="753.9" y="305" fill="#c9d1d9" font-size="11.5" text-anchor="start">68.33%</text><rect x="232.0" y="322" width="514.9" height="18" rx="2.5" fill="#3fb950" fill-opacity="0.9"/><text x="222" y="335" fill="#e6edf3" font-size="12" text-anchor="end">INT8 TRT-sym(D)</text><text x="753.9" y="335" fill="#c9d1d9" font-size="11.5" text-anchor="start">68.33%</text><rect x="232.0" y="352" width="526.2" height="18" rx="2.5" fill="#3fb950" fill-opacity="0.9"/><text x="222" y="365" fill="#e6edf3" font-size="12" text-anchor="end">INT8 TRT-asym(B)</text><text x="765.2" y="365" fill="#c9d1d9" font-size="11.5" text-anchor="start">68.62%</text><rect x="232.0" y="382" width="571.9" height="18" rx="2.5" fill="#58a6ff" fill-opacity="0.9"/><text x="222" y="395" fill="#e6edf3" font-size="12" text-anchor="end">FP32 (tv)</text><text x="810.9" y="395" fill="#c9d1d9" font-size="11.5" text-anchor="start">69.81%</text><rect x="232.0" y="412" width="566.7" height="18" rx="2.5" fill="#bc8cff" fill-opacity="0.9"/><text x="222" y="425" fill="#e6edf3" font-size="12" text-anchor="end">INT8 MinMax (tv)</text><text x="805.7" y="425" fill="#c9d1d9" font-size="11.5" text-anchor="start">69.67%</text></svg><div class="legend"><span><i style="background:#58a6ff"></i>FP32 기준</span><span><i style="background:#3fb950"></i>INT8 무손실급</span><span><i style="background:#ff7b72"></i>INT8 열화(캘리브 실패)</span><span><i style="background:#bc8cff"></i>tv 전처리</span></div></div>
+
+  <div class="chartwrap"><p class="ct">그림 C — INT8 각 방법의 FP32 대비 Δtop-1 (%p)</p><p class="cs">0에서 왼쪽으로 뻗을수록 손실이 크다. 채움 = McNemar 유의, 옅음 = 유의하지 않음. MinMax/Entropy/asym(B)는 통계적으로 FP32와 구분되지 않는다.</p><svg viewBox="0 0 920 376" role="img" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;font-family:var(--mono)"><line x1="232.0" y1="16" x2="232.0" y2="346" stroke="#242b38"/><text x="232.0" y="364" fill="#8b949e" font-size="11" text-anchor="middle">-10</text><line x1="339.5" y1="16" x2="339.5" y2="346" stroke="#242b38"/><text x="339.5" y="364" fill="#8b949e" font-size="11" text-anchor="middle">-8</text><line x1="447.1" y1="16" x2="447.1" y2="346" stroke="#242b38"/><text x="447.1" y="364" fill="#8b949e" font-size="11" text-anchor="middle">-6</text><line x1="554.6" y1="16" x2="554.6" y2="346" stroke="#242b38"/><text x="554.6" y="364" fill="#8b949e" font-size="11" text-anchor="middle">-4</text><line x1="662.2" y1="16" x2="662.2" y2="346" stroke="#242b38"/><text x="662.2" y="364" fill="#8b949e" font-size="11" text-anchor="middle">-2</text><line x1="769.7" y1="16" x2="769.7" y2="346" stroke="#242b38"/><text x="769.7" y="364" fill="#8b949e" font-size="11" text-anchor="middle">+0</text><line x1="769.7" y1="10" x2="769.7" y2="346" stroke="#8b949e" stroke-width="1.6"/><rect x="763.4" y="22" width="6.3" height="18" rx="2.5" fill="#3fb950" fill-opacity="0.16" stroke="#3fb950" stroke-width="1.4"/><text x="222" y="35" fill="#e6edf3" font-size="12" text-anchor="end">INT8 MinMax</text><text x="812" y="35" fill="#3fb950" font-size="11" text-anchor="start">-0.12%p  n.s.</text><rect x="754.6" y="52" width="15.2" height="18" rx="2.5" fill="#3fb950" fill-opacity="0.92" stroke="#3fb950" stroke-width="0"/><text x="222" y="65" fill="#e6edf3" font-size="12" text-anchor="end">INT8 MinMax(PT)</text><text x="812" y="65" fill="#3fb950" font-size="11" text-anchor="start">-0.28%p  유의</text><rect x="763.4" y="82" width="6.3" height="18" rx="2.5" fill="#3fb950" fill-opacity="0.16" stroke="#3fb950" stroke-width="1.4"/><text x="222" y="95" fill="#e6edf3" font-size="12" text-anchor="end">INT8 Entropy</text><text x="812" y="95" fill="#3fb950" font-size="11" text-anchor="start">-0.12%p  n.s.</text><rect x="261.6" y="112" width="508.2" height="18" rx="2.5" fill="#ff7b72" fill-opacity="0.92" stroke="#ff7b72" stroke-width="0"/><text x="222" y="125" fill="#e6edf3" font-size="12" text-anchor="end">INT8 Ent(fixed)</text><text x="812" y="125" fill="#ff7b72" font-size="11" text-anchor="start">-9.45%p  유의</text><rect x="402.5" y="142" width="367.3" height="18" rx="2.5" fill="#ff7b72" fill-opacity="0.92" stroke="#ff7b72" stroke-width="0"/><text x="222" y="155" fill="#e6edf3" font-size="12" text-anchor="end">INT8 Pct 99.9</text><text x="812" y="155" fill="#ff7b72" font-size="11" text-anchor="start">-6.83%p  유의</text><rect x="746.4" y="172" width="23.3" height="18" rx="2.5" fill="#3fb950" fill-opacity="0.92" stroke="#3fb950" stroke-width="0"/><text x="222" y="185" fill="#e6edf3" font-size="12" text-anchor="end">INT8 Pct 99.99</text><text x="812" y="185" fill="#3fb950" font-size="11" text-anchor="start">-0.43%p  유의</text><rect x="761.2" y="202" width="8.5" height="18" rx="2.5" fill="#3fb950" fill-opacity="0.92" stroke="#3fb950" stroke-width="0"/><text x="222" y="215" fill="#e6edf3" font-size="12" text-anchor="end">INT8 Pct 99.999</text><text x="812" y="215" fill="#3fb950" font-size="11" text-anchor="start">-0.16%p  유의</text><rect x="766.6" y="232" width="3.1" height="18" rx="2.5" fill="#3fb950" fill-opacity="0.16" stroke="#3fb950" stroke-width="1.4"/><text x="222" y="245" fill="#e6edf3" font-size="12" text-anchor="end">INT8 MM calib1000</text><text x="812" y="245" fill="#3fb950" font-size="11" text-anchor="start">-0.06%p  n.s.</text><rect x="747.7" y="262" width="22.0" height="18" rx="2.5" fill="#3fb950" fill-opacity="0.92" stroke="#3fb950" stroke-width="0"/><text x="222" y="275" fill="#e6edf3" font-size="12" text-anchor="end">INT8 TRT-sym(C)</text><text x="812" y="275" fill="#3fb950" font-size="11" text-anchor="start">-0.41%p  유의</text><rect x="747.7" y="292" width="22.0" height="18" rx="2.5" fill="#3fb950" fill-opacity="0.92" stroke="#3fb950" stroke-width="0"/><text x="222" y="305" fill="#e6edf3" font-size="12" text-anchor="end">INT8 TRT-sym(D)</text><text x="812" y="305" fill="#3fb950" font-size="11" text-anchor="start">-0.41%p  유의</text><rect x="763.5" y="322" width="6.2" height="18" rx="2.5" fill="#3fb950" fill-opacity="0.16" stroke="#3fb950" stroke-width="1.4"/><text x="222" y="335" fill="#e6edf3" font-size="12" text-anchor="end">INT8 TRT-asym(B)</text><text x="812" y="335" fill="#3fb950" font-size="11" text-anchor="start">-0.12%p  n.s.</text></svg><div class="legend"><span><i style="background:#ff7b72"></i>McNemar 유의 (p&lt;0.05)</span><span><i style="background:#ff7b72;opacity:.28"></i>유의하지 않음 (n.s.)</span></div></div>
+
+  <h2 class="sec" id="s5">5 · 재현 대조 — baseline과 per-image 비교</h2>
+  <p class="step" style="color:var(--dim);font-size:14.5px;margin:0">각 모델의 50,000장 정오답 배열을 이관 baseline과 XOR해 <b style="color:var(--brt)">달라진 예측 장수(flip)</b>를 셌다. 카운트만 같고 배열이 다를 가능성까지 배제하는, 가장 엄격한 대조다.</p>
+
+  <div class="chartwrap"><p class="ct">그림 B — 모델별 baseline 대비 변화한 예측 장수</p><p class="cs">13개 모델이 정확히 0장(초록). 유일한 예외 <code>INT8 MM calib1000</code>만 42장(빨강) — 전체의 0.084%.</p><svg viewBox="0 0 920 466" role="img" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;font-family:var(--mono)"><line x1="232.0" y1="16" x2="232.0" y2="436" stroke="#242b38"/><text x="232.0" y="454" fill="#8b949e" font-size="11" text-anchor="middle">0장</text><line x1="355.6" y1="16" x2="355.6" y2="436" stroke="#242b38"/><text x="355.6" y="454" fill="#8b949e" font-size="11" text-anchor="middle">10장</text><line x1="479.2" y1="16" x2="479.2" y2="436" stroke="#242b38"/><text x="479.2" y="454" fill="#8b949e" font-size="11" text-anchor="middle">20장</text><line x1="602.8" y1="16" x2="602.8" y2="436" stroke="#242b38"/><text x="602.8" y="454" fill="#8b949e" font-size="11" text-anchor="middle">30장</text><line x1="726.4" y1="16" x2="726.4" y2="436" stroke="#242b38"/><text x="726.4" y="454" fill="#8b949e" font-size="11" text-anchor="middle">40장</text><line x1="850.0" y1="16" x2="850.0" y2="436" stroke="#242b38"/><text x="850.0" y="454" fill="#8b949e" font-size="11" text-anchor="middle">50장</text><rect x="232.0" y="22" width="2.0" height="18" rx="2.5" fill="#3fb950" fill-opacity="0.9"/><text x="222" y="35" fill="#e6edf3" font-size="12" text-anchor="end">FP32</text><text x="239.0" y="35" fill="#8b949e" font-size="11.5" text-anchor="start">0</text><rect x="232.0" y="52" width="2.0" height="18" rx="2.5" fill="#3fb950" fill-opacity="0.9"/><text x="222" y="65" fill="#e6edf3" font-size="12" text-anchor="end">INT8 MinMax</text><text x="239.0" y="65" fill="#8b949e" font-size="11.5" text-anchor="start">0</text><rect x="232.0" y="82" width="2.0" height="18" rx="2.5" fill="#3fb950" fill-opacity="0.9"/><text x="222" y="95" fill="#e6edf3" font-size="12" text-anchor="end">INT8 MinMax(PT)</text><text x="239.0" y="95" fill="#8b949e" font-size="11.5" text-anchor="start">0</text><rect x="232.0" y="112" width="2.0" height="18" rx="2.5" fill="#3fb950" fill-opacity="0.9"/><text x="222" y="125" fill="#e6edf3" font-size="12" text-anchor="end">INT8 Entropy</text><text x="239.0" y="125" fill="#8b949e" font-size="11.5" text-anchor="start">0</text><rect x="232.0" y="142" width="2.0" height="18" rx="2.5" fill="#3fb950" fill-opacity="0.9"/><text x="222" y="155" fill="#e6edf3" font-size="12" text-anchor="end">INT8 Ent(fixed)</text><text x="239.0" y="155" fill="#8b949e" font-size="11.5" text-anchor="start">0</text><rect x="232.0" y="172" width="2.0" height="18" rx="2.5" fill="#3fb950" fill-opacity="0.9"/><text x="222" y="185" fill="#e6edf3" font-size="12" text-anchor="end">INT8 Pct 99.9</text><text x="239.0" y="185" fill="#8b949e" font-size="11.5" text-anchor="start">0</text><rect x="232.0" y="202" width="2.0" height="18" rx="2.5" fill="#3fb950" fill-opacity="0.9"/><text x="222" y="215" fill="#e6edf3" font-size="12" text-anchor="end">INT8 Pct 99.99</text><text x="239.0" y="215" fill="#8b949e" font-size="11.5" text-anchor="start">0</text><rect x="232.0" y="232" width="2.0" height="18" rx="2.5" fill="#3fb950" fill-opacity="0.9"/><text x="222" y="245" fill="#e6edf3" font-size="12" text-anchor="end">INT8 Pct 99.999</text><text x="239.0" y="245" fill="#8b949e" font-size="11.5" text-anchor="start">0</text><rect x="232.0" y="262" width="519.1" height="18" rx="2.5" fill="#ff7b72" fill-opacity="0.9"/><text x="222" y="275" fill="#e6edf3" font-size="12" text-anchor="end">INT8 MM calib1000</text><text x="758.1" y="275" fill="#ff7b72" font-size="11.5" text-anchor="start">42장</text><rect x="232.0" y="292" width="2.0" height="18" rx="2.5" fill="#3fb950" fill-opacity="0.9"/><text x="222" y="305" fill="#e6edf3" font-size="12" text-anchor="end">INT8 TRT-sym(C)</text><text x="239.0" y="305" fill="#8b949e" font-size="11.5" text-anchor="start">0</text><rect x="232.0" y="322" width="2.0" height="18" rx="2.5" fill="#3fb950" fill-opacity="0.9"/><text x="222" y="335" fill="#e6edf3" font-size="12" text-anchor="end">INT8 TRT-sym(D)</text><text x="239.0" y="335" fill="#8b949e" font-size="11.5" text-anchor="start">0</text><rect x="232.0" y="352" width="2.0" height="18" rx="2.5" fill="#3fb950" fill-opacity="0.9"/><text x="222" y="365" fill="#e6edf3" font-size="12" text-anchor="end">INT8 TRT-asym(B)</text><text x="239.0" y="365" fill="#8b949e" font-size="11.5" text-anchor="start">0</text><rect x="232.0" y="382" width="2.0" height="18" rx="2.5" fill="#3fb950" fill-opacity="0.9"/><text x="222" y="395" fill="#e6edf3" font-size="12" text-anchor="end">FP32 (tv)</text><text x="239.0" y="395" fill="#8b949e" font-size="11.5" text-anchor="start">0</text><rect x="232.0" y="412" width="2.0" height="18" rx="2.5" fill="#3fb950" fill-opacity="0.9"/><text x="222" y="425" fill="#e6edf3" font-size="12" text-anchor="end">INT8 MinMax (tv)</text><text x="239.0" y="425" fill="#8b949e" font-size="11.5" text-anchor="start">0</text></svg></div>
+
+  <table class="dt"><thead><tr><th>모델</th><th>baseline</th><th>재실행</th><th>Δcount</th><th>flip 장수</th><th>판정</th></tr></thead><tbody>
+  <tr class=""><td>FP32</td><td>34370</td><td>34370</td><td>0</td><td><span class="d">0</span></td><td><span class="g">비트 동일 ✅</span></td></tr>
+<tr class=""><td>INT8 MinMax</td><td>34311</td><td>34311</td><td>0</td><td><span class="d">0</span></td><td><span class="g">비트 동일 ✅</span></td></tr>
+<tr class=""><td>INT8 MinMax(PT)</td><td>34229</td><td>34229</td><td>0</td><td><span class="d">0</span></td><td><span class="g">비트 동일 ✅</span></td></tr>
+<tr class=""><td>INT8 Entropy</td><td>34311</td><td>34311</td><td>0</td><td><span class="d">0</span></td><td><span class="g">비트 동일 ✅</span></td></tr>
+<tr class=""><td>INT8 Ent(fixed)</td><td>29645</td><td>29645</td><td>0</td><td><span class="d">0</span></td><td><span class="g">비트 동일 ✅</span></td></tr>
+<tr class=""><td>INT8 Pct 99.9</td><td>30955</td><td>30955</td><td>0</td><td><span class="d">0</span></td><td><span class="g">비트 동일 ✅</span></td></tr>
+<tr class=""><td>INT8 Pct 99.99</td><td>34153</td><td>34153</td><td>0</td><td><span class="d">0</span></td><td><span class="g">비트 동일 ✅</span></td></tr>
+<tr class=""><td>INT8 Pct 99.999</td><td>34291</td><td>34291</td><td>0</td><td><span class="d">0</span></td><td><span class="g">비트 동일 ✅</span></td></tr>
+<tr class="lo"><td>INT8 MM calib1000</td><td>34327</td><td>34341</td><td><span class="g">+14</span></td><td><span class="r">42</span></td><td><span class="a">노이즈 · 0.084%</span></td></tr>
+<tr class=""><td>INT8 TRT-sym(C)</td><td>34165</td><td>34165</td><td>0</td><td><span class="d">0</span></td><td><span class="g">비트 동일 ✅</span></td></tr>
+<tr class=""><td>INT8 TRT-sym(D)</td><td>34165</td><td>34165</td><td>0</td><td><span class="d">0</span></td><td><span class="g">비트 동일 ✅</span></td></tr>
+<tr class=""><td>INT8 TRT-asym(B)</td><td>34312</td><td>34312</td><td>0</td><td><span class="d">0</span></td><td><span class="g">비트 동일 ✅</span></td></tr>
+<tr class=""><td>FP32 (tv)</td><td>34903</td><td>34903</td><td>0</td><td><span class="d">0</span></td><td><span class="g">비트 동일 ✅</span></td></tr>
+<tr class=""><td>INT8 MinMax (tv)</td><td>34836</td><td>34836</td><td>0</td><td><span class="d">0</span></td><td><span class="g">비트 동일 ✅</span></td></tr>
+  </tbody></table>
+  <div class="note tip"><span class="tag">왜 강한 근거인가</span>카운트가 같아도 서로 다른 장을 맞히고 틀렸다면 우연한 상쇄일 수 있다. 여기서는 <b>같은 장을, 같게</b> 맞혔다(flip 0). 13개 모델에서 50,000장 예측이 완전히 겹친다는 것은 캘리브레이션·양자화·추론 경로가 baseline과 동일하게 재현됐다는 뜻이다.</div>
+
+  <div class="chartwrap"><p class="ct">그림 D — 14회 평가 총 wall-clock</p><p class="cs">같은 코드·같은 50k. 하드웨어 차이만으로 RTX 3080이 baseline(3060) 대비 1.77× 빠르다.</p><svg viewBox="0 0 920 106" role="img" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;font-family:var(--mono)"><line x1="232.0" y1="16" x2="232.0" y2="76" stroke="#242b38"/><text x="232.0" y="94" fill="#8b949e" font-size="11" text-anchor="middle">0s</text><line x1="343.1" y1="16" x2="343.1" y2="76" stroke="#242b38"/><text x="343.1" y="94" fill="#8b949e" font-size="11" text-anchor="middle">300s</text><line x1="454.1" y1="16" x2="454.1" y2="76" stroke="#242b38"/><text x="454.1" y="94" fill="#8b949e" font-size="11" text-anchor="middle">600s</text><line x1="565.2" y1="16" x2="565.2" y2="76" stroke="#242b38"/><text x="565.2" y="94" fill="#8b949e" font-size="11" text-anchor="middle">900s</text><line x1="676.2" y1="16" x2="676.2" y2="76" stroke="#242b38"/><text x="676.2" y="94" fill="#8b949e" font-size="11" text-anchor="middle">1200s</text><rect x="232.0" y="22" width="279.0" height="18" rx="2.5" fill="#3fb950" fill-opacity="0.9"/><text x="222" y="35" fill="#e6edf3" font-size="12" text-anchor="end">이번 재실행 · RTX 3080</text><text x="518.0" y="35" fill="#c9d1d9" font-size="11.5" text-anchor="start">754s  (평균 53.8s/잡)</text><rect x="232.0" y="52" width="494.4" height="18" rx="2.5" fill="#8b949e" fill-opacity="0.9"/><text x="222" y="65" fill="#e6edf3" font-size="12" text-anchor="end">이관 baseline · RTX 3060</text><text x="733.4" y="65" fill="#c9d1d9" font-size="11.5" text-anchor="start">1336s  (평균 95.4s/잡)</text></svg></div>
+
+  <h2 class="sec" id="s6">6 · 문서에 박힌 정정값 재확인</h2>
+  <p class="step" style="color:var(--dim);font-size:14.5px;margin:0">1단계 50k 재실행으로 <code>03·05·10</code>에 반영했던 핵심 정정들을 이번 실행이 그대로 재산출하는지 확인했다. rerun 열은 이번 npz에서 다시 계산한 값(Δ%p, base만/대상만, p)이다.</p>
+  <table class="dt"><thead><tr><th style="text-align:left">문서 정정 항목</th><th>문서값</th><th>이번 재실행 값</th><th>판정</th></tr></thead><tbody>
+  <tr><td style="text-align:left">MinMax = Entropy (기본 num_bins) 비트 동일</td><td class="d">0/0, p=1.0</td><td>+0.00%p, 0/0, p=1.00e+0</td><td><span class="g">일치 ✅</span></td></tr>
+<tr><td style="text-align:left">weight per-channel→per-tensor 대가</td><td class="d">-0.16%p, p=4.46e-2</td><td>-0.16%p, 854/772, p=4.46e-2</td><td><span class="g">일치 ✅</span></td></tr>
+<tr><td style="text-align:left">활성 대칭 강제 대가 (MinMax→TRT-sym C)</td><td class="d">-0.29%p, p=9.16e-5</td><td>-0.29%p, 760/614, p=9.16e-5</td><td><span class="g">일치 ✅</span></td></tr>
+<tr><td style="text-align:left">bias DQ 유무 (TRT-sym C→D) — 정확히 0</td><td class="d">0/0, p=1.0</td><td>+0.00%p, 0/0, p=1.00e+0</td><td><span class="g">일치 ✅</span></td></tr>
+<tr><td style="text-align:left">TRT-asym(B) ≈ MinMax</td><td class="d">0/1, p=1.0</td><td>+0.00%p, 0/1, p=1.00e+0</td><td><span class="g">일치 ✅</span></td></tr>
+<tr><td style="text-align:left">전처리 squash→tv (FP32)</td><td class="d">+1.07%p, p=1.56e-14</td><td>+1.07%p, 2131/2664, p=1.56e-14</td><td><span class="g">일치 ✅</span></td></tr>
+<tr><td style="text-align:left">양자화 대가 MinMax (FP32 기준)</td><td class="d">-0.12%p, p=6.14e-2</td><td>-0.12%p, 510/451, p=6.13e-2</td><td><span class="g">일치 ✅</span></td></tr>
+  </tbody></table>
+  <div class="note"><span class="tag">읽는 법</span><b>MinMax = Entropy</b>가 0/0(예측 0건 불일치)로 재현된 것은 ORT 기본 Entropy가 <code>num_bins=128</code>에서 후보 1개로 퇴화해 MinMax와 <b>비트 동일</b> 모델이 된다는 정정을 뒷받침한다. <b>bias DQ(TRT C→D)</b>도 0/0 — 정확도 영향 정확히 0. <b>대칭 강제</b>는 −0.29%p·p≈9e-5로 여전히 유의하다.</div>
+
+  <h2 class="sec" id="s7">7 · 유일한 차이: INT8 MM calib1000</h2>
+  <p class="step" style="color:var(--dim);font-size:14.5px;margin:0 0 6px">14개 중 이 모델만 <b style="color:var(--brt)">1000장으로 캘리브</b>하는 변형이다. 넓은 MinMax 캘리브의 극값(min/max)은 <b>단 한 텐서에서 1 ULP</b>만 달라져도 스케일이 바뀌고, 임계 근처 소수 예측이 뒤집힌다. GPU가 3060→3080으로 바뀌며 캘리브 경로 부동소수 리덕션이 미세하게 달라진 것이 유력한 원인이다(다른 13개는 calib200 이하라 극값이 비트 안정적으로 일치).</p>
+  <table class="dt"><thead><tr><th>지표</th><th>baseline</th><th>재실행</th><th>차이</th></tr></thead><tbody>
+    <tr><td>top-1 카운트</td><td>34327</td><td>34341</td><td><span class="a">+14장</span></td></tr>
+    <tr><td>top-1 %</td><td>68.65%</td><td>68.68%</td><td><span class="a">+0.028%p</span></td></tr>
+    <tr><td>flip 장수 / 50,000</td><td>—</td><td>42</td><td><span class="a">0.084%</span></td></tr>
+    <tr class="hi"><td>MinMax 대비 판정</td><td>+0.06%p · p=0.36</td><td>+0.06%p · p=0.36</td><td><span class="g">유의하지 않음 — 불변 ✅</span></td></tr>
+  </tbody></table>
+  <div class="note warnb"><span class="tag">문서 정정은 불필요</span>이 모델의 문서 결론은 “캘리브 커버리지 200→1000은 유의한 이득이 없다(p=0.36)”이다. 절대 top-1이 68.65%→68.68%로 <b>+0.028%p</b> 움직였지만 그 판정(+0.06%p·유의하지 않음)은 <b>그대로</b>다. 어떤 부호도, 어떤 유의성 경계도 넘지 않았다 — 측정 노이즈 범위.</div>
+
+  <h2 class="sec" id="sA" style="border-top:2px solid var(--accent)">남은 1단계 심화 분석 3종 — 이 머신에서 재현</h2>
+  <p class="step" style="color:var(--dim);font-size:14.5px;margin:0 0 4px">위 50k 재현과 같은 <code>models_v2/</code> 산출물 위에서, 문서 <code>03·05</code>에 박힌 세 가지 심화 결론을 이 머신에서 다시 검증했다. 전부 <b style="color:var(--brt)">문서값을 그대로 재산출</b>했다.</p>
+  <div class="term"><div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">심화 3종 실행 명령</span></div><pre><span class="cmt"># 심화 3종 — 같은 models_v2/ 산출물 위에서 (§3에 이어) 실행</span>
+<span class="cmt"># (E) 캘리브 9방법의 활성 스케일 비교  · CPU, ONNX 그래프만 읽음</span>
+<span class="in"><span class="p">$</span>python3 compare_scales_v2.py   2>&1 | tee compare_scales_v2_rerun.log</span>
+
+<span class="cmt"># (F) TensorRT EP 2×2 절제  · 0.5단계 gotcha 픽스로 무음 폴백 차단</span>
+<span class="in"><span class="p">$</span>SP=~/emb-ai/lib/python3.10/site-packages</span>
+<span class="in"><span class="p">$</span>export LD_LIBRARY_PATH="$SP/tensorrt_libs:$(find $SP/nvidia -maxdepth 2 -name lib -type d | paste -sd:):$LD_LIBRARY_PATH"</span>
+<span class="in"><span class="p">$</span>python3 ablate_trt_v2.py        2>&1 | tee ablate_trt_v2_rerun.log</span>
+
+<span class="cmt"># (G) 21개 레이어 격리 양자화 민감도  · GPU, 각 50k 패스(≈8분)</span>
+<span class="in"><span class="p">$</span>python3 layer_sensitivity_v2.py 2>&1 | tee layer_sensitivity_v2_rerun.log</span></pre></div>
+
+  <h2 class="sec" id="s8">8 · 활성 스케일 — 캘리브 방법이 클리핑을 바꾸는 법</h2>
+  <p class="step" style="color:var(--dim);font-size:14.5px;margin:0">INT8 9종의 <code>QuantizeLinear</code> 노드에서 활성 스칼라 스케일 32개를 뽑아 <code>minmax</code> 대비 상한(=(qmax−z)·s)의 <b>median 비율</b>과 <b>스케일·zero-point가 몇 개나 비트 동일한지</b>를 셌다. 스케일이 문서의 정정(“Entropy=MinMax”, “클리핑 비율↔top-1 단조”)을 그대로 설명한다.</p>
+  <table class="dt"><thead><tr><th>캘리브 방법</th><th>scale·zp 동일</th><th>상한비율 median</th><th>0.5배 미만</th><th>성격</th></tr></thead><tbody>
+  <tr class="hi"><td>minmax</td><td>32/32</td><td><b>1.000×</b></td><td>0/32</td><td><span class="d">근사</span></td></tr>
+<tr class="hi"><td>minmax_pertensor</td><td>32/32</td><td><b>1.000×</b></td><td>0/32</td><td><span class="g">비트 동일</span></td></tr>
+<tr class="hi"><td>entropy</td><td>32/32</td><td><b>1.000×</b></td><td>0/32</td><td><span class="g">비트 동일</span></td></tr>
+<tr class="lo"><td>entropy_fixed</td><td>1/32</td><td><b>0.313×</b></td><td>18/32</td><td><span class="r">강한 클리핑</span></td></tr>
+<tr class="lo"><td>pct999</td><td>0/32</td><td><b>0.323×</b></td><td>28/32</td><td><span class="r">강한 클리핑</span></td></tr>
+<tr class="lo"><td>pct9999</td><td>0/32</td><td><b>0.486×</b></td><td>19/32</td><td><span class="r">강한 클리핑</span></td></tr>
+<tr class="lo"><td>pct99999</td><td>0/32</td><td><b>0.668×</b></td><td>2/32</td><td><span class="r">강한 클리핑</span></td></tr>
+<tr class=""><td>minmax_calib1000</td><td>4/32</td><td><b>1.126×</b></td><td>0/32</td><td><span class="p">넓음</span></td></tr>
+<tr class=""><td>minmax_tv</td><td>2/32</td><td><b>0.996×</b></td><td>0/32</td><td><span class="d">근사</span></td></tr>
+  </tbody></table>
+  <div class="chartwrap"><p class="ct">그림 E — 활성 상한비율 median (minmax=1.0 기준)</p><p class="cs">1.0 왼쪽 = minmax보다 좁게 클리핑, 오른쪽 = 넓음. percentile은 관대해질수록(99.9→99.999) 단조로 상한이 커진다.</p><svg viewBox="0 0 920 316" role="img" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;font-family:var(--mono)"><line x1="150.0" y1="16" x2="150.0" y2="286" stroke="#242b38"/><text x="150.0" y="304" fill="#8b949e" font-size="11" text-anchor="middle">0×</text><line x1="253.7" y1="16" x2="253.7" y2="286" stroke="#242b38"/><text x="253.7" y="304" fill="#8b949e" font-size="11" text-anchor="middle">0.25×</text><line x1="357.4" y1="16" x2="357.4" y2="286" stroke="#242b38"/><text x="357.4" y="304" fill="#8b949e" font-size="11" text-anchor="middle">0.5×</text><line x1="461.1" y1="16" x2="461.1" y2="286" stroke="#242b38"/><text x="461.1" y="304" fill="#8b949e" font-size="11" text-anchor="middle">0.75×</text><line x1="564.8" y1="16" x2="564.8" y2="286" stroke="#242b38"/><text x="564.8" y="304" fill="#8b949e" font-size="11" text-anchor="middle">1.0×</text><line x1="668.5" y1="16" x2="668.5" y2="286" stroke="#242b38"/><text x="668.5" y="304" fill="#8b949e" font-size="11" text-anchor="middle">1.25×</text><line x1="564.8" y1="10" x2="564.8" y2="286" stroke="#58a6ff" stroke-width="1.4" stroke-dasharray="4 3"/><text x="564.8" y="8" fill="#58a6ff" font-size="10.5" text-anchor="middle">minmax=1.0</text><rect x="150.0" y="22" width="414.8" height="18" rx="2.5" fill="#3fb950" fill-opacity="0.9"/><text x="140" y="35" fill="#e6edf3" font-size="12" text-anchor="end">minmax</text><text x="571.8" y="35" fill="#3fb950" font-size="11.5" text-anchor="start">1.000  · scale동일 32/32</text><rect x="150.0" y="52" width="414.8" height="18" rx="2.5" fill="#3fb950" fill-opacity="0.9"/><text x="140" y="65" fill="#e6edf3" font-size="12" text-anchor="end">minmax_pertensor</text><text x="571.8" y="65" fill="#3fb950" font-size="11.5" text-anchor="start">1.000  · scale동일 32/32</text><rect x="150.0" y="82" width="414.8" height="18" rx="2.5" fill="#3fb950" fill-opacity="0.9"/><text x="140" y="95" fill="#e6edf3" font-size="12" text-anchor="end">entropy</text><text x="571.8" y="95" fill="#3fb950" font-size="11.5" text-anchor="start">1.000  · scale동일 32/32</text><rect x="150.0" y="112" width="129.8" height="18" rx="2.5" fill="#ff7b72" fill-opacity="0.9"/><text x="140" y="125" fill="#e6edf3" font-size="12" text-anchor="end">entropy_fixed</text><text x="286.8" y="125" fill="#ff7b72" font-size="11.5" text-anchor="start">0.313  · scale동일 1/32</text><rect x="150.0" y="142" width="134.0" height="18" rx="2.5" fill="#ff7b72" fill-opacity="0.9"/><text x="140" y="155" fill="#e6edf3" font-size="12" text-anchor="end">pct999</text><text x="291.0" y="155" fill="#ff7b72" font-size="11.5" text-anchor="start">0.323  · scale동일 0/32</text><rect x="150.0" y="172" width="201.6" height="18" rx="2.5" fill="#ff7b72" fill-opacity="0.9"/><text x="140" y="185" fill="#e6edf3" font-size="12" text-anchor="end">pct9999</text><text x="358.6" y="185" fill="#ff7b72" font-size="11.5" text-anchor="start">0.486  · scale동일 0/32</text><rect x="150.0" y="202" width="277.1" height="18" rx="2.5" fill="#ff7b72" fill-opacity="0.9"/><text x="140" y="215" fill="#e6edf3" font-size="12" text-anchor="end">pct99999</text><text x="434.1" y="215" fill="#ff7b72" font-size="11.5" text-anchor="start">0.668  · scale동일 0/32</text><rect x="150.0" y="232" width="467.1" height="18" rx="2.5" fill="#bc8cff" fill-opacity="0.9"/><text x="140" y="245" fill="#e6edf3" font-size="12" text-anchor="end">minmax_calib1000</text><text x="624.1" y="245" fill="#bc8cff" font-size="11.5" text-anchor="start">1.126  · scale동일 4/32</text><rect x="150.0" y="262" width="413.2" height="18" rx="2.5" fill="#bc8cff" fill-opacity="0.9"/><text x="140" y="275" fill="#e6edf3" font-size="12" text-anchor="end">minmax_tv</text><text x="570.2" y="275" fill="#bc8cff" font-size="11.5" text-anchor="start">0.996  · scale동일 2/32</text></svg><div class="legend"><span><i style="background:#3fb950"></i>minmax와 스케일 동일(무손실)</span><span><i style="background:#ff7b72"></i>강한 클리핑(percentile 계열)</span><span><i style="background:#bc8cff"></i>범위 넓어짐/근사(calib1000·tv)</span></div></div>
+  <div class="term"><div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">compare_scales_v2_rerun.log (전문)</span></div><pre><span class="dim">activation scalar-scale 텐서: 공통 32개 (minmax=32, minmax_pertensor=32, entropy=32 …)</span>
+방법                      scale·zp 동일      상한비율 median    0.5배 미만
+minmax                   32/32                1.000       0/32
+minmax_pertensor         32/32                1.000       0/32 ← 비트 단위 동일
+entropy                  32/32                1.000       0/32 ← 비트 단위 동일
+entropy_fixed             1/32                0.313      18/32
+pct999                    0/32                0.323      28/32
+pct9999                   0/32                0.486      19/32
+pct99999                  0/32                0.668       2/32
+minmax_calib1000          4/32                1.126       0/32
+minmax_tv                 2/32                0.996       0/32
+--- 텐서별 상한 (minmax 대비) ---
+tensor                                      minmax   ent_fix     p99.9   p99.999
+getitem_12                                  6.2747    4.7095    2.7238    6.2490
+getitem_18                                  5.5570    3.1571    1.7946    3.4352
+getitem_21                                  3.9803    2.1395    1.3068    2.6508
+getitem_27                                  5.1750    2.8755    1.9264    3.5250
+getitem_33                                  5.8993    2.9932    1.6754    4.4583
+getitem_36                                  1.3482    1.0661    0.6832    1.3462
+getitem_42                                  4.9903    3.3303    2.1012    4.3257
+getitem_48                                  5.4934    3.5032    2.0871    3.6016
+getitem_51                                  3.7121    2.5742    1.4533    2.8379
+getitem_57                                 27.6363   18.9667   10.8262   19.8907
+getitem_6                                   4.3238    3.5753    2.2049    3.7496
+input                                       2.6308    2.6308    2.6301    2.6301
+<span class="dim">  … 총 32개</span></pre></div>
+  <div class="note"><span class="tag">읽는 법</span><b>entropy</b>는 32/32 스케일·zp가 minmax와 <b>비트 동일</b>(median 1.000) — ORT 기본 Entropy가 <code>num_bins=128</code>에서 퇴화한다는 §6 결론과 일치한다. <code>num_bins</code>를 2048/128로 강제한 <b>entropy_fixed</b>라야 비로소 18/32 텐서가 0.5배 미만으로 클리핑된다. <b>percentile</b>은 pct99.9(0.323×)→99.99(0.486×)→99.999(0.668×)로 <b>단조</b>롭게 상한이 커지고, 이 순서가 top-1 회복 순서와 같다. <b>calib1000</b>만 median <b>1.126×(>1)</b>로 오히려 넓어지는데 — 넓은 MinMax 캘리브의 극값 민감성이 §7 calib1000 드리프트(42장)의 메커니즘이다.</div>
+
+  <h2 class="sec" id="s9">9 · TensorRT EP 2×2 절제 — 하드 블로커 규명</h2>
+  <p class="step" style="color:var(--dim);font-size:14.5px;margin:0">“ORT 권장 비대칭 <code>QUInt8</code>을 TensorRT가 못 받아 무음 폴백”이라는 정정을 <b>원인까지</b> 못 박기 위해, <b>대칭/비대칭 × bias 양자화 유무</b> 2×2 네 모델을 실제 TensorRT EP로 올려 그래프 사실(활성 zero-point·int32 DQ 개수)과 p50 지연을 쟀다. <span class="hl">0.5단계 gotcha 픽스</span>(<code>LD_LIBRARY_PATH</code>에 <code>tensorrt_libs</code>·<code>nvidia/*/lib</code>)로 무음 CPU 폴백을 차단했다 — 그래서 아래 <b>진짜 TRT 파싱 에러</b>가 나온다(= TRT EP가 실제로 관여했다는 증거).</p>
+  <table class="dt"><thead><tr><th>케이스</th><th>활성</th><th>bias 양자화</th><th>활성 zero-point</th><th>int32 DQ</th><th>TRT p50(ms)</th><th>CUDA p50</th><th>vs FP32</th><th>판정</th></tr></thead><tbody>
+  <tr class="lo"><td>A_asym_bias</td><td>비대칭</td><td>있음</td><td><span class="r">[0,173]</span></td><td>21</td><td><b>2.25</b></td><td>1.11</td><td>0.34×</td><td><span class="r">🔴 폴백</span></td></tr>
+<tr class="lo"><td>B_asym_nobias</td><td>비대칭</td><td>없음</td><td><span class="r">[0,173]</span></td><td>0</td><td><b>2.22</b></td><td>1.11</td><td>0.34×</td><td><span class="r">🔴 폴백</span></td></tr>
+<tr class="hi"><td>C_sym_bias</td><td>대칭</td><td>있음</td><td><span class="g">[0,0]</span></td><td>21</td><td><b>0.43</b></td><td>1.23</td><td>1.77×</td><td><span class="g">✅ 성공</span></td></tr>
+<tr class="hi"><td>D_sym_nobias</td><td>대칭</td><td>없음</td><td><span class="g">[0,0]</span></td><td>0</td><td><b>0.43</b></td><td>1.23</td><td>1.77×</td><td><span class="g">✅ 성공</span></td></tr>
+  </tbody></table>
+  <div class="chartwrap"><p class="ct">그림 F — 케이스별 TensorRT EP p50 지연</p><p class="cs">점선 = FP32 TRT 0.76ms. 대칭(C·D)은 그 아래(0.43ms=1.77×), 비대칭(A·B)은 그 위(2.25ms) — 폴백은 FP32보다도 3배 느리다.</p><svg viewBox="0 0 920 166" role="img" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;font-family:var(--mono)"><line x1="150.0" y1="16" x2="150.0" y2="136" stroke="#242b38"/><text x="150.0" y="154" fill="#8b949e" font-size="11" text-anchor="middle">0ms</text><line x1="253.8" y1="16" x2="253.8" y2="136" stroke="#242b38"/><text x="253.8" y="154" fill="#8b949e" font-size="11" text-anchor="middle">0.5ms</text><line x1="357.7" y1="16" x2="357.7" y2="136" stroke="#242b38"/><text x="357.7" y="154" fill="#8b949e" font-size="11" text-anchor="middle">1.0ms</text><line x1="461.5" y1="16" x2="461.5" y2="136" stroke="#242b38"/><text x="461.5" y="154" fill="#8b949e" font-size="11" text-anchor="middle">1.5ms</text><line x1="565.4" y1="16" x2="565.4" y2="136" stroke="#242b38"/><text x="565.4" y="154" fill="#8b949e" font-size="11" text-anchor="middle">2.0ms</text><line x1="669.2" y1="16" x2="669.2" y2="136" stroke="#242b38"/><text x="669.2" y="154" fill="#8b949e" font-size="11" text-anchor="middle">2.5ms</text><line x1="307.8" y1="10" x2="307.8" y2="136" stroke="#58a6ff" stroke-width="1.4" stroke-dasharray="4 3"/><text x="307.8" y="8" fill="#58a6ff" font-size="10.5" text-anchor="middle">FP32 0.76ms</text><rect x="150.0" y="22" width="467.3" height="18" rx="2.5" fill="#ff7b72" fill-opacity="0.9"/><text x="140" y="35" fill="#e6edf3" font-size="12" text-anchor="end">A_asym_bias</text><text x="624.3" y="35" fill="#ff7b72" font-size="11.5" text-anchor="start">2.25 ms · 0.34× · 폴백</text><rect x="150.0" y="52" width="461.1" height="18" rx="2.5" fill="#ff7b72" fill-opacity="0.9"/><text x="140" y="65" fill="#e6edf3" font-size="12" text-anchor="end">B_asym_nobias</text><text x="618.1" y="65" fill="#ff7b72" font-size="11.5" text-anchor="start">2.22 ms · 0.34× · 폴백</text><rect x="150.0" y="82" width="89.3" height="18" rx="2.5" fill="#3fb950" fill-opacity="0.9"/><text x="140" y="95" fill="#e6edf3" font-size="12" text-anchor="end">C_sym_bias</text><text x="246.3" y="95" fill="#3fb950" font-size="11.5" text-anchor="start">0.43 ms · 1.77× · 성공</text><rect x="150.0" y="112" width="89.3" height="18" rx="2.5" fill="#3fb950" fill-opacity="0.9"/><text x="140" y="125" fill="#e6edf3" font-size="12" text-anchor="end">D_sym_nobias</text><text x="246.3" y="125" fill="#3fb950" font-size="11.5" text-anchor="start">0.43 ms · 1.77× · 성공</text></svg><div class="legend"><span><i style="background:#3fb950"></i>TRT 파싱 성공(대칭 zp=0)</span><span><i style="background:#ff7b72"></i>무음 폴백(비대칭 zp≠0)</span><span><i style="background:#58a6ff;opacity:.7"></i>점선 = FP32 기준선</span></div></div>
+  <div class="term"><div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">ablate_trt_v2_rerun.log (요약 + 대표 에러)</span></div><pre>EP 목록: [Tensorrt, CUDA, CPU]
+FP32 기준선: TRT p50=0.76 ms   CUDA p50=0.79 ms
+
+<span class="dim">케이스           대칭/비대칭  활성 zero-point  int32 bias DQ   TRT p50   vsFP32  판정</span>
+<span class="err">A_asym_bias     비대칭  zp=[0,173]  int32DQ=21  TRT_p50=2.25ms  0.34×  폴백 🔴</span>
+<span class="err">B_asym_nobias   비대칭  zp=[0,173]  int32DQ= 0  TRT_p50=2.22ms  0.34×  폴백 🔴</span>
+<span class="ok">C_sym_bias      대칭   zp=[0,  0]  int32DQ=21  TRT_p50=0.43ms  1.77×  성공 ✅</span>
+<span class="ok">D_sym_nobias    대칭   zp=[0,  0]  int32DQ= 0  TRT_p50=0.43ms  1.77×  성공 ✅</span>
+
+<span class="dim">── TensorRT 파싱 로그에서 실제로 나온 에러 두 종류 (총 676줄 중 대표만) ──</span>
+<span class="err">[6] Assertion failed: shiftIsAllZeros(zeroPoint): Non-zero zero point is not supported.</span>   <span class="dim">← A·B(비대칭)만. 하드 블로커.</span>
+<span class="err">[6] Invalid Node - conv1.weight_bias_DequantizeLinear</span>
+<span class="err">    input has type Int32 but must have type FP8, FP4, Int4, or Int8.</span>   <span class="dim">← int32 bias DQ. 2차 증상(C는 이게 21개여도 성공).</span>
+<span class="warn">[W] For zero_point with type int32 TensorRT will use INT8 instead.</span>   <span class="dim">← 비치명 경고.</span></pre></div>
+  <div class="note block"><span class="tag">2×2가 증명하는 것</span>하드 블로커는 <b>활성 zero-point ≠ 0</b> 하나다. 비대칭 A·B는 zp=[0,173]이라 <b>둘 다 폴백</b>하고, 대칭 C·D는 zp=[0,0]이라 <b>둘 다 성공</b>한다. <b>int32 bias DQ는 2차 증상</b>이다 — C는 int32 DQ가 <b>21개나 있어도 성공</b>하고(경고로만 강등), B는 int32 DQ가 <b>0개여도 폴백</b>한다. 즉 해법은 bias DQ 제거가 아니라 <b>활성 대칭화</b>다. 대가는 §6에서 −0.29%p·p≈9e-5(유의)로 재확인됐지만, 속도는 무음 폴백(2.25ms, FP32의 3× 지연)에서 <b>0.43ms(1.77×)</b>로 뒤집힌다.</div>
+
+  <h2 class="sec" id="s10">10 · 레이어 민감도 — SQNR은 취약 레이어를 예측하는가</h2>
+  <p class="step" style="color:var(--dim);font-size:14.5px;margin:0">21개 Conv/Linear를 <b>하나씩만</b> per-channel 대칭 INT8로 fake-quant해 50,000장 top-1을 쟀다. 데이터가 필요 없는 대리지표 <b>SQNR</b>이, 실제로 어느 레이어가 취약한지(<b>Δtop-1</b>)를 예측하는지 본다.</p>
+  <div class="chartwrap"><p class="ct">그림 G — SQNR(대리지표) vs 실측 Δtop-1, 21개 레이어</p><p class="cs">예측력이 있으려면 오른쪽(고SQNR)일수록 0에 붙는 <b>양의 추세</b>가 보여야 한다. 실제로는 무상관 구름 — Spearman ρ=-0.030, Pearson r=+0.071.</p><svg viewBox="0 0 920 360" role="img" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;font-family:var(--mono)"><line x1="88.3" y1="18" x2="88.3" y2="316" stroke="#242b38"/><text x="88.3" y="334" fill="#8b949e" font-size="11" text-anchor="middle">36</text><line x1="210.1" y1="18" x2="210.1" y2="316" stroke="#242b38"/><text x="210.1" y="334" fill="#8b949e" font-size="11" text-anchor="middle">37</text><line x1="331.8" y1="18" x2="331.8" y2="316" stroke="#242b38"/><text x="331.8" y="334" fill="#8b949e" font-size="11" text-anchor="middle">38</text><line x1="453.5" y1="18" x2="453.5" y2="316" stroke="#242b38"/><text x="453.5" y="334" fill="#8b949e" font-size="11" text-anchor="middle">39</text><line x1="575.2" y1="18" x2="575.2" y2="316" stroke="#242b38"/><text x="575.2" y="334" fill="#8b949e" font-size="11" text-anchor="middle">40</text><line x1="697.0" y1="18" x2="697.0" y2="316" stroke="#242b38"/><text x="697.0" y="334" fill="#8b949e" font-size="11" text-anchor="middle">41</text><line x1="64" y1="282.9" x2="770" y2="282.9" stroke="#242b38" stroke-width="1" /><text x="55" y="286.9" fill="#8b949e" font-size="11" text-anchor="end">-0.02</text><line x1="64" y1="216.7" x2="770" y2="216.7" stroke="#58a6ff" stroke-width="1.4" stroke-dasharray='4 3'/><text x="55" y="220.7" fill="#8b949e" font-size="11" text-anchor="end">+0</text><line x1="64" y1="150.4" x2="770" y2="150.4" stroke="#242b38" stroke-width="1" /><text x="55" y="154.4" fill="#8b949e" font-size="11" text-anchor="end">+0.02</text><line x1="64" y1="84.2" x2="770" y2="84.2" stroke="#242b38" stroke-width="1" /><text x="55" y="88.2" fill="#8b949e" font-size="11" text-anchor="end">+0.04</text><text x="417" y="354" fill="#8b949e" font-size="11.5" text-anchor="middle">SQNR (dB) — 데이터프리 대리지표 ↑좋음</text><text x="14" y="167" fill="#8b949e" font-size="11.5" text-anchor="middle" transform="rotate(-90 14 167)">실측 Δtop-1 (%p)</text><circle cx="106.5" cy="130.6" r="4.5" fill="#d29922" fill-opacity="0.85" stroke="#0b0e14" stroke-width="0.8"/><text x="115.5" y="134.6" fill="#d29922" font-size="10.5" text-anchor="start">layer1.0.conv1  (SQNR 최저)</text><circle cx="125.1" cy="71.0" r="6" fill="#bc8cff" fill-opacity="0.85" stroke="#0b0e14" stroke-width="0.8"/><text x="134.1" y="65.0" fill="#bc8cff" font-size="10.5" text-anchor="start">layer3.0.conv2  (SQNR 2위 나쁨 → 실측 2위 안전)</text><circle cx="159.3" cy="196.8" r="4.5" fill="#58a6ff" fill-opacity="0.85" stroke="#0b0e14" stroke-width="0.8"/><circle cx="174.6" cy="170.3" r="4.5" fill="#58a6ff" fill-opacity="0.85" stroke="#0b0e14" stroke-width="0.8"/><circle cx="194.7" cy="170.3" r="4.5" fill="#58a6ff" fill-opacity="0.85" stroke="#0b0e14" stroke-width="0.8"/><circle cx="205.2" cy="196.8" r="4.5" fill="#58a6ff" fill-opacity="0.85" stroke="#0b0e14" stroke-width="0.8"/><circle cx="219.1" cy="216.7" r="4.5" fill="#58a6ff" fill-opacity="0.85" stroke="#0b0e14" stroke-width="0.8"/><circle cx="260.7" cy="282.9" r="4.5" fill="#58a6ff" fill-opacity="0.85" stroke="#0b0e14" stroke-width="0.8"/><circle cx="273.5" cy="97.5" r="4.5" fill="#58a6ff" fill-opacity="0.85" stroke="#0b0e14" stroke-width="0.8"/><circle cx="311.3" cy="196.8" r="4.5" fill="#58a6ff" fill-opacity="0.85" stroke="#0b0e14" stroke-width="0.8"/><circle cx="330.8" cy="203.4" r="4.5" fill="#58a6ff" fill-opacity="0.85" stroke="#0b0e14" stroke-width="0.8"/><circle cx="359.4" cy="183.6" r="4.5" fill="#58a6ff" fill-opacity="0.85" stroke="#0b0e14" stroke-width="0.8"/><circle cx="362.1" cy="190.2" r="4.5" fill="#58a6ff" fill-opacity="0.85" stroke="#0b0e14" stroke-width="0.8"/><circle cx="368.7" cy="130.6" r="4.5" fill="#58a6ff" fill-opacity="0.85" stroke="#0b0e14" stroke-width="0.8"/><circle cx="383.3" cy="117.3" r="4.5" fill="#58a6ff" fill-opacity="0.85" stroke="#0b0e14" stroke-width="0.8"/><circle cx="392.3" cy="183.6" r="4.5" fill="#58a6ff" fill-opacity="0.85" stroke="#0b0e14" stroke-width="0.8"/><circle cx="453.3" cy="216.7" r="4.5" fill="#58a6ff" fill-opacity="0.85" stroke="#0b0e14" stroke-width="0.8"/><circle cx="547.6" cy="183.6" r="4.5" fill="#58a6ff" fill-opacity="0.85" stroke="#0b0e14" stroke-width="0.8"/><circle cx="639.5" cy="216.7" r="4.5" fill="#58a6ff" fill-opacity="0.85" stroke="#0b0e14" stroke-width="0.8"/><circle cx="660.3" cy="176.9" r="4.5" fill="#58a6ff" fill-opacity="0.85" stroke="#0b0e14" stroke-width="0.8"/><circle cx="715.1" cy="44.5" r="6" fill="#3fb950" fill-opacity="0.85" stroke="#0b0e14" stroke-width="0.8"/><text x="706.1" y="48.5" fill="#3fb950" font-size="10.5" text-anchor="end">conv1  (SQNR 최고·Δ 최고 = 가장 안전)</text></svg><div class="legend"><span><i style="background:#3fb950;border-radius:50%"></i>conv1 = 가장 안전</span><span><i style="background:#bc8cff;border-radius:50%"></i>layer3.0.conv2 = 대리지표 반례</span><span><i style="background:#d29922;border-radius:50%"></i>SQNR 최저</span><span><i style="background:#58a6ff;border-radius:50%"></i>기타 18개</span></div></div>
+  <table class="dt"><thead><tr><th>SQNR 순위</th><th>레이어</th><th>out_ch</th><th>SQNR(dB)</th><th>실측 Δtop-1</th></tr></thead><tbody>
+  <tr class="lo"><td>1</td><td>layer1.0.conv1</td><td class="d">64</td><td>36.15</td><td><span class="g">+0.026</span></td></tr>
+<tr class="lo"><td>2</td><td>layer3.0.conv2</td><td class="d">256</td><td>36.30</td><td><span class="g">+0.044</span></td></tr>
+<tr class="lo"><td>3</td><td>layer2.1.conv1</td><td class="d">128</td><td>36.58</td><td><span class="g">+0.006</span></td></tr>
+<tr class=""><td>4</td><td>layer4.0.conv2</td><td class="d">512</td><td>36.71</td><td><span class="g">+0.014</span></td></tr>
+<tr><td colspan="5" class="d" style="text-align:center">… 중간 13개 레이어 생략 (전부 Δ∈[-0.020, +0.052]) …</td></tr>
+<tr class=""><td>18</td><td>layer4.0.downsample.0</td><td class="d">512</td><td>39.77</td><td><span class="g">+0.010</span></td></tr>
+<tr class=""><td>19</td><td>layer3.0.downsample.0</td><td class="d">256</td><td>40.53</td><td><span class="g">+0.000</span></td></tr>
+<tr class=""><td>20</td><td>layer2.0.downsample.0</td><td class="d">128</td><td>40.70</td><td><span class="g">+0.012</span></td></tr>
+<tr class="hi"><td>21</td><td>conv1</td><td class="d">64</td><td>41.15</td><td><span class="g">+0.052</span></td></tr>
+  </tbody></table>
+  <div class="statgrid">
+    <div class="stat"><div class="k">SQNR↔Δ 상관</div><div class="v">-0.030</div><div class="n">Spearman ρ · 예측력 없음(양의 상관 기대)</div></div>
+    <div class="stat"><div class="k">worst-5 교집합</div><div class="v">0 / 5</div><div class="n">SQNR 최악 5 ∩ 실측 최악 5</div></div>
+    <div class="stat ok"><div class="k">가장 안전(실측·대리 동시)</div><div class="v">conv1</div><div class="n">SQNR 41.15dB · Δ+0.052%p</div></div>
+    <div class="stat"><div class="k">21개 전부 동시 INT8</div><div class="v">-0.044%p</div><div class="n">top-1 68.70% · 약 22장</div></div>
+  </div>
+  <div class="term"><div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">layer_sensitivity_v2_rerun.log (요약)</span></div><pre>/home/yuyeong/stage1-work/layer_sensitivity_v2.py:51: UserWarning: The given NumPy array is not writable, and PyTorch does not support non-writable tensors. This means writing to this tensor will result in undefined behavior. You may want to copy the array to protect its data or make it writable before converting it to a tensor. This type of warning will be suppressed for the rest of this program. (Triggered internally at /pytorch/torch/csrc/utils/tensor_numpy.cpp:213.)
+  x = torch.from_numpy(np.ascontiguousarray(imgs[s:s + BS])).to(DEV)
+대상 레이어 21개, 평가 표본 50000장, device=cuda
+FP32 baseline top-1 = 68.75%  (14s / 50k)
+<span class="dim">  … 레이어 21개 격리 양자화 진행(각 50k 평가) (×21)</span>
+전 레이어 weight INT8 동시: top-1=68.70%  Δ=-0.044%p
+개별 낙폭 합계 = +0.294%p → 거의 가산적
+SQNR ↔ Δtop-1  Pearson r=+0.071  Spearman ρ=-0.030
+  (SQNR이 높을수록 Δ가 0에 가까워야 예측력이 있다 → 양의 상관을 기대)
+SQNR 최저 5개 (대리 지표가 &#x27;위험&#x27;하다고 말하는 레이어):
+  layer1.0.conv1           SQNR= 36.15dB  실제 Δ=+0.026%p
+  layer3.0.conv2           SQNR= 36.30dB  실제 Δ=+0.044%p
+  layer2.1.conv1           SQNR= 36.58dB  실제 Δ=+0.006%p
+  layer4.0.conv2           SQNR= 36.71dB  실제 Δ=+0.014%p
+  layer2.0.conv2           SQNR= 36.87dB  실제 Δ=+0.014%p
+실제 낙폭 최대 5개 (정답):
+  layer3.0.conv1           SQNR= 37.42dB  실제 Δ=-0.020%p
+  layer3.1.conv1           SQNR= 37.07dB  실제 Δ=+0.000%p
+  layer1.1.conv2           SQNR= 39.00dB  실제 Δ=+0.000%p
+  layer3.0.downsample.0    SQNR= 40.53dB  실제 Δ=+0.000%p
+  layer4.0.conv1           SQNR= 37.99dB  실제 Δ=+0.004%p
+<span class="ok">saved layer_sensitivity_v2.csv (21 rows)</span></pre></div>
+  <div class="note trap"><span class="tag">통념 반전</span>“첫 번째 conv(conv1)가 양자화에 가장 취약하다”는 통념과 <b>반대</b>다 — <code>conv1</code>은 21개 중 <b>가장 안전</b>하다(SQNR 최고 41.15dB, Δtop-1 최고 +0.052%p). per-channel 전제에선 입력 채널이 적을수록(conv1=3) 채널별 스케일이 촘촘해 유리하다. 그리고 <b>SQNR은 취약 레이어를 예측하지 못한다</b>: worst-5끼리 교집합이 <b>0개</b>이고, 대표 반례 <code>layer3.0.conv2</code>는 SQNR로는 2번째로 나쁜데 실측 Δ로는 2번째로 <b>안전</b>(+0.044%p)하다. 애초에 단일 레이어 Δ는 [-0.020, +0.052]%p(≈36장)로 전부 노이즈급이고, 21개를 <b>동시에</b> 켜도 -0.044%p뿐 — weight-only per-channel INT8은 사실상 무료다.</div>
+
+  <h2 class="sec" id="s11">11 · 산출물과 다음 단계</h2>
+  <table class="kv">
+    <tr><th>갱신된 산출물</th><td>~/stage1-work/ 　eval_hits_v2.npz · top1_counts_v2.json · <b>layer_sensitivity_v2.csv</b> · <b>layer_sens_v2.npz</b>　<span class="d">(이관본은 _baseline_transferred/에 보존)</span></td></tr>
+    <tr><th>실행 로그(5+3)</th><td>prep_cache · quantize_v2 · run_eval_v2 · <b>compare_scales_v2</b> · <b>ablate_trt_v2</b> · <b>layer_sensitivity_v2</b> _rerun.log</td></tr>
+    <tr><th>이 보고서</th><td>logs/stage1_50k_rerun_reproduction_report.html　<span class="d">(50k 재현 §1–7 + 심화 3종 §8–10)</span></td></tr>
+    <tr><th>repo 문서</th><td><span class="ok">변경 없음</span> — 50k 재현·심화 3종 정정값이 전부 재산출돼 study_guide 수정 불필요</td></tr>
+  </table>
+  <table class="dt" style="margin-top:14px"><thead><tr><th style="text-align:left">1단계 심화 분석</th><th>문서 결론</th><th>이 머신 재현</th></tr></thead><tbody>
+    <tr class="hi"><td>활성 스케일(compare_scales)</td><td class="d">Entropy≡MinMax · 클리핑 단조</td><td><span class="g">일치 ✅</span></td></tr>
+    <tr class="hi"><td>TRT 2×2(ablate_trt)</td><td class="d">하드 블로커 = 활성 zp≠0</td><td><span class="g">일치 ✅</span></td></tr>
+    <tr class="hi"><td>레이어 민감도(layer_sensitivity)</td><td class="d">SQNR 예측력 없음 · conv1 안전</td><td><span class="g">일치 ✅ (ρ=-0.030)</span></td></tr>
+  </tbody></table>
+  <footer>
+    <div>생성: 이 보고서의 모든 수치는 실제 아티팩트에서 재계산했다 — <code>top1_counts_v2.json</code>·<code>eval_hits_v2.npz</code>(신·구 per-image 배열), <code>layer_sensitivity_v2.csv</code>, 그리고 <code>compare_scales/ablate_trt/layer_sensitivity_v2_rerun.log</code>. McNemar/Wilson·상관계수는 스크립트와 동일 정의.</div>
+    <div class="next"><b>다음 후보</b> — <span class="g">(A) 남은 1단계 분석 3종 완료 ✅</span> · (B) 미완의 <b>QAT 회복 2팔 실험</b>(대조군 최초 실행) · (C) 이 재현 사실을 HANDOFF/메모리에 상태로 기록</div>
+  </footer>
+</div>
+</body>
+</html>
