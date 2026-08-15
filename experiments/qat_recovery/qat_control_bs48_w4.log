@@ -1,0 +1,33 @@
+QAT 참조값 (qat_recovery_result_bs48_w4.json, BS=48·EP=2·W=4bit): FP32 68.51% → PTQ 44.35% → QAT 67.81%
+
+학습 40000장 / 평가 10000장 (서로소 ✅, qat_recovery.py와 동일 분할)
+
+(1) FP32 학습 전            top-1 = 68.51%   ← qat_recovery.py의 68.51%와 일치해야 함
+    ep0 step    0/833  loss=1.7106
+    ep0 step  100/833  loss=1.3211
+    ep0 step  200/833  loss=1.3132
+    ep0 step  300/833  loss=1.3186
+    ep0 step  400/833  loss=1.3092
+    ep0 step  500/833  loss=1.3022
+    ep0 step  600/833  loss=1.2951
+    ep0 step  700/833  loss=1.3033
+    ep0 step  800/833  loss=1.3025
+(2) FP32 finetune ep0      top-1 = 69.35%  Δ(학습 전)=+0.84%p  [42s]
+    ep1 step    0/833  loss=1.1867
+    ep1 step  100/833  loss=1.1997
+    ep1 step  200/833  loss=1.1915
+    ep1 step  300/833  loss=1.2208
+    ep1 step  400/833  loss=1.2223
+    ep1 step  500/833  loss=1.2235
+    ep1 step  600/833  loss=1.2210
+    ep1 step  700/833  loss=1.2118
+    ep1 step  800/833  loss=1.2041
+(2) FP32 finetune ep1      top-1 = 69.31%  Δ(학습 전)=+0.80%p  [42s]
+
+=== 분리 결과 ===
+FP32 학습 전        68.51%
+FP32 + 파인튜닝     69.31%   (+0.80%p)  ← 순수 '추가 학습' 효과
+QAT (fake-quant)   67.81%   (-0.70%p)
+
+QAT − FP32finetune = -1.50%p  ← 같은 학습량에서 양자화가 가져간 대가
+→ QAT가 낮다. 그 격차가 학습으로도 못 메운 양자화 손실이다.

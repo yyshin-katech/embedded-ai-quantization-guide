@@ -83,13 +83,14 @@ footer{margin-top:46px;padding-top:20px;border-top:1px solid var(--bd);color:var
   <header class="hero">
     <p class="kicker">실행 보고서 · 1단계 50k 재실행 · 이관 머신 재현</p>
     <h1>1단계 50,000장 재실행 — 재현 검증 보고서</h1>
-    <p class="sub">GPU가 고장난 이전 머신(RTX 3060)에서 넘겨받은 작업을, 새로 확보한 <b>ImageNet val 50,000장</b>으로 이 머신(RTX 3080)에서 처음부터 다시 돌렸다. 전처리 캐시 → INT8 13종 생성 → 14회 50k 평가까지 전 과정의 <b>명령·터미널 출력·데이터</b>를 기록하고, 이관 baseline과 <b>per-image 예측 배열(70만 건)</b>을 대조했다. 이어 남은 1단계 심화 분석 <b>3종</b>(활성 스케일 · TensorRT 2×2 절제 · 레이어 민감도)까지 재실행해 문서 결론을 재확인했다.</p>
+    <p class="sub">GPU가 고장난 이전 머신(RTX 3060)에서 넘겨받은 작업을, 새로 확보한 <b>ImageNet val 50,000장</b>으로 이 머신(RTX 3080)에서 처음부터 다시 돌렸다. 전처리 캐시 → INT8 13종 생성 → 14회 50k 평가까지 전 과정의 <b>명령·터미널 출력·데이터</b>를 기록하고, 이관 baseline과 <b>per-image 예측 배열(70만 건)</b>을 대조했다. 이어 남은 1단계 심화 분석 <b>3종</b>(활성 스케일 · TensorRT 2×2 절제 · 레이어 민감도)까지 재실행해 문서 결론을 재확인했다. 끝으로, 이전 머신에서 <b>미완이던 QAT 회복 실험</b>을 weight 4-bit 손실 변형으로 이 머신에서 처음 완주했다(신규 실험 · §11).</p>
     <div class="chips">
       <span class="chip"><b>2026-08-14</b></span>
       <span class="chip done">val <b>50,000</b>장</span>
       <span class="chip done">13/14 모델 비트 동일</span>
       <span class="chip partial">calib1000 <b>+14</b>장</span>
       <span class="chip done">심화 <b>3종</b> 재현 ✅</span>
+      <span class="chip done">QAT 회복 <b>97%</b></span>
       <span class="chip done">전부 <b>CUDA EP</b></span>
       <span class="chip">RTX 3080 · ORT 1.23.2</span>
     </div>
@@ -97,7 +98,7 @@ footer{margin-top:46px;padding-top:20px;border-top:1px solid var(--bd);color:var
       <a href="#s1">1 요약·판정</a><a href="#s2">2 환경·무결성</a><a href="#s3">3 명령·출력</a>
       <a href="#s4">4 결과 데이터</a><a href="#s5">5 재현 대조</a><a href="#s6">6 문서값 재확인</a>
       <a href="#s7">7 calib1000</a><a href="#s8">8 활성 스케일</a><a href="#s9">9 TRT 2×2</a>
-      <a href="#s10">10 레이어 민감도</a><a href="#s11">11 산출물·다음</a>
+      <a href="#s10">10 레이어 민감도</a><a href="#s11">11 QAT 회복</a><a href="#s12">12 산출물·다음</a>
     </nav>
   </header>
 
@@ -504,12 +505,122 @@ SQNR 최저 5개 (대리 지표가 &#x27;위험&#x27;하다고 말하는 레이�
 <span class="ok">saved layer_sensitivity_v2.csv (21 rows)</span></pre></div>
   <div class="note trap"><span class="tag">통념 반전</span>“첫 번째 conv(conv1)가 양자화에 가장 취약하다”는 통념과 <b>반대</b>다 — <code>conv1</code>은 21개 중 <b>가장 안전</b>하다(SQNR 최고 41.15dB, Δtop-1 최고 +0.052%p). per-channel 전제에선 입력 채널이 적을수록(conv1=3) 채널별 스케일이 촘촘해 유리하다. 그리고 <b>SQNR은 취약 레이어를 예측하지 못한다</b>: worst-5끼리 교집합이 <b>0개</b>이고, 대표 반례 <code>layer3.0.conv2</code>는 SQNR로는 2번째로 나쁜데 실측 Δ로는 2번째로 <b>안전</b>(+0.044%p)하다. 애초에 단일 레이어 Δ는 [-0.020, +0.052]%p(≈36장)로 전부 노이즈급이고, 21개를 <b>동시에</b> 켜도 -0.044%p뿐 — weight-only per-channel INT8은 사실상 무료다.</div>
 
-  <h2 class="sec" id="s11">11 · 산출물과 다음 단계</h2>
+  <h2 class="sec" id="sB" style="border-top:2px solid var(--purple)">QAT 회복 실험 — 손실 큰 구간에서 (신규 · 재현 아님)</h2>
+  <p class="step" style="color:var(--dim);font-size:14.5px;margin:0 0 4px">앞의 §1–10은 <b style="color:var(--brt)">재현</b>이지만, 이 절은 <b style="color:var(--brt)">새 실험</b>이다(2026-08-15). 이전 머신 GPU 고장으로 <b>미완이던 QAT 회복 2팔 실험</b>을 정상 RTX 3080에서 처음 완주했다. 걸림돌은 현 양자화 구성(per-channel 대칭 INT8 weight + UINT8 activation)이 무손실급이라 “회복할 것이 없다”는 것 — 그래서 <b>노브 하나(weight 8→4bit)</b>만 바꿔 측정 가능한 손실을 만들었다(W4A8). arm 1이 회복률을, arm 2(대조군)가 “그 회복이 양자화 인식 덕인지 그냥 추가 학습 덕인지”를 가른다.</p>
+  <div class="term"><div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">QAT 2팔 실행 명령</span></div><pre><span class="cmt"># QAT 회복 실험 — 미완이던 2팔을 weight 4-bit 손실 변형으로 처음 완주</span>
+<span class="cmt"># 손실 변형: QAT_WBITS=4 한 노브만 오버라이드 (activation은 UINT8 그대로 = W4A8)</span>
+<span class="in"><span class="p">$</span>cp experiments/qat_recovery/*.py ~/stage1-work/ &amp;&amp; cd ~/stage1-work</span>
+<span class="in"><span class="p">$</span>nvidia-smi -L   <span class="cmt"># GPU 생존 확인 먼저</span></span>
+
+<span class="cmt"># arm 1 — FP32 → PTQ(4-bit, 학습 없음) → QAT(STE 2에폭)</span>
+<span class="in"><span class="p">$</span>QAT_WBITS=4 python3 qat_recovery.py         2>&amp;1 | tee qat_recovery_bs48_w4.log</span>
+
+<span class="cmt"># arm 2 — fake-quant만 제거한 동일 설정 FP32 파인튜닝(arm1 JSON 읽어 설정 일치 검증)</span>
+<span class="in"><span class="p">$</span>QAT_WBITS=4 python3 qat_control_finetune.py 2>&amp;1 | tee qat_control_bs48_w4.log</span></pre></div>
+
+  <h2 class="sec" id="s11">11 · QAT는 PTQ가 잃은 정확도를 되찾는가</h2>
+  <p class="step" style="color:var(--dim);font-size:14.5px;margin:0">arm 1: FP32 → PTQ(weight 4-bit, 학습 없음) → QAT(STE fake-quant로 2에폭 파인튜닝). arm 2: <b>fake-quant만 제거</b>하고 분할·step·optimizer·LR·schedule·batch·epoch·전처리를 전부 동일하게 맞춘 FP32 파인튜닝. 두 팔의 <b style="color:var(--brt)">차이(QAT − 대조군)</b>가 “양자화 인식 학습”의 순수 기여다.</p>
+  <div class="statgrid">
+    <div class="stat warn"><div class="k">PTQ 4-bit 손실</div><div class="v">-24.16%p</div><div class="n">68.51% → 44.35% · naive min/max 전레이어</div></div>
+    <div class="stat ok"><div class="k">QAT 회복률</div><div class="v">97.1%</div><div class="n">24.16%p 손실 중 23.46%p 탈환</div></div>
+    <div class="stat"><div class="k">QAT − 대조군</div><div class="v">-1.50%p</div><div class="n">동일 학습에서 4-bit 환원불가 대가</div></div>
+    <div class="stat ok"><div class="k">양자화 인식 기여</div><div class="v">+23.46%p</div><div class="n">QAT 상승폭 · 추가학습만은 +0.80%p</div></div>
+  </div>
+
+  <div class="chartwrap"><p class="ct">그림 H — 회복 계단: PTQ 크레이터에서 QAT가 되돌아온다</p><p class="cs">weight를 8→4bit로 낮추자 PTQ가 68.51%→44.35%로 무너지고(-24.16%p), STE 2에폭 만에 67.81%로 복귀 — 손실의 97.1% 회복. 점선 = FP32.</p><svg viewBox="0 0 920 166" role="img" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;font-family:var(--mono)"><line x1="235.9" y1="16" x2="235.9" y2="136" stroke="#242b38"/><text x="235.9" y="154" fill="#8b949e" font-size="11" text-anchor="middle">45%</text><line x1="349.0" y1="16" x2="349.0" y2="136" stroke="#242b38"/><text x="349.0" y="154" fill="#8b949e" font-size="11" text-anchor="middle">50%</text><line x1="462.1" y1="16" x2="462.1" y2="136" stroke="#242b38"/><text x="462.1" y="154" fill="#8b949e" font-size="11" text-anchor="middle">55%</text><line x1="575.2" y1="16" x2="575.2" y2="136" stroke="#242b38"/><text x="575.2" y="154" fill="#8b949e" font-size="11" text-anchor="middle">60%</text><line x1="688.3" y1="16" x2="688.3" y2="136" stroke="#242b38"/><text x="688.3" y="154" fill="#8b949e" font-size="11" text-anchor="middle">65%</text><line x1="801.4" y1="16" x2="801.4" y2="136" stroke="#242b38"/><text x="801.4" y="154" fill="#8b949e" font-size="11" text-anchor="middle">70%</text><line x1="767.7" y1="10" x2="767.7" y2="136" stroke="#58a6ff" stroke-width="1.4" stroke-dasharray="4 3"/><text x="767.7" y="8" fill="#58a6ff" font-size="10.5" text-anchor="middle">FP32 68.51%</text><rect x="168.0" y="22" width="599.7" height="18" rx="2.5" fill="#58a6ff" fill-opacity="0.9"/><text x="158" y="35" fill="#e6edf3" font-size="12" text-anchor="end">FP32 (학습 없음)</text><text x="774.7" y="35" fill="#c9d1d9" font-size="11.5" text-anchor="start">68.51%</text><rect x="168.0" y="52" width="53.2" height="18" rx="2.5" fill="#ff7b72" fill-opacity="0.9"/><text x="158" y="65" fill="#e6edf3" font-size="12" text-anchor="end">PTQ · weight 4-bit</text><text x="228.2" y="65" fill="#ff7b72" font-size="11.5" text-anchor="start">44.35%</text><rect x="168.0" y="82" width="578.9" height="18" rx="2.5" fill="#d29922" fill-opacity="0.9"/><text x="158" y="95" fill="#e6edf3" font-size="12" text-anchor="end">QAT ep0 (STE)</text><text x="753.9" y="95" fill="#d29922" font-size="11.5" text-anchor="start">67.59%</text><rect x="168.0" y="112" width="583.8" height="18" rx="2.5" fill="#3fb950" fill-opacity="0.9"/><text x="158" y="125" fill="#e6edf3" font-size="12" text-anchor="end">QAT ep1 (STE)</text><text x="758.8" y="125" fill="#3fb950" font-size="11.5" text-anchor="start">67.81%</text></svg><div class="legend"><span><i style="background:#58a6ff"></i>FP32 기준</span><span><i style="background:#ff7b72"></i>PTQ 4-bit 손실</span><span><i style="background:#d29922"></i>QAT 회복 중(ep0)</span><span><i style="background:#3fb950"></i>QAT 최종</span><span><i style="background:#bc8cff"></i>대조군(추가학습)</span></div></div>
+
+  <table class="dt"><thead><tr><th>arm 1 · 회복 단계</th><th>top-1</th><th>vs FP32</th><th>vs PTQ</th></tr></thead><tbody>
+    <tr class="base"><td>FP32 (학습 없음)</td><td><b>68.51%</b></td><td class="d">—</td><td class="d">—</td></tr>
+    <tr class="lo"><td>PTQ · weight 4-bit</td><td><b>44.35%</b></td><td><span class="r">-24.16%p</span></td><td class="d">—</td></tr>
+    <tr><td>QAT ep0 (STE)</td><td><b>67.59%</b></td><td><span class="r">-0.92%p</span></td><td><span class="g">+23.24%p</span></td></tr>
+    <tr class="hi"><td>QAT ep1 (STE)</td><td><b>67.81%</b></td><td><span class="r">-0.70%p</span></td><td><span class="g">+23.46%p</span></td></tr>
+  </tbody></table>
+
+  <div class="chartwrap"><p class="ct">그림 I — 대조군 분해 (축 67–70% 확대)</p><p class="cs">추가 학습만으로 FP32는 +0.80%p 오른다(대조군 69.31%). QAT는 67.81%로, 동일 학습을 받은 대조군보다 <b>-1.50%p</b> 낮다 = 4-bit가 학습으로도 못 메운 대가. 점선 = 학습 전 68.51%.</p><svg viewBox="0 0 920 136" role="img" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;font-family:var(--mono)"><line x1="196.0" y1="16" x2="196.0" y2="106" stroke="#242b38"/><text x="196.0" y="124" fill="#8b949e" font-size="11" text-anchor="middle">67%</text><line x1="387.3" y1="16" x2="387.3" y2="106" stroke="#242b38"/><text x="387.3" y="124" fill="#8b949e" font-size="11" text-anchor="middle">68%</text><line x1="578.7" y1="16" x2="578.7" y2="106" stroke="#242b38"/><text x="578.7" y="124" fill="#8b949e" font-size="11" text-anchor="middle">69%</text><line x1="770.0" y1="16" x2="770.0" y2="106" stroke="#242b38"/><text x="770.0" y="124" fill="#8b949e" font-size="11" text-anchor="middle">70%</text><line x1="484.9" y1="10" x2="484.9" y2="106" stroke="#58a6ff" stroke-width="1.4" stroke-dasharray="4 3"/><text x="484.9" y="8" fill="#58a6ff" font-size="10.5" text-anchor="middle">학습 전 68.51%</text><rect x="196.0" y="22" width="442.0" height="18" rx="2.5" fill="#bc8cff" fill-opacity="0.9"/><text x="186" y="35" fill="#e6edf3" font-size="12" text-anchor="end">FP32 + 파인튜닝 (대조군)</text><text x="645.0" y="35" fill="#bc8cff" font-size="11.5" text-anchor="start">69.31%</text><rect x="196.0" y="52" width="288.9" height="18" rx="2.5" fill="#58a6ff" fill-opacity="0.9"/><text x="186" y="65" fill="#e6edf3" font-size="12" text-anchor="end">FP32 학습 전</text><text x="491.9" y="65" fill="#58a6ff" font-size="11.5" text-anchor="start">68.51%</text><rect x="196.0" y="82" width="155.0" height="18" rx="2.5" fill="#3fb950" fill-opacity="0.9"/><text x="186" y="95" fill="#e6edf3" font-size="12" text-anchor="end">QAT 4-bit</text><text x="358.0" y="95" fill="#3fb950" font-size="11.5" text-anchor="start">67.81%</text></svg><div class="legend"><span><i style="background:#58a6ff"></i>FP32 기준</span><span><i style="background:#ff7b72"></i>PTQ 4-bit 손실</span><span><i style="background:#d29922"></i>QAT 회복 중(ep0)</span><span><i style="background:#3fb950"></i>QAT 최종</span><span><i style="background:#bc8cff"></i>대조군(추가학습)</span></div></div>
+
+  <table class="dt"><thead><tr><th>arm 2 · 대조군 분해 (fake-quant만 제거)</th><th>top-1</th><th>Δ</th></tr></thead><tbody>
+    <tr class="base"><td>FP32 학습 전</td><td><b>68.51%</b></td><td class="d">— (arm1과 일치 ✅)</td></tr>
+    <tr><td>FP32 + 파인튜닝 (대조군)</td><td><b>69.31%</b></td><td><span class="g">+0.80%p</span> · 순수 추가학습</td></tr>
+    <tr class="hi"><td>QAT 4-bit</td><td><b>67.81%</b></td><td><span class="r">-0.70%p</span></td></tr>
+    <tr class="lo"><td><b>QAT − 대조군</b></td><td class="d">—</td><td><span class="r"><b>-1.50%p</b></span> · 4-bit 잔여 대가</td></tr>
+  </tbody></table>
+
+  <div class="term"><div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">qat_recovery_bs48_w4.log — arm 1 (FP32→PTQ→QAT)</span></div><pre><span class="ok">학습 40000장 / 평가 10000장 (서로소 확인 ✅), device=cuda, weight=4-bit per-channel 대칭, activation=UINT8 비대칭</span>
+
+(1) FP32                     top-1 = 68.51%
+(2) PTQ (fake-quant, 학습 없음) top-1 = 44.35%  Δ=-24.16%p
+    ep0 step    0/833  loss=1.9271
+    ep0 step  100/833  loss=1.4974
+    ep0 step  200/833  loss=1.4626
+    ep0 step  300/833  loss=1.4603
+    ep0 step  400/833  loss=1.4414
+    ep0 step  500/833  loss=1.4301
+    ep0 step  600/833  loss=1.4186
+    ep0 step  700/833  loss=1.4221
+    ep0 step  800/833  loss=1.4178
+(3) QAT epoch 0            top-1 = 67.59%  Δ(FP32)=-0.92%p  Δ(PTQ)=+23.24%p   [48s]
+    ep1 step    0/833  loss=1.2268
+    ep1 step  100/833  loss=1.2843
+    ep1 step  200/833  loss=1.2778
+    ep1 step  300/833  loss=1.3053
+    ep1 step  400/833  loss=1.3070
+    ep1 step  500/833  loss=1.3088
+    ep1 step  600/833  loss=1.3065
+    ep1 step  700/833  loss=1.2987
+    ep1 step  800/833  loss=1.2900
+(3) QAT epoch 1            top-1 = 67.81%  Δ(FP32)=-0.70%p  Δ(PTQ)=+23.46%p   [48s]
+
+요약: FP32 68.51% → PTQ 44.35% → QAT 67.81%
+PTQ 손실 24.16%p 중 QAT가 회복한 비율 = 97.1%
+⚠️ val을 쪼개 학습했으므로 절대값은 문헌과 비교 불가 — 상대 관계만 유효
+<span class="ok">⚠️ QAT 팔만 추가 학습을 받았다 — &#x27;추가 학습&#x27; 효과와 분리하려면 qat_control_finetune.py(동일 설정, fake-quant만 제거)를 같은 배치로 돌려야 한다.</span>
+
+결과 저장: qat_recovery_result_bs48_w4.json (대조군이 이 파일을 읽는다)</pre></div>
+  <div class="term"><div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">qat_control_bs48_w4.log — arm 2 (대조군 FP32 파인튜닝)</span></div><pre>QAT 참조값 (qat_recovery_result_bs48_w4.json, BS=48·EP=2·W=4bit): FP32 68.51% → PTQ 44.35% → QAT 67.81%
+
+<span class="ok">학습 40000장 / 평가 10000장 (서로소 ✅, qat_recovery.py와 동일 분할)</span>
+
+(1) FP32 학습 전            top-1 = 68.51%   ← qat_recovery.py의 68.51%와 일치해야 함
+    ep0 step    0/833  loss=1.7106
+    ep0 step  100/833  loss=1.3211
+    ep0 step  200/833  loss=1.3132
+    ep0 step  300/833  loss=1.3186
+    ep0 step  400/833  loss=1.3092
+    ep0 step  500/833  loss=1.3022
+    ep0 step  600/833  loss=1.2951
+    ep0 step  700/833  loss=1.3033
+    ep0 step  800/833  loss=1.3025
+(2) FP32 finetune ep0      top-1 = 69.35%  Δ(학습 전)=+0.84%p  [42s]
+    ep1 step    0/833  loss=1.1867
+    ep1 step  100/833  loss=1.1997
+    ep1 step  200/833  loss=1.1915
+    ep1 step  300/833  loss=1.2208
+    ep1 step  400/833  loss=1.2223
+    ep1 step  500/833  loss=1.2235
+    ep1 step  600/833  loss=1.2210
+    ep1 step  700/833  loss=1.2118
+    ep1 step  800/833  loss=1.2041
+(2) FP32 finetune ep1      top-1 = 69.31%  Δ(학습 전)=+0.80%p  [42s]
+
+=== 분리 결과 ===
+FP32 학습 전        68.51%
+FP32 + 파인튜닝     69.31%   (+0.80%p)  ← 순수 &#x27;추가 학습&#x27; 효과
+QAT (fake-quant)   67.81%   (-0.70%p)
+
+QAT − FP32finetune = -1.50%p  ← 같은 학습량에서 양자화가 가져간 대가
+→ QAT가 낮다. 그 격차가 학습으로도 못 메운 양자화 손실이다.</pre></div>
+
+  <div class="note block"><span class="tag">4가지 판정</span><b>① 손실 변형 성공</b> — 노브 하나(weight 8→4bit)로 무손실급 PTQ를 <b>-24.16%p</b>로 만들어, 회복률이 처음으로 노이즈(±0.05%p) 위에서 측정됐다. <b>② §2.5 주장 실증</b> — “QAT는 PTQ가 잃은 정확도를 되찾는다”가 손실 큰 구간에서 <b>97.1%</b>로 참이다. <b>③ 진짜 양자화 인식 학습</b> — 추가 학습만으로는 +0.80%p뿐인데 QAT는 손상 지점(44%)에서 <b>+23.46%p</b> 올랐다 — 회복은 일반 파인튜닝이 아니라 양자화 인식 적응의 기여다. <b>④ 정직한 상한</b> — 동일 학습을 받은 FP32(대조군)보다 QAT는 여전히 <b>-1.50%p</b> 뒤진다 = 4-bit weight(+8-bit act)의 환원 불가 용량 비용. “QAT = 공짜 회복”이 아니다.</div>
+
+  <div class="note warnb"><span class="tag">캐비앗 (불변)</span>ImageNet train split이 없어 <b>val 50k을 클래스당 40/10으로 쪼개</b> 학습했다(서로소, 평가셋 누수 없음). 따라서 <b>절대 top-1은 문헌값과 비교 불가</b> — FP32 68.51%도 그래서 공식 69.758%가 아니다. 이 절의 모든 수는 <b>상대 관계</b>(회복률·대조군 격차)로만 유효하다. 실험 상세·재실행법은 <code>experiments/qat_recovery/README.md</code>.</div>
+
+  <h2 class="sec" id="s12">12 · 산출물과 다음 단계</h2>
   <table class="kv">
     <tr><th>갱신된 산출물</th><td>~/stage1-work/ 　eval_hits_v2.npz · top1_counts_v2.json · <b>layer_sensitivity_v2.csv</b> · <b>layer_sens_v2.npz</b>　<span class="d">(이관본은 _baseline_transferred/에 보존)</span></td></tr>
     <tr><th>실행 로그(5+3)</th><td>prep_cache · quantize_v2 · run_eval_v2 · <b>compare_scales_v2</b> · <b>ablate_trt_v2</b> · <b>layer_sensitivity_v2</b> _rerun.log</td></tr>
-    <tr><th>이 보고서</th><td>logs/stage1_50k_rerun_reproduction_report.html　<span class="d">(50k 재현 §1–7 + 심화 3종 §8–10)</span></td></tr>
-    <tr><th>repo 문서</th><td><span class="ok">변경 없음</span> — 50k 재현·심화 3종 정정값이 전부 재산출돼 study_guide 수정 불필요</td></tr>
+    <tr><th>QAT 실험(신규 · 2팔)</th><td><b>experiments/qat_recovery/</b> qat_recovery.py · qat_control_finetune.py <span class="d">(QAT_WBITS 손실변형 반영)</span>　·　~/stage1-work/ qat_recovery_bs48_w4.log · qat_control_bs48_w4.log · qat_recovery_result_bs48_w4.json</td></tr>
+    <tr><th>이 보고서</th><td>logs/stage1_50k_rerun_reproduction_report.html　<span class="d">(50k 재현 §1–7 + 심화 3종 §8–10 + QAT 회복 §11)</span></td></tr>
+    <tr><th>repo 변경</th><td>study_guide <span class="ok">수정 불필요</span>(50k·심화 3종 재산출) · <b>experiments/qat_recovery/</b> 스크립트에 손실변형(QAT_WBITS) 반영 + README 완결화</td></tr>
   </table>
   <table class="dt" style="margin-top:14px"><thead><tr><th style="text-align:left">1단계 심화 분석</th><th>문서 결론</th><th>이 머신 재현</th></tr></thead><tbody>
     <tr class="hi"><td>활성 스케일(compare_scales)</td><td class="d">Entropy≡MinMax · 클리핑 단조</td><td><span class="g">일치 ✅</span></td></tr>
@@ -518,7 +629,7 @@ SQNR 최저 5개 (대리 지표가 &#x27;위험&#x27;하다고 말하는 레이�
   </tbody></table>
   <footer>
     <div>생성: 이 보고서의 모든 수치는 실제 아티팩트에서 재계산했다 — <code>top1_counts_v2.json</code>·<code>eval_hits_v2.npz</code>(신·구 per-image 배열), <code>layer_sensitivity_v2.csv</code>, 그리고 <code>compare_scales/ablate_trt/layer_sensitivity_v2_rerun.log</code>. McNemar/Wilson·상관계수는 스크립트와 동일 정의.</div>
-    <div class="next"><b>다음 후보</b> — <span class="g">(A) 남은 1단계 분석 3종 완료 ✅</span> · (B) 미완의 <b>QAT 회복 2팔 실험</b>(대조군 최초 실행) · (C) 이 재현 사실을 HANDOFF/메모리에 상태로 기록</div>
+    <div class="next"><b>다음 후보</b> — <span class="g">(A) 남은 1단계 분석 3종 완료 ✅</span> · <span class="g">(B) QAT 회복 2팔 실험 완주 ✅</span>(W4A8 · 회복 97.1% · 대조군 격차 -1.50%p) · (C) 이 재현·실험 사실을 HANDOFF/메모리에 상태로 기록 · (D) 정제본을 study_guide §2.5(QAT)에 반영</div>
   </footer>
 </div>
 </body>

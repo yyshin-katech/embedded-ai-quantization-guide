@@ -1,0 +1,31 @@
+학습 40000장 / 평가 10000장 (서로소 확인 ✅), device=cuda, weight=4-bit per-channel 대칭, activation=UINT8 비대칭
+
+(1) FP32                     top-1 = 68.51%
+(2) PTQ (fake-quant, 학습 없음) top-1 = 44.35%  Δ=-24.16%p
+    ep0 step    0/833  loss=1.9271
+    ep0 step  100/833  loss=1.4974
+    ep0 step  200/833  loss=1.4626
+    ep0 step  300/833  loss=1.4603
+    ep0 step  400/833  loss=1.4414
+    ep0 step  500/833  loss=1.4301
+    ep0 step  600/833  loss=1.4186
+    ep0 step  700/833  loss=1.4221
+    ep0 step  800/833  loss=1.4178
+(3) QAT epoch 0            top-1 = 67.59%  Δ(FP32)=-0.92%p  Δ(PTQ)=+23.24%p   [48s]
+    ep1 step    0/833  loss=1.2268
+    ep1 step  100/833  loss=1.2843
+    ep1 step  200/833  loss=1.2778
+    ep1 step  300/833  loss=1.3053
+    ep1 step  400/833  loss=1.3070
+    ep1 step  500/833  loss=1.3088
+    ep1 step  600/833  loss=1.3065
+    ep1 step  700/833  loss=1.2987
+    ep1 step  800/833  loss=1.2900
+(3) QAT epoch 1            top-1 = 67.81%  Δ(FP32)=-0.70%p  Δ(PTQ)=+23.46%p   [48s]
+
+요약: FP32 68.51% → PTQ 44.35% → QAT 67.81%
+PTQ 손실 24.16%p 중 QAT가 회복한 비율 = 97.1%
+⚠️ val을 쪼개 학습했으므로 절대값은 문헌과 비교 불가 — 상대 관계만 유효
+⚠️ QAT 팔만 추가 학습을 받았다 — '추가 학습' 효과와 분리하려면 qat_control_finetune.py(동일 설정, fake-quant만 제거)를 같은 배치로 돌려야 한다.
+
+결과 저장: qat_recovery_result_bs48_w4.json (대조군이 이 파일을 읽는다)

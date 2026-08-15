@@ -1,0 +1,12 @@
+{
+  "bs_train": 48,
+  "bs_eval": 128,
+  "epochs": 2,
+  "calib_n": 5000,
+  "wbits": 4,
+  "fp32": 68.51,
+  "ptq": 44.35,
+  "qat": 67.81,
+  "n_train": 40000,
+  "n_eval": 10000
+}

@@ -15,7 +15,7 @@ val 40,000장으로 추가 학습을 받았으므로, QAT가 FP32를 이긴 것�
    배치를 96→48로 바꿨을 때 낡은 69.13%(BS=96)와 비교하면 조용히 오답이 나온다.
 """
 import json, sys, time, numpy as np, torch, torch.nn as nn, torchvision
-from qat_recovery import CACHE, DEV, MEAN, STD, BS_TRAIN, BS_EVAL, EPOCHS, RESULT_JSON, evaluate
+from qat_recovery import CACHE, DEV, MEAN, STD, BS_TRAIN, BS_EVAL, EPOCHS, WBITS, RESULT_JSON, evaluate
 
 
 def load_qat_result():
@@ -24,10 +24,10 @@ def load_qat_result():
         sys.exit(f"❌ {RESULT_JSON.name}이 없다. 먼저 같은 배치로 qat_recovery.py를 돌려라:\n"
                  f"   python3 qat_recovery.py 2>&1 | tee qat_recovery_bs{BS_TRAIN}.log")
     r = json.load(open(RESULT_JSON))
-    if (r["bs_train"], r["epochs"]) != (BS_TRAIN, EPOCHS):
-        sys.exit(f"❌ 설정 불일치 — JSON은 BS={r['bs_train']}/EP={r['epochs']}, "
-                 f"지금은 BS={BS_TRAIN}/EP={EPOCHS}. 두 팔은 같은 설정이어야 비교가 성립한다.")
-    print(f"QAT 참조값 ({RESULT_JSON.name}, BS={r['bs_train']}·EP={r['epochs']}): "
+    if (r["bs_train"], r["epochs"], r.get("wbits", 8)) != (BS_TRAIN, EPOCHS, WBITS):
+        sys.exit(f"❌ 설정 불일치 — JSON은 BS={r['bs_train']}/EP={r['epochs']}/W={r.get('wbits', 8)}, "
+                 f"지금은 BS={BS_TRAIN}/EP={EPOCHS}/W={WBITS}. 두 팔은 같은 설정이어야 비교가 성립한다.")
+    print(f"QAT 참조값 ({RESULT_JSON.name}, BS={r['bs_train']}·EP={r['epochs']}·W={r.get('wbits', 8)}bit): "
           f"FP32 {r['fp32']:.2f}% → PTQ {r['ptq']:.2f}% → QAT {r['qat']:.2f}%\n")
     return r
 

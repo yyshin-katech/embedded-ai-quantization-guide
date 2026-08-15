@@ -38,7 +38,11 @@ EPOCHS = int(os.environ.get("QAT_EPOCHS", 2))
 #    BS_EVAL을 250→128로 줄이자 관측 이미지가 5,000→2,560장으로 같이 반토막 나
 #    PTQ top-1이 68.46%→68.37%로 움직였다(배치는 결과를 바꿔선 안 되는 노브다).
 CALIB_N = int(os.environ.get("QAT_CALIB_N", 5000))
-RESULT_JSON = WORK / f"qat_recovery_result_bs{BS_TRAIN}.json"
+# 🔵 손실 변형(2026-08-15): weight 비트폭 노출. 기본 8은 무손실급 PTQ라 QAT−대조군이 노이즈에
+#    묻힌다(README §"알려진 한계"). QAT_WBITS=4면 per-channel 대칭 4-bit weight PTQ의 실측 손실
+#    (수 %p)이 생겨 회복률이 처음으로 읽힌다. activation은 UINT8 그대로 — 즉 W4A8을 잰다.
+WBITS = int(os.environ.get("QAT_WBITS", 8))
+RESULT_JSON = WORK / f"qat_recovery_result_bs{BS_TRAIN}_w{WBITS}.json"
 
 
 class FakeQuantSTE(torch.autograd.Function):
@@ -91,12 +95,12 @@ class ActFakeQuant(nn.Module):
 
 class QConv2d(nn.Conv2d):
     def forward(self, x):
-        return self._conv_forward(x, fq_weight_per_channel(self.weight), self.bias)
+        return self._conv_forward(x, fq_weight_per_channel(self.weight, WBITS), self.bias)
 
 
 class QLinear(nn.Linear):
     def forward(self, x):
-        return nn.functional.linear(x, fq_weight_per_channel(self.weight), self.bias)
+        return nn.functional.linear(x, fq_weight_per_channel(self.weight, WBITS), self.bias)
 
 
 def quantize_model(model):
@@ -161,7 +165,8 @@ def main():
         tr.extend(perm[:40].tolist()); ev.extend(perm[40:].tolist())
     tr = np.array(sorted(tr), dtype=np.int64); ev = np.array(sorted(ev), dtype=np.int64)
     assert not (set(tr.tolist()) & set(ev.tolist()))
-    print(f"학습 {len(tr)}장 / 평가 {len(ev)}장 (서로소 확인 ✅), device={DEV}\n")
+    print(f"학습 {len(tr)}장 / 평가 {len(ev)}장 (서로소 확인 ✅), device={DEV}, "
+          f"weight={WBITS}-bit per-channel 대칭, activation=UINT8 비대칭\n")
 
     W = torchvision.models.ResNet18_Weights.IMAGENET1K_V1
 
@@ -222,6 +227,7 @@ def main():
           "qat_control_finetune.py(동일 설정, fake-quant만 제거)를 같은 배치로 돌려야 한다.")
 
     json.dump({"bs_train": BS_TRAIN, "bs_eval": BS_EVAL, "epochs": EPOCHS, "calib_n": CALIB_N,
+               "wbits": WBITS,
                "fp32": round(fp32_top1, 4), "ptq": round(ptq_top1, 4), "qat": round(t1, 4),
                "n_train": len(tr), "n_eval": len(ev)},
               open(RESULT_JSON, "w"), indent=2, ensure_ascii=False)
