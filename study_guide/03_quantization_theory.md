@@ -34,7 +34,7 @@
 - [ ] symmetric vs asymmetric, per-tensor vs per-channel을 표로 설명하고 **"weight=per-channel symmetric, activation=per-tensor asymmetric"인 이유**를 채널별 분포 수치 예와 함께 서술할 수 있다.
 - [ ] QDQ 그래프가 무엇이며 왜 "모든 툴체인의 공용어"인지 설명하고, ONNX 안의 `QuantizeLinear`/`DequantizeLinear` 노드 쌍을 읽을 수 있다.
 - [ ] 캘리브레이션 4종(MinMax / Percentile / Entropy(KL) / MSE)의 원리·장단·언제 쓰는지를 비교표로 설명하고, **특히 Entropy(KL)의 히스토그램 구성 → 후보 threshold별 KL 최소화 절차를 의사코드 수준으로** 설명할 수 있다.
-- [ ] QAT의 fake-quant와 STE(Straight-Through Estimator)를 `torch.autograd.Function`으로 구현하고, 미니 학습 루프(옵티마이저·손실)로 돌릴 수 있다. LSQ(learnable scale)가 무엇인지 한 문장으로 말할 수 있다.
+- [ ] QAT의 fake-quant와 STE(Straight-Through Estimator)를 `torch.autograd.Function`으로 구현하고, 미니 학습 루프(옵티마이저·손실)로 돌릴 수 있다. QAT가 실모델(ResNet18)에서 PTQ 손실을 얼마나 되찾는지, 그리고 대조군(동일 학습 FP32) 대비 그 회복이 '공짜'가 아님을 실측으로 설명할 수 있다. LSQ(learnable scale)가 무엇인지 한 문장으로 말할 수 있다.
 - [ ] ResNet18을 ONNX로 export하고, ONNX Runtime `quantize_static`으로 INT8 PTQ(MinMax/Entropy/Percentile, per-channel 옵션)를 수행.
 - [ ] **타깃 하드웨어에 따라 dtype 선택이 갈리는 이유**를 설명하고(x86 = QUInt8 비대칭 / TensorRT = QInt8 대칭), 잘못 고르면 **에러 없이 FP32보다 느려지는** 무음 폴백이 발생함을 안다(4.3.2).
 - [ ] **라이브러리 기본값이 알고리즘을 조용히 무력화할 수 있음**을 안다 — ORT `Entropy`가 MinMax로 퇴화하는 사례를 재현하고, scale 비교로 자가진단할 수 있다(4.3.1).
@@ -567,7 +567,37 @@ cos(W_q, W_true): 0.0
 
 > 💡 **팁**: STE의 직관 — "forward는 정수의 거친 세계를 겪지만, backward는 매끄러운 FP 기울기를 그대로 받아 weight를 조금씩 옮긴다." 이 한 줄로 설명할 수 있으면 충분하다.
 
-#### 2.5.4 LSQ (Learned Step Size Quantization) — 한 줄 소개
+#### 2.5.4 실모델에서 QAT는 PTQ 손실을 얼마나 되찾나 (ResNet18 실측)
+
+2.5.3은 STE가 **gradient를 통과시킨다**는 것을 합성 회귀로 증명했다. 하지만 "gradient가 흐른다"와 "실모델의 정확도를 되찾는다"는 다른 명제다. ResNet18로 **FP32 → PTQ → QAT** 회복 계단을 직접 쟀다([전체 재현: `experiments/qat_recovery/`](../experiments/qat_recovery/README.md) · [렌더 요약: 보고서 §11](../logs/stage1_50k_rerun_reproduction_report.html#s11)).
+
+**먼저 손실을 크게 만들어야 회복률이 읽힌다.** 이 문서의 정본 구성(per-channel 대칭 INT8 weight + per-tensor 비대칭 UINT8 activation, 즉 **W8A8**)은 PTQ 손실이 0.06~0.14%p로 **측정 노이즈 크기**다. 여기서 회복률을 계산하면 `1116.7%` 같은 무의미한 수가 나온다(0에 가까운 값으로 나눔). 그래서 노브 하나만 바꿔(`QAT_WBITS=4` — weight를 4-bit로) PTQ 손실을 **−24.16%p**까지 키운 **손실 변형 W4A8**에서 회복률을 처음으로 노이즈 위에서 측정했다. 설정: `BS_TRAIN=48 · BS_EVAL=128 · EPOCHS=2 · CALIB_N=5000`, ImageNet val을 **40,000 학습 / 10,000 평가(서로소)**로 쪼갬.
+
+**팔 1 — 회복 계단**
+
+| 단계 | top-1 | vs FP32 | vs PTQ |
+|---|---|---|---|
+| FP32 (학습 없음) | 68.51% | — | — |
+| PTQ · weight 4-bit | 44.35% | **−24.16%p** | — |
+| QAT ep0 (STE) | 67.59% | −0.92%p | +23.24%p |
+| QAT ep1 (STE) | **67.81%** | −0.70%p | **+23.46%p** |
+
+→ PTQ가 무너뜨린 24.16%p 중 QAT가 **97.1%(23.46%p)를 되찾았다**. §2.5 첫 문장("PTQ로 부족하면 QAT")이 손실 큰 구간에서 실증된 것이다.
+
+**팔 2 — 대조군이 없으면 착시가 생긴다.** 팔 1만 보면 "QAT가 정확도를 되찾았다"로 끝내기 쉽다. 그러나 **QAT 팔만 val 40,000장으로 2에폭을 추가 학습**했다. 그 이득이 '양자화 인식(fake-quant를 겪으며 적응)' 때문인지 '그냥 더 학습한 것' 때문인지 구분되지 않는다. **fake-quant만 제거하고 나머지(데이터·에폭·옵티마이저)를 전부 똑같이 맞춘 FP32 파인튜닝**을 대조군으로 돌려 그 몫을 떼어낸다.
+
+| | top-1 | Δ |
+|---|---|---|
+| FP32 학습 전 | 68.51% | — (팔 1과 일치 ✅) |
+| FP32 + 파인튜닝 (대조군) | 69.31% | **+0.80%p** · 순수 추가학습 몫 |
+| QAT 4-bit | 67.81% | −0.70%p |
+| **QAT − 대조군** | — | **−1.50%p** · 4-bit 환원 불가 대가 |
+
+> 💡 **읽는 법 — 두 가지가 동시에 참이다.** ① **회복은 진짜다**: 추가 학습만으로는 +0.80%p인데, QAT는 손상 지점(44.35%)에서 +23.46%p를 끌어올렸다 → 회복의 본체는 일반 파인튜닝이 아니라 **양자화 인식 적응**이다. ② **공짜는 아니다**: 같은 데이터·같은 에폭을 받은 FP32 대조군보다 QAT는 여전히 **−1.50%p** 낮다 → 이건 4-bit weight(+8-bit activation)의 **환원 불가 용량 비용**이다. "QAT = 손실 0 복구"가 아니라 **"QAT = 손실의 대부분을 되찾되 하한이 있다"**가 정직한 요약이다.
+
+> ⚠️ **이 수치는 상대 관계로만 읽어라.** ImageNet **train split이 없어 val을 쪼개 학습**했다(클래스당 40장 학습/10장 평가, 서로소 assert로 평가 누수는 없음). 그래서 **절대 top-1을 문헌값과 비교하면 안 된다** — FP32 68.51%도 공식 69.758%가 아니다. 유효한 것은 **회복률(97.1%)·대조군 격차(−1.50%p)** 처럼 **같은 실험 안에서의 상대 비교**뿐이다. 회복률을 다른 손실 변형(Entropy 정규화 −9.45%p, Percentile 99.9 −6.83%p)으로도 재보려면 같은 2팔 틀을 재사용하면 된다.
+
+#### 2.5.5 LSQ (Learned Step Size Quantization) — 한 줄 소개
 
 위 코드는 `scale`을 매 step **weight의 max에서 다시 계산**(고정 규칙)한다. **LSQ**(Esser et al., ICLR 2020, arXiv:1902.08153)는 여기서 한 걸음 더 나아가 **scale(step size) `s` 자체를 학습 가능한 파라미터로 두고 gradient descent로 함께 학습**한다. 핵심은 `∂x̂/∂s`(양자화 출력의 scale에 대한 미분)를 STE 방식으로 근사해 흘리고, step size gradient에 `1/√(N·q_max)` 스케일 보정을 걸어 weight 업데이트와 크기 균형을 맞추는 것. **"scale을 손으로 정하지 말고 loss가 정하게 하라"**가 LSQ의 한 문장이며, 저비트(2~4bit) QAT에서 특히 효과가 크다(3bit로 FP 정확도 근접).
 
@@ -1449,7 +1479,7 @@ INT8 top-1이 목표보다 크게 떨어졌을 때, **어느 레이어가 원인
 - Gholami et al. (2021), *A Survey of Quantization Methods for Efficient Neural Network Inference*, arXiv:[2103.13630](https://arxiv.org/abs/2103.13630) — 양자화 전반 분류(PTQ/QAT, uniform/non-uniform, per-tensor/per-channel)의 지도. 용어·개념 정리에 필독.
 - Nagel et al. (2021, Qualcomm AI Research), *A White Paper on Neural Network Quantization*, arXiv:[2106.08295](https://arxiv.org/abs/2106.08295) — PTQ 고급 기법(**AdaRound**, **CLE(cross-layer equalization)**, **bias correction**)과 QAT 실무 레시피. 이 단계 PTQ 정확도 회복의 근거.
 - Jacob et al. (2018, CVPR; arXiv 2017), *Quantization and Training of Neural Networks for Efficient Integer-Arithmetic-Only Inference*, arXiv:[1712.05877](https://arxiv.org/abs/1712.05877) — 정수 전용 추론 스킴의 원조. symmetric weight(zero-point=0)로 정수 MAC이 단순해지는 이유(2.2.1 유도)의 출처.
-- Esser et al. (2020, ICLR), *Learned Step Size Quantization (LSQ)*, arXiv:[1902.08153](https://arxiv.org/abs/1902.08153) — scale(step size)을 학습 파라미터로 두는 QAT. 2.5.4의 출처. 저비트(2~4bit)에서 특히 강력.
+- Esser et al. (2020, ICLR), *Learned Step Size Quantization (LSQ)*, arXiv:[1902.08153](https://arxiv.org/abs/1902.08153) — scale(step size)을 학습 파라미터로 두는 QAT. 2.5.5의 출처. 저비트(2~4bit)에서 특히 강력.
 
 > ⚠️ **확인 필요**: Jacob et al.은 arXiv 등록이 2017-12(ID 1712.05877)이고 학회 발표는 **CVPR 2018**이다. 인용 시 맥락에 맞게 연도를 표기.
 
