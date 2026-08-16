@@ -9,23 +9,26 @@
 > ⚠️ 메모리는 **작성 시점의 관찰**입니다. 파일·함수·플래그를 지목한 서술은 지금도 유효한지
 > 코드로 확인한 뒤 사실로 인용하세요.
 
+현재 작업 머신은 **AI-LAP (RTX 3080)** 입니다 — 이전 Nuvo-6108GC(RTX 3060)가 GPU 고장으로 교체됐습니다.
+
 | 파일 | 내용 |
 |---|---|
-| [`stage0-env-installed.md`](stage0-env-installed.md) | 0단계 환경 실제 설치 결과 — 확정 스택 버전, `LD_LIBRARY_PATH` 픽스 2개(cuDNN·TensorRT), `dynamo=True`가 요구하는 `onnxscript`, opset 다운컨버트 무음 폴백 |
+| [`machine-ai-lap-rtx3080.md`](machine-ai-lap-rtx3080.md) | 현재 작업 머신(AI-LAP 노트북, RTX 3080) — 죽은 Nuvo/RTX3060 대체, venv·데이터 이관, GPU가 QAT를 300W로 완주 |
+| [`stage0-env-installed.md`](stage0-env-installed.md) | 0단계 환경 — 확정 스택 버전, `LD_LIBRARY_PATH` 픽스 2개(cuDNN·TensorRT), `dynamo=True`가 요구하는 `onnxscript`, opset 다운컨버트 무음 폴백 |
 | [`study-guide-project.md`](study-guide-project.md) | 0.5단계 배포 사다리 — `executorch`/`torch`/`torchvision` 3자 ABI 핀 충돌과 해법, LiteRT `CompiledModel` API 부재, Lv.2 PTQ 4종 실측 |
 | [`stage1-quantization-hands-on.md`](stage1-quantization-hands-on.md) | 1단계 양자화 이론 2회 실행 — ORT Entropy가 MinMax로 퇴화(산출 md5 동일), TensorRT 폴백 원인은 activation zero-point≠0 하나뿐, 50k 재실행 정정 12건 |
-| [`qat-recovery-experiment.md`](qat-recovery-experiment.md) | **미완 작업** — QAT 회복 실험 2팔 설계와 현재 상태. 회복률을 읽지 말아야 하는 이유 |
 | [`imagenet-val-50k-local.md`](imagenet-val-50k-local.md) | ImageNet val 50,000장 확보·검증 경위, 라벨 규약, 전처리 2종(`crop_tv` vs `crop_squash`)의 −1.07%p 차이 |
-| [`gpu-xid79-fallen-off-bus.md`](gpu-xid79-fallen-off-bus.md) | RTX 3060 Xid 79 3회 재발 진단 — 배치 축소가 무효한 레버라는 실측 반증, SW Power Cap 상시 점등 |
-| [`repo-is-public-scan-before-commit.md`](repo-is-public-scan-before-commit.md) | 커밋 전 비밀정보 스캔 절차와 "마스킹 후 커밋" 방침 |
+| [`qat-recovery-experiment.md`](qat-recovery-experiment.md) | **완료** — QAT 회복(W4A8 손실변형): FP32→PTQ 4-bit −24.16%p→QAT 97.1% 회복, QAT−대조군 −1.50%p("공짜 아님") |
+| [`stage2-detr-hands-on.md`](stage2-detr-hands-on.md) | 2단계 DETR INT8(커밋 41dc49e) — 초안 단정 3건 반전(export 블로커=SDPA·op선택 mixed 실패·손상 분산), 다음=SmoothQuant/BEVFormer |
+| [`gpu-xid79-fallen-off-bus.md`](gpu-xid79-fallen-off-bus.md) | (구 머신 이력·해소) RTX 3060 Xid 79 3회 재발 진단 — SW Power Cap 상시 점등, 배치 축소 무효. 3080 이관으로 해결 |
+| [`repo-is-public-scan-before-commit.md`](repo-is-public-scan-before-commit.md) | 커밋 규약 — 시크릿 스캔, main 직접 커밋, 푸시는 요청 시만 |
 
 ## 공개본에서 손댄 것
 
 저장소가 public이라 복사 시 다음을 처리했습니다.
 
-- **sudo 암호 마스킹** — `stage0-env-installed.md`와 `repo-is-public-scan-before-commit.md`에
-  이전 작업 머신의 실제 sudo 암호가 평문으로 있었습니다. `<암호>`로 치환했습니다. 비밀값은
-  문서의 교육적 가치에 기여하는 바가 없어 마스킹해도 내용 손실이 없습니다.
-- **`repo-git-push-auth.md` 제외** — 그 머신의 git 자격증명 저장 방식(경로·계정)만 담고 있어
-  공개 가치가 없고 노출 위험만 있습니다. 새 PC에서는 각자 `git` 인증을 새로 설정하면 됩니다.
+- **sudo 암호 마스킹/제외** — 이전 작업 머신의 실제 sudo 암호가 평문으로 있던 것을 마스킹했고,
+  갱신본(2026-08-16)부터는 아예 기록하지 않습니다. 비밀값은 문서의 교육적 가치에 기여하지 않아 손실이 없습니다.
+- **git 자격증명 세부 제외** — `repo-git-push-auth.md`(자격증명 저장 방식)와 PAT 저장 위치 언급은
+  공개 가치가 없고 노출 위험만 있어 공개본에서 뺐습니다. 새 PC에서는 각자 `git` 인증을 새로 설정하면 됩니다.
 - **로컬 메타 제거** — `originSessionId`, `modified` 필드는 로컬 세션 식별자라 지웠습니다.
