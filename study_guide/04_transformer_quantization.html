@@ -67,7 +67,7 @@ footer{margin-top:60px;padding-top:18px;border-top:1px solid var(--line);color:v
 <blockquote class="callout bad">📌 이 문서의 정본 버전 스택(모든 명령/표는 이 기준): <strong>CUDA 12.8 · onnx 1.18.0 · onnxruntime-gpu 1.23.2 · TensorRT 10.16.x LTS · <a href="https://github.com/NVIDIA/Model-Optimizer">NVIDIA Model Optimizer</a> · ExecuTorch 1.3.x</strong>. 산출물 <code>onnx_export_failures.md</code>는 이 문서(2단계)의 실습에서 생성된다. 🔴 <strong>export 전에 반드시 확인</strong>: 정본 ORT 1.23.2는 <strong>ONNX IR 11 / opset 23까지만</strong> 읽는다(그 상한을 만드는 것이 <code>onnx==1.18.0</code> 핀이다 — <a href="01_environment_setup.html">0단계 2절</a> 참조). 이 문서의 모든 export는 <strong>opset ≤ 23</strong>을 지킨다(실제로는 16~17을 쓴다). <code>onnx</code>를 무제한으로 올리면 1.22.0(<strong>IR 13</strong>)이 깔려 export한 모델이 ORT 로드 단계에서 <code>Unsupported model IR version: 13</code> 으로 죽는다.</blockquote>
 <hr>
 <h2 id="1-학습-목표--완료-체크리스트">1) 학습 목표 &amp; 완료 체크리스트</h2>
-<ul><li class="task"><label><input type="checkbox" data-k="4222d390bc"> Transformer 4대 문제(LayerNorm·Softmax·GELU·act×act matmul)를 "왜 깨지는가"까지 <strong>수치 예시로</strong> 설명할 수 있다.</label></li><li class="task"><label><input type="checkbox" data-k="62c47ec218"> outlier 100 vs 본체 ±3 상황에서 per-tensor INT8의 <strong>유효 비트 손실을 직접 계산</strong>할 수 있다.</label></li><li class="task"><label><input type="checkbox" data-k="686c527628"> SmoothQuant의 스무딩 수식 <code>s_j = max(|X_j|)^α / max(|W_j|)^(1−α)</code> 을 <strong>등가 변환에서 유도</strong>하고, α(migration strength) 스윕이 activation/weight 난이도를 어떻게 옮기는지 안다.</label></li><li class="task"><label><input type="checkbox" data-k="0146ecfebe"> SmoothQuant를 실제 툴(NVIDIA Model Optimizer 또는 원본 repo)로 적용하고 전후 activation 분포를 비교해봤다.</label></li><li class="task"><label><input type="checkbox" data-k="72b2f0dc40"> ViT 양자화 3부작(FQ-ViT·PTQ4ViT·RepQ-ViT)의 핵심 메커니즘(PTF·LIS / twin uniform·Hessian / scale reparam)과 arXiv ID를 안다.</label></li><li class="task"><label><input type="checkbox" data-k="217353184e"> <code>facebook/detr-resnet-50</code>을 torch로 로드하고 <code>torch.onnx.export</code>를 <strong>시도해서 실패시켰다</strong>.</label></li><li class="task"><label><input type="checkbox" data-k="88f9a97b90"> 실패 원인(<code>grid_sampler</code>/<code>aten::unsupported</code>/dynamic shape/opset)을 <strong>로그 원문 5~8개</strong>로 채집하고 하나씩 우회했다(opset 상향·op 치환·shape 고정).</label></li><li class="task"><label><input type="checkbox" data-k="1ca5a7f943"> deformable attention을 <strong>표준 op(grid_sample+bilinear+gather)로 분해</strong>하거나 plugin으로 감싸는 두 경로를 구분해 설명할 수 있다.</label></li><li class="task"><label><input type="checkbox" data-k="4547f5124f"> INT8 PTQ로 mAP 폭락을 재현하고, mixed precision으로 회복시켰다.</label></li><li class="task"><label><input type="checkbox" data-k="b396c4e73f"> <strong>산출물 <code>onnx_export_failures.md</code></strong> 를 (템플릿의 예시 항목까지 채워) 작성했다.</label></li></ul>
+<ul><li class="task"><label><input type="checkbox" data-k="4222d390bc"> Transformer 4대 문제(LayerNorm·Softmax·GELU·act×act matmul)를 "왜 깨지는가"까지 <strong>수치 예시로</strong> 설명할 수 있다.</label></li><li class="task"><label><input type="checkbox" data-k="62c47ec218"> outlier 100 vs 본체 ±3 상황에서 per-tensor INT8의 <strong>유효 비트 손실을 직접 계산</strong>할 수 있다.</label></li><li class="task"><label><input type="checkbox" data-k="686c527628"> SmoothQuant의 스무딩 수식 <code>s_j = max(|X_j|)^α / max(|W_j|)^(1−α)</code> 을 <strong>등가 변환에서 유도</strong>하고, α(migration strength) 스윕이 activation/weight 난이도를 어떻게 옮기는지 안다.</label></li><li class="task"><label><input type="checkbox" data-k="0146ecfebe"> SmoothQuant를 실제 툴(NVIDIA Model Optimizer 또는 원본 repo)로 적용하고 전후 activation 분포를 비교해봤다.</label></li><li class="task"><label><input type="checkbox" data-k="72b2f0dc40"> ViT 양자화 3부작(FQ-ViT·PTQ4ViT·RepQ-ViT)의 핵심 메커니즘(PTF·LIS / twin uniform·Hessian / scale reparam)과 arXiv ID를 안다.</label></li><li class="task"><label><input type="checkbox" data-k="217353184e"> <code>facebook/detr-resnet-50</code>을 torch로 로드하고 <code>torch.onnx.export</code>를 <strong>시도해서 실패시켰다</strong>.</label></li><li class="task"><label><input type="checkbox" data-k="88f9a97b90"> 실패 원인(<code>grid_sampler</code>/<code>aten::unsupported</code>/dynamic shape/opset)을 <strong>로그 원문 5~8개</strong>로 채집하고 하나씩 우회했다(opset 상향·op 치환·shape 고정).</label></li><li class="task"><label><input type="checkbox" data-k="1ca5a7f943"> deformable attention을 <strong>표준 op(grid_sample+bilinear+gather)로 분해</strong>하거나 plugin으로 감싸는 두 경로를 구분해 설명할 수 있다.</label></li><li class="task"><label><input type="checkbox" data-k="04e5f32fc7"> INT8 PTQ로 mAP 폭락을 재현하고(DETR 실측 42.07→24.02, −42.9%), <strong>op 단위 mixed(<code>nodes_to_exclude</code>)로는 회복이 안 된다는 것</strong>과 그 이유(손상이 per-tensor activation 양자화로 망 전체에 분산됨)를 실측으로 설명할 수 있다.</label></li><li class="task"><label><input type="checkbox" data-k="b396c4e73f"> <strong>산출물 <code>onnx_export_failures.md</code></strong> 를 (템플릿의 예시 항목까지 채워) 작성했다.</label></li></ul>
 <hr>
 <h2 id="2-배경-이론--왜-transformer가-int8에서-깨지는가">2) 배경 이론 — 왜 Transformer가 INT8에서 깨지는가</h2>
 <h3 id="21-4대-문제-이유까지">2.1 4대 문제 (이유까지)</h3>
@@ -141,6 +141,12 @@ pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
 #    🔴 onnx는 반드시 ==1.18.0 (IR 11). 무제한이면 1.22.0(IR 13)이 깔려 ORT 로드가 깨진다.
 #    🔴 ORT는 상한 &#x27;&lt;1.27&#x27; (1.27+는 PyPI 기본이 CUDA 13) → Python 3.10에서 1.23.2로 해석된다.
 pip install &quot;transformers&gt;=4.44&quot; &quot;onnx==1.18.0&quot; &quot;onnxruntime-gpu&lt;1.27&quot; onnxsim
+#    🔴 timm 필수: `facebook/detr-resnet-50`의 backbone은 `TimmBackbone`이라, timm이 없으면
+#       from_pretrained가 곧바로 죽는다(실측, transformers 5.15.0):
+#         ImportError: TimmBackbone requires the timm library but it was not found ...
+#       config에 backbone_config가 있어 네이티브처럼 보여도 실제 인스턴스는 timm 백본이다.
+pip install timm                          # DETR backbone(TimmBackbone) 필수
+#    참고: 위 &quot;transformers&gt;=4.44&quot;는 2026-08 실측에서 5.15.0으로 해석된다(정상 동작 확인).
 #    🔴 onnxscript 필수: torch 2.11의 torch.onnx.export는 기본이 dynamo=True이고 그 경로가
 #       onnxscript를 요구한다. 없으면 아래 4.2의 dynamo=True 시도가 의도한 export 에러가 아니라
 #       &quot;No module named &#x27;onnxscript&#x27;&quot;로 죽어서 실습이 성립하지 않는다.
@@ -176,6 +182,7 @@ providers  : [&#x27;TensorrtExecutionProvider&#x27;, &#x27;CUDAExecutionProvider
 <hr>
 <h2 id="4-단계별-실습--detr을-깨뜨리고-되살리기">4) 단계별 실습 — DETR을 깨뜨리고 되살리기</h2>
 <p>목표 서사: <strong>export 시도 → 실패 → 로그 채집 → 우회 → INT8 PTQ → mAP 폭락 → mixed precision 회복.</strong> 각 실패를 <code>onnx_export_failures.md</code>에 그때그때 기록한다.</p>
+<blockquote class="callout bad">🔴 <strong>2단계 실측 반영 (2026-08-16 · RTX 3080 · COCO val2017 전량 5,000장 · <a href="../logs/stage2_detr_quantization_report.html">실측 리포트</a>)</strong>: 이 절(4)을 실제로 완주했고, <strong>초안과 어긋난 3가지</strong>를 아래 각 소절에 반영했다. 1. <strong>export 경로</strong>: torch 2.11의 <code>torch.onnx.export</code>는 <strong>기본이 <code>dynamo=True</code></strong> 다. 그래서 이 절의 export 코드처럼 <code>dynamo=</code>를 안 주면 legacy가 아니라 <strong>dynamo 경로</strong>로 돌아 요청 opset을 무시하고 <strong>opset 18·IR 10·external data</strong>(main 2.2MB + <code>.onnx.data</code> 166MB)를 낸다(→ 4.2·4.3). 그리고 DETR의 legacy 저-opset 실패는 <code>grid_sampler</code>가 아니라 <strong>SDPA</strong>(<code>aten::scaled_dot_product_attention</code>)다 — <strong>DETR엔 <code>grid_sample</code>이 없다</strong>(grid_sampler 지뢰는 4.6 BEVFormer의 것). 2. <strong>폭락은 재현됐다</strong>: mAP <strong>42.07 → 24.02</strong>(−18.05, <strong>−42.9%</strong>), 작은 객체는 <strong>−77%</strong>(mAP_s 0.213→0.049). FP32 실측 42.07이 공개값 42.0과 일치해 계측이 신뢰된다. 3. <strong>문서의 회복책(문제 op만 <code>nodes_to_exclude</code>)은 실패한다</strong>: attention score matmul 36개를 FP로 빼도 <strong>+0.36 mAP뿐</strong>(24.02→24.38)이고, backbone·transformer <strong>어느 절반을 통째로 FP로 둬도</strong> 회복이 안 된다(bb_fp 23.91 / tf_fp 26.53). 손상은 소수 "문제 op"에 있는 게 아니라 <strong>per-tensor activation 양자화가 망 전체에 분산</strong>돼 있다 → 진짜 레버는 op 제외가 아니라 <strong>SmoothQuant(2.2)·activation 캘리브레이션(2.1.1)</strong>이다. (상세: 4.5)</blockquote>
 <h3 id="41-모델-로드--정상-추론-확인-fp32-baseline">4.1 모델 로드 &amp; 정상 추론 확인 (FP32 baseline)</h3>
 <pre><code class="lang-python"># detr_load.py — DETR을 로드하고 FP32로 한 장 추론해 baseline을 확보
 import torch, requests
@@ -199,33 +206,51 @@ print(&quot;boxes  :&quot;, out.pred_boxes.shape)     # [1, 100, 4]</code></pre>
 boxes  : torch.Size([1, 100, 4])</code></pre>
 <blockquote class="callout tip">💡 팁: DETR(resnet-50)은 <strong>backbone이 CNN, head가 Transformer(encoder+decoder)</strong> 인 하이브리드다. 그래서 "CNN은 되는데 Transformer 파트에서 export가 깨지는" 현상을 <strong>한 모델 안에서</strong> 관찰하기 좋다. <code>grid_sample</code>을 직접 쓰진 않지만, 아래 4.6에서 BEVFormer-tiny로 넘어가면 <code>grid_sample</code>/deformable attention 지뢰를 만난다.</blockquote>
 <h3 id="42-onnx-export-시도--실패-재현">4.2 ONNX export 시도 → 실패 재현</h3>
-<pre><code class="lang-python"># export_try.py — 일부러 낮은 opset/dynamo로 시도해 에러를 채집한다
+<pre><code class="lang-python"># export_try.py — export 경로별로 에러/산출물을 채집한다 (torch 2.11 실측)
 import torch
 from export_common import model, inputs   # 4.1에서 만든 것을 재사용한다고 가정
 
 pixel_values = inputs[&quot;pixel_values&quot;]
 
-# (A) legacy 경로, 낮은 opset — 자주 실패
-try:
-    torch.onnx.export(
-        model, (pixel_values,), &quot;detr_op11.onnx&quot;,
-        input_names=[&quot;pixel_values&quot;], output_names=[&quot;logits&quot;, &quot;pred_boxes&quot;],
-        opset_version=11, do_constant_folding=True,
-    )
-except Exception as e:
-    print(&quot;[FAIL opset11]&quot;, repr(e))
+# 🔴 torch 2.11은 torch.onnx.export의 기본이 dynamo=True다. 그래서 dynamo=를 생략하면
+#    &#x27;낮은 opset으로 legacy 실패를 보려던&#x27; 시도조차 dynamo 경로로 돌아 조용히 &#x27;성공&#x27;해 버린다.
+#    legacy 실패를 재현하려면 아래 (A)처럼 dynamo=False를 반드시 명시해야 한다.
 
-# (B) dynamo 경로 — 커스텀/미지원 op에서 다른 형태로 실패하기도
+# (A) legacy(TorchScript) + 낮은 opset — DETR은 여기서 SDPA 때문에 실패한다
 try:
     torch.onnx.export(
-        model, (pixel_values,), &quot;detr_dynamo.onnx&quot;,
-        opset_version=17, dynamo=True,
+        model, (pixel_values,), &quot;detr_legacy_op11.onnx&quot;,
+        input_names=[&quot;pixel_values&quot;], output_names=[&quot;logits&quot;, &quot;pred_boxes&quot;],
+        opset_version=11, do_constant_folding=True, dynamo=False,
     )
+    print(&quot;[OK legacy op11]&quot;)
 except Exception as e:
-    print(&quot;[FAIL dynamo]&quot;, repr(e))</code></pre>
+    print(&quot;[FAIL legacy op11]&quot;, repr(e))
+# 실측 → FAIL:
+#   UnsupportedOperatorError: Exporting the operator &#x27;aten::scaled_dot_product_attention&#x27;
+#   to ONNX opset version 11 is not supported. Support for this operator was added in version 14 ...
+#   (grid_sampler가 아니다 — DETR엔 grid_sample이 없다. 첫 블로커는 SDPA다.)
+
+# (B) dynamo 경로(기본값) — DETR에선 &#x27;성공&#x27;하지만 요청 opset을 무시한다
+try:
+    torch.onnx.export(
+        model, (pixel_values,), &quot;detr_dynamo_op17.onnx&quot;,
+        opset_version=17, dynamo=True,   # dynamo= 생략해도 결과 동일(기본 True)
+    )
+    print(&quot;[OK dynamo op17]&quot;)
+except Exception as e:
+    print(&quot;[FAIL dynamo]&quot;, repr(e))
+# 실측 → OK지만 opset 17이 아니라 opset 18로 나온다:
+#   W ... Setting ONNX exporter to use operator set version 18 because the requested
+#         opset_version 17 is a lower version than we have implementations for
+#   (opset 17 다운컨버트도 시도하나 RuntimeError: No Adapter To Version $17 for Resize 로 실패 → 18 유지)
+#   산출물: main 2.2MB + detr_dynamo_op17.onnx.data 166.5MB (external data), IR 10</code></pre>
+<p><strong>4가지 경로 실측 결과 (2026-08-16, torch 2.11.0+cu128 · <a href="../logs/stage2_detr_quantization_report.html">리포트</a>):</strong></p>
+<div class="tablewrap"><table><thead><tr><th>시도</th><th>kwargs</th><th>결과</th><th>IR</th><th>opset</th><th>산출물</th></tr></thead><tbody><tr><td>default op11</td><td><code>opset_version=11</code> (dynamo 생략→기본 True)</td><td>✅ OK</td><td>10</td><td><strong>18</strong>(요청 무시)</td><td>main 2.2MB + <code>.onnx.data</code> 166.5MB</td></tr><tr><td>dynamo op17</td><td><code>opset_version=17, dynamo=True</code></td><td>✅ OK</td><td>10</td><td><strong>18</strong>(요청 무시)</td><td>main 2.2MB + <code>.onnx.data</code> 166.5MB</td></tr><tr><td><strong>legacy op11</strong></td><td><code>opset_version=11, dynamo=False</code></td><td>🔴 <strong>FAIL</strong></td><td>—</td><td>—</td><td><code>aten::scaled_dot_product_attention ... not supported</code>(v14부터)</td></tr><tr><td><strong>legacy op17</strong></td><td><code>opset_version=17, dynamo=False</code></td><td>✅ OK</td><td>8</td><td>17</td><td><strong>단일 파일 170.4MB</strong></td></tr></tbody></table></div>
+<blockquote class="callout bad">🔴 <strong>핵심 교훈 3가지 (실측)</strong>: ① <strong>dynamo가 기본</strong>이라 <code>dynamo=</code>를 안 주면 legacy 실패를 볼 수 없다(조용히 성공). ② <strong>dynamo 경로는 요청 opset을 무시</strong>하고 opset 18로 고정하며(다운컨버트는 <code>Resize</code> 어댑터 부재로 실패), 가중치를 <strong>external data로 분리</strong>해 main 파일이 2.2MB로 쪼그라든다 — 배포·검증 파이프라인이 단일 파일을 가정한다면 여기서 어긋난다. ③ <strong>깨끗한 단일 파일(IR 8·opset 17)을 원하면 <code>dynamo=False</code> + opset ≥ 17</strong> 이 유일한 경로다. 이 문서의 이후 실습(4.3~4.5)은 전부 이 legacy 단일 파일을 쓴다.</blockquote>
 <h4 id="421-export-실패-카탈로그-실제-로그-문구--원인--우회">4.2.1 export 실패 카탈로그 (실제 로그 문구 → 원인 → 우회)</h4>
 <p><strong>아래 로그 문구는 <code>onnx_export_failures.md</code>에 통째로 붙여넣을 것.</strong> 모델·버전에 따라 문구가 조금씩 다르니 <strong>본인 환경에서 실제로 나온 것</strong>을 기록한다(여기 표는 채집 가이드).</p>
-<div class="tablewrap"><table><thead><tr><th>#</th><th>증상(로그 핵심 문구)</th><th>발생 경로</th><th>원인</th><th>우회</th></tr></thead><tbody><tr><td>1</td><td><code>Exporting the operator &#x27;aten::grid_sampler&#x27; to ONNX opset version 11 is not supported.</code></td><td>legacy, opset≤15</td><td>ONNX <code>GridSample</code>는 <strong>opset 16</strong>부터 표준</td><td><strong>opset ≥ 16</strong> (<code>opset_version=16</code>/17). BEVFormer/deformable 계열에서 특히</td></tr><tr><td>2</td><td><code>Unsupported: ONNX export of operator GridSample with 5D volumetric input.</code></td><td>legacy, opset 16/17</td><td>opset 16 <code>GridSample</code>는 <strong>4D(2D 샘플링)만</strong></td><td>5D→4D reshape 후 샘플링, 또는 커스텀 op/plugin. ONNX 표준은 <strong>opset 20</strong>에서 5D 추가</td></tr><tr><td>3</td><td><code>torch.onnx.errors.UnsupportedOperatorError: Exporting the operator &#x27;aten::&lt;op&gt;&#x27; to ONNX ... is not supported.</code></td><td>legacy</td><td>특정 aten op 미지원(모델별 상이; <code>aten::unique</code>, <code>aten::nonzero</code> 등)</td><td>opset 상향 / 서브그래프를 지원 op로 치환 / <strong>custom symbolic</strong> 등록</td></tr><tr><td>4</td><td><code>torch._dynamo.exc.Unsupported: ... could not be traced</code> / <code>Failed to export the model with torch.export</code></td><td>dynamo=True</td><td>dynamo가 데이터 의존 제어흐름(control flow)·커스텀 op를 트레이스 못 함</td><td><code>dynamo=False</code>(legacy)로 재시도, 또는 문제 블록을 <code>torch.cond</code>/wrapper로 감싸기</td></tr><tr><td>5</td><td><code>RuntimeError: Exporting the operator ... with FakeQuantize is not supported</code> / QDQ 노드 export 실패</td><td>dynamo=True, 양자화 그래프</td><td>dynamo 경로의 QDQ/FakeQuantize export가 아직 불안정</td><td>양자화 그래프 export는 <strong>legacy(<code>dynamo=False</code>)</strong> 로</td></tr><tr><td>6</td><td><code>Type Error: Type &#x27;tensor(int64)&#x27; of input parameter ... is invalid</code> (ORT 로드 시)</td><td>로드/추론</td><td>export는 됐으나 dtype 불일치(예: index가 int64인데 backend가 int32 기대)</td><td><code>onnxsim</code>/GraphSurgeon로 cast 삽입, opset 상향</td></tr><tr><td>7</td><td><code>[ShapeInferenceError] ... Dynamic shape ... inference failed</code> / downstream shape 경고</td><td>로드/컴파일</td><td>DETR은 입력 H,W 가변 → dynamic axes가 ORT/TRT/NPU에서 문제</td><td>아래 4.3처럼 <strong>입력 shape 고정</strong> 또는 명시적 <code>dynamic_axes</code></td></tr><tr><td>8</td><td><code>In node ... GridSample ... attribute &#x27;align_corners&#x27; ...</code> / opset mismatch</td><td>로드</td><td>export opset과 ORT가 기대하는 opset 속성 불일치</td><td>export opset과 <code>onnxruntime</code> 버전(정본 1.23.2 → <strong>opset ≤ 23</strong>)이 지원하는 opset을 맞추기</td></tr></tbody></table></div>
+<div class="tablewrap"><table><thead><tr><th>#</th><th>증상(로그 핵심 문구)</th><th>발생 경로</th><th>원인</th><th>우회</th></tr></thead><tbody><tr><td><strong>0</strong></td><td><code>UnsupportedOperatorError: Exporting the operator &#x27;aten::scaled_dot_product_attention&#x27; to ONNX opset version 11 is not supported. Support for this operator was added in version 14</code></td><td><strong>legacy(dynamo=False), opset ≤ 13</strong></td><td>SDPA(attention) symbolic은 <strong>opset 14</strong>부터. <strong>DETR의 실제 첫 블로커</strong>(grid_sampler 아님)</td><td><strong>opset ≥ 17</strong>(dynamo=False). dynamo 경로는 SDPA를 분해해 통과하지만 opset 18로 나감</td></tr><tr><td>1</td><td><code>Exporting the operator &#x27;aten::grid_sampler&#x27; to ONNX opset version 11 is not supported.</code></td><td>legacy, opset≤15</td><td>ONNX <code>GridSample</code>는 <strong>opset 16</strong>부터 표준</td><td><strong>opset ≥ 16</strong> (<code>opset_version=16</code>/17). <strong>DETR엔 grid_sample이 없다 — 이 행은 4.6 BEVFormer의 것</strong></td></tr><tr><td>2</td><td><code>Unsupported: ONNX export of operator GridSample with 5D volumetric input.</code></td><td>legacy, opset 16/17</td><td>opset 16 <code>GridSample</code>는 <strong>4D(2D 샘플링)만</strong></td><td>5D→4D reshape 후 샘플링, 또는 커스텀 op/plugin. ONNX 표준은 <strong>opset 20</strong>에서 5D 추가</td></tr><tr><td>3</td><td><code>torch.onnx.errors.UnsupportedOperatorError: Exporting the operator &#x27;aten::&lt;op&gt;&#x27; to ONNX ... is not supported.</code></td><td>legacy</td><td>특정 aten op 미지원(모델별 상이; <code>aten::unique</code>, <code>aten::nonzero</code> 등)</td><td>opset 상향 / 서브그래프를 지원 op로 치환 / <strong>custom symbolic</strong> 등록</td></tr><tr><td>4</td><td><code>torch._dynamo.exc.Unsupported: ... could not be traced</code> / <code>Failed to export the model with torch.export</code></td><td>dynamo=True</td><td>dynamo가 데이터 의존 제어흐름(control flow)·커스텀 op를 트레이스 못 함</td><td><code>dynamo=False</code>(legacy)로 재시도, 또는 문제 블록을 <code>torch.cond</code>/wrapper로 감싸기</td></tr><tr><td>5</td><td><code>RuntimeError: Exporting the operator ... with FakeQuantize is not supported</code> / QDQ 노드 export 실패</td><td>dynamo=True, 양자화 그래프</td><td>dynamo 경로의 QDQ/FakeQuantize export가 아직 불안정</td><td>양자화 그래프 export는 <strong>legacy(<code>dynamo=False</code>)</strong> 로</td></tr><tr><td>6</td><td><code>Type Error: Type &#x27;tensor(int64)&#x27; of input parameter ... is invalid</code> (ORT 로드 시)</td><td>로드/추론</td><td>export는 됐으나 dtype 불일치(예: index가 int64인데 backend가 int32 기대)</td><td><code>onnxsim</code>/GraphSurgeon로 cast 삽입, opset 상향</td></tr><tr><td>7</td><td><code>[ShapeInferenceError] ... Dynamic shape ... inference failed</code> / downstream shape 경고</td><td>로드/컴파일</td><td>DETR은 입력 H,W 가변 → dynamic axes가 ORT/TRT/NPU에서 문제</td><td>아래 4.3처럼 <strong>입력 shape 고정</strong> 또는 명시적 <code>dynamic_axes</code></td></tr><tr><td>8</td><td><code>In node ... GridSample ... attribute &#x27;align_corners&#x27; ...</code> / opset mismatch</td><td>로드</td><td>export opset과 ORT가 기대하는 opset 속성 불일치</td><td>export opset과 <code>onnxruntime</code> 버전(정본 1.23.2 → <strong>opset ≤ 23</strong>)이 지원하는 opset을 맞추기</td></tr></tbody></table></div>
 <blockquote class="callout bad">🔴 함정: "일단 export만 되면 끝"이 아니다. export가 성공해도 <strong>NPU 컴파일 단계에서 다시 깨진다</strong>(4.6, 6절). 그래서 실패 로그를 export/컴파일 <strong>양쪽 모두</strong> 남겨야 design rules가 된다.</blockquote>
 <blockquote class="callout tip">💡 legacy vs dynamo 채집 전략: <strong>같은 모델을 <code>dynamo=False</code>와 <code>dynamo=True</code>로 각각 돌려</strong> 에러를 나란히 기록하라. 둘은 <strong>다른 이유로 다른 지점에서</strong> 깨진다(legacy는 aten symbolic 부재, dynamo는 트레이스/제어흐름). 어느 경로가 이 모델에 맞는지는 이 비교로만 알 수 있다. 양자화 QDQ export는 현재 대체로 <strong>legacy가 안정적</strong>이다.</blockquote>
 <h3 id="43-우회-1--opset-상향--입력-shape-고정">4.3 우회 1 — opset 상향 + 입력 shape 고정</h3>
@@ -241,6 +266,9 @@ torch.onnx.export(
     output_names=[&quot;logits&quot;, &quot;pred_boxes&quot;],
     opset_version=17,
     do_constant_folding=True,
+    dynamo=False,                       # 🔴 필수: 생략하면 dynamo(기본)로 돌아 opset 18 +
+                                        #    external data가 나온다. dynamo=False라야 opset 17·
+                                        #    IR 8·단일 파일(≈170MB)이 나온다(4.2 실측표).
     dynamic_axes=None,                  # 우선 완전 고정으로 성공시킨 뒤,
     # dynamic_axes={&quot;pixel_values&quot;: {0: &quot;batch&quot;}},  # 필요 시 batch만 열기
 )
@@ -254,6 +282,7 @@ polygraphy run detr_sim.onnx --onnxrt</code></pre>
 <p>예상 출력(Polygraphy 성공 시 말미):</p>
 <pre><code>[I] PASSED | Runtime: ... | Command: polygraphy run detr_sim.onnx --onnxrt</code></pre>
 <blockquote class="callout tip">💡 팁: DETR은 backbone에서 위치 인코딩이 입력 크기에 의존하므로 <strong>shape를 고정</strong>하면 export/컴파일이 훨씬 순탄하다. 임베디드 배포에서 <strong>dynamic shape는 거의 항상 적</strong>이다 — 고정하는 습관을 들인다.</blockquote>
+<blockquote class="callout bad">🔴 실측 주의 (고정 vs 동적의 상충): <strong>COCO val 전량(5,000장) mAP를 재려면</strong> DETR 전처리가 이미지마다 최단변 800·최장변 ≤1333으로 리사이즈해 <strong>입력 H,W가 장마다 다르다</strong>. 완전 고정 모델로는 이 셋을 못 돌린다. 그래서 4.5의 실측은 같은 legacy(<code>dynamo=False</code>)·opset 17로 <strong>H,W·batch를 <code>dynamic_axes</code>로 연</strong> 모델을 썼다(정확도 판정용). 배포용(고정)과 정확도 측정용(동적)을 <strong>분리</strong>하는 셈이다. 단, 이 <strong>동적 shape가 4.5의 Percentile/Entropy 캘리브레이션을 깨뜨린다</strong>(장마다 activation 텐서 shape가 달라 히스토그램 수집이 실패) — 상세는 4.5의 "캘리브레이션은 레버가 되는가" 참조.</blockquote>
 <h3 id="44-우회-2--smoothquant-적용-activation-outlier-완화">4.4 우회 2 — SmoothQuant 적용 (activation outlier 완화)</h3>
 <p>INT8 PTQ 전에 SmoothQuant로 LayerNorm outlier를 눌러두면 정확도 하락이 줄어든다(원리는 2.2). <strong>원본 repo</strong> 또는 <strong>프로덕션 툴</strong> 중 택1.</p>
 <p><strong>옵션 A) NVIDIA Model Optimizer (modelopt)</strong> — SmoothQuant를 quant config로 내장 지원(2026 기준 유지·활성. repo: <code>https://github.com/NVIDIA/Model-Optimizer</code>).</p>
@@ -321,23 +350,40 @@ quantize_static(
     weight_type=QuantType.QInt8,
     per_channel=True,                     # LayerNorm/Conv weight는 per-channel이 유리
 )</code></pre>
-<pre><code class="lang-python"># eval_map.py — COCO val 일부에서 mAP를 재본다 (개념)
-# 1) FP32(detr_sim.onnx) mAP 측정  -&gt; baseline
-# 2) INT8(detr_int8.onnx) mAP 측정 -&gt; 보통 &#x27;폭락&#x27;을 관찰 (특히 Softmax/GELU/attention 때문)
-# torchmetrics.detection.MeanAveragePrecision 또는 pycocotools 사용</code></pre>
-<p><strong>회복 전략 — mixed precision(핵심):</strong> 문제 연산만 FP16으로 되돌린다.</p>
-<pre><code class="lang-python"># nodes_to_exclude로 attention/softmax/layernorm/gelu 계열을 INT8에서 제외
+<pre><code class="lang-python"># eval_map.py — COCO val2017 mAP를 pycocotools(COCOeval &#x27;bbox&#x27;)로 잰다
+# 후처리는 HF API 대신 표준 DETR 수식으로 직접(버전 독립):
+#   prob = softmax(logits, -1)[..., :91]     # 마지막 92번째 = no-object 드롭
+#   score, label = prob.max(-1)              # label = COCO category_id (index==id)
+#   box: cxcywh(정규화) → xyxy(절대) × (W,H); 임계값·NMS 없이 100 쿼리 전부 제출
+# 🔴 판정용은 val 전량(5,000장)으로. 소표본은 mAP가 흔들려 폭락 크기를 못 가린다.
+# 실측 하네스: experiments/stage2_detr/s2_07_coco_eval.py (FP32/INT8/mixed 한 패스 동시 평가)</code></pre>
+<p><strong>회복 전략 — mixed precision:</strong> 문제 연산만 FP로 되돌린다. <strong>이것이 초안의 핵심 처방이었는데, DETR 실측에선 통하지 않았다</strong>(아래).</p>
+<pre><code class="lang-python"># nodes_to_exclude로 &#x27;문제 op&#x27;를 INT8에서 제외 (초안 예시)
 quantize_static(
-    &quot;detr_sim.onnx&quot;, &quot;detr_mixed.onnx&quot;,
+    &quot;detr_dyn.onnx&quot;, &quot;detr_mixed.onnx&quot;,
     calibration_data_reader=Reader(calib_samples),
     quant_format=QuantFormat.QDQ,
     activation_type=QuantType.QInt8, weight_type=QuantType.QInt8, per_channel=True,
-    nodes_to_exclude=[  # 그래프에서 실제 노드명을 확인해 채운다 (netron/polygraphy로)
-        # &quot;*/Softmax&quot;, &quot;*/Gelu&quot;, &quot;*LayerNorm*&quot;, &quot;*attention*MatMul*&quot;
+    nodes_to_exclude=[  # 🔴 아래 4개 중 3개는 DETR에서 &#x27;무효&#x27;다(측정으로 확인):
+        # &quot;*/Gelu&quot;,          # → 매칭 0개. DETR은 GELU가 없다(FFN이 ReLU 63개, Gelu/Erf 0개)
+        # &quot;*/Softmax&quot;,       # → Softmax 18개 존재하나 ORT QDQ는 Softmax를 애초에 양자화 안 함(무효)
+        # &quot;*LayerNorm*&quot;,     # → LayerNormalization 31개 존재하나 역시 양자화 대상 아님(무효)
+        # 실제로 그래프를 바꾸는 건 이것뿐 ↓ (attention score의 act×act matmul 36개)
+        # 정규식: r&quot;/(self_attn|encoder_attn)/MatMul(_1)?$&quot;
     ],
 )</code></pre>
-<div class="tablewrap"><table><thead><tr><th>구성</th><th>무엇을 INT8로</th><th>예상 결과</th><th>해석</th></tr></thead><tbody><tr><td>FP32 baseline</td><td>없음</td><td>mAP 100%(기준)</td><td>원본 정확도</td></tr><tr><td><strong>전부 INT8</strong></td><td>모든 연산</td><td><strong>mAP 폭락</strong>(수십 % 손실 흔함)</td><td>Softmax/GELU/attention이 INT8을 못 견딤</td></tr><tr><td><strong>mixed precision</strong></td><td>Conv/Linear만 INT8, Softmax/GELU/attention/LayerNorm은 FP16</td><td>mAP를 <strong>baseline 근처로 회복</strong> + 속도 이득 유지</td><td>4대 문제 연산만 FP16으로 뺀 것이 핵심</td></tr></tbody></table></div>
-<blockquote class="callout tip">💡 팁: 노드명을 모를 땐 <code>polygraphy inspect model detr_sim.onnx --show layers</code> 또는 Netron으로 그래프를 열어 Softmax/Gelu/MatMul 노드 이름을 확보한 뒤 <code>nodes_to_exclude</code>에 넣는다.</blockquote>
+<p><strong>측정 결과 (COCO val2017 전량 5,000장 · CUDA EP · MinMax 캘리브 100장 · per-channel QDQ · <a href="../logs/stage2_detr_quantization_report.html">리포트</a>):</strong></p>
+<div class="tablewrap"><table><thead><tr><th>구성</th><th>무엇을 INT8로</th><th>mAP</th><th>mAP50</th><th>mAP_s</th><th>mAP_l</th><th>vs FP32</th></tr></thead><tbody><tr><td>FP32 baseline</td><td>없음</td><td><strong>0.4207</strong></td><td>0.6231</td><td>0.213</td><td>0.610</td><td>— (공개값 42.0 재현✓)</td></tr><tr><td><strong>전부 INT8</strong></td><td>190개(Conv 54+MatMul 136) 전부</td><td><strong>0.2402</strong></td><td>0.4708</td><td>0.049</td><td>0.450</td><td><strong>−0.1805 (−42.9%)</strong></td></tr><tr><td>mixed (attn score 36개 FP)</td><td>위에서 act×act matmul 36개만 제외</td><td>0.2438</td><td>0.4736</td><td>0.048</td><td>0.457</td><td>−0.1769 (<strong>+0.36 vs INT8</strong>)</td></tr></tbody></table></div>
+<blockquote class="callout bad">🔴 <strong>판정 1 — 폭락은 재현됐다</strong>: 42.07 → 24.02, 절반 가까이(<strong>−42.9%</strong>) 무너진다. 가장 심한 곳은 <strong>작은 객체</strong>로 mAP_s가 0.213→0.049(<strong>−77%</strong>), 큰 객체는 0.610→0.450(−26%)로 상대적으로 버틴다. FP32가 공개값 42.0과 일치하므로 이 폭락은 계측 오차가 아니다.</blockquote>
+<blockquote class="callout bad">🔴 <strong>판정 2 — 초안의 mixed 처방(문제 op만 FP)은 실패한다</strong>: attention score matmul 36개를 FP로 빼도 <strong>+0.36 mAP</strong>(24.02→24.38)뿐이다. 게다가 초안 예시의 <code>nodes_to_exclude</code> 4개 중 3개는 애초에 <strong>무효</strong>다 — DETR엔 <strong>GELU가 없고</strong>(ReLU만), Softmax·LayerNorm은 <strong>ORT QDQ가 Conv/MatMul/Gemm만 양자화</strong>해서 제외할 것도 없다. "4대 문제 연산만 FP16으로 빼면 baseline 근처로 회복"은 <strong>DETR에서 성립하지 않는다.</strong></blockquote>
+<p><strong>결정적 절제 — 범인은 backbone인가 transformer인가:</strong> 어느 한쪽만 INT8로 내려 본다(<a href="../experiments/stage2_detr/s2_09_quantize_ablation.py"><code>s2_09_quantize_ablation.py</code></a>).</p>
+<div class="tablewrap"><table><thead><tr><th>구성</th><th>INT8 대상</th><th>mAP</th><th>vs FP32</th><th>해석</th></tr></thead><tbody><tr><td>bb_fp</td><td>transformer(137)만 INT8, backbone(53 Conv) FP</td><td>0.2391</td><td>−0.1816</td><td>transformer만 내려도 <strong>거의 풀 폭락</strong></td></tr><tr><td>tf_fp</td><td>backbone(53 Conv)만 INT8, transformer(137) FP</td><td>0.2653</td><td>−0.1554</td><td>backbone만 내려도 <strong>−15.5 mAP</strong></td></tr></tbody></table></div>
+<blockquote class="callout bad">🔴 <strong>판정 3 — 손상은 분산돼 있다(범인이 없다)</strong>: transformer만 INT8로 내리면 23.91(≈ 전부 INT8 24.02), backbone만 내려도 26.53. <strong>두 절반이 각자 독립적으로 폭락의 대부분을 만든다</strong>(합산 아님, sub-additive). 즉 소수의 "문제 op"를 FP로 빼는 것으론 회복이 불가능하다 — 문제는 <strong>per-tensor activation 양자화가 망 전체에 퍼져</strong> 있다는 것이다. 이래서 판정 2의 op-제외가 실패한다.</blockquote>
+<p><strong>캘리브레이션은 레버가 되는가 (2.1.1 outlier 명제 직접 검증):</strong> per-tensor scale이 outlier에 끌려가는 게 원인이라면, outlier를 clip하는 <strong>Percentile/Entropy 캘리브레이션</strong>으로 회복돼야 한다. 그러나 정본 ORT 스택에서 <strong>이 경로는 DETR에 대해 3가지로 연달아 죽는다</strong>(<a href="../experiments/stage2_detr/s2_10_quantize_percentile.py"><code>s2_10_quantize_percentile.py</code></a>):</p>
+<ol><li><strong>동적 shape 충돌</strong>: 4.3에서 본 대로 mAP 측정 모델은 H,W가 열려 있어 <strong>장마다 activation 텐서 shape가 다르다</strong> → ORT 히스토그램 수집기가 per-image 배열을 하나로 stack하려다 <code>ValueError: setting an array element with a sequence ... inhomogeneous shape</code>.</li><li><strong>메모리 폭발</strong>: 캘리브 입력을 고정 shape로 맞춰 (1)을 우회하면 이번엔 Percentile이 이미지당 activation 분포를 통째로 쥐고 있어 <strong>약 3.6GB/장</strong> — N=8에서 peak 30.9GB로 <strong>OOM(SIGKILL)</strong>(장비 31GB).</li><li><strong>비유한값</strong>: N=4로 줄여 메모리를 맞추면(peak 19GB) <code>numpy.histogram</code>이 DETR의 attention mask 채움값 등 <strong><code>inf</code>를 만나</strong> <code>ValueError: autodetected range of [inf, inf] is not finite</code>.</li></ol>
+<blockquote class="callout bad">🔴 <strong>판정 4 — 스톡 ORT에서 histogram 캘리브레이션은 DETR에 사실상 못 쓴다</strong>: 살아남는 건 <strong>MinMax(스칼라 min/max)</strong> 뿐이고, 위 모든 mAP가 MinMax 결과다. 즉 "Percentile로 바꿔 outlier를 clip해 회복" 같은 손쉬운 노브는 <strong>DETR에선 존재하지 않는다</strong>. 진짜 레버는 캘리브레이터 교체가 아니라 <strong>activation outlier 자체를 구조적으로 없애는</strong> 쪽 — <strong>SmoothQuant(2.2)</strong> 로 outlier를 weight로 이전하거나(activation을 per-tensor로도 담을 수 있게 만듦), per-token/per-group activation 양자화(스톡 ORT QDQ엔 없음)로 가야 한다. <strong>본 실습에선 SmoothQuant(modelopt) 적용을 다음 검증 과제로 남긴다</strong>(4.4는 API 확인 필요 상태). 다만 절제 결과(판정 3)로 볼 때, op 단위가 아니라 <strong>activation 스케일 문제 자체(2.1.1)</strong> 를 공략해야 한다는 방향은 분명하다.</blockquote>
+<blockquote class="callout tip">💡 왜 1단계 ResNet18(−0.1%p)보다 이렇게 심한가: <strong>검출(위치 회귀)은 분류보다 양자화에 훨씬 민감</strong>하다. 박스 좌표는 정밀도가 곧 IoU이고, DETR은 100개 쿼리를 <strong>임계값·NMS 없이</strong> 순위로 제출하므로 미세한 점수 교란이 순위를 흔든다. 특히 작은 객체는 미세한 공간 특징에 의존하는데, per-tensor activation 양자화가 outlier에 끌려가 그 작은 값들을 뭉갠다(2.1.1) → mAP_s −77%.</blockquote>
+<blockquote class="callout tip">💡 팁: 노드명을 모를 땐 <code>polygraphy inspect model detr_dyn.onnx --show layers</code> 또는 Netron으로 그래프를 열어 노드 이름을 확보한다. DETR에서 실제로 제외 효과가 있는 건 <code>/model/*/self_attn/MatMul(_1)</code>·<code>/model/*/encoder_attn/MatMul(_1)</code>(총 36개)뿐이다.</blockquote>
 <h3 id="46-심화-bevformer-tiny--grid_sample--deformable-attention-지뢰">4.6 (심화) BEVFormer-tiny — grid_sample &amp; Deformable Attention 지뢰</h3>
 <p>DETR로 흐름을 익혔다면, BEV/Occupancy 실전 난이도를 맛본다. BEVFormer-tiny를 export하면 <strong>DETR보다 훨씬 험한</strong> 실패를 만난다.</p>
 <pre><code class="lang-bash"># BEVFormer는 mmdet3d/mmcv 계열 의존이 무겁다. 공식 repo 기준으로 환경을 맞춘다.
@@ -367,8 +413,9 @@ git clone https://github.com/DerryHub/BEVFormer_tensorrt</code></pre>
 <div class="tablewrap"><table><thead><tr><th>opset</th><th><code>grid_sample</code>(4D) export</th><th>5D 볼류메트릭</th><th>비고</th></tr></thead><tbody><tr><td>9 / 11 / 12</td><td>❌ <code>not supported</code></td><td>❌</td><td><code>GridSample</code> 미표준. 가장 흔한 첫 실패</td></tr><tr><td><strong>16, 17</strong></td><td>✅</td><td>❌ (<code>5D volumetric</code> 에러)</td><td>4D만. DETR/2D BEV엔 충분</td></tr><tr><td>20+</td><td>✅</td><td>✅(표준상)</td><td>ONNX 표준에 5D 추가. 런타임 지원은 별개</td></tr></tbody></table></div>
 <blockquote class="callout">런타임 쪽(4.6.1 상세 표 참고): <strong>TensorRT 10.16.x LTS</strong> 는 <code>GridSample</code>을 native로 파싱하되 <strong>4D(rank-4)만</strong>(5D 미지원, issue #3890). <strong>정본 onnxruntime 1.23.2</strong> 는 4D는 CUDA EP에서 돌리지만 <strong>5D는 CUDA 커널이 없어 CPU로 조용히 fallback</strong>한다(실측). CUDA EP의 볼류메트릭(3D) GridSample은 <strong>1.27</strong>에서 추가됐고 1.28.0이 이를 계승했지만, 그 라인은 CUDA 13이라 이 스택에서는 쓰지 않는다 — 즉 <strong>5D는 정본 스택에서 분해/plugin이 사실상 필수</strong>다. <strong>NPU(TIDL 등)는 여전히 미지원 다수</strong> → <a href="06_multi_soc.html">4단계</a>에서 op 치환/분해 필요.</blockquote>
 <h3 id="52-precision별-정확도특성-해석-틀">5.2 precision별 정확도/특성 (해석 틀)</h3>
-<div class="tablewrap"><table><thead><tr><th>구성</th><th>정확도</th><th>속도</th><th>언제 쓰나</th></tr></thead><tbody><tr><td>FP32</td><td>기준</td><td>느림</td><td>baseline·정확도 상한</td></tr><tr><td>전부 INT8</td><td>폭락</td><td>빠름</td><td>Transformer엔 <strong>사실상 불가</strong></td></tr><tr><td><strong>mixed(권장)</strong></td><td>baseline 근처</td><td>빠름(대부분 INT8)</td><td>Softmax/GELU/attention/LayerNorm만 FP16</td></tr><tr><td>FP16 전체</td><td>≈FP32</td><td>중간</td><td>INT8이 도저히 안 될 때의 안전판</td></tr></tbody></table></div>
-<p><strong>핵심 해석:</strong> Transformer 양자화는 "얼마나 INT8로 내리느냐"가 아니라 <strong>"무엇을 INT8에서 빼느냐(어떤 연산을 FP16으로 지킬 것인가)"</strong> 의 게임이다. 그 판단 근거가 2절의 4대 문제다. 그리고 그 판단을 자동화하려면 SmoothQuant(activation 난이도 낮추기) + per-channel(공간 분리) + 로그/twin-uniform(비균일 분포)까지 조합한다.</p>
+<div class="tablewrap"><table><thead><tr><th>구성</th><th>정확도</th><th>속도</th><th>언제 쓰나</th></tr></thead><tbody><tr><td>FP32</td><td>기준</td><td>느림</td><td>baseline·정확도 상한</td></tr><tr><td>전부 INT8</td><td>폭락(DETR 실측 −42.9%)</td><td>빠름</td><td>Transformer엔 <strong>사실상 불가</strong></td></tr><tr><td>mixed <strong>(스톡 ORT 노드 제외)</strong></td><td>🔴 <strong>회복 실패</strong>(DETR 실측 +0.36 mAP뿐)</td><td>빠름(대부분 INT8)</td><td>per-tensor·op 단위 제외로는 부족</td></tr><tr><td>mixed <strong>(SmoothQuant+twin-uniform 등)</strong></td><td>문헌상 near-lossless(8-bit &lt;0.5%)</td><td>빠름</td><td>제대로 된 기법 조합이 전제(본 실습 미검증)</td></tr><tr><td>FP16 전체</td><td>≈FP32</td><td>중간</td><td>INT8이 도저히 안 될 때의 안전판</td></tr></tbody></table></div>
+<blockquote class="callout bad">🔴 <strong>실측 정정 (2026-08-16, DETR)</strong>: 초안은 "mixed = baseline 근처 회복"을 권장 처방으로 뒀지만, <strong>스톡 ONNX Runtime의 per-tensor INT8 + <code>nodes_to_exclude</code>로는 DETR에서 회복되지 않는다</strong>(42.07→24.02, mixed 24.38, 4.5). 문헌의 "near-lossless"(PTQ4ViT 등)는 <strong>per-channel/per-token activation 양자화 + twin-uniform + Hessian 캘리브</strong> 같은 기법 조합의 결과이지, "문제 op만 FP로 빼기"의 결과가 아니다. 즉 <strong>회복은 도구가 결정한다</strong> — 스톡 ORT가 주는 노브(per-tensor + 노드 제외)와 논문이 쓰는 노브는 다르다.</blockquote>
+<p><strong>핵심 해석 (실측 반영):</strong> Transformer 양자화의 승부처는 "무엇을 FP로 지키느냐"라는 <strong>op 선택</strong>이 <strong>아니라</strong>, DETR 실측으로 보면 <strong>activation을 어떤 입도(granularity)로 양자화하느냐</strong>다. per-tensor로는 outlier 하나가 텐서 전체 scale을 끌고 가(2.1.1) 손상이 망 전체에 분산되고(4.5 판정 3), op를 몇 개 빼는 것으론 못 되돌린다. 되돌리려면 <strong>activation 스케일 문제 자체를 공략</strong>해야 한다 — <strong>SmoothQuant</strong>(activation outlier를 weight로 이전, 2.2) + <strong>per-channel/per-token</strong>(공간 분리) + 로그/twin-uniform(비균일 분포). op 단위 mixed는 이들이 다 실패했을 때의 마지막 수단이지 1차 처방이 아니다.</p>
 <hr>
 <h2 id="6-흔한-오류와-해결-troubleshooting">6) 흔한 오류와 해결 (Troubleshooting)</h2>
 <div class="tablewrap"><table><thead><tr><th>증상</th><th>원인</th><th>해결</th></tr></thead><tbody><tr><td><code>Exporting the operator &#x27;aten::grid_sampler&#x27; to ONNX opset version 11 is not supported</code></td><td><code>GridSample</code>는 opset 16부터 표준</td><td><code>opset_version=16</code>(이상)으로 export</td></tr><tr><td><code>Unsupported: ONNX export of operator GridSample with 5D volumetric input</code></td><td>opset 16 GridSample은 4D만</td><td>5D→4D reshape 후 샘플링, 또는 커스텀 op/plugin. 런타임(ORT≥1.27 / 표준 opset≥20)도 확인</td></tr><tr><td><code>torch.onnx ... aten::xxx is not supported</code> / <code>UnsupportedOperatorError</code></td><td>특정 aten op 미지원</td><td>opset 상향 / 서브그래프를 지원 op로 치환 / custom symbolic 등록</td></tr><tr><td><code>torch._dynamo.exc.Unsupported ... could not be traced</code></td><td>dynamo가 데이터 의존 제어흐름/커스텀 op 트레이스 실패</td><td><code>dynamo=False</code>(legacy)로 재시도, 문제 블록 wrapper/<code>torch.cond</code></td></tr><tr><td>export 성공했으나 downstream에서 shape/dynamic 에러</td><td>dynamic axes를 backend가 못 받음</td><td>입력 <strong>shape 고정</strong>, 또는 필요한 축만 <code>dynamic_axes</code> 지정</td></tr><tr><td><code>torch.onnx.export(..., dynamo=True)</code>가 FakeQuantize/QDQ에서 깨짐</td><td>dynamo 경로의 QDQ export가 아직 불안정</td><td>양자화 그래프 export는 <strong>legacy 경로(<code>dynamo=False</code>)</strong> 로</td></tr><tr><td>ORT 로드 시 <code>Type &#x27;tensor(int64)&#x27; ... is invalid</code></td><td>index dtype 불일치(int64 vs int32)</td><td>GraphSurgeon/<code>onnxsim</code>로 cast 삽입, opset 상향</td></tr><tr><td>MSDeformAttn을 표준 op로 분해했더니 <strong>너무 느림/노드 폭증</strong></td><td>레벨·포인트 루프가 펼쳐져 grid_sample 다회 호출</td><td>GPU면 <strong>plugin (4.6.2-b)</strong>, NPU면 구조 변경/벤더 op</td></tr><tr><td>INT8 후 mAP/accuracy 폭락</td><td>Softmax/GELU/attention/LayerNorm이 INT8을 못 견딤</td><td>mixed precision — 해당 노드 <code>nodes_to_exclude</code>로 FP16 유지, LayerNorm 전에 SmoothQuant</td></tr><tr><td><strong>TIDL: QDQ + self-attention 모델 컴파일 에러</strong></td><td>TIDL이 self-attention 블록의 QDQ 그래프를 못 컴파일</td><td>릴리스 노트에 보고된 사례. attention을 FP16으로 두거나, 해당 서브그래프를 non-QDQ로 우회</td></tr></tbody></table></div>
@@ -379,44 +426,51 @@ git clone https://github.com/DerryHub/BEVFormer_tensorrt</code></pre>
 <ul><li class="task"><label><input type="checkbox" data-k="d2ca3b233f"> <code>detr_fixed.onnx</code> (opset 17·shape 고정 export 성공본)</label></li><li class="task"><label><input type="checkbox" data-k="807841d9ba"> <code>detr_int8.onnx</code> (전부 INT8·폭락 재현본) + <code>detr_mixed.onnx</code> (mixed·회복본)</label></li><li class="task"><label><input type="checkbox" data-k="7ebee7ebc7"> <code>detr_sq_int8.onnx</code> (SmoothQuant 적용본, 옵션)</label></li><li class="task"><label><input type="checkbox" data-k="be0b63795d"> mAP 비교표 (FP32 vs INT8 vs mixed)</label></li><li class="task"><label><input type="checkbox" data-k="fd0af33c2a"> SmoothQuant 전후 채널 absmax 비교(ratio 30x→3x) 로그/그림</label></li><li class="task"><label><input type="checkbox" data-k="df645781b3"> <strong><code>onnx_export_failures.md</code></strong> ← 포트폴리오 핵심. 아래 템플릿을 <strong>예시 항목까지 채워</strong> 사용.</label></li></ul>
 <h3 id="onnx_export_failuresmd-템플릿-예시-항목-채움"><code>onnx_export_failures.md</code> 템플릿 (예시 항목 채움)</h3>
 <pre><code class="lang-markdown"># ONNX Export &amp; Quantization Failure Log — DETR / BEVFormer-tiny
-&gt; 환경: Ubuntu 22.04 · RTX ____ · driver ____ · CUDA 12.8 · torch 2.11.0+cu128 · onnx 1.18.0 (IR 11)
-&gt;       onnxruntime-gpu 1.23.2 · TensorRT 10.16.x LTS
+&gt; 환경(예시, 본 실습 실측): Ubuntu 22.04 · RTX 3080 · driver 595.84 · CUDA 12.8 · torch 2.11.0+cu128
+&gt;       transformers 5.15.0 · timm 1.0.28 · onnx 1.18.0 (IR 11) · onnxruntime-gpu 1.23.2 · TensorRT 10.16.x LTS
 &gt; 목적: &quot;무엇이 왜 깨졌고 어떻게 우회했는가&quot; = 재사용 가능한 design rules
 
 ## 요약 표
 | # | 단계(export/compile/PTQ) | 증상(로그 핵심) | 원인 가설 | 우회/해결 | 상태 |
 |---|--------------------------|-----------------|-----------|-----------|------|
-| 1 | export(opset11, legacy) | `aten::grid_sampler ... opset 11 is not supported` | GridSample은 opset16+ | `opset_version=17` | ✅ |
-| 2 | export(opset17, 5D)      | `GridSample with 5D volumetric input` unsupported | opset16/17은 4D만 | 5D→4D reshape / plugin | ✅ |
-| 3 | export(dynamo=True)      | `torch._dynamo.exc.Unsupported ... could not be traced` | 데이터 의존 제어흐름 | `dynamo=False`로 전환 | ✅ |
-| 4 | export(QDQ, dynamo)      | FakeQuantize export 실패 | dynamo QDQ 불안정 | legacy 경로로 QDQ export | ✅ |
-| 5 | load(ORT 1.28)           | `Type &#x27;tensor(int64)&#x27; ... is invalid` | index dtype 불일치 | GraphSurgeon cast 삽입 | ✅ |
-| 6 | PTQ(all-int8)            | mAP __→__ 폭락 | Softmax/GELU/attn | mixed precision | ✅ |
+| 0 | export(opset11, **legacy** dynamo=False) | `aten::scaled_dot_product_attention ... opset 11 is not supported` (v14+) | SDPA symbolic opset14+ | `opset_version=17, dynamo=False` | ✅ (DETR 실측) |
+| 0b | export(opset11/17, **기본** dynamo=True) | (실패 아님) opset이 18로 고정·external data 분리 | torch 2.11 기본 dynamo | 단일파일 원하면 `dynamo=False` | ✅ (DETR 실측) |
+| 1 | export(opset11, legacy) | `aten::grid_sampler ... opset 11 is not supported` | GridSample은 opset16+ | `opset_version=17` | ⏳ (BEVFormer, DETR엔 없음) |
+| 2 | export(opset17, 5D)      | `GridSample with 5D volumetric input` unsupported | opset16/17은 4D만 | 5D→4D reshape / plugin | ⏳ (BEVFormer) |
+| 3 | export(dynamo=True)      | `torch._dynamo.exc.Unsupported ... could not be traced` | 데이터 의존 제어흐름 | `dynamo=False`로 전환 | ⏳ (DETR은 dynamo 성공) |
+| 4 | export(QDQ, dynamo)      | FakeQuantize export 실패 | dynamo QDQ 불안정 | legacy 경로로 QDQ export | ⏳ |
+| 5 | load(ORT 1.28)           | `Type &#x27;tensor(int64)&#x27; ... is invalid` | index dtype 불일치 | GraphSurgeon cast 삽입 | ⏳ |
+| 6 | PTQ(all-int8)            | **mAP 42.07 → 24.02 폭락(−42.9%)** | per-tensor act 양자화가 망 전체 분산 | op 제외 mixed 실패(+0.36); SmoothQuant 필요 | ✅ (DETR 실측) |
 | 7 | export(MSDeformAttn)     | 표준 op 분해 후 노드 폭증·느림 | grid_sample 다회 호출 | TensorRT plugin | ⏳ |
 | 8 | TRT build(GridSample 5D) | rank-4만 지원(issue #3890) | TRT native 4D 한정 | 5D→4D 분해 / plugin | ⏳ |
 | 9 | TIDL compile             | `CHECK failed (index)&lt;(current_size_)` | self-attn QDQ 미지원 | attn FP16 유지 | ⏳ |
 
 ## 상세 로그 (케이스별)
-### Case 1 — grid_sampler opset 미지원
+### Case 0 — SDPA opset 미지원 (DETR 실측 첫 블로커)
 - **시도한 명령/코드**:
-  `torch.onnx.export(model, (pv,), &quot;detr_op11.onnx&quot;, opset_version=11)`
+  `torch.onnx.export(model, (pv,), &quot;detr_legacy_op11.onnx&quot;, opset_version=11, dynamo=False)`
 - **전체 에러 로그**(잘라내지 말 것):
-  `torch.onnx.errors.UnsupportedOperatorError: Exporting the operator &#x27;aten::grid_sampler&#x27; to ONNX opset version 11 is not supported. Support for this operator was added in version 16 ...`
-- **원인 분석**: op 미지원(2.1 4대 문제와 무관, 순수 opset 문제). ONNX GridSample 표준화가 opset 16.
-- **우회 방법**: `opset_version=17`로 상향.
-- **재현성**: 상향 후 export 성공. 정확도 영향 없음(수치 동일).
+  `torch.onnx.errors.UnsupportedOperatorError: Exporting the operator &#x27;aten::scaled_dot_product_attention&#x27; to ONNX opset version 11 is not supported. Support for this operator was added in version 14, try exporting with this version`
+- **원인 분석**: op 미지원(순수 opset 문제). DETR self/cross-attention이 SDPA로 트레이스되고 SDPA symbolic은 opset 14부터. **grid_sampler가 아니다 — DETR엔 grid_sample이 없다.**
+- **우회 방법**: `opset_version=17, dynamo=False`(단일 파일 IR8) 또는 dynamo=True(성공하되 opset 18·external data).
+- **재현성**: opset 17 legacy로 export 성공(170.4MB 단일 파일). 정확도 영향 없음.
 
-### Case 6 — 전부 INT8에서 mAP 폭락
-- **시도한 명령/코드**: `quantize_static(..., activation_type=QInt8, weight_type=QInt8)` (전 노드)
-- **관측**: COCO val mAP FP32 42.0 → INT8 ~19 로 폭락.
-- **원인 분석**: 2.1.2/2.1.3 — Softmax·GELU·attention matmul이 INT8을 못 견딤.
-- **우회 방법**: `nodes_to_exclude`로 Softmax/Gelu/LayerNorm/attention MatMul을 FP16 유지(mixed).
-- **재현성**: mixed에서 mAP 41.x로 회복, 속도는 대부분 INT8 이득 유지.
+### Case 1 — grid_sampler opset 미지원 (BEVFormer, 4.6)
+- **전체 에러 로그**: `UnsupportedOperatorError: Exporting the operator &#x27;aten::grid_sampler&#x27; to ONNX opset version 11 is not supported. Support for this operator was added in version 16 ...`
+- **원인 분석**: ONNX GridSample 표준화가 opset 16. **DETR엔 해당 없음** — BEVFormer/deformable 계열에서 발생(4.6에서 다룸).
+- **우회 방법**: `opset_version=16`(이상)으로 상향(4D). 5D는 분해/plugin.
+
+### Case 6 — 전부 INT8에서 mAP 폭락 (DETR 실측, COCO val 전량 5,000장)
+- **시도한 명령/코드**: `quantize_static(..., activation_type=QInt8, weight_type=QInt8, per_channel=True)` (Conv 54+MatMul 136 = 190 노드 전부)
+- **관측**: COCO val2017 mAP **FP32 0.4207 → INT8 0.2402**(−0.1805, **−42.9%**). 작은 객체 mAP_s 0.213→0.049(**−77%**). FP32가 공개값 42.0과 일치 → 계측 신뢰.
+- **원인 분석**: 소수 &quot;문제 op&quot;가 아니라 **per-tensor activation 양자화가 망 전체에 분산**. 절제 실측: transformer만 INT8=0.2391, backbone만 INT8=0.2653 — **두 절반이 각자 폭락 대부분을 만든다**(sub-additive). Softmax/LayerNorm은 ORT QDQ가 애초에 양자화 안 하고, DETR엔 GELU도 없음.
+- **우회 시도 &amp; 결과**: ① `nodes_to_exclude`로 attention score matmul 36개 FP → **+0.36 mAP뿐(실패)**. ② Percentile 캘리브 회복 시도 → 동적 shape·OOM·`inf`로 **3중 실패**, MinMax만 생존. → **op 제외로는 회복 불가**, SmoothQuant(2.2)/per-token 양자화가 진짜 레버(다음 과제).
+- **재현성**: 위 수치는 [`experiments/stage2_detr/`](../experiments/stage2_detr/) 스크립트로 재현. [실측 리포트](../logs/stage2_detr_quantization_report.html) 참조.
 
 ## Design Rules (이 로그에서 도출한 규칙)
 - [ ] BEV 모델은 처음부터 **opset ≥ 16**, 입력 **shape 고정**으로 export한다.
 - [ ] `grid_sample` 5D는 표준 opset 20 / ORT 1.27+; **TensorRT는 4D만** → 5D는 분해/plugin 전제로 설계한다.
-- [ ] Softmax/GELU/attention/LayerNorm은 **기본 FP16**, Conv/Linear만 INT8부터 시도한다.
+- [ ] Softmax/GELU/attention/LayerNorm은 **기본 FP16**, Conv/Linear만 INT8부터 시도한다. 🔴 **단, &quot;특정 op만 FP로 빼면 회복된다&quot;는 기대는 DETR 실측에서 반증됐다** — attention score matmul 36개를 FP로 남겨도 +0.36 mAP뿐(4.5). 손상이 망 전체에 분산돼 있어 **op 선택(granularity가 op 단위)이 아니라 activation 양자화 자체(per-tensor→per-token/SmoothQuant)를 바꿔야** 한다. 이 규칙은 &quot;탐색 시작점&quot;이지 &quot;회복 보장&quot;이 아니다.
 - [ ] LayerNorm outlier가 크면 INT8 전에 **SmoothQuant(α≈0.5)** 를 걸고, 채널 absmax ratio가 줄었는지 확인한다.
 - [ ] 양자화 QDQ export는 **legacy(`dynamo=False`)** 를 기본으로 한다.
 - [ ] Deformable Attention은 **GPU=plugin / NPU=구조변경** 을 사전 결정한다.

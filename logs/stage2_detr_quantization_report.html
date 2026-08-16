@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>2단계 DETR INT8 양자화 — 실측 검증 보고서 (RTX 3080)</title>
+<style>
+:root{--bg:#0b0e14;--panel:#131720;--panel2:#0f131b;--bd:#242b38;--tx:#c9d1d9;--dim:#8b949e;--brt:#e6edf3;--accent:#58a6ff;--green:#3fb950;--amber:#d29922;--red:#ff7b72;--purple:#bc8cff;--mono:'JetBrains Mono','SF Mono',ui-monospace,'Cascadia Code',Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans KR','Malgun Gothic',sans-serif}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:var(--sans);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:980px;margin:0 auto;padding:0 20px 120px}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+.hero{padding:48px 0 26px;border-bottom:1px solid var(--bd);margin-bottom:8px}
+.kicker{font-family:var(--mono);font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+.hero h1{margin:0 0 10px;font-size:30px;line-height:1.25;color:var(--brt);letter-spacing:-.01em}
+.hero p.sub{margin:0 0 20px;color:var(--dim);font-size:15px;max-width:78ch}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font-family:var(--mono);font-size:12px;padding:5px 10px;border:1px solid var(--bd);border-radius:999px;background:var(--panel);color:var(--tx)}
+.chip b{color:var(--brt);font-weight:600}
+.chip.done{border-color:rgba(63,185,80,.5);background:rgba(63,185,80,.12);color:#7ee787}
+.chip.blocked{border-color:rgba(255,123,114,.5);background:rgba(255,123,114,.12);color:#ff9d96}
+.chip.partial{border-color:rgba(210,153,34,.5);background:rgba(210,153,34,.12);color:#e3b341}
+nav.toc{display:flex;flex-wrap:wrap;gap:8px;margin:26px 0 6px}
+nav.toc a{font-family:var(--mono);font-size:12.5px;padding:6px 11px;border:1px solid var(--bd);border-radius:8px;background:var(--panel);color:var(--tx)}
+nav.toc a:hover{border-color:var(--accent);color:var(--brt);text-decoration:none}
+h2.sec{font-size:13px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin:40px 0 12px;font-weight:600;border-top:1px solid var(--bd);padding-top:26px}
+.step{margin:26px 0 0;scroll-margin-top:16px}
+.step>h3{display:flex;align-items:center;gap:12px;font-size:19px;color:var(--brt);margin:0 0 6px;letter-spacing:-.01em}
+.num{flex:none;display:inline-grid;place-items:center;width:28px;height:28px;border-radius:8px;background:var(--accent);color:#06101f;font-family:var(--mono);font-weight:700;font-size:13px}
+.step p.lead{margin:0 0 4px;color:var(--dim);font-size:14.5px}
+table.dt{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.3px;border:1px solid var(--bd);border-radius:10px;overflow:hidden;font-family:var(--mono)}
+table.dt th,table.dt td{padding:8px 12px;text-align:right;border-bottom:1px solid var(--bd)}
+table.dt th{background:var(--panel);color:var(--dim);font-weight:600;font-size:12px;letter-spacing:.04em}
+table.dt th:first-child,table.dt td:first-child{text-align:left;color:var(--brt)}
+table.dt tr:last-child td{border-bottom:none}
+table.dt tr.hi td{background:rgba(63,185,80,.08)}
+table.dt tr.lo td{background:rgba(255,123,114,.08)}
+table.dt tr.base td{background:rgba(88,166,255,.07)}
+.g{color:var(--green)}.r{color:var(--red)}.a{color:var(--amber)}.p{color:var(--purple)}.d{color:var(--dim)}
+table.kv{width:100%;border-collapse:collapse;margin:12px 0;font-size:13.5px;border:1px solid var(--bd);border-radius:10px;overflow:hidden}
+table.kv th,table.kv td{padding:9px 13px;text-align:left;border-bottom:1px solid var(--bd);vertical-align:top}
+table.kv th{background:var(--panel);color:var(--dim);font-weight:600;width:34%;font-size:12.5px}
+table.kv td{font-family:var(--mono);font-size:12.7px;color:var(--tx)}
+table.kv tr:last-child td,table.kv tr:last-child th{border-bottom:none}
+.term{background:var(--panel2);border:1px solid var(--bd);border-radius:11px;overflow:hidden;margin:14px 0}
+.term-bar{display:flex;align-items:center;gap:7px;padding:9px 13px;background:#0c1017;border-bottom:1px solid var(--bd)}
+.dot{width:11px;height:11px;border-radius:50%}.dot.r{background:#ff5f56}.dot.y{background:#ffbd2e}.dot.g{background:#27c93f}
+.term-title{margin-left:9px;color:var(--dim);font-size:12.5px;font-family:var(--mono)}
+.term pre{margin:0;padding:15px 17px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.62;color:var(--tx);white-space:pre;tab-size:2}
+.cmt{color:#5c6773}.ok{color:var(--green)}.err{color:var(--red)}.warn{color:var(--amber)}.dim{color:var(--dim)}.hl{color:var(--purple)}.in{color:var(--brt);font-weight:600}
+.note{border-left:3px solid var(--accent);background:rgba(88,166,255,.07);padding:13px 17px;border-radius:0 9px 9px 0;margin:15px 0;font-size:14px}
+.note.trap{border-color:var(--red);background:rgba(255,123,114,.08)}
+.note.warnb{border-color:var(--amber);background:rgba(210,153,34,.08)}
+.note.tip{border-color:var(--green);background:rgba(63,185,80,.07)}
+.note.block{border-color:var(--purple);background:rgba(188,140,255,.08)}
+.note .tag{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 8px;border-radius:6px;margin-bottom:7px}
+.note.trap .tag{background:rgba(255,123,114,.18);color:#ff9d96}
+.note.warnb .tag{background:rgba(210,153,34,.18);color:#e3b341}
+.note.tip .tag{background:rgba(63,185,80,.18);color:#7ee787}
+.note.block .tag{background:rgba(188,140,255,.18);color:#d8b8ff}
+.note b{color:var(--brt)}.note code{font-family:var(--mono);font-size:12.5px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:4px}
+.chartwrap{border:1px solid var(--bd);background:var(--panel2);border-radius:12px;padding:18px 18px 14px;margin:16px 0}
+.chartwrap .ct{font-family:var(--mono);font-size:12.5px;color:var(--brt);margin:0 0 4px}
+.chartwrap .cs{font-size:12.5px;color:var(--dim);margin:0 0 12px}
+.statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:14px 0}
+.stat{border:1px solid var(--bd);background:var(--panel);border-radius:11px;padding:15px 16px}
+.stat .k{font-family:var(--mono);font-size:11.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em}
+.stat .v{font-size:23px;color:var(--brt);font-weight:700;margin-top:5px;letter-spacing:-.01em}
+.stat .n{font-size:12px;color:var(--dim);margin-top:3px}
+.stat.ok .v{color:#7ee787}.stat.warn .v{color:#e3b341}.stat.bad .v{color:#ff9d96}
+.verdict{border:1px solid var(--bd);border-radius:12px;padding:16px 18px;margin:14px 0;background:var(--panel)}
+.verdict h4{margin:0 0 6px;font-size:15px;color:var(--brt);display:flex;align-items:center;gap:9px}
+.verdict h4 .b{font-family:var(--mono);font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px}
+.verdict.yes h4 .b{background:rgba(63,185,80,.18);color:#7ee787}
+.verdict.no h4 .b{background:rgba(255,123,114,.18);color:#ff9d96}
+.verdict p{margin:0;font-size:13.8px;color:var(--tx)}
+footer{margin-top:46px;padding-top:20px;border-top:1px solid var(--bd);color:var(--dim);font-size:13px}
+.next{display:block;margin-top:12px;padding:12px 16px;border:1px solid var(--bd);border-radius:9px;color:var(--tx);background:var(--panel);font-size:13.6px}
+.next b{color:var(--accent)}
+@media (max-width:560px){.hero h1{font-size:23px}.term pre{font-size:11.4px}.stat .v{font-size:20px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <p class="kicker">실행 보고서 · 2단계 · DETR Transformer INT8 양자화</p>
+    <h1>2단계 DETR INT8 양자화 — 실측 검증 보고서</h1>
+    <p class="sub"><b>facebook/detr-resnet-50</b>(CNN backbone + Transformer head)을 실제로 ONNX export → 실패 채집 → 우회 → INT8 PTQ → <b>COCO val2017 전량 5,000장</b> mAP까지 완주했다. 초안(<code>04_transformer_quantization.md</code>)의 경험적 단정 세 가지가 실측과 어긋났다: ① export 첫 블로커는 <b>grid_sampler가 아니라 SDPA</b>, ② "특정 op만 FP로 빼면 회복"은 <b>+0.36 mAP로 사실상 실패</b>, ③ 손상의 범인은 attention이 아니라 <b>망 전체에 분산</b>. 모든 명령·터미널 출력·mAP를 기록하고 초안을 실측으로 정정했다.</p>
+    <div class="chips">
+      <span class="chip"><b>2026-08-16</b></span>
+      <span class="chip"><b>RTX 3080</b> · driver 595.84</span>
+      <span class="chip done">COCO val <b>5,000</b>장</span>
+      <span class="chip done">FP32 0.4207 = 공개값 42.0 ✓</span>
+      <span class="chip blocked">INT8 <b>−42.9%</b> 폭락</span>
+      <span class="chip partial">mixed 회복 실패</span>
+    </div>
+    <nav class="toc">
+      <a href="#s1">1 · 실행 요약</a>
+      <a href="#s2">2 · 환경·스택</a>
+      <a href="#s3">3 · Export 4경로</a>
+      <a href="#s4">4 · 그래프 해부</a>
+      <a href="#s5">5 · mAP 폭락</a>
+      <a href="#s6">6 · mixed·절제</a>
+      <a href="#s7">7 · 캘리브 3중 실패</a>
+      <a href="#s8">8 · 판정·산출물</a>
+    </nav>
+  </header>
+
+  <h2 class="sec">§1 — 실행 요약</h2>
+  <section id="s1" class="step">
+    <div class="statgrid">
+      <div class="stat"><div class="k">FP32 mAP</div><div class="v">0.4207</div><div class="n">공개값 42.0과 일치 → 계측 신뢰</div></div>
+      <div class="stat bad"><div class="k">all-INT8 mAP</div><div class="v">0.2402</div><div class="n">−0.1805 (−42.9%)</div></div>
+      <div class="stat bad"><div class="k">작은 객체 mAP_s</div><div class="v">−77%</div><div class="n">0.2131 → 0.0487</div></div>
+      <div class="stat warn"><div class="k">mixed 회복분</div><div class="v">+0.36</div><div class="n">mAP ×10⁻², 폭락의 2% 미만</div></div>
+    </div>
+    <p class="lead">초안 대비 <b>3가지 반전</b>을 실측으로 확정했다. 상세는 각 절 참조.</p>
+    <table class="kv">
+      <tr><th>① export 첫 블로커</th><td>초안 통념 "grid_sampler" → 실측 <b>SDPA</b>(opset14+). DETR엔 grid_sample이 아예 없다(Grid op = 0). (3절)</td></tr>
+      <tr><th>② op-선택 mixed 회복</th><td>초안 "attention을 FP로 빼면 회복" → 실측 attention matmul 36개 FP로 <b>+0.0036 mAP뿐</b>(실패). (6절)</td></tr>
+      <tr><th>③ 폭락의 범인</th><td>초안 "attention이 범인" → 절제 결과 <b>backbone·transformer 각 절반이 따로 폭락</b>(sub-additive, 분산 손상). (6절)</td></tr>
+      <tr><th>부수 실측</th><td>torch 2.11 <code>export</code> 기본 <b>dynamo=True</b>(opset 18 강제·external data 분리) · <b>timm 필수</b> · Percentile 캘리브 <b>3중 실패</b>로 MinMax만 생존. (3·7절)</td></tr>
+    </table>
+  </section>
+
+  <h2 class="sec">§2 — 환경·스택 (실측)</h2>
+  <section id="s2" class="step">
+    <table class="kv">
+      <tr><th>머신 / OS</th><td>RTX 3080 (10GB) · driver 595.84 · Ubuntu 22.04 · venv <code>~/emb-ai</code></td></tr>
+      <tr><th>프레임워크</th><td>CUDA 12.8 · torch 2.11.0+cu128 · transformers 5.15.0 · timm 1.0.28</td></tr>
+      <tr><th>ONNX 스택</th><td>onnx 1.18.0 (IR 11 상한) · onnxruntime-gpu 1.23.2 · onnxscript(dynamo 경로용)</td></tr>
+      <tr><th>모델 / 데이터</th><td>facebook/detr-resnet-50 · COCO val2017 5,000장 · pycocotools <code>bbox</code></td></tr>
+      <tr><th>재현 스크립트</th><td><code>experiments/stage2_detr/s2_01…s2_10_*.py</code> · 원 로그 <code>_workspace/stage2/*.log</code> · 실패로그 <code>onnx_export_failures.md</code></td></tr>
+    </table>
+    <div class="note trap"><span class="tag">환경 함정</span> DETR backbone은 <code>TimmBackbone</code>이라 <b>timm이 없으면 <code>from_pretrained</code>가 즉사</b>한다: <code>ImportError: TimmBackbone requires the timm library ...</code>. config에 <code>backbone_config</code>가 있어 네이티브처럼 보여도 실제 인스턴스는 timm 백본. 설치 목록에 반드시 포함.</div>
+  </section>
+
+  <h2 class="sec">§3 — ONNX export 4경로 실측</h2>
+  <section id="s3" class="step">
+    <p class="lead">"export 실패를 재현"하려 했으나, torch 2.11에서 <code>torch.onnx.export</code>의 <b>기본이 <code>dynamo=True</code></b>라 <code>dynamo=</code>를 생략하면 실패 시도조차 조용히 성공해 버린다. 4경로를 명시적으로 대조했다.</p>
+    <table class="dt">
+      <thead><tr><th>시도</th><th>kwargs</th><th>결과</th><th>opset</th><th>IR</th><th>산출물</th></tr></thead>
+      <tbody>
+        <tr class="lo"><td>detr_legacy_op11</td><td>opset=11, dynamo=False</td><td class="r">FAIL (SDPA)</td><td>—</td><td>—</td><td>—</td></tr>
+        <tr class="hi"><td>detr_legacy_op17</td><td>opset=17, dynamo=False</td><td class="g">OK</td><td>17</td><td>8</td><td>단일 170.4 MB</td></tr>
+        <tr><td>detr_dynamo_op17</td><td>opset=17, dynamo=True</td><td class="g">OK</td><td class="a">18</td><td>10</td><td>2.2 MB + .onnx.data</td></tr>
+        <tr><td>detr_default_op11</td><td>opset=11 (dynamo 생략)</td><td class="g">OK</td><td class="a">18</td><td>10</td><td>2.2 MB + .onnx.data</td></tr>
+      </tbody>
+    </table>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">s2_02_export_try.log — Case 0 (legacy opset11) 실패 원문</span></div>
+<pre><span class="cmt">### ATTEMPT: detr_legacy_op11  kw={'opset_version': 11, ..., 'dynamo': False}</span>
+<span class="err">&gt;&gt;&gt; RESULT[detr_legacy_op11]: FAIL :: UnsupportedOperatorError: Exporting the</span>
+<span class="err">operator 'aten::scaled_dot_product_attention' to ONNX opset version 11 is not</span>
+<span class="err">supported. Support for this operator was added in version 14, try exporting</span>
+<span class="err">with this version</span>
+<span class="cmt"># 트레이스 노드(검색 앵커): DetrEncoderLayer::layers.0/DetrSelfAttention::self_attn</span>
+<span class="cmt">#   aten::scaled_dot_product_attention(...)  # sdpa_attention.py:154:0</span></pre>
+    </div>
+    <div class="note trap"><span class="tag">반전 ①</span> <b>DETR export 첫 블로커는 grid_sampler가 아니라 SDPA다.</b> "Transformer/BEV export 실패 = grid_sampler"라는 통념이 DETR엔 안 맞는다 — DETR 그래프의 Grid op count는 <b>0</b>. self/cross-attention 18개가 전부 <code>aten::scaled_dot_product_attention</code>으로 트레이스되고, 그 symbolic은 opset <b>14</b>부터. grid_sampler는 BEVFormer/deformable 계열의 얘기(4.6).</div>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">s2_02_export_try.log — dynamo가 opset 18을 강제 (Case 0b/0c)</span></div>
+<pre><span class="cmt">### ATTEMPT: detr_dynamo_op17  kw={'opset_version': 17, 'dynamo': True}</span>
+<span class="warn">W ... Setting ONNX exporter to use operator set version 18 because the requested</span>
+<span class="warn">opset_version 17 is a lower version than we have implementations for ...</span>
+<span class="err">RuntimeError: ... adapter_lookup: Assertion `false` failed:</span>
+<span class="err">   No Adapter To Version $17 for Resize</span>
+<span class="ok">&gt;&gt;&gt; RESULT[detr_dynamo_op17]: OK  (2.2 MB)</span>  <span class="cmt"># opset은 18로 유지, weight는 .onnx.data로 분리</span></pre>
+    </div>
+    <div class="note"><span class="tag">교훈</span> ① legacy 실패 재현은 <b>반드시 <code>dynamo=False</code> 명시</b>. ② dynamo는 <b>요청 opset을 무시</b>하고 18로 올린다(Resize 다운컨버트 실패). ③ dynamo는 weight를 <b>external data로 분리</b>(main 2.2MB) — 단일 파일이 필요하면 legacy. 평가에는 legacy·opset17·dynamic axes로 만든 <code>detr_dyn.onnx</code>(166.7MB, IR 8)를 사용.</div>
+  </section>
+
+  <h2 class="sec">§4 — 그래프 해부 (detr_dyn.onnx)</h2>
+  <section id="s4" class="step">
+    <p class="lead">양자화·제외 대상을 op 타입으로 실측했다. "무엇을 FP로 뺄 수 있는가"의 전제.</p>
+    <table class="dt">
+      <thead><tr><th>op 타입</th><th>개수</th><th>비고</th></tr></thead>
+      <tbody>
+        <tr><td>Conv</td><td>54</td><td>backbone 53 + input_projection 1</td></tr>
+        <tr><td>MatMul</td><td>136</td><td>proj/FFN + attention score</td></tr>
+        <tr><td>Gemm</td><td>0</td><td>—</td></tr>
+        <tr class="base"><td><b>양자화 대상 (Conv+MatMul+Gemm)</b></td><td><b>190</b></td><td>ORT QDQ는 이 3종만 건드림</td></tr>
+        <tr><td>attention score matmul</td><td>36</td><td>self/encoder_attn의 MatMul(_1) = act×act</td></tr>
+        <tr class="lo"><td>Gelu / Erf</td><td>0 / 0</td><td class="r">DETR엔 GELU 없음(제외 대상 아님)</td></tr>
+        <tr class="lo"><td>Softmax / LayerNorm</td><td>18 / 31</td><td class="r">존재하지만 ORT QDQ가 양자화 안 함</td></tr>
+      </tbody>
+    </table>
+    <div class="note warnb"><span class="tag">초안 4개 제외 패턴 중 3개가 no-op</span> 초안은 GELU·Softmax·LayerNorm·attention matmul을 FP로 빼라 했지만, DETR엔 <b>GELU가 없고</b> Softmax·LayerNorm은 ORT QDQ가 <b>애초에 양자화하지 않는다</b>. 실제로 제외가 성립하는 건 attention matmul 36개뿐 — 그마저 회복 효과는 +0.36(6절).</div>
+  </section>
+
+  <h2 class="sec">§5 — INT8 mAP 폭락 (COCO val2017 5,000장)</h2>
+  <section id="s5" class="step">
+    <p class="lead">전부 INT8(190 노드, per-channel QDQ, MinMax 캘리브 100장). CUDA EP.</p>
+    <div class="chartwrap">
+      <p class="ct">COCO mAP (bbox, val2017 5,000장) — 구성별</p>
+      <p class="cs">축 0 – 0.45. FP32가 공개값 0.420과 일치. INT8·mixed·절제 전부 0.24~0.27대에서 폭락.</p>
+      <svg viewBox="0 0 700 250" width="100%" role="img" aria-label="구성별 mAP 막대그래프">
+        <line x1="140" y1="12" x2="140" y2="228" stroke="#242b38" stroke-width="1"/>
+        <line x1="140" y1="228" x2="680" y2="228" stroke="#242b38" stroke-width="1"/>
+        <!-- gridlines at 0.1,0.2,0.3,0.4 -->
+        <g font-family="'JetBrains Mono',monospace" font-size="10" fill="#5c6773">
+          <line x1="260" y1="12" x2="260" y2="228" stroke="#1a202b"/><text x="260" y="244" text-anchor="middle">0.10</text>
+          <line x1="380" y1="12" x2="380" y2="228" stroke="#1a202b"/><text x="380" y="244" text-anchor="middle">0.20</text>
+          <line x1="500" y1="12" x2="500" y2="228" stroke="#1a202b"/><text x="500" y="244" text-anchor="middle">0.30</text>
+          <line x1="620" y1="12" x2="620" y2="228" stroke="#1a202b"/><text x="620" y="244" text-anchor="middle">0.40</text>
+        </g>
+        <g font-family="'JetBrains Mono',monospace" font-size="11.5">
+          <!-- FP32 0.4207 -> 540*0.4207/0.45=504.8 -->
+          <text x="132" y="33" text-anchor="end" fill="#e6edf3">FP32</text>
+          <rect x="140" y="20" width="504.8" height="26" rx="3" fill="#58a6ff"/>
+          <text x="650.8" y="37" fill="#e6edf3">0.4207</text>
+          <!-- all-INT8 0.2402 -> 288.2 -->
+          <text x="132" y="73" text-anchor="end" fill="#e6edf3">all-INT8</text>
+          <rect x="140" y="60" width="288.2" height="26" rx="3" fill="#ff7b72"/>
+          <text x="434" y="77" fill="#ff9d96">0.2402  (−42.9%)</text>
+          <!-- mixed 0.2438 -> 292.6 -->
+          <text x="132" y="113" text-anchor="end" fill="#e6edf3">mixed(attn FP)</text>
+          <rect x="140" y="100" width="292.6" height="26" rx="3" fill="#d29922"/>
+          <text x="438.6" y="117" fill="#e3b341">0.2438  (+0.0036)</text>
+          <!-- bb_fp 0.2391 (transformer INT8) -> 286.9 -->
+          <text x="132" y="153" text-anchor="end" fill="#e6edf3">transformer만 INT8</text>
+          <rect x="140" y="140" width="286.9" height="26" rx="3" fill="#8b5cf0"/>
+          <text x="432.9" y="157" fill="#d8b8ff">0.2391</text>
+          <!-- tf_fp 0.2653 (backbone INT8) -> 318.4 -->
+          <text x="132" y="193" text-anchor="end" fill="#e6edf3">backbone만 INT8</text>
+          <rect x="140" y="180" width="318.4" height="26" rx="3" fill="#8b5cf0"/>
+          <text x="464.4" y="197" fill="#d8b8ff">0.2653</text>
+        </g>
+      </svg>
+    </div>
+    <table class="dt">
+      <thead><tr><th>구성</th><th>mAP</th><th>mAP50</th><th>mAP75</th><th>mAP_s</th><th>mAP_m</th><th>mAP_l</th></tr></thead>
+      <tbody>
+        <tr class="base"><td>FP32</td><td>0.4207</td><td>0.6231</td><td>0.4421</td><td>0.2131</td><td>0.4595</td><td>0.6102</td></tr>
+        <tr class="lo"><td>all-INT8</td><td>0.2402</td><td>0.4708</td><td>0.2179</td><td class="r">0.0487</td><td>0.2329</td><td>0.4500</td></tr>
+        <tr><td>mixed (attn 36 FP)</td><td>0.2438</td><td>0.4736</td><td>0.2221</td><td>0.0476</td><td>0.2390</td><td>0.4567</td></tr>
+        <tr><td>transformer만 INT8</td><td>0.2391</td><td>0.4715</td><td>0.2159</td><td>0.0462</td><td>0.2323</td><td>0.4468</td></tr>
+        <tr><td>backbone만 INT8</td><td>0.2653</td><td>0.4865</td><td>0.2585</td><td>0.0555</td><td>0.2708</td><td>0.4877</td></tr>
+      </tbody>
+    </table>
+    <div class="note"><span class="tag">계측 신뢰</span> FP32 mAP 0.4207이 DETR 공개값 <b>42.0</b>과 일치 → 후처리(softmax over 92 → no-object 제거 → 91 max → cxcywh→xyxy 절대좌표, 100 query 유지)·평가 파이프라인이 옳다. 따라서 폭락은 계측 오류가 아니라 <b>진짜 양자화 손상</b>. 작은 객체 mAP_s가 0.2131→0.0487로 <b>−77%</b>, 가장 먼저·가장 크게 무너진다.</div>
+  </section>
+
+  <h2 class="sec">§6 — mixed 회복 실패 & 범인 절제</h2>
+  <section id="s6" class="step">
+    <p class="lead">"가장 어려운 op(activation×activation matmul)만 FP로 빼면 회복"이라는 초안 가설을 직접 시험하고, 실패하자 범인 위치를 절제로 분리했다.</p>
+    <div class="verdict no"><h4><span class="b">반증</span> op-선택 mixed로는 회복 안 됨</h4>
+      <p>attention score matmul 36개(<code>/model/*/self_attn/MatMul(_1)</code>, <code>/model/*/encoder_attn/MatMul(_1)</code>)를 FP로 남겨도 mAP 0.2402 → <b>0.2438</b>. 폭락 −0.1805의 <b>2%</b>도 못 되찾는다.</p></div>
+    <div class="verdict no"><h4><span class="b">반증</span> "attention이 범인"</h4>
+      <p>절제: <b>transformer만 INT8 = 0.2391</b>(거의 full 폭락), <b>backbone만 INT8 = 0.2653</b>. 두 절반이 각자 폭락 대부분을 만든다 — 손상은 특정 서브그래프가 아니라 <b>망 전체에 분산</b>(sub-additive, 두 절반의 손실 합 &gt; 전체 손실).</p></div>
+    <div class="note trap"><span class="tag">핵심 해석</span> 폭락의 지배 요인은 <b>per-tensor activation 양자화</b> 자체다. 소수의 "문제 op"를 골라 FP로 빼는 <b>op granularity 전략은 DETR에서 무력</b>하다. 진짜 레버는 activation 양자화의 <b>입도</b>를 바꾸는 것 — SmoothQuant(§2.2, outlier를 weight로 migrate)나 per-token/group activation 양자화(stock ORT QDQ엔 없음).</div>
+  </section>
+
+  <h2 class="sec">§7 — Percentile 캘리브 3중 실패</h2>
+  <section id="s7" class="step">
+    <p class="lead">"outlier를 clip하면 per-tensor scale이 본체를 되찾는다"(§2.1.1)를 Percentile 캘리브(99.99/99.9)로 시험. stock ORT HistogramCollector는 DETR에서 <b>세 방식으로 죽었다</b>.</p>
+    <table class="kv">
+      <tr><th>① 동적 shape</th><td>이미지마다 activation shape가 달라 HistogramCollector가 stack 실패 → <code>ValueError: ... inhomogeneous shape</code></td></tr>
+      <tr><th>② 고정 shape → OOM</th><td>1066×800 고정(<code>do_resize=False</code>)으로 ①을 우회하면 이미지당 ~3.6GB → N=8에서 <b>SIGKILL</b>(peak 30.9GB/31GB, exit 137)</td></tr>
+      <tr><th>③ N=4 → inf</th><td>peak 19GB로 들어가지만 <code>numpy.histogram</code>이 attention mask fill에서 inf를 만남 → <code>ValueError: autodetected range of [inf, inf] is not finite</code></td></tr>
+    </table>
+    <div class="note block"><span class="tag">결론</span> stock ORT의 Percentile/Entropy 캘리브는 <b>동적·고해상 detection 그래프에서 사실상 못 돈다</b>. 스칼라 min/max인 <b>MinMax만 생존</b> → 본 보고서의 모든 mAP는 MinMax 기준. 회복은 캘리브 방법 교체가 아니라 SmoothQuant/per-token으로 가야 한다는 6절 결론과 일치.</div>
+  </section>
+
+  <h2 class="sec">§8 — 판정 & 산출물</h2>
+  <section id="s8" class="step">
+    <div class="verdict yes"><h4><span class="b">확정 ✓</span> 폭락은 실재하고 계측은 신뢰</h4><p>FP32 0.4207 = 공개값 42.0. INT8 −42.9%, 작은 객체 −77%. detection은 classification(1단계 ResNet18 −0.1%p)보다 <b>수백 배</b> 양자화에 취약.</p></div>
+    <div class="verdict no"><h4><span class="b">반증 ✗</span> op-선택 mixed는 회복책이 아니다</h4><p>+0.36 mAP뿐. 초안 §4.5의 "폭락 → mixed 회복" 헤드라인을 실측으로 정정.</p></div>
+    <div class="verdict no"><h4><span class="b">반증 ✗</span> export 블로커 = grid_sampler</h4><p>DETR 첫 블로커는 SDPA. grid_sampler는 DETR에 없음(BEVFormer 얘기).</p></div>
+    <div class="verdict yes"><h4><span class="b">지목 →</span> 진짜 레버는 activation 양자화 입도</h4><p>SmoothQuant / per-token. modelopt 무거운 설치로 이번엔 미실행 — 다음 과제로 명시.</p></div>
+    <table class="kv">
+      <tr><th>산출물</th><td><code>detr_dyn.onnx</code>(FP32 166.7MB) · <code>detr_dyn_int8.onnx</code>(43.4MB) · <code>detr_dyn_mixed.onnx</code> · <code>detr_bb_fp/tf_fp.onnx</code></td></tr>
+      <tr><th>포트폴리오 핵심</th><td><a href="../experiments/stage2_detr/onnx_export_failures.md">onnx_export_failures.md</a> — 실패 로그 원문·design rules</td></tr>
+      <tr><th>재현 스크립트</th><td><a href="../experiments/stage2_detr/">experiments/stage2_detr/</a> s2_01…s2_10</td></tr>
+      <tr><th>상위 가이드</th><td><a href="../study_guide/04_transformer_quantization.md">2단계 — Transformer 양자화 지옥</a> (§4·§5·§7에 본 실측 반영)</td></tr>
+      <tr><th>미실행(다음 과제)</th><td>SmoothQuant(§4.4, modelopt) · BEVFormer-tiny(§4.6, grid_sample/deformable)</td></tr>
+    </table>
+    <div class="note warnb"><span class="tag">캐비앗</span> 절대 mAP는 CUDA EP·MinMax·per-channel QDQ·특정 후처리 기준이다. TensorRT 엔진·다른 캘리브·다른 후처리에선 수치가 달라질 수 있다. 유효한 건 <b>상대 관계</b>(폭락 폭·op-선택 무력·분산 손상·작은 객체 우선 붕괴)다.</div>
+    <a class="next" href="../study_guide/05_tensorrt.md"><b>다음 →</b> 3단계: 이 ONNX(와 실패 로그)를 들고 TensorRT 엔진 컴파일 — mixed precision·QDQ·deformable plugin.</a>
+  </section>
+
+  <footer>
+    2단계 DETR INT8 양자화 실측 검증 · RTX 3080 · 2026-08-16 · COCO val2017 5,000장 · 원 로그 <code>_workspace/stage2/*.log</code><br>
+    본 보고서의 수치는 <code>coco_map_summary_main.json</code> / <code>coco_map_summary_ablation.json</code>에서 그대로 옮겼다.
+  </footer>
+</div>
+</body>
+</html>

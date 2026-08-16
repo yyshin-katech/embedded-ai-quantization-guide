@@ -5,7 +5,7 @@
 > 원본 기획: `../guide (1).html` (Embedded AI Engineer 실전 학습 가이드 v2)
 > 이 `study_guide/`는 그 단계 구조를 **Ubuntu 22.04 + NVIDIA RTX GPU** 환경에서 실행 가능한 명령어·코드·예시·참고문헌으로 확장한 것입니다.
 
-> ✅ **실측 반영 현황** — `01`(0단계)·`02`(0.5단계)·`03`(1단계)은 실제 머신(Ubuntu 22.04.5 / RTX 3060 12GB / 드라이버 595.84)에서 **끝까지 따라 해보고 그 결과로 문서를 정정**했습니다. 예상 출력·실측 표·함정은 모두 그때 나온 실제 값입니다. 전 과정 로그: [`../logs/`](../logs/) (`stage0_setup_log.html`, `stage0.5_ladder_log.html`, `lv2_ptq_deep_dive.html`, `stage1_quantization_log.html`). 나머지 문서는 웹 검증 기반이며 아직 실행 검증 전입니다.
+> ✅ **실측 반영 현황** — `01`(0단계)·`02`(0.5단계)·`03`(1단계)은 실제 머신(Ubuntu 22.04.5 / RTX 3060 12GB / 드라이버 595.84)에서 **끝까지 따라 해보고 그 결과로 문서를 정정**했습니다. 예상 출력·실측 표·함정은 모두 그때 나온 실제 값입니다. 전 과정 로그: [`../logs/`](../logs/) (`stage0_setup_log.html`, `stage0.5_ladder_log.html`, `lv2_ptq_deep_dive.html`, `stage1_quantization_log.html`). `04`(2단계)는 **2026-08-16 RTX 3080에서 실측 완료** — DETR을 COCO val2017 전량(5,000장)으로 돌려 초안의 3가지 단정(export 블로커=SDPA·op선택 mixed 실패·분산 손상)을 정정했습니다(리포트 [`../logs/stage2_detr_quantization_report.html`](../logs/stage2_detr_quantization_report.html), 실패 로그 [`../experiments/stage2_detr/onnx_export_failures.md`](../experiments/stage2_detr/onnx_export_failures.md)). 나머지 문서는 웹 검증 기반이며 아직 실행 검증 전입니다.
 >
 > 🔁 **2026-08-06 — `03`(1단계)을 ImageNet val 50,000장 전량으로 재실행**했습니다. 1차 실습은 클래스당 1장 큐레이션 셋(1,000장)이었고, 그 절대 top-1이 **평균 +9.77%p 부풀려져 있었습니다**. 전량 재측정으로 **Δ의 부호 3건·유의성 판정 5건이 뒤집혀** `03`·`05`·`10`을 정정했습니다(새 항목: [10단계 함정 0](10_pitfalls.md) — *평가셋이 작으면 나머지 함정을 진단할 수 없다*). 근거: [`stage1_real_imagenet_log.html`](../logs/stage1_real_imagenet_log.html) · [`stage1_real_imagenet_report.html`](../logs/stage1_real_imagenet_report.html). **이 가이드의 수치를 인용할 때는 큐레이션 셋 값이 아닌 50k 값을 쓰세요.**
 

@@ -9,6 +9,8 @@
 > ✅ **0.5단계(배포 사다리)·1단계(양자화 이론)도 2026-08-02 실측 완료**했습니다. 1단계에서는 ORT의 **Entropy 캘리브레이터가 기본값에서 MinMax로 조용히 퇴화**하고(산출 ONNX의 md5까지 동일), ORT 권장 설정(`QUInt8` 비대칭)으로 만든 INT8 QDQ를 **TensorRT가 파싱조차 못 해 FP32보다 3배 느려지는**(3.06 ms vs 0.96 ms) 무음 폴백을 잡아냈습니다 — 전 과정은 [`logs/stage1_quantization_log.html`](logs/stage1_quantization_log.html).
 >
 > 🔁 **2026-08-06, 1단계를 ImageNet val 50,000장 전량으로 재실행**했습니다. 1차는 클래스당 1장 큐레이션 셋(1,000장)이었는데, 전량으로 다시 재니 **절대 top-1이 평균 +9.77%p 부풀려져 있었고, Δ의 부호가 3건·유의성 판정이 5건 뒤집혔습니다**. FP32는 공개 재현값과 **0.05%p** 안에서 만납니다(69.81% vs 69.758%). 여기서 나온 정정 12건을 [`03`](study_guide/03_quantization_theory.md)·[`05`](study_guide/05_tensorrt.md)·[`10`](study_guide/10_pitfalls.md)에 반영했습니다 — **작은 평가셋으로는 나머지 함정을 진단할 수 없다**는 것이 [10단계 함정 0](study_guide/10_pitfalls.md)으로 새로 들어갔습니다. 실행 로그 [`logs/stage1_real_imagenet_log.html`](logs/stage1_real_imagenet_log.html) · 분석 보고서 [`logs/stage1_real_imagenet_report.html`](logs/stage1_real_imagenet_report.html).
+>
+> ✅ **2026-08-16, 2단계(Transformer 양자화 지옥)를 RTX 3080에서 실측 완료**했습니다. `facebook/detr-resnet-50`을 ONNX export→INT8 PTQ→**COCO val2017 전량 5,000장** mAP까지 완주하니 초안의 경험적 단정 **3가지가 뒤집혔습니다**: ① export 첫 블로커는 통념의 `grid_sampler`가 아니라 **SDPA**(DETR엔 grid_sample이 아예 없음), ② "특정 op만 FP로 빼면 회복"은 attention matmul 36개를 FP로 남겨도 **+0.36 mAP뿐(사실상 실패)**, ③ 폭락(mAP **0.4207→0.2402, −42.9%**, 작은 객체 **−77%**)의 범인은 attention이 아니라 **망 전체에 분산**(절제로 확인). FP32는 공개값 **42.0**과 일치해 계측을 신뢰할 수 있습니다. 실측 리포트 [`logs/stage2_detr_quantization_report.html`](logs/stage2_detr_quantization_report.html) · 실패 로그 [`experiments/stage2_detr/onnx_export_failures.md`](experiments/stage2_detr/onnx_export_failures.md).
 
 ---
 
