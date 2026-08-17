@@ -1,0 +1,63 @@
+{
+  "note": "TRT 10.16 \uc9c1\uc811 \ud30c\uc11c/\ube4c\ub354 \uc81c\uc57d \uc808\uc81c (ResNet50 + DETR)",
+  "cases": {
+    "A_sym_nobias_exstem": {
+      "parse_ok": true,
+      "build_ok": true,
+      "stage": null,
+      "err": null,
+      "zp_dtypes": [
+        "int8"
+      ],
+      "act_zp_nonzero_frac": 0.0,
+      "act_zp_count": 293
+    },
+    "B_sym_bias_exstem": {
+      "parse_ok": false,
+      "build_ok": false,
+      "stage": "parse",
+      "err": "Could not parse ONNX correctly",
+      "zp_dtypes": [
+        "int32",
+        "int8"
+      ],
+      "act_zp_nonzero_frac": 0.0,
+      "act_zp_count": 293
+    },
+    "C_asym_qu8_exstem": {
+      "parse_ok": false,
+      "build_ok": false,
+      "stage": "parse",
+      "err": "Could not parse ONNX correctly",
+      "zp_dtypes": [
+        "int8",
+        "uint8"
+      ],
+      "act_zp_nonzero_frac": 0.213,
+      "act_zp_count": 197
+    },
+    "D_sym_nobias_incstem": {
+      "parse_ok": true,
+      "build_ok": false,
+      "stage": "build",
+      "err": "Invalid Engine. Please ensure the engine was built correctly",
+      "zp_dtypes": [
+        "int8"
+      ],
+      "act_zp_nonzero_frac": 0.0,
+      "act_zp_count": 300
+    },
+    "E_detr_int8_ORT": {
+      "parse_ok": false,
+      "build_ok": false,
+      "stage": "parse",
+      "err": "Could not parse ONNX correctly",
+      "zp_dtypes": [
+        "int32",
+        "int8"
+      ],
+      "act_zp_nonzero_frac": 0.831,
+      "act_zp_count": 1306
+    }
+  }
+}

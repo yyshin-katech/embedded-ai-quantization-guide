@@ -22,6 +22,7 @@
 | [`stage2-detr-hands-on.md`](stage2-detr-hands-on.md) | 2단계 DETR INT8(커밋 41dc49e) — 초안 단정 3건 반전(export 블로커=SDPA·op선택 mixed 실패·손상 분산), §4.4·§4.6 후속 완료 |
 | [`stage2-bevformer-hands-on.md`](stage2-bevformer-hands-on.md) | 2단계 BEVFormer-tiny §4.6 — FP32 nuScenes-mini mAP 0.2647(스모크), op 단정 반전 0·실전 함정 +2(mmcv op CPU-only export·전체 export는 point_sampling에서 사망), 전체 INT8은 포크 필요(범위 밖), 무컴파일 레거시 env 레시피 |
 | [`stage2-smoothquant-hands-on.md`](stage2-smoothquant-hands-on.md) | 2단계 §4.4 SmoothQuant(nvidia-modelopt 0.45.0) — per-tensor INT8 폭락(0.4209→0.3301)의 59.9%를 SmoothQuant(α=1.0)가 회복(→0.3845, +0.0544 mAP), op-선택 mixed의 ~15배 → "activation 입도가 레버" 확증. 프리셋 기본 α=1.0(논문 0.5 아님)·absmax 3.69×→1.96×. torch fake-quant 경로라 상대 관계만 |
+| [`stage3-tensorrt-hands-on.md`](stage3-tensorrt-hands-on.md) | 3단계 TensorRT(ResNet50) — 정본 pip 휠에 **trtexec 부재**→polygraphy Python API(FP16 ×1.96·INT8 ×2.12·−0.52%p), 1단계 §2.2.1 "zp≠0 하나뿐"이 **직접 파서에선 INT32 bias DQ까지 둘**(경로 병기·반전 아님), deprecated implicit 캘리브레이터가 TRT 10.16서 여전히 빌드(경고 134건=126+8). DLA는 범위 밖(num_DLA_cores=0) |
 | [`gpu-xid79-fallen-off-bus.md`](gpu-xid79-fallen-off-bus.md) | (구 머신 이력·해소) RTX 3060 Xid 79 3회 재발 진단 — SW Power Cap 상시 점등, 배치 축소 무효. 3080 이관으로 해결 |
 | [`repo-is-public-scan-before-commit.md`](repo-is-public-scan-before-commit.md) | 커밋 규약 — 시크릿 스캔, main 직접 커밋, 푸시는 요청 시만 |
 

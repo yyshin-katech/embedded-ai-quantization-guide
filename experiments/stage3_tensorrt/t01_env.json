@@ -1,0 +1,36 @@
+{
+  "gpu": "GPU 0: NVIDIA GeForce RTX 3080 (UUID: GPU-202f9c47-574f-e875-f399-8e829b285840)",
+  "trtexec_on_PATH": null,
+  "trtexec_filesystem_hits": [],
+  "trtexec_present": false,
+  "tensorrt_version": "10.16.1.11",
+  "implicit_calibrators": {
+    "IInt8EntropyCalibrator2": true,
+    "IInt8MinMaxCalibrator": true,
+    "IInt8EntropyCalibrator": true,
+    "IInt8LegacyCalibrator": true
+  },
+  "builder_flags": {
+    "INT8": true,
+    "FP16": true,
+    "BF16": true,
+    "FP8": true,
+    "INT4": true,
+    "OBEY_PRECISION_CONSTRAINTS": true,
+    "PREFER_PRECISION_CONSTRAINTS": true,
+    "STRICT_TYPES": false
+  },
+  "strongly_typed_flag": true,
+  "num_DLA_cores": 0,
+  "platform_has_fast_int8": true,
+  "platform_has_fast_fp16": true,
+  "polygraphy_build_path": {
+    "available": true,
+    "version": "0.50.3"
+  },
+  "modelopt_onnx": {
+    "importable": false,
+    "error": "Please install optional ``[onnx]`` dependencies."
+  },
+  "onnxruntime_version": "1.23.2"
+}

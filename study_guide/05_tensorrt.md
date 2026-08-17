@@ -149,11 +149,26 @@ NVIDIA는 10.1부터 implicit(entropy calibrator)을 deprecated 처리했고, 11
 - **C가 성공** → INT32 bias DQ가 **있어도 문제없다.**
 - 따라서 ①은 **②로 Q/DQ 융합이 깨진 뒤 홀로 남은 bias DQ가 내는 2차 증상**이다. 파서는 `DQ(int32 bias) → Conv` 패턴을 통째로 접을 때는 INT32 bias를 받아들이고, 융합이 깨져 DQ가 홀로 남을 때만 타입 검사에 걸린다. **에러 메시지 개수를 원인 개수로 세면 안 된다**는 교훈이기도 하다 — 첫 줄에 뜬 에러(①)를 붙잡고 `QuantizeBias`만 만졌다면 case B에 갇혀 하루를 날렸을 것이다.
 - **두 축이 정확도에서도 완전히 분리된다.** `top-1` 열을 보라 — 값이 **대칭/비대칭 축만 따라 움직이고** `QuantizeBias`에는 전혀 반응하지 않는다. 50,000장에서 **C와 D의 예측은 한 장도 다르지 않았고**(0장 불일치), A와 B는 1장만 달랐다. 즉 **`QuantizeBias`는 정확도에 영향이 없다** — 파싱·그래프 정리 관점에서만 논할 옵션이다.
-- 실무 처방: **`activation_type=QInt8` + `ActivationSymmetric=True`, 이 하나면 된다.** `QuantizeBias=False`는 **필수가 아니라 선택**이고(속도 0.51 ms 동일, 정확도 완전 동일), 대칭 전환의 정확도 대가 −0.29%p는 **`QuantizeBias`로 되찾을 수 없다.** 구체적인 재양자화 코드와 검증 절차는 **실습 4-(C)** 에 있다.
+- 실무 처방: **`activation_type=QInt8` + `ActivationSymmetric=True`, 이 하나면 된다.** `QuantizeBias=False`는 **필수가 아니라 선택**이고(속도 0.51 ms 동일, 정확도 완전 동일), 대칭 전환의 정확도 대가 −0.29%p는 **`QuantizeBias`로 되찾을 수 없다.** 구체적인 재양자화 코드와 검증 절차는 **실습 4-(C)** 에 있다. **단 이 "선택"은 ORT TensorRT EP 경로 한정이다** — 아래 3단계 실측(직접 파서 절제)에서 보듯, 같은 QDQ ONNX를 `polygraphy`/`trtexec`의 **직접 파서**로 빌드하면 INT32 bias DQ가 독립 하드 블로커가 되어 `QuantizeBias=False`가 **필수**로 바뀐다.
 
 > 💡 **ModelOpt QDQ는 왜 이 문제가 없나:** ModelOpt는 *"generates new ONNX models with QDQ nodes **following TensorRT rules**"* 라고 문서에 명시돼 있고, 산출물을 곧바로 `trtexec --onnx=quant.onnx`로 빌드하는 것을 표준 경로로 제시한다([ModelOpt ONNX Quantization](https://nvidia.github.io/Model-Optimizer/guides/_onnx_quantization.html)). 즉 **삽입 규칙 자체가 위 표의 제약(대칭·허용 dtype)에 맞춰져 있다.** 반대로 ORT `quantize_static`은 **기본 타깃이 x86 CPU**라, 같은 QDQ 포맷이라도 TRT가 못 받는 형태를 만들어 낸다. **"QDQ = 공용어"는 포맷 얘기지 호환 보장이 아니다.** 실습 4가 "권장 경로"인 실질적 이유가 이것이다.
 >
 > ⚠️ 확인 필요: ModelOpt가 **bias를 어떻게 처리하는지**(FP로 남기는지, 다른 방식으로 접는지)는 공개 문서에 명시가 없다(2026-08 기준 [ONNX Quantization 가이드](https://nvidia.github.io/Model-Optimizer/guides/_onnx_quantization.html)·[qdq_utils API](https://nvidia.github.io/Model-Optimizer/reference/generated/modelopt.onnx.quantization.qdq_utils.html) 모두 언급 없음). 자신의 산출물에서 직접 세어 보는 게 확실하다 — `python -c "import onnx; m=onnx.load('x.quant.onnx'); print(sum(1 for n in m.graph.node if n.op_type=='DequantizeLinear' and 'bias' in n.name))"`.
+
+> 🔴 **3단계 실측 정밀화 — 직접 TRT 파서엔 하드 블로커가 "하나"가 아니라 "둘"이다 (2026-08-17 · RTX 3080 · TensorRT 10.16.1.11 · [리포트](../logs/stage3_tensorrt_report.html) · 로그 원문 [`parser_constraints.md`](../experiments/stage3_tensorrt/parser_constraints.md)):** 위 2×2 절제는 **ORT TensorRT EP** 경로(RTX 3060·ResNet18)에서 잰 것이고, 그 경로에선 "zero-point≠0 하나뿐"이 맞다. 그런데 같은 종류의 QDQ ONNX를 **polygraphy/`trtexec`의 직접 ONNX 파서**(정본 TRT 10.16.1.11)에 물리면 축이 하나 더 드러난다. ResNet50으로 5케이스를 절제했다([`t03`](../experiments/stage3_tensorrt/t03_parser_constraints.py)):
+
+| 케이스 | 구성 | parse | build | 실패 지점·블로커 |
+|---|---|:---:|:---:|---|
+| A | 대칭 `QInt8` · bias 양자화 off · stem 제외 | ✅ | ✅ | — (**정본 처방**) |
+| B | 대칭 `QInt8` · **bias INT32 양자화 on** · stem 제외 | ❌ | — | **파서**: INT32 bias DQ 거부(대칭 zp=0인데도) |
+| C | **비대칭 `QUInt8`** · stem 제외 | ❌ | — | **파서**: `shiftIsAllZeros`(zp≠0, act zp 21.3%가 비영) |
+| D | 대칭 `QInt8` · bias off · **stem(conv1) 포함** | ✅ | ❌ | **빌더**: stem 융합블록 INT8 커널 부재(Error Code 10) |
+| E | 2단계 DETR `detr_int8.onnx`(ORT 산출) 실제 | ❌ | — | **파서**: zp≠0 + INT32 bias 동시(act zp 83.1%가 비영) |
+
+- **B가 핵심 정밀화 지점이다.** §2.2.1(ORT-EP)에선 "INT32 bias DQ는 ②의 2차 증상, 대칭이면 남아 있어도 무해"(case C 성공)였는데, **직접 파서에선 대칭(zp=0)이어도 INT32 bias DQ 하나만으로 파싱이 죽는다** — `IDequantizeLayer::setPrecision: … A DequantizeLayer can only run in DataType::kINT8, kFP8, kFP4, or kINT4 precision` → `INVALID_NODE: Invalid Node - fc.bias_DequantizeLinear`. 즉 **직접 파서에선 INT32 bias DQ가 독립 하드 블로커**다.
+- **왜 갈리나(경로 차이 — 반전이 아니라 병기).** ORT TensorRT EP는 그래프를 파서에 넘기기 **전에** 자체 QDQ 정리를 거쳐 `DQ(int32 bias)→Conv` 패턴을 흡수한다 — 그래서 EP 경로의 파서는 이 DQ를 애초에 안 본다(§2.2.1 case C가 통과한 이유). 반면 polygraphy/`trtexec`는 ONNX를 **날것으로** 파서에 던지므로 홀로 남은 INT32 bias DQ를 그대로 만나 거부한다. **§2.2.1의 ORT-EP 결론은 그 경로 안에서 그대로 유효하며, 이 절은 그것을 뒤집는 게 아니라 "직접 파서 경로"를 병기해 정밀화한다.** 실무 규칙: **ORT `quantize_static`으로 QDQ를 만들어 직접 파서로 빌드하려면 대칭 `QInt8`에 더해 `QuantizeBias=False`도 필수**다(둘 다 있어야 case A). ModelOpt QDQ(실습 4)를 쓰면 애초에 TRT 규칙대로 삽입돼 이 문제를 우회한다.
+- **파서 실패와 빌더 실패는 별개 축이다(D).** stem conv1(3ch 7×7 Conv+relu+maxpool 융합)은 QDQ가 정상이라 **파싱은 통과**하지만, 그 융합 패턴의 INT8 커널이 없어 **빌드 단계**에서 죽는다 — `Could not find any implementation for node … + /conv1/Conv + PWN(/relu/Relu) + /maxpool/MaxPool`. 처방은 QDQ 수정이 아니라 **그 노드만 INT8 대상에서 제외**(`nodes_to_exclude=["/conv1/Conv"]`)해 TRT가 나머지 conv는 INT8로 융합하게 두는 것이다.
+- **E는 실모델 확인.** 2단계에서 만든 DETR INT8 ONNX(ORT 비대칭 기본)를 직접 파서에 물리면 **첫 DQ 노드에서** zp≠0으로 즉사한다(`/model/Tile_output_0_DequantizeLinear` … `shiftIsAllZeros(zeroPoint)`) — 2단계에서 관측한 "ORT 기본 QDQ를 TRT가 못 받는다"의 파서 레벨 근거다.
 
 ### 2.3 DLA (Deep Learning Accelerator)
 
@@ -203,6 +218,8 @@ python3 -c "import tensorrt as trt; print(trt.__version__)"   # Python 바인딩
 
 > ⚠️ 확인 필요: 위에서 나온 버전을 웹의 [TensorRT Release Notes](https://docs.nvidia.com/deeplearning/tensorrt/latest/getting-started/release-notes.html)와 대조해 EOL/알려진 버그를 확인하라. 2026-07 기준 **정본은 10.16.x LTS**(10.16에서 deprecated된 API는 2027-03까지 유지)이며, 11.x는 최신이나 정밀도 플래그·DLA가 없다. Orin JetPack은 통상 **TensorRT 10.x**를 탑재한다.
 
+> 🔴 **3단계 실측 헤드라인 (2026-08-17 · RTX 3080 · TensorRT 10.16.1.11 pip 휠 · [리포트](../logs/stage3_tensorrt_report.html)):** `pip install tensorrt-cu12`로 깐 **정본 휠에는 `trtexec` 실행파일이 아예 없다** — `trtexec_on_PATH=null`, 파일시스템 0건([`t01_env.json`](../experiments/stage3_tensorrt/t01_env.json)). 위 `trtexec --version`은 **deb/JetPack 설치 기준**이고, 0단계를 pip 경로로 따라온 독자는 이 단계의 거의 모든 `trtexec …` 명령을 그대로는 못 쓴다. 실행 가능한 대체 경로는 **polygraphy 0.50.3의 Python API**(`network_from_onnx_path`로 파싱 → `engine_from_network(…, config=CreateConfig(int8=…, fp16=…))`으로 빌드)이며, 이 문서의 3점 빌드·파서 절제·implicit 실측은 전부 그 경로로 냈다([`experiments/stage3_tensorrt/`](../experiments/stage3_tensorrt/README.md)). 버전 확인만큼은 pip 휠에서도 되는 **`python3 -c "import tensorrt as trt; print(trt.__version__)"`**(실측 `10.16.1.11`)로 한다. 아래 절과 실습의 `trtexec …` 블록은 **deb/JetPack 독자용 정본으로 유지**하고, pip 독자를 위한 polygraphy 등가 실측을 각 지점에 병기한다.
+
 ### 3.2 부가 도구 설치
 
 ```bash
@@ -236,6 +253,8 @@ pip install pycuda
 - `pycuda`: 파이썬 캘리브레이터에서 디바이스 버퍼 할당/H2D 복사(`mem_alloc`, `memcpy_htod`).
 
 > 💡 팁: 버전 충돌이 잦다. `pip install` 후 `python3 -c "import tensorrt, onnxruntime, modelopt"`가 한 번에 통과하는지 확인하고, 안 되면 컨테이너(`nvcr.io/nvidia/tensorrt`)로 격리하는 편이 빠르다. 컨테이너 태그는 정본에 맞춰 **10.16.x 계열**을 고른다.
+
+> 🔴 **실측 함정 — `modelopt.onnx`는 import 자체가 실패한다(2026-08-17, RTX 3080):** 위 `nvidia-modelopt`가 깔려 `import modelopt`(버전 문자열)·`modelopt.torch`(2단계 §4.4 SmoothQuant에서 쓴 경로)는 **정상**인데, `import modelopt.onnx.quantization`은 **`Please install optional \`\`[onnx]\`\` dependencies.`로 죽는다**([`t01_env.json`](../experiments/stage3_tensorrt/t01_env.json)의 `modelopt_onnx.importable=false`) — `[onnx]` 엑스트라(예: `onnxslim`)가 채워지지 않은 것이다. **처방**: ONNX PTQ 경로가 필요하면 `pip install "nvidia-modelopt[onnx]"`(또는 최소 `pip install onnxslim`)로 보충한 뒤 `python3 -c "import modelopt.onnx.quantization"`가 통과하는지 재확인한다. 이 단계의 INT8 실측은 그 대신 **ORT `quantize_static` QDQ + polygraphy 빌드**(실습1·4-(C) 경로)로 냈고, `modelopt.torch` PTQ는 2단계에서 이미 검증했으므로 여기선 ONNX-측 공백만 메우면 된다.
 
 ---
 
@@ -310,6 +329,18 @@ trtexec --loadEngine=yolo11n_int8.engine \
 
 - `.engine`(=`.plan`)은 **직렬화된 바이너리**다. Python에서는 `runtime.deserialize_cuda_engine(f.read())`로 로드한다.
 - 🔴 **직렬화 엔진의 이식성:** 엔진은 (a)빌드한 **GPU 아키텍처(SM 버전)**, (b)**TensorRT 버전**, (c)일부 빌드 플래그에 종속적이다. RTX(예: SM 8.9)에서 만든 엔진은 Orin(SM 8.7)에서 로드되지 않는다 → **타깃에서 재빌드**가 원칙. 그래서 CI에서 "엔진을 아티팩트로 굽는" 잡은 **타깃 GPU별로** 돌린다.
+
+> 🟩 **3단계 실측 — trtexec 없이 polygraphy로 3점 빌드 (2026-08-17 · RTX 3080 · ResNet50 `IMAGENET1K_V1` · batch=1 · [리포트](../logs/stage3_tensorrt_report.html) · [`t02`](../experiments/stage3_tensorrt/t02_latency_3point.py)):** 위 `trtexec --onnx=… {--fp16|--int8}` 3점을 pip 스택(trtexec 부재)에선 polygraphy Python API로 등가 재현한다 — `network_from_onnx_path(onnx)`로 파싱 → `engine_from_network(…, config=CreateConfig(fp16=…, int8=…))`으로 빌드. YOLO 대신 **1단계 연속선상의 ResNet50**으로 export 리스크를 없앴고, 지연은 워밍업 후 p50, 정확도는 ImageNet val 5,000장.
+
+| 구성 (polygraphy `CreateConfig`) | p50 (ms) | vs FP32 | top-1 | 엔진 | INT8 커널줄 |
+|---|---|:---:|---|---|:---:|
+| FP32 | 1.6615 | ×1.00 | 76.88% | 122.3 MiB | 0 |
+| FP16 (`fp16=True`) | **0.8459** | **×1.96** | 76.88%(동일) | 49.2 MiB | 0 |
+| INT8+FP16 (`int8=True, fp16=True`, QDQ) | **0.7843** | **×2.12** | 76.36%(−0.52%p) | 25.5 MiB | **74** |
+
+- **FP16은 사실상 공짜**(top-1 완전 동일, ×1.96). **INT8은 ×2.12에 −0.52%p**이고, 엔진 레이어 덤프에 **INT8 커널이 74줄** 잡혀 Q/DQ가 실제 INT8 GEMM으로 융합됐음이 확인된다(무음 폴백이면 이 줄 수가 0인 것과 대비된다 — 2.2.1의 CUDA-EP 교차 판정과 같은 신호).
+- **왜 "INT8+FP16"인가:** 순수 `int8=True`만 주면 stem conv1 융합블록의 INT8 커널 부재로 **빌드가 실패**한다(2.2.1 실측 case D). 실전 배포 구성이자 안전한 기본값은 **`int8=True, fp16=True`**(= trtexec `--int8 --fp16`) — INT8 커널이 없는 층만 FP16으로 자동 폴백시켜 빌드를 통과시키면서 나머지는 INT8로 융합한다.
+- top-1 서브셋(5,000장) 76.88%는 공개 FP32 76.13%보다 부풀려짐(1단계 함정 0). 논점은 **배수와 정확도 순위**(FP32=FP16 ≥ INT8)이지 절대값이 아니다.
 
 #### (2-B) TensorRT 11.x (참고) — strongly-typed(플래그 제거됨)
 
@@ -512,6 +543,16 @@ polygraphy debug precision yolo11n.onnx \
 ### 실습 3 — INT8 캘리브레이터 직접 구현 (TensorRT 10.x, `IInt8EntropyCalibrator2`)
 
 > ⚠️ **버전 주의:** `IInt8EntropyCalibrator2`는 **10.1부터 deprecated**, **11.0에서 관련 경로가 제거**됐다. **정본 10.16.x LTS에서는 여전히 동작**(deprecated 경고만)하며, deprecated API는 2027-03까지 유지된다. 11.x거나 신규 프로젝트라면 실습 4(ModelOpt PTQ/QDQ)로 대체하라. 그래도 "캘리브레이터가 내부에서 뭘 하는가"를 이해하려면 한 번은 짜볼 가치가 있다.
+
+> 🟩 **3단계 실측 — implicit이 정본 10.16에서 여전히 빌드된다 (2026-08-17 · RTX 3080 · ResNet50 · [`t04`](../experiments/stage3_tensorrt/t04_implicit_calibrator.py)):** 위 `IInt8EntropyCalibrator2`(QDQ 없는 FP32 ONNX + 캘리브 200장)로 INT8 엔진 **빌드 성공**(캐시 5,776B). deprecation 경고는 **Python 바인딩 레벨 134건**(그중 `Superseded by explicit quantization`=TensorRT **10.1** 표시 **8건** → 문서 §2.2의 "10.1부터 deprecated"를 실측으로 확증, 나머지 126건은 config 플래그의 strong-typing/10.12 경고), **TRT 로그 자체엔 0건**. 즉 "deprecated=제거"가 아니라 정본 LTS에선 경고만 뜨고 정상 동작한다.
+
+| INT8 경로(동일 ResNet50) | p50 (ms) | top-1 | INT8 커널줄 | 제어성 |
+|---|---|---|:---:|---|
+| explicit QDQ (실습1) | 0.7843 | 76.36% | 74 | 층별 명시(권장) |
+| implicit calib (실습3) | **0.7074** | **76.80%** | 57 | TRT 자동(deprecated) |
+
+- 이 모델에선 implicit이 **더 빠르고(×2.35 vs explicit ×2.12) 더 정확했다**(76.80% vs 76.36%). 이유는 TRT가 지연 최소화 목표로 **층별 정밀도를 자동 선택**(INT8을 57층만)한 반면, explicit QDQ는 감싼 층을 **전부 INT8로 강제**(74층)했기 때문이다.
+- ⚠️ **그래도 신규는 explicit 권장.** 위 수치는 **이 모델에서 우연히** 유리했을 뿐이고, implicit은 (a) deprecated(10.1)라 제거 예정이고 (b) 어느 층을 INT8로 둘지 **제어할 수 없다**. 재현성·이식성·1단계 sensitivity 연동이 필요한 실전에선 explicit QDQ(실습1·4)가 맞다.
 
 **캘리브레이터가 하는 일(직관):** INT8은 실수 텐서를 정수로 매핑하는데, 그 스케일 `s = max_abs / 127`을 정하려면 "이 텐서 값이 보통 어디까지 커지나"를 알아야 한다. 캘리브레이터는 **대표 입력 배치를 실제로 흘려보내며 각 텐서의 분포(히스토그램)를 모아** 동적 범위를 추정한다. `EntropyCalibrator2`는 그 범위를 **KL divergence(정보 손실)를 최소화**하도록 고른다(단순 min/max보다 outlier에 강함). 이 콜백이 배치를 공급하는 게 우리가 짤 코드다.
 
@@ -769,6 +810,8 @@ trtexec --onnx=yolo11n.quant.onnx --int8 --fp16 \
 ### 실습 5 — DLA 파티셔닝 (GPU-only / DLA-only / 하이브리드)
 
 > 🟨 **보드 필요 구분:** 아래는 **Orin/Xavier 보드 + TensorRT 10.x(JetPack)에서만** 실행/실측이 의미 있다(DLA 하드웨어 + DLA를 지원하는 TRT 필요). RTX 데스크톱에는 DLA가 없어 `--useDLACore`가 에러다. **또한 TensorRT 11.0/11.1은 DLA 자체를 지원하지 않는다** — DLA는 정본 10.x 전용 실습이다. **보드가 없으면 이 실습은 개념 학습으로 남기고, 산출물 `dla_fallback.md`에 '보드 필요 — 미실행'으로 명시**한다.
+
+> 🟥 **3단계 실측 — 이 머신(RTX 3080)엔 DLA가 없다(범위 밖, 정직한 폴백):** TRT introspection에서 **`num_DLA_cores=0`**([`t01_env.json`](../experiments/stage3_tensorrt/t01_env.json)) — dGPU라 DLA 코어가 물리적으로 없다. 따라서 이 실습은 **하드웨어 범위 밖**(2단계 BEVFormer 전체 INT8과 같은 처리)이며, 아래 `trtexec --useDLACore` 명령은 Orin/Xavier에서만 유효하다. 이 머신 기준 산출물 `dla_fallback.md`는 '보드 필요 — 미실행'으로 남긴다.
 
 ```bash
 # (a) GPU-only (기준선) — Orin에서
@@ -1058,7 +1101,9 @@ DLA의 진짜 가치는 순수 latency보다 **GPU를 비워 다른 태스크(�
 
 | 증상 | 원인 | 해결 |
 |------|------|------|
+| `trtexec: command not found` (pip 설치) | pip 휠 `tensorrt-cu12`엔 **trtexec 바이너리가 없다**(polygraphy만 옴, 3단계 실측 [`t01`](../experiments/stage3_tensorrt/t01_env.json)) | 빌드·벤치를 **polygraphy Python API**(`network_from_onnx_path`+`engine_from_network`)로. 버전은 `python3 -c "import tensorrt as trt; print(trt.__version__)"`. deb/JetPack이면 `/usr/src/tensorrt/bin/trtexec` |
 | `trtexec: unrecognized option '--int8'` | **TensorRT 11.x**(정밀도 플래그 제거됨) | 정본 10.16.x로 맞추거나, 실습 2-B/4로 전환. INT8은 ModelOpt QDQ, FP16은 AutoCast로 모델에 심기 |
+| `import modelopt.onnx…` → `Please install optional [onnx] dependencies` | `nvidia-modelopt[all]`인데도 `[onnx]` 엑스트라(onnxslim) 미충족(3단계 실측 [`t01`](../experiments/stage3_tensorrt/t01_env.json)) | `pip install "nvidia-modelopt[onnx]"`(또는 `pip install onnxslim`) 후 재확인. `modelopt.torch`는 영향 없음(2단계 §4.4에서 사용) |
 | `IInt8EntropyCalibrator2` import/동작 실패 | 11.x에서 제거 / 10.1+ deprecated | 정본 10.16.x에서 사용(경고만), 신규는 ModelOpt PTQ(실습 4A) |
 | INT8인데 mAP가 폭락 | 캘리브레이션 데이터 부족·비대표 / `--int8`만 주고 캘리브 생략 / 옛 `calib.cache` 재사용 | 대표 이미지 1000장+로 재캘리브(캐시 삭제 후), QDQ/QAT 사용 |
 | `input has type Int32 but must have type FP8, FP4, Int4, or Int8` + `Invalid Node - <name>_bias_DequantizeLinear` | **아래 zero-point 행에서 파생되는 2차 증상.** `zero_point ≠ 0`으로 Q/DQ 융합이 깨진 뒤 **홀로 남은 bias DQ**가 타입 검사에 걸린 것이다. ORT는 `QuantizeBias` 기본 `True`라 bias를 INT32로 양자화해 DQ를 붙이는데, 융합이 정상이면 TRT는 이걸 그대로 받아들인다(절제 실험 case C: bias DQ 21개인 채로 빌드 성공) | **아래 zero-point 행을 먼저 고치고 재시도** — 그것만으로 이 에러도 같이 사라진다. 🔴 `extra_options={"QuantizeBias": False}`는 **이 에러의 해법이 아니다**: bias DQ를 0개로 만들어도 zero-point가 그대로면 여전히 실패·폴백한다(절제 실험 case B). 애초에 ModelOpt PTQ로 QDQ를 만들면 회피 → **2.2.1 / 실습 4-(A)·(C)** |
@@ -1091,6 +1136,8 @@ DLA의 진짜 가치는 순수 latency보다 **GPU를 비워 다른 태스크(�
 - [ ] (보드 시) `dla_fallback.md` — GPU-only/DLA/하이브리드 비교표, fallback 레이어 목록(`--exportLayerInfo`), op 치환 전/후 fallback 수(없으면 '보드 필요 — 미실행'으로 명시)
 - [ ] (심화) `deform_attn_plugin/` — IPluginV3 골격 소스(+Creator+REGISTER) + 빌드된 `.so`(최소 identity라도)
 - [ ] (선택) `*.nsys-rep` — Nsight Systems 타임라인 캡처 1건 + 병목 유형 판정 메모
+
+> 🟩 **3단계 실측 산출물 (이 저장소, 2026-08-17 · RTX 3080):** 위 체크리스트는 학습자용 목표이고, **이 문서의 실측 검증**은 아래로 남겼다 — 실측 리포트 [`logs/stage3_tensorrt_report.html`](../logs/stage3_tensorrt_report.html), 파서/빌더 제약 로그 원문+설계규칙 [`experiments/stage3_tensorrt/parser_constraints.md`](../experiments/stage3_tensorrt/parser_constraints.md), 재현 스크립트·JSON [`experiments/stage3_tensorrt/`](../experiments/stage3_tensorrt/README.md)(`t01`~`t04`). trtexec 부재 → polygraphy 3점(INT8 ×2.12), 직접 파서의 2개 하드 블로커, implicit 생존이 여기서 재현된다.
 
 ---
 

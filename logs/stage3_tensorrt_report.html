@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>3단계 TensorRT — 실측 검증 보고서 (RTX 3080)</title>
+<style>
+:root{--bg:#0b0e14;--panel:#131720;--panel2:#0f131b;--bd:#242b38;--tx:#c9d1d9;--dim:#8b949e;--brt:#e6edf3;--accent:#58a6ff;--green:#3fb950;--amber:#d29922;--red:#ff7b72;--purple:#bc8cff;--mono:'JetBrains Mono','SF Mono',ui-monospace,'Cascadia Code',Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans KR','Malgun Gothic',sans-serif}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:var(--sans);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:980px;margin:0 auto;padding:0 20px 120px}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+.hero{padding:48px 0 26px;border-bottom:1px solid var(--bd);margin-bottom:8px}
+.kicker{font-family:var(--mono);font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+.hero h1{margin:0 0 10px;font-size:30px;line-height:1.25;color:var(--brt);letter-spacing:-.01em}
+.hero p.sub{margin:0 0 20px;color:var(--dim);font-size:15px;max-width:78ch}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font-family:var(--mono);font-size:12px;padding:5px 10px;border:1px solid var(--bd);border-radius:999px;background:var(--panel);color:var(--tx)}
+.chip b{color:var(--brt);font-weight:600}
+.chip.done{border-color:rgba(63,185,80,.5);background:rgba(63,185,80,.12);color:#7ee787}
+.chip.blocked{border-color:rgba(255,123,114,.5);background:rgba(255,123,114,.12);color:#ff9d96}
+.chip.partial{border-color:rgba(210,153,34,.5);background:rgba(210,153,34,.12);color:#e3b341}
+nav.toc{display:flex;flex-wrap:wrap;gap:8px;margin:26px 0 6px}
+nav.toc a{font-family:var(--mono);font-size:12.5px;padding:6px 11px;border:1px solid var(--bd);border-radius:8px;background:var(--panel);color:var(--tx)}
+nav.toc a:hover{border-color:var(--accent);color:var(--brt);text-decoration:none}
+h2.sec{font-size:13px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin:40px 0 12px;font-weight:600;border-top:1px solid var(--bd);padding-top:26px}
+.step{margin:26px 0 0;scroll-margin-top:16px}
+.step>h3{display:flex;align-items:center;gap:12px;font-size:19px;color:var(--brt);margin:0 0 6px;letter-spacing:-.01em}
+.num{flex:none;display:inline-grid;place-items:center;width:28px;height:28px;border-radius:8px;background:var(--accent);color:#06101f;font-family:var(--mono);font-weight:700;font-size:13px}
+.step p.lead{margin:0 0 4px;color:var(--dim);font-size:14.5px}
+table.dt{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.3px;border:1px solid var(--bd);border-radius:10px;overflow:hidden;font-family:var(--mono)}
+table.dt th,table.dt td{padding:8px 12px;text-align:right;border-bottom:1px solid var(--bd)}
+table.dt th{background:var(--panel);color:var(--dim);font-weight:600;font-size:12px;letter-spacing:.04em}
+table.dt th:first-child,table.dt td:first-child{text-align:left;color:var(--brt)}
+table.dt tr:last-child td{border-bottom:none}
+table.dt tr.hi td{background:rgba(63,185,80,.08)}
+table.dt tr.lo td{background:rgba(255,123,114,.08)}
+table.dt tr.base td{background:rgba(88,166,255,.07)}
+.g{color:var(--green)}.r{color:var(--red)}.a{color:var(--amber)}.p{color:var(--purple)}.d{color:var(--dim)}
+table.kv{width:100%;border-collapse:collapse;margin:12px 0;font-size:13.5px;border:1px solid var(--bd);border-radius:10px;overflow:hidden}
+table.kv th,table.kv td{padding:9px 13px;text-align:left;border-bottom:1px solid var(--bd);vertical-align:top}
+table.kv th{background:var(--panel);color:var(--dim);font-weight:600;width:34%;font-size:12.5px}
+table.kv td{font-family:var(--mono);font-size:12.7px;color:var(--tx)}
+table.kv tr:last-child td,table.kv tr:last-child th{border-bottom:none}
+.term{background:var(--panel2);border:1px solid var(--bd);border-radius:11px;overflow:hidden;margin:14px 0}
+.term-bar{display:flex;align-items:center;gap:7px;padding:9px 13px;background:#0c1017;border-bottom:1px solid var(--bd)}
+.dot{width:11px;height:11px;border-radius:50%}.dot.r{background:#ff5f56}.dot.y{background:#ffbd2e}.dot.g{background:#27c93f}
+.term-title{margin-left:9px;color:var(--dim);font-size:12.5px;font-family:var(--mono)}
+.term pre{margin:0;padding:15px 17px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.62;color:var(--tx);white-space:pre;tab-size:2}
+.cmt{color:#5c6773}.ok{color:var(--green)}.err{color:var(--red)}.warn{color:var(--amber)}.dim{color:var(--dim)}.hl{color:var(--purple)}.in{color:var(--brt);font-weight:600}
+.note{border-left:3px solid var(--accent);background:rgba(88,166,255,.07);padding:13px 17px;border-radius:0 9px 9px 0;margin:15px 0;font-size:14px}
+.note.trap{border-color:var(--red);background:rgba(255,123,114,.08)}
+.note.warnb{border-color:var(--amber);background:rgba(210,153,34,.08)}
+.note.tip{border-color:var(--green);background:rgba(63,185,80,.07)}
+.note.block{border-color:var(--purple);background:rgba(188,140,255,.08)}
+.note .tag{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 8px;border-radius:6px;margin-bottom:7px}
+.note.trap .tag{background:rgba(255,123,114,.18);color:#ff9d96}
+.note.warnb .tag{background:rgba(210,153,34,.18);color:#e3b341}
+.note.tip .tag{background:rgba(63,185,80,.18);color:#7ee787}
+.note.block .tag{background:rgba(188,140,255,.18);color:#d8b8ff}
+.note b{color:var(--brt)}.note code{font-family:var(--mono);font-size:12.5px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:4px}
+.chartwrap{border:1px solid var(--bd);background:var(--panel2);border-radius:12px;padding:18px 18px 14px;margin:16px 0}
+.chartwrap .ct{font-family:var(--mono);font-size:12.5px;color:var(--brt);margin:0 0 4px}
+.chartwrap .cs{font-size:12.5px;color:var(--dim);margin:0 0 12px}
+.statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:14px 0}
+.stat{border:1px solid var(--bd);background:var(--panel);border-radius:11px;padding:15px 16px}
+.stat .k{font-family:var(--mono);font-size:11.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em}
+.stat .v{font-size:23px;color:var(--brt);font-weight:700;margin-top:5px;letter-spacing:-.01em}
+.stat .n{font-size:12px;color:var(--dim);margin-top:3px}
+.stat.ok .v{color:#7ee787}.stat.warn .v{color:#e3b341}.stat.bad .v{color:#ff9d96}
+.verdict{border:1px solid var(--bd);border-radius:12px;padding:16px 18px;margin:14px 0;background:var(--panel)}
+.verdict h4{margin:0 0 6px;font-size:15px;color:var(--brt);display:flex;align-items:center;gap:9px}
+.verdict h4 .b{font-family:var(--mono);font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px}
+.verdict.yes h4 .b{background:rgba(63,185,80,.18);color:#7ee787}
+.verdict.no h4 .b{background:rgba(255,123,114,.18);color:#ff9d96}
+.verdict p{margin:0;font-size:13.8px;color:var(--tx)}
+footer{margin-top:46px;padding-top:20px;border-top:1px solid var(--bd);color:var(--dim);font-size:13px}
+.next{display:block;margin-top:12px;padding:12px 16px;border:1px solid var(--bd);border-radius:9px;color:var(--tx);background:var(--panel);font-size:13.6px}
+.next b{color:var(--accent)}
+@media (max-width:560px){.hero h1{font-size:23px}.term pre{font-size:11.4px}.stat .v{font-size:20px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <p class="kicker">실행 보고서 · 3단계 · TensorRT (엔진 빌드·INT8·파서 제약)</p>
+    <h1>3단계 TensorRT — 실측 검증 보고서</h1>
+    <p class="sub">3단계 문서(<code>05_tensorrt.md</code>)는 <b>전부 <code>trtexec</code> 명령</b>으로 쓰여 있으나 정본 pip 스택엔 trtexec가 없다. 실제 RTX 3080 · <b>TensorRT 10.16.1.11</b>에서 <b>polygraphy Python API</b>로 동일 파이프라인을 완주했다. torchvision <b>ResNet50</b>으로 FP32/FP16/INT8 3점 지연·정확도를 재고, §2.2.1(1단계 ResNet18 ORT-EP 관측)을 <b>직접 파서 5케이스 절제</b>로 정밀화했으며, 실습3 implicit 캘리브레이터의 생존을 확인했다. 핵심: trtexec 부재 → polygraphy, 직접 파서엔 <b>독립 하드 블로커 2개</b>(INT32 bias DQ + zp≠0), 그와 별개 축의 <b>빌더 커널 부재</b>(stem), implicit은 살아있지만 deprecated.</p>
+    <div class="chips">
+      <span class="chip"><b>2026-08-17</b></span>
+      <span class="chip"><b>RTX 3080</b></span>
+      <span class="chip"><b>TensorRT 10.16.1.11</b></span>
+      <span class="chip blocked">trtexec 부재</span>
+      <span class="chip done">polygraphy 0.50.3</span>
+      <span class="chip done">INT8 ×2.12</span>
+      <span class="chip partial">파서 블로커 2개</span>
+    </div>
+    <nav class="toc">
+      <a href="#s1">1 · 실행 요약</a>
+      <a href="#s2">2 · 환경·스택</a>
+      <a href="#s3">3 · 실습1 3점</a>
+      <a href="#s4">4 · §2.2.1 파서 절제</a>
+      <a href="#s5">5 · 실습3 implicit</a>
+      <a href="#s6">6 · 판정·산출물</a>
+    </nav>
+  </header>
+
+  <h2 class="sec">§1 — 실행 요약</h2>
+  <section id="s1" class="step">
+    <div class="statgrid">
+      <div class="stat bad"><div class="k">trtexec</div><div class="v">부재</div><div class="n">PATH·파일시스템 0건 → polygraphy로 대체</div></div>
+      <div class="stat ok"><div class="k">INT8 speedup</div><div class="v">×2.12</div><div class="n">vs FP32, top-1 −0.52%p</div></div>
+      <div class="stat warn"><div class="k">직접 파서 하드 블로커</div><div class="v">2개</div><div class="n">INT32 bias DQ + zp≠0 (§2.2.1은 1개)</div></div>
+      <div class="stat ok"><div class="k">implicit 캘리브</div><div class="v">생존</div><div class="n">TRT 10.16 빌드 OK, 단 10.1 deprecated</div></div>
+    </div>
+    <p class="lead">문서 전제(trtexec·§2.2.1 단일 블로커·implicit 제거 여부)를 실측으로 검증·정밀화했다. 상세는 각 절.</p>
+    <table class="kv">
+      <tr><th>① 헤드라인 정정 (trtexec 부재)</th><td>정본 pip 휠 <code>tensorrt-cu12</code>엔 <code>trtexec</code> 실행파일이 <b>없다</b>(PATH null, find 0건). 문서의 모든 <code>trtexec --onnx=... --int8</code>는 그대로 실행 불가 → <b>polygraphy 0.50.3</b>(<code>network_from_onnx_path</code> + <code>engine_from_network</code>)로 동일 결과. modelopt.onnx는 <code>[onnx]</code> 선택 의존성(onnxslim) 누락으로 import 불가. (§2)</td></tr>
+      <tr><th>② 실습1 3점 재현</th><td>ResNet50 배치1·eval 5,000장: FP32 1.6615ms → FP16 <b>×1.96</b> → INT8 <b>×2.12</b>(top-1 −0.52%p, INT8 커널 74줄로 QDQ 융합 확인). (§3)</td></tr>
+      <tr><th>③ §2.2.1 정밀화 (경로 병기)</th><td>1단계는 ORT-EP로 "하드 블로커 = zp≠0 하나"로 봤다. <b>직접 파서</b>는 5케이스 절제 결과 <b>INT32 bias DQ도 독립 블로커</b>(대칭 zp=0인데도 거부). 반전 아닌 <b>경로 병기</b> — ORT-EP가 파서 전 bias DQ를 흡수하기 때문. (§4)</td></tr>
+      <tr><th>④ 빌더 vs 파서는 별개 축</th><td>stem conv1(3ch 7×7 융합)을 INT8로 넣으면 <b>파서는 통과, 빌더가 실패</b>(Error Code 10, INT8 tactic 부재). 처방 <code>nodes_to_exclude=["/conv1/Conv"]</code>. (§4-D)</td></tr>
+      <tr><th>⑤ 실습3 implicit 생존</th><td><code>IInt8EntropyCalibrator2</code>가 TRT 10.16에서 <b>여전히 빌드</b>(deprecation 경고 Python 134건, TRT 로그 0). 이 모델에선 explicit보다 빠르고(0.707ms) 정확(76.80%) — TRT가 층별 정밀도를 자동 선택. 단 deprecated라 신규는 explicit 권장. (§5)</td></tr>
+      <tr><th>⑥ 범위 밖 (정직한 폴백)</th><td>실습5 DLA는 <code>num_DLA_cores=0</code>(RTX 3080 dGPU) → 하드웨어 부재. Jetson Orin 전용. 실습6 플러그인은 헤비, 미실행. (§2·§6)</td></tr>
+    </table>
+    <div class="note warnb"><span class="tag">캐비앗(먼저)</span> 절대 지연·top-1은 <b>CUDA/RTX 3080 · polygraphy 빌드 · 배치1</b> 기준이고, top-1은 <b>5,000장 서브셋</b>이라 공개값(76.13%)보다 부풀려진다(1단계 함정 0). 1:1 절대 비교가 아니라 <b>같은 경로 안의 상대 관계</b>(FP16/INT8 배수, implicit↔explicit 격차, 파서/빌더 절제 판정)가 유효 결론이다.</div>
+  </section>
+
+  <h2 class="sec">§2 — 환경·스택 (실측 · t01)</h2>
+  <section id="s2" class="step">
+    <table class="kv">
+      <tr><th>머신 / OS</th><td>RTX 3080 (10GB) · Ubuntu 22.04 · venv <code>~/emb-ai</code></td></tr>
+      <tr><th>TensorRT</th><td><b>10.16.1.11</b> (pip 휠 <code>tensorrt-cu12</code>) · polygraphy <b>0.50.3</b> · onnxruntime 1.23.2</td></tr>
+      <tr><th>🔴 trtexec</th><td><b>부재</b> — <code>shutil.which("trtexec")</code>=null, <code>find ~/emb-ai /usr /opt</code> 0건. pip TensorRT 휠은 Python 바인딩만 제공, CLI 도구(trtexec)는 tar/deb 배포판에만 있다. → polygraphy Python API로 대체.</td></tr>
+      <tr><th>implicit 캘리브레이터</th><td>4종 <b>전부 존재</b>: <code>IInt8EntropyCalibrator2 / IInt8MinMaxCalibrator / IInt8EntropyCalibrator / IInt8LegacyCalibrator</code> = all True (버전 10.16에도 제거 안 됨)</td></tr>
+      <tr><th>빌더 능력</th><td>INT8·FP16·BF16·FP8·INT4 flag 전부 True · STRONGLY_TYPED True · <code>platform_has_fast_int8/fp16</code> True</td></tr>
+      <tr><th>🔴 num_DLA_cores</th><td><b>0</b> (RTX 3080은 dGPU) → 실습5(DLA 오프로드)는 <b>하드웨어 범위 밖</b>. DLA는 Jetson Orin 전용.</td></tr>
+      <tr><th>modelopt.onnx</th><td><b>import 불가</b> — <code>"Please install optional [onnx] dependencies."</code>(onnxslim 누락). modelopt.<b>torch</b>는 가용(2단계 §4.4에서 사용). ONNX QDQ export는 ORT <code>quantize_static</code>으로 대체.</td></tr>
+      <tr><th>모델 / 데이터</th><td>torchvision <code>resnet50</code>(IMAGENET1K_V1, 공개 top-1 76.13%) · ImageNet val 5,000장 서브셋 · 캘리브 200장</td></tr>
+    </table>
+    <div class="note trap"><span class="tag">함정 · trtexec ≠ TensorRT 설치</span> 문서 §3.1은 "0단계에서 trtexec가 깔렸다고 가정"하고 실습1·2를 전부 trtexec 명령으로 쓴다. 그러나 <b>pip로 TensorRT를 깔면 trtexec가 안 온다</b>. Python으로 엔진을 빌드하려면 polygraphy(또는 순수 <code>tensorrt.Builder</code> API)를 써야 한다. trtexec가 꼭 필요하면 NVIDIA 개발자 사이트의 <b>tar/deb 배포판</b>을 따로 받아야 한다.</div>
+  </section>
+
+  <h2 class="sec">§3 — 실습1: FP32 / FP16 / INT8 3점 (ResNet50 · t02)</h2>
+  <section id="s3" class="step">
+    <p class="lead">문서 실습1의 <code>trtexec --fp16 / --int8</code> 3점을 polygraphy로 재현. 배치1(지연 정본 지표), 300 iters(warmup 80), 정확도는 ImageNet val 5,000장. INT8은 explicit QDQ(ORT <code>quantize_static</code>, 대칭 QInt8·<code>QuantizeBias=False</code>·stem 제외 — §4의 정본 처방)로 만들어 파서가 그대로 먹는다.</p>
+    <div class="chartwrap">
+      <p class="ct">p50 지연 (ms) — 짧을수록 빠름. FP32 기준선</p>
+      <p class="cs">막대 길이 ∝ p50 지연 (0 ~ 1.8ms). 오른쪽 = 속도 배수(vs FP32).</p>
+      <svg viewBox="0 0 800 210" width="100%" aria-label="latency bar chart">
+        <g font-family="'JetBrains Mono',monospace" font-size="10" fill="#5c6773">
+          <line x1="284.4" y1="12" x2="284.4" y2="170" stroke="#1a202b"/><text x="284.4" y="186" text-anchor="middle">0.5ms</text>
+          <line x1="428.9" y1="12" x2="428.9" y2="170" stroke="#1a202b"/><text x="428.9" y="186" text-anchor="middle">1.0ms</text>
+          <line x1="573.3" y1="12" x2="573.3" y2="170" stroke="#1a202b"/><text x="573.3" y="186" text-anchor="middle">1.5ms</text>
+        </g>
+        <line x1="620" y1="12" x2="620" y2="170" stroke="#8b949e" stroke-dasharray="4 3" opacity="0.5"/>
+        <g font-family="'JetBrains Mono',monospace" font-size="11.5">
+          <text x="132" y="37" text-anchor="end" fill="#e6edf3">FP32</text>
+          <rect x="140" y="20" width="480.0" height="26" rx="3" fill="#58a6ff"/>
+          <text x="626" y="37" fill="#e6edf3">1.6615ms  ×1.00</text>
+          <text x="132" y="77" text-anchor="end" fill="#e6edf3">FP16</text>
+          <rect x="140" y="60" width="244.4" height="26" rx="3" fill="#3fb950"/>
+          <text x="390" y="77" fill="#7ee787">0.8459ms  ×1.96</text>
+          <text x="132" y="117" text-anchor="end" fill="#e6edf3">INT8 (+fp16)</text>
+          <rect x="140" y="100" width="226.6" height="26" rx="3" fill="#bc8cff"/>
+          <text x="372" y="117" fill="#d8b8ff">0.7843ms  ×2.12</text>
+          <text x="132" y="157" text-anchor="end" fill="#e6edf3">INT8 implicit</text>
+          <rect x="140" y="140" width="204.4" height="26" rx="3" fill="#d29922"/>
+          <text x="350" y="157" fill="#e3b341">0.7074ms  ×2.35  (§5)</text>
+        </g>
+      </svg>
+    </div>
+    <table class="dt">
+      <thead><tr><th>구성</th><th>p50 (ms)</th><th>p90 (ms)</th><th>throughput</th><th>vs FP32</th><th>top-1</th><th>엔진</th><th>INT8커널줄</th></tr></thead>
+      <tbody>
+        <tr class="base"><td>FP32</td><td>1.6615</td><td>1.6716</td><td>601.9/s</td><td>×1.00</td><td>76.88%</td><td>122.3 MiB</td><td>0</td></tr>
+        <tr class="hi"><td>FP16</td><td>0.8459</td><td>0.8594</td><td>1182.2/s</td><td class="g">×1.96</td><td>76.88%</td><td>49.2 MiB</td><td>0</td></tr>
+        <tr class="hi"><td>INT8 (+fp16 폴백)</td><td>0.7843</td><td>0.7909</td><td>1275.1/s</td><td class="g">×2.12</td><td class="a">76.36%</td><td>25.5 MiB</td><td class="p">74</td></tr>
+      </tbody>
+    </table>
+    <div class="verdict yes"><h4><span class="b">재현 ✓</span> INT8 ×2.12 · 정확도 −0.52%p · QDQ 융합 확인</h4>
+      <p>FP16은 top-1 <b>완전 동일</b>(76.88%)에 ×1.96로 사실상 공짜. INT8은 ×2.12에 −0.52%p(76.36%)이고, 엔진 레이어에 <b>INT8 커널이 74줄</b> 잡혀 Q/DQ가 실제 INT8 GEMM으로 융합됐음을 확인. 지연 최저는 §5의 implicit(0.7074ms/×2.35)인데, 이는 TRT가 지연 최소화로 층별 정밀도를 자동 선택한 결과다(§5).</p></div>
+    <div class="note"><span class="tag">주의</span> 순수 INT8은 stem 융합블록의 커널 부재로 <b>빌드 실패</b>(§4-D)라, 실전 배포 구성인 <b>INT8+FP16 폴백</b>(<code>int8=True, fp16=True</code> = trtexec <code>--int8 --fp16</code>)으로 측정했다. top-1 서브셋 76.88%는 공개 76.13%보다 부풀려짐(함정 0) — 논점은 배수와 정확도 순위이지 절대값이 아니다.</div>
+  </section>
+
+  <h2 class="sec">§4 — §2.2.1 정밀화: 직접 파서 5케이스 절제 (t03)</h2>
+  <section id="s4" class="step">
+    <p class="lead">1단계 §2.2.1은 ResNet18을 <b>ORT TensorRT-EP</b>로 관측해 "하드 블로커는 <code>zero_point≠0</code> 하나뿐, INT32 bias DQ는 2차 증상"으로 판정했다. 여기선 ResNet50 QDQ 변형을 <b>polygraphy로 TRT 10.16 파서·빌더에 직접</b> 먹여, 파서 제약과 빌더 제약을 분리한다. 로그 원문·설계 규칙 전문은 <a href="../experiments/stage3_tensorrt/parser_constraints.md">parser_constraints.md</a>.</p>
+    <table class="dt">
+      <thead><tr><th>케이스</th><th>구성</th><th>parse</th><th>build</th><th>실패단계</th><th>act zp≠0</th><th>zp dtypes</th></tr></thead>
+      <tbody>
+        <tr class="hi"><td>A</td><td>대칭 QInt8·bias off·stem 제외</td><td class="g">✅</td><td class="g">✅</td><td>—</td><td>0.0</td><td>int8</td></tr>
+        <tr class="lo"><td>B</td><td>대칭 QInt8·<b>bias INT32</b>·stem 제외</td><td class="r">❌</td><td>—</td><td>parse</td><td>0.0</td><td>int32,int8</td></tr>
+        <tr class="lo"><td>C</td><td><b>비대칭 QUInt8</b>·stem 제외</td><td class="r">❌</td><td>—</td><td>parse</td><td>0.213</td><td>int8,uint8</td></tr>
+        <tr class="lo"><td>D</td><td>대칭 QInt8·bias off·<b>stem 포함</b></td><td class="g">✅</td><td class="r">❌</td><td>build</td><td>0.0</td><td>int8</td></tr>
+        <tr class="lo"><td>E</td><td>DETR <code>detr_int8.onnx</code> 실제</td><td class="r">❌</td><td>—</td><td>parse</td><td>0.831</td><td>int32,int8</td></tr>
+      </tbody>
+    </table>
+    <p class="lead" style="margin-top:18px"><b>B</b> — 대칭(zp=0)인데 bias만 INT32로 양자화. §2.2.1의 "zp≠0" 블로커와 무관한데도 파서가 <code>fc.bias_DequantizeLinear</code>에서 죽는다:</p>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">t03 — case B (대칭 + INT32 bias)</span></div>
+      <pre><span class="warn">[W] onnxOpImporters.cpp:1703: For zero_point with type int32 TensorRT will use INT8 instead.</span>
+<span class="err">[E] IDequantizeLayer::setPrecision: Error Code 3: API Usage Error (Parameter check failed,
+    condition: isQuantized(dataType) || (uint8QDQSupported() && dataType == kUINT8).
+    A DequantizeLayer can only run in DataType::kINT8, kFP8, kFP4, or kINT4 precision ...)</span>
+<span class="err">[E] ITensor::getDimensions: Error Code 3: API Usage Error (fc.bias_DequantizeLinear:
+    only activation datatypes allowed as input to this layer. ...)</span>
+<span class="err">[E] In node 0 with name: fc.bias_DequantizeLinear and operator: DequantizeLinear
+    (parseNode): INVALID_NODE: Invalid Node - fc.bias_DequantizeLinear</span></pre>
+    </div>
+    <p class="lead"><b>C</b> — 비대칭 QUInt8 → activation zp가 비영(0.213). 첫 downsample conv에서 <code>shiftIsAllZeros</code> 단언 실패(§2.2.1과 동일 블로커):</p>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">t03 — case C (비대칭 zp≠0)</span></div>
+      <pre><span class="warn">[W] onnxOpImporters.cpp:1695: TensorRT supports Q/DQ with UINT8 zero_point only on DLA
+    (version >= 3.16). Defaulting to INT8 instead. To import as UINT8, set the
+    kIMPORT_UINT8_QUANTIZATION flag.</span>
+<span class="err">[E] Assertion failed: shiftIsAllZeros(zeroPoint): Non-zero zero point is not supported.</span>
+<span class="err">[E] In node 61 with name: /layer1/layer1.0/downsample/downsample.0/Conv_output_0_QuantizeLinear
+    ... INVALID_NODE: Assertion failed: shiftIsAllZeros(zeroPoint) ...</span></pre>
+    </div>
+    <p class="lead"><b>D</b> — A와 같되 stem conv1도 INT8. zp 전부 0·dtype int8만 → <b>파서는 통과</b>. 그런데 빌더가 stem 융합블록에서 죽는다(별개 축):</p>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">t03 — case D (stem INT8 포함, 빌더 실패)</span></div>
+      <pre><span class="dim">... 나머지 53개 conv는 전부 INT8 precision 배정됨(requested-precision 맵) ...</span>
+<span class="err">[E] IBuilder::buildSerializedNetwork: Error Code 10: Internal Error
+    (Could not find any implementation for node
+     onnx::Conv_497_quantized + /conv1/Conv + PWN(/relu/Relu) + /maxpool/MaxPool.
+     In computeCosts at optimizer.cpp:4265)</span>
+<span class="err">[!] Invalid Engine. Please ensure the engine was built correctly</span></pre>
+    </div>
+    <p class="lead"><b>E</b> — 2단계 DETR의 실제 ORT export(<code>detr_int8.onnx</code>, 비대칭+INT32 bias 혼합). B와 C의 블로커를 <b>둘 다</b> 가지나, 파서는 그래프상 먼저 만난 zp≠0(node 0)에서 abort:</p>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">t03 — case E (DETR 실제 export)</span></div>
+      <pre><span class="err">[E] onnxOpImporters.cpp:1738 In function QuantDequantLinearHelper:
+    [6] Assertion failed: shiftIsAllZeros(zeroPoint): Non-zero zero point is not supported.</span>
+<span class="err">[E] In node 0 with name: /model/Tile_output_0_DequantizeLinear and operator:
+    DequantizeLinear ... INVALID_NODE: Assertion failed: shiftIsAllZeros(zeroPoint) ...</span></pre>
+    </div>
+    <div class="verdict yes"><h4><span class="b">정밀화 →</span> 직접 파서엔 독립 블로커 2개 + 별개 축의 빌더 제약</h4>
+      <p>(1) <b>zp≠0</b>(C·E) — §2.2.1과 일치, 경로 무관. (2) <b>INT32 bias DQ</b>(B) — 대칭 zp=0인데도 파서가 독립 거부. §2.2.1이 "2차 증상"으로 본 것과 다르다. (3) <b>stem 커널 부재</b>(D) — 파서 통과·빌더 실패, QDQ 제약과 완전히 별개 축. 정본 처방은 A: <b>대칭 QInt8 + <code>QuantizeBias=False</code> + stem 제외 + INT8/FP16 병용</b>.</p></div>
+    <div class="note block"><span class="tag">경로 병기 (반전 아님)</span> §2.2.1은 <b>ORT TensorRT-EP</b> 경로에서 "zp≠0 하나, bias는 2차 증상"을 <b>정당하게 측정</b>했다. 여기(B)선 대칭인데도 bias INT32가 파서를 막는다. 차이는 <b>모델이 아니라 경로</b>다: ORT-EP는 파서에 넘기기 전 자체 그래프 최적화로 INT32 bias DQ를 흡수/제거해 파서가 <b>홀로 선 INT32 DQ를 아예 못 본다</b>. 직접 파서(polygraphy/trtexec/ModelOpt→엔진)는 원본 그래프를 그대로 파싱해 dtype 검사(<code>only activation datatypes allowed</code>, 모델 독립)에 걸린다. 따라서 §2.2.1의 결론은 <b>ORT-EP 경로에서 유효</b>하고, 직접 파서 경로에선 <code>QuantizeBias=False</code>가 필수로 <b>강화</b>된다 — 삭제·반전이 아닌 가법적 정밀화.</div>
+  </section>
+
+  <h2 class="sec">§5 — 실습3: implicit 캘리브레이터 생존 (t04)</h2>
+  <section id="s5" class="step">
+    <p class="lead">문서 §2.2/실습3은 implicit(<code>IInt8EntropyCalibrator2</code>)을 "10.1 deprecated, 정본 10.16에선 살아있음"으로 서술한다. QDQ 없는 FP32 ONNX + polygraphy <code>Calibrator(BaseClass=trt.IInt8EntropyCalibrator2)</code>로 INT8 엔진을 실제로 빌드해 확인.</p>
+    <table class="kv">
+      <tr><th>빌드 결과</th><td><b>build_ok=True</b> — 63.8초, 캘리브 캐시 5,776B 기록. TRT 10.16에서 implicit 경로가 <b>여전히 동작</b>.</td></tr>
+      <tr><th>deprecation 경고</th><td>Python 레벨 <b>134건</b> — 그중 <code>"Superseded by explicit quantization"</code>(= TensorRT 10.1 표시) <b>8건</b>이 캘리브레이터 자체의 deprecation. 나머지 126건은 <code>int8/fp16</code> config 플래그의 strong-typing deprecation(10.12). <b>TRT 로그엔 0건</b>(경고는 Python 바인딩 레벨).</td></tr>
+      <tr><th>정확도 / 지연</th><td>top-1 <b>76.80%</b> · p50 <b>0.7074ms</b> · throughput 1413.7/s · 엔진 25.3 MiB · INT8 커널 <b>57줄</b></td></tr>
+    </table>
+    <table class="dt">
+      <thead><tr><th>INT8 경로 (동일 ResNet50)</th><th>p50 (ms)</th><th>throughput</th><th>top-1</th><th>INT8커널줄</th><th>제어성</th></tr></thead>
+      <tbody>
+        <tr><td>explicit QDQ (실습1)</td><td>0.7843</td><td>1275.1/s</td><td>76.36%</td><td>74</td><td>층별 명시(권장)</td></tr>
+        <tr class="hi"><td>implicit calib (실습3)</td><td class="g">0.7074</td><td class="g">1413.7/s</td><td class="g">76.80%</td><td>57</td><td class="a">TRT 자동(deprecated)</td></tr>
+      </tbody>
+    </table>
+    <div class="verdict yes"><h4><span class="b">확인 ✓</span> implicit은 살아있다 — 이 모델에선 더 빠르고 정확</h4>
+      <p>implicit이 explicit보다 빠르고(0.7074 &lt; 0.7843) 정확한(76.80 &gt; 76.36) 건, TRT가 <b>지연 최소화로 층별 정밀도를 자동 선택</b>해 INT8을 57층만 쓰고 나머지를 FP16에 남겼기 때문이다. explicit QDQ는 감싼 층을 <b>전부 INT8로 강제</b>한다. 즉 이 결과는 implicit이 "더 낫다"가 아니라 <b>제어를 TRT에 넘겼더니 이 모델에서 우연히 유리하게 떨어진 것</b>이다.</p></div>
+    <div class="note warnb"><span class="tag">그래도 explicit 권장</span> implicit은 <b>10.1에서 deprecated</b>(explicit quantization으로 대체) — 제어성이 낮고(층별 정밀도 보장 불가) 장기적으로 제거 대상이다. 위 유리한 수치는 <b>모델 특이적</b>이라 일반화 금지. 신규 파이프라인은 <b>explicit QDQ</b>(1단계 §2.2.1 정본 처방)를 쓰고, 지연이 급하면 <code>int8+fp16</code> 병용으로 TRT가 층별로 고르게 하되 QDQ로 임계층을 고정하는 게 안전하다.</div>
+  </section>
+
+  <h2 class="sec">§6 — 판정 & 산출물</h2>
+  <section id="s6" class="step">
+    <div class="verdict yes"><h4><span class="b">정정 ✓</span> trtexec 부재 → polygraphy Python API</h4><p>문서 전체가 trtexec 명령이나 정본 pip 스택엔 trtexec가 없다. polygraphy 0.50.3로 동일 3점·절제·implicit을 완주. 문서 §3에 부재 경고 + polygraphy 대체 경로를 반영.</p></div>
+    <div class="verdict yes"><h4><span class="b">정밀화 ✓</span> §2.2.1은 경로 병기로 강화</h4><p>직접 파서엔 zp≠0 + INT32 bias DQ 두 독립 블로커(+별개 축의 stem 빌더 제약). ORT-EP 단일 블로커 결론은 그 경로에서 유효 — 반전 아닌 가법적 정밀화.</p></div>
+    <div class="verdict yes"><h4><span class="b">확인 ✓</span> implicit 생존 + 범위 밖 정직화</h4><p>implicit 캘리브 TRT 10.16 생존(단 deprecated). DLA는 num_DLA_cores=0으로 하드웨어 범위 밖 명시.</p></div>
+    <table class="kv">
+      <tr><th>재현 스크립트</th><td><a href="../experiments/stage3_tensorrt/">experiments/stage3_tensorrt/</a> — t3_common·t01~t04 + JSON + <a href="../experiments/stage3_tensorrt/parser_constraints.md">parser_constraints.md</a></td></tr>
+      <tr><th>상위 가이드</th><td><a href="../study_guide/05_tensorrt.md">3단계 05_tensorrt.md</a> (본 실측 반영: §3 trtexec 부재·§2.2.1 경로 병기·실습1/3·실습5 범위 밖)</td></tr>
+      <tr><th>선행 실측</th><td><a href="stage1_50k_rerun_reproduction_report.html">1단계 §2.2.1 ORT-EP 절제</a>(이 §4가 정밀화하는 원본) · <a href="stage2_detr_quantization_report.html">2단계 DETR INT8</a>(case E의 그 모델)</td></tr>
+    </table>
+    <div class="note warnb"><span class="tag">캐비앗</span> ① 절대 지연·top-1은 RTX 3080·polygraphy·배치1 기준 — 다른 GPU·배치·TRT 버전과 1:1 비교 불가. ② top-1 서브셋(5,000장)은 공개값보다 부풀려짐(함정 0). ③ §2.2.1 정밀화는 <b>경로 병기</b>(ORT-EP vs 직접 파서) — 1단계 ResNet18 결과를 반전하지 않는다. ④ implicit의 유리한 수치는 모델 특이적. 유효 결론은 <b>상대 관계</b>: (a) FP16/INT8 배수, (b) 파서 블로커 2개 + 빌더 별개 축, (c) implicit↔explicit 격차의 원인(층별 자동 선택).</div>
+    <a class="next" href="../study_guide/05_tensorrt.md"><b>다음 →</b> 05_tensorrt.md 본문에 반영 완료. 남은 심화: 실습6 IPluginV3 커스텀 플러그인(툴체인 필요), Nsight Systems 프로파일, INT8+FP16 층별 정밀도 수동 고정(mixed precision) 실측.</a>
+  </section>
+
+  <footer>
+    3단계 TensorRT 실측 검증 · RTX 3080 · 2026-08-17 · TensorRT 10.16.1.11 · polygraphy 0.50.3 · ResNet50(IMAGENET1K_V1) · ImageNet val 5,000장<br>
+    본 보고서 수치는 <code>experiments/stage3_tensorrt/t0{1,2,3,4}*.json</code>에서 그대로 옮겼다.
+  </footer>
+</div>
+</body>
+</html>
