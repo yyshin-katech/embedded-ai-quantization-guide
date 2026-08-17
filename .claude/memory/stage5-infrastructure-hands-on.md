@@ -1,6 +1,6 @@
 ---
 name: stage5-infrastructure-hands-on
-description: "5단계 인프라화 완료(2026-08-17, 미커밋): 벤치 하네스 polygraphy TrtRunner. 무음 오답 2건(zero-copy 버퍼 에일리어싱 top-1 0.0014·pivot dropna 회색행 드롭). device_memory_size_v2=scratch mem≠엔진파일. pytest-regressions 최신 2.11.0"
+description: "5단계 인프라화 완료(2026-08-17, 커밋 ff523de 푸시완료): 벤치 하네스 polygraphy TrtRunner. 무음 오답 2건(zero-copy 버퍼 에일리어싱 top-1 0.0014·pivot dropna 회색행 드롭). device_memory_size_v2=scratch mem≠엔진파일. pytest-regressions 최신 2.11.0"
 metadata:
   node_type: memory
   type: project
@@ -9,7 +9,7 @@ metadata:
 `study_guide/07_infrastructure.md`(1229줄 초안, hands-on 미검증)를 AI-LAP/RTX3080
 ([[machine-ai-lap-rtx3080]])에서 완주(2026-08-17). venv `~/emb-ai` · **TensorRT 10.16.1.11** ·
 polygraphy 0.50.3 · pandas · pytest-regressions 2.11.0. 모델 torchvision **ResNet50**(3단계 자산 재사용 —
-[[stage3-tensorrt-hands-on]]), 지연 배치1 / 정확도 ImageNet val 5,000장. **미커밋**(요청 시만 —
+[[stage3-tensorrt-hands-on]]), 지연 배치1 / 정확도 ImageNet val 5,000장. **커밋 ff523de**(main, 푸시 완료 —
 [[repo-is-public-scan-before-commit]]). 산출물: `logs/stage5_infrastructure_report.html` ·
 `experiments/stage5_infrastructure/`(bench/*·harness_constraints.md·README).
 
