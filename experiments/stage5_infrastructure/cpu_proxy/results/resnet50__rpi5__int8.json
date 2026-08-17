@@ -1,0 +1,12 @@
+{
+  "model": "resnet50",
+  "soc": "rpi5",
+  "precision": "int8",
+  "latency_ms": 79.0827,
+  "peak_mem_mb": NaN,
+  "accuracy": 0.75,
+  "engine_build_s": 0.0,
+  "latency_p95_ms": 81.2943,
+  "trt_version": "",
+  "notes": "ORT 1.28.0 CPUExecutionProvider; Cortex-A76 dotprod(asimddp); batch1 single-input; n_eval=1000; edge ARM CPU proxy (NOT automotive NPU)"
+}

@@ -1,0 +1,12 @@
+{
+  "model": "resnet50",
+  "soc": "x86_cpu",
+  "precision": "int8",
+  "latency_ms": 16.3376,
+  "peak_mem_mb": NaN,
+  "accuracy": 0.753,
+  "engine_build_s": 0.0,
+  "latency_p95_ms": 20.1,
+  "trt_version": "",
+  "notes": "ORT 1.23.2 CPUExecutionProvider; x86_64 dev-host; batch1 single-input; n_eval=1000; dev-host CPU baseline"
+}
