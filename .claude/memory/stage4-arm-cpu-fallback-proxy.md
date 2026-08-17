@@ -47,8 +47,8 @@ x86 대조. 산출물: `logs/stage4_arm_cpu_fallback_report.html` · `experiment
 (260.0/141.85/260.0/457.91, 기준선 x=400)·크로스링크 실재·§오염 0(git diff 18 insertions·0 deletions)·회귀 3
 passed·캐비앗 3종 병기 확인.
 
-**커밋:** 콘텐츠 커밋 예정(스캔 후 — 규약 [[repo-is-public-scan-before-commit]], 이번엔 사용자 요청으로 push).
-이 파일은 동기화 커밋에서 콘텐츠 해시 기록.
+**커밋:** 콘텐츠 커밋 **2ae48be**(main, 푸시완료 — 규약 [[repo-is-public-scan-before-commit]], 사용자 요청).
+스캔 청결(전체 Tailscale 호스트 IP·PAT·평문 암호 0건). 이 메모리 갱신은 뒤따르는 동기화 커밋.
 
 **남은 과제:** 4단계 벤더 NPU 본실측(TIDL/QNN/DRP-AI 컴파일·offload% 실측)은 보드·SDK 확보 시(4-A~C). 그때 이
 CPU 바닥값이 "가속기가 이겨야 할 최소선" 대조축.
