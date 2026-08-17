@@ -1,6 +1,6 @@
 ---
 name: stage3-tensorrt-hands-on
-description: "3단계 TensorRT 완료(2026-08-17, ResNet50, 미커밋): trtexec가 pip 휠에 부재→polygraphy API. §2.2.1은 경로 병기(직접 파서 하드 블로커 둘: INT32 bias DQ+zp≠0). implicit 캘리브레이터 10.16서 생존"
+description: "3단계 TensorRT 완료(2026-08-17, ResNet50, 커밋 70c82e9 푸시완료): trtexec가 pip 휠에 부재→polygraphy API. §2.2.1은 경로 병기(직접 파서 하드 블로커 둘: INT32 bias DQ+zp≠0). implicit 캘리브레이터 10.16서 생존"
 metadata:
   node_type: memory
   type: project
@@ -9,7 +9,7 @@ metadata:
 `study_guide/05_tensorrt.md`(1135줄 초안, 전부 `trtexec` 명령 기반)를 AI-LAP/RTX3080
 ([[machine-ai-lap-rtx3080]])에서 완주(2026-08-17). venv `~/emb-ai` · **TensorRT 10.16.1.11**(pip 휠
 `tensorrt-cu12`) · polygraphy 0.50.3 · onnxruntime 1.23.2. 모델 torchvision **ResNet50**(공개 76.13%),
-지연 배치1 / 정확도 ImageNet val 5,000장. **미커밋**(커밋은 요청 시 — [[repo-is-public-scan-before-commit]]).
+지연 배치1 / 정확도 ImageNet val 5,000장. **커밋 70c82e9**(main, 푸시 완료 — [[repo-is-public-scan-before-commit]]).
 
 **헤드라인 반전 — trtexec가 없다:** 정본 pip 휠에 `trtexec` **실행파일이 없다**(PATH·파일시스템 0건).
 문서의 모든 `trtexec --onnx=… --int8` 명령이 그대로는 실행 불가 → **polygraphy 0.50.3 Python API**
