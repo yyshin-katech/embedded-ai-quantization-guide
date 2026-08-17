@@ -1,0 +1,12 @@
+{
+  "model": "resnet50",
+  "soc": "tda4vm",
+  "precision": "int8",
+  "latency_ms": NaN,
+  "peak_mem_mb": NaN,
+  "accuracy": NaN,
+  "engine_build_s": 0.0,
+  "latency_p95_ms": NaN,
+  "trt_version": "",
+  "notes": "not implemented: TIDL compile hook \u2014 TDA4VM/PC-emulation \ud544\uc694"
+}

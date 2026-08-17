@@ -1,0 +1,12 @@
+{
+  "model": "resnet50",
+  "soc": "qcs8550",
+  "precision": "int8",
+  "latency_ms": NaN,
+  "peak_mem_mb": NaN,
+  "accuracy": NaN,
+  "engine_build_s": 0.0,
+  "latency_p95_ms": NaN,
+  "trt_version": "",
+  "notes": "not implemented: QNN context binary \uc0dd\uc131 \u2014 QNN SDK/\ub514\ubc14\uc774\uc2a4 \ud544\uc694"
+}

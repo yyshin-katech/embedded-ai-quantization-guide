@@ -1,0 +1,37 @@
+# bench/config.yaml  — 학습가이드 §4-5 스키마 그대로.
+#   models[]:  name, onnx, calib      — 무엇을(모델)
+#   backends[]:                        — 무엇으로(타깃 SoC 백엔드 키)
+#   precisions[]:                      — 어떤 정밀도로
+#   exclude[]: (선택) 특정 조합 제외
+#
+# 검증 인스턴스(2026-08-17): 문서 예시는 bevformer지만, BEVFormer INT8은 2단계에서
+# '유효 export 경로 없음(포크 필요)'으로 범위 밖 → RTX에서 실제로 빌드·측정 가능한
+# ResNet50(3단계 자산)로 하네스를 관통시킨다. 세 precision 모두 같은 FP32 ONNX에서
+# 빌드(INT8은 implicit 캘리브레이터). onnx 경로는 이 머신 기준(각자 환경에 맞게).
+defaults:
+  warmup: 20
+  iters: 200
+  eval_n: 5000              # 정확도 판정 장수(1단계 함정 0: 서브셋 top-1은 공개값보다 부풀려짐)
+
+models:
+  - name: resnet50
+    onnx: /home/yuyeong/embedded-ai-quantization-guide/_workspace/stage3/resnet50_fp32.onnx
+    calib: calib200          # data.Loader.calib_feed(n=200)로 해석
+  # - name: bevformer        # 모델 추가 = 여기 한 블록 (단 export 유효성은 2단계 참고)
+  #   onnx: models/bevformer.onnx
+
+backends:                    # 이 실행 환경(runner)에서 가능한 것만 켠다
+  - trt                      # 데스크톱/CI: TRT. 보드 백엔드는 label 붙은 runner에서.
+  - tidl                     # stub → '보드필요' 회색 행 (하네스가 죽지 않음을 검증)
+  - qnn                      # stub
+  - drpai                    # stub
+
+precisions: [fp32, fp16, int8]
+
+exclude:                     # 물리적으로 불가능한 조합은 제외
+  - {backend: drpai, precision: fp16}   # DRP-AI는 INT8 고정
+  - {backend: drpai, precision: fp32}
+  - {backend: tidl,  precision: fp32}   # TIDL은 실효 없음(예시)
+  - {backend: tidl,  precision: fp16}
+  - {backend: qnn,   precision: fp32}
+  - {backend: qnn,   precision: fp16}

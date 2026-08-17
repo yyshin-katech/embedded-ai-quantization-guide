@@ -1,0 +1,7 @@
+model,soc,precision,latency_ms,peak_mem_mb,accuracy,engine_build_s,latency_p95_ms,trt_version,notes
+resnet50,qcs8550,int8,,,,0.0,,,not implemented: QNN context binary 생성 — QNN SDK/디바이스 필요
+resnet50,rtx,fp16,1.0231,3.9,0.7686,29.8,1.0603,10.16.1.11,polygraphy TrtRunner; mem_api=device_memory_size_v2
+resnet50,rtx,fp32,1.837,8.4,0.7688,12.8,1.8832,10.16.1.11,polygraphy TrtRunner; mem_api=device_memory_size_v2
+resnet50,rtx,int8,0.8628,1.7,0.768,49.8,0.8927,10.16.1.11,polygraphy TrtRunner; mem_api=device_memory_size_v2
+resnet50,rzv2h,int8,,,,0.0,,,not implemented: DRP-AI TVM compile hook — 보드 필요
+resnet50,tda4vm,int8,,,,0.0,,,not implemented: TIDL compile hook — TDA4VM/PC-emulation 필요

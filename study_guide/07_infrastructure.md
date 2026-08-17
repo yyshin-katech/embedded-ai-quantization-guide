@@ -4,6 +4,8 @@
 
 > 정본 버전 스택(이 문서 전체 고정): **CUDA 12.8 · TensorRT 10.16.x LTS(`build_serialized_network`) · onnx 1.18.0 · onnxruntime-gpu 1.23.2**. 앞 단계 산출물 이름 고정: `layer_sensitivity.csv`(1단계), `onnx_export_failures.md`(2단계).
 
+> 🔬 **실측 검증 완료 (2026-08-17, RTX 3080 · TensorRT 10.16.1.11)** — 이 문서의 하네스 골격을 실제로 관통시켜 **8건**을 정정했다. 정본 pip 스택엔 `pycuda`·`trtexec`가 없고(→ polygraphy `TrtRunner`로 대체), 그 `TrtRunner`가 **zero-copy**라 정확도 eval에서 **무음 오답**(top-1 0.0014)이 나며, `pivot_table`의 기본 `dropna=True`가 §5-1의 "회색행 보존" 원칙을 스스로 위반한다. 검증 인스턴스는 BEVFormer가 아니라 **ResNet50/ImageNet**([2단계](04_transformer_quantization.md)에서 BEVFormer INT8은 유효 export 경로 없음 → 범위 밖). 전체 로그·정정표는 [`experiments/stage5_infrastructure/`](../experiments/stage5_infrastructure/), 사람이 읽는 리포트는 [`logs/stage5_infrastructure_report.html`](../logs/stage5_infrastructure_report.html). 아래 각 실습의 **🔬 실측 검증** 콜아웃이 정정 지점을 표시한다.
+
 ---
 
 ## 0) 이 단계에서 무엇을·왜 하는가
@@ -122,7 +124,7 @@ python3 -m pip install --upgrade \
 # tabulate           : DataFrame → 마크다운 표 (df.to_markdown)
 # jinja2             : DataFrame.style → HTML (하이라이트 매트릭스 렌더)
 # pytest             : 회귀 테스트 러너
-# pytest-regressions : 골든 파일(baseline) 비교 (v3.0+ 권장, 2026-07 기준)
+# pytest-regressions : 골든 파일(baseline) 비교 (최신 2.11.0, 2026-08 기준 — 초안의 'v3.0+'는 사실오류: v3.x 미존재)
 # pyyaml             : bench 설정(config.yaml) 로드
 ```
 
@@ -424,6 +426,14 @@ class TRTBackend(Backend):
         )
 ```
 
+> 🔬 **실측 검증 (2026-08-17, RTX 3080 · TensorRT 10.16.1.11)** — 위 `trt.py` 골격을 실제로 관통시키니 정본 pip 스택에서 **5건**이 어긋났다. 동작하는 정정본은 [`experiments/stage5_infrastructure/bench/backends/trt.py`](../experiments/stage5_infrastructure/bench/backends/trt.py), 전체 로그는 [`harness_constraints.md`](../experiments/stage5_infrastructure/harness_constraints.md)에 있다.
+>
+> - **🔴 정정 1 — `pycuda` 부재**: 정본 venv엔 `pycuda`가 없다(`ModuleNotFoundError`). 위 `import pycuda.driver`(L329)와 `run()`/`measure()`의 `cuda.mem_alloc`/`memcpy_htod`/`execute_async_v3`/`Stream`이 첫 import에서 죽는다. → **polygraphy `TrtRunner.infer`**로 대체(디바이스 버퍼·H2D/D2H·stream sync를 내부에서 처리, 3단계 지연측정과 동일 경로). [3단계](05_tensorrt.md) `trtexec` 바이너리 부재와 **같은 결** — 정본 pip 휠엔 NVIDIA C++ 계열 도구가 빠져 있다.
+> - **🔴 정정 5 — zero-copy 무음 오답(핵심 발견)**: `measure()`의 `preds = [self.run(x) for x in loader.eval_set()]`는 **pycuda 원안에선 안전**하다(매 호출 `np.empty` 새 버퍼). 그런데 정정 1로 `run()`을 `TrtRunner.infer`로 바꾸면 러너가 **호스트 출력버퍼를 재사용(zero-copy)**해 반환이 그 버퍼의 view가 된다 → 리스트에 모은 5,000개가 **전부 마지막 추론을 가리켜** top-1 **0.0014(=1/1000, 우연 수준)**. exit 0·예외 0·로그 정상, **오직 숫자만 조용히 틀린다.** 처방: `preds = [self.run(x).copy() for x in loader.eval_set()]` → **0.7688**(공개값 일치). 교훈: 버퍼 소유권이 바뀌는 치환(pycuda→polygraphy)에선 반드시 즉시 `.copy()`하거나 루프 안에서 소비하라(3단계 `evaluate_top1`은 루프 안 즉시 argmax로 원천 회피).
+> - **🔴 정정 2 — INT8 캘리브레이터 주석**: L367–369의 `# config.int8_calibrator = ...`(지면상 생략)를 실제로 배선하지 않으면 스케일이 없어 엔진이 무의미하다. polygraphy `Calibrator(data_loader=..., BaseClass=trt.IInt8EntropyCalibrator2)`(3단계 실습3의 그 API — deprecated지만 10.16서 빌드 성공)로 배선 → INT8 top-1 **0.768** = 3단계 t04(implicit)와 **정확히 일치**.
+> - **🟡 정정 3 — `device_memory_size` deprecated**: L416은 TRT 10.x에서 `device_memory_size_v2`로 정정. **값 의미 주의** — 이 수치는 실행컨텍스트 **scratch(activation)** 디바이스 메모리(실측 8.4→3.9→1.7MB, 저정밀일수록 축소)이지 **엔진파일/가중치 크기가 아니다**(3단계가 본 엔진파일 122→49→25 MiB와 다른 축).
+> - **🟢 정정 7 — `EXPLICIT_BATCH` 명시**: L349–351 주석의 "명시해도 무방"은 10.16서 부정확 — 명시하면 **DeprecationWarning**("Implicit batch ... removed")이고, 무인자 `create_network()`가 이미 explicit-batch다. polygraphy `network_from_onnx_path`는 네트워크 생성을 내부 처리하므로 이 지점을 아예 우회한다.
+
 > ✅ 확인됨 (2026-07): `execute_async_v3` / `set_tensor_address` / `get_tensor_name`은 TensorRT 10.x의 name 기반 I/O API가 맞다. 8.x의 bindings 배열 방식은 10.x에서 제거되었다([TensorRT 8→10 Python API 마이그레이션](https://docs.nvidia.com/deeplearning/tensorrt/latest/api/tensorrt-8x-to-10x-python-api.html)). BEV 모델은 입력이 여러 개(멀티뷰 이미지 + intrinsics)이므로 위 단일 I/O 예시를 실제 텐서 수에 맞게 확장해야 한다 — `engine.num_io_tensors`를 순회하며 `engine.get_tensor_mode(name)`으로 입력/출력을 구분해 주소를 세팅한다.
 
 ### 4-4. 나머지 백엔드 stub — 공통 시그니처만 맞춘다
@@ -640,6 +650,8 @@ done: 3 results, 0 skipped
 
 > 💡 팁 — `itertools.product`가 핵심: 모델·precision·백엔드 3중 순회가 한 줄이다. 매트릭스가 커져도 코드는 그대로고 `config.yaml`만 자란다. "조합을 코드가 아니라 데이터로 관리"하는 것이 조합 폭발을 견디는 유일한 방법이다.
 
+> 🔬 **실측 검증 — 정정 4 (`data.py` 미제공)**: `run_bench.py` L591 `from data import Loader, Evaluator`인데 `data.py`가 저장소에 없다 — 데이터층은 프로젝트마다 달라 문서가 **의도적으로 비운 자리**다. 검증에선 ResNet50/ImageNet-val 분류로 채웠다([`experiments/stage5_infrastructure/bench/data.py`](../experiments/stage5_infrastructure/bench/data.py): 50k NHWC uint8 캐시 + top-1 evaluator, `Evaluator.compute_map`은 top-1의 별칭으로 두어 문서의 mAP 계약 유지). FP32 top-1 **0.7688 = 공개값·[3단계](05_tensorrt.md) 일치**로 데이터층·전처리·라벨정렬이 올바름을 검증했다 — `BenchResult.accuracy`(0~1)는 mAP·top-1 공용이라 스키마는 불변.
+
 ### 4-6. `report/generate.py` — md / csv / HTML 매트릭스 자동 생성
 
 `results/`의 JSON들을 모아 pandas로 피벗해 **마크다운 + CSV + HTML** 3종을 뱉는다. CSV는 회귀 baseline의 소스, 마크다운은 README/PR용, HTML은 하이라이트가 들어간 대시보드다.
@@ -742,6 +754,8 @@ python3 report/generate.py   # bench/ 에서
 
 > 💡 팁: `to_markdown()`과 Styler의 `to_html()`은 각각 `tabulate`·`jinja2`가 있어야 동작한다(3절에서 설치). **CSV는 회귀 테스트의 baseline**, 마크다운은 PR/README, **HTML은 팀 대시보드**(초록=행별 최속, 셀 색으로 한눈에)로 쓴다. `sort_values`로 CSV를 정렬해 저장하면 결과 순서가 실행마다 안 흔들려 git diff가 깨끗해진다.
 
+> 🔬 **실측 검증 — 정정 6 (`pivot_table`이 회색행을 삭제)**: 위 `pivot_table(..., values="latency_ms")`는 pandas 기본 `dropna=True`라 **값이 전부 NaN인 행을 조용히 버린다** → stub 백엔드(tidl/qnn/drpai)의 '보드필요' 회색 행이 `matrix.md/html`에서 통째로 사라진다. 그런데 **§5-1은 정반대(회색 '보드필요' 행도 매트릭스에 남기는 게 정직한 보고)를 명령**한다 — 즉 이 코드가 §5-1 원칙을 **스스로 위반**하며, 코드만 읽으면 안 보이고 실행해 표를 눈으로 봐야만 드러난다. 처방: 모든 pivot에 **`dropna=False`** + HTML `na_rep="보드필요"`. **CSV(long-form)는 원래도 6행 전부 보존**하므로 회귀 baseline·게이트엔 영향 없다(그래서 회귀 테스트는 정상 통과했고, 사람이 읽는 표에서만 정직성이 훼손됐다). 정정본: [`experiments/stage5_infrastructure/bench/report/generate.py`](../experiments/stage5_infrastructure/bench/report/generate.py).
+
 ### 4-7. 회귀 테스트 `tests/test_regression.py` — mAP 1% 하락 시 실패 + 골든 파일 이중화
 
 핵심 규칙: **커밋 후 측정한 mAP가 baseline보다 1%p(절대) 이상 낮으면 테스트 실패.** 두 층으로 지킨다 — (A) 임계값 기반 assertion, (B) `pytest-regressions` 골든 파일 비교.
@@ -810,7 +824,7 @@ def test_no_latency_regression(merged):
 def test_matrix_matches_golden(dataframe_regression):
     """현재 매트릭스를 골든과 통째로 비교. 의도적 변경은 --force-regen으로만 갱신.
 
-    dataframe_regression fixture는 pytest-regressions(v3.0+)가 제공.
+    dataframe_regression fixture는 pytest-regressions(최신 2.11.0, v3.x 없음)가 제공.
     최초 실행(또는 --force-regen) 시 tests/test_regression/ 아래에
     골든 파일을 생성하고, 이후엔 그와 비교한다.
     """
@@ -837,7 +851,7 @@ AssertionError: mAP 회귀 감지:
 bevformer rtx      int8         0.3820        0.3660  0.016
 ```
 
-> 💡 팁 — 골든 파일 갱신 규율: baseline을 **의도적으로** 바꿀 때(모델 개선 등)만 갱신하고, 커밋 메시지에 사유를 남긴다. 임계값 방식은 `baseline_matrix.csv`를, 골든 방식은 `--force-regen`을 쓴다([pytest-regressions](https://pypi.org/project/pytest-regressions/), v3.0+, 2026-07 기준). 무심코 갱신하는 것이 회귀 방지 시스템을 무력화하는 1번 원인이다. **두 층(A/B)을 같이 두는 이유**: (A)는 "얼마나 나빠지면 실패"라는 정책을, (B)는 "숫자가 조용히 바뀌면 눈에 띄게"라는 감시를 담당한다 — 역할이 다르다.
+> 💡 팁 — 골든 파일 갱신 규율: baseline을 **의도적으로** 바꿀 때(모델 개선 등)만 갱신하고, 커밋 메시지에 사유를 남긴다. 임계값 방식은 `baseline_matrix.csv`를, 골든 방식은 `--force-regen`을 쓴다([pytest-regressions](https://pypi.org/project/pytest-regressions/), 최신 2.11.0, 2026-08 기준 — 'v3.0+'는 사실오류). 무심코 갱신하는 것이 회귀 방지 시스템을 무력화하는 1번 원인이다. **두 층(A/B)을 같이 두는 이유**: (A)는 "얼마나 나빠지면 실패"라는 정책을, (B)는 "숫자가 조용히 바뀌면 눈에 띄게"라는 감시를 담당한다 — 역할이 다르다.
 
 ### 4-8. self-hosted GPU runner 등록
 
@@ -1050,6 +1064,17 @@ python3 report/track_mlflow.py
 - **SoC를 내려갈수록**(rtx → orin → tda4vm) latency는 늘고 mem은 준다 → 하드웨어 예산과 정확도의 트레이드오프. 매트릭스는 이 트레이드오프를 **한 화면**에서 논쟁 가능하게 만든다.
 - **회색(보드필요) 행**도 매트릭스에 남긴다 → "아직 측정 못 함"과 "측정했더니 나쁨"은 다르다. 빈칸이 아니라 명시적 '보드필요'가 정직한 보고다.
 
+> 🔬 **실측 매트릭스 (2026-08-17, RTX 3080)** — 위 BEVFormer 표는 **형식 예시(가상값)**다. 실제로 하네스를 관통시킨 정본 매트릭스는 아래이며, 검증 인스턴스는 BEVFormer가 아니라 [3단계](05_tensorrt.md) 자산 **ResNet50 / ImageNet val 5,000장**이다(BEVFormer INT8은 2단계 결론상 유효 export 경로 없음 → 범위 밖). 지연은 wall-clock median, 정확도는 top-1.
+
+| soc | precision | latency(ms, median) | p95 | scratch mem_v2(MB) | top-1 | vs fp32 |
+|-----|-----------|--------------------:|----:|-------------------:|------:|--------:|
+| rtx | fp32 | 1.837 | 1.8832 | 8.4 | 0.7688 | ×1.00 |
+| rtx | fp16 | 1.0231 | 1.0603 | 3.9 | 0.7686 | ×1.80 |
+| rtx | int8 | 0.8628 | 0.8927 | 1.7 | 0.768 | ×2.13 |
+| tda4vm / qcs8550 / rzv2h | int8 | 보드필요(NaN) | — | — | — | stub(회색) |
+
+> **교차검증·캐비앗**: INT8 top-1 0.768 = 3단계 t04(implicit 캘리브) 일치, FP32 0.7688 = 공개값 일치 → 데이터층·라벨정렬 올바름. 절대 지연이 3단계(event-timed, fp32 1.6615ms)보다 높고 배율도 압축된 것(×1.80/×2.13 vs 3단계 ×1.96/×2.12)은 `_timeit`이 **wall-clock**(`perf_counter`)이라 H2D/D2H·Python 오버헤드가 분모에 상수로 얹혀서다. **상대 관계(배율·회귀 델타·회색행 유무)만 유효**하며, 5,000장 서브셋 top-1은 공개 50k보다 부풀 수 있다(1단계 함정 0). 회색 3행은 §4-6 정정 6(`dropna=False`)으로 보존된 것이다.
+
 ### 5-2. `design_rules.md` — 작성 방법론 + 실제 도출
 
 **이 파일이 JD가 명시적으로 요구하는 산출물**이다. 하지만 핵심은 4분류 표가 아니라, **각 규칙이 앞 단계 산출물에서 어떻게 도출됐는지**가 추적 가능해야 한다는 것이다.
@@ -1165,7 +1190,7 @@ python3 report/track_mlflow.py
 | `Styler.to_html()`에서 ImportError | `jinja2` 미설치 | `pip install jinja2` |
 | `onnxruntime-gpu` 설치했는데 CPU로만 돔 | CUDA 13 기본 휠을 CUDA 12.8에 설치 / provider 미지정 | CUDA 12 인덱스로 재설치(3절), 세션에 `providers=[...]` 명시 |
 | 회귀 테스트가 baseline 없다고 실패 | `tests/baseline_matrix.csv` 미커밋 | 첫 골든 매트릭스를 만들어 커밋 |
-| `dataframe_regression` fixture 없음 | `pytest-regressions` 미설치 | `pip install pytest-regressions` (v3.0+) |
+| `dataframe_regression` fixture 없음 | `pytest-regressions` 미설치 | `pip install pytest-regressions` (최신 2.11.0) |
 | mAP가 매 실행마다 미세하게 흔들려 CI 불안정(flaky) | 시드 미고정 / 비결정적 커널 | eval 시드 고정, latency는 median, tolerance를 소폭(예: atol=1e-3) 여유 |
 | latency가 실행마다 크게 튐 | warmup 부족 / GPU 클럭 변동 | warmup↑, `nvidia-smi -lgc`로 클럭 고정, median/p95 사용 |
 | `build_serialized_network`가 `None` 반환 | ONNX에 미지원 op / config 오류 | parser 에러 로그 확인, `design_rules.md`의 ❌ op가 그래프에 있는지 점검 |
@@ -1211,7 +1236,7 @@ python3 report/track_mlflow.py
 - [ONNX Runtime — QNN Execution Provider](https://onnxruntime.ai/docs/execution-providers/QNN-ExecutionProvider.html) — QNN 백엔드(context binary)
 - [pandas — DataFrame.to_markdown](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.to_markdown.html) — 매트릭스 마크다운화(tabulate 필요)
 - [pandas — Styler.to_html](https://pandas.pydata.org/docs/reference/api/pandas.io.formats.style.Styler.to_html.html) — HTML 하이라이트 매트릭스(jinja2 필요)
-- [pytest-regressions](https://pypi.org/project/pytest-regressions/) — 골든 파일 회귀(`dataframe_regression`, `--force-regen`, v3.0+)
+- [pytest-regressions](https://pypi.org/project/pytest-regressions/) — 골든 파일 회귀(`dataframe_regression`, `--force-regen`, 최신 2.11.0 — v3.x 없음)
 - [MLflow Tracking Server (셀프호스팅)](https://mlflow.org/docs/latest/self-hosting/architecture/tracking-server/) — `log_param`/`log_metric`/`log_artifact`/`mlflow server`
 - [MLflow vs W&B 2026 비교](https://deploybase.ai/articles/mlflow-vs-wandb) — 실험 추적 도구 선택 근거
 - 백엔드 SDK: [TensorRT](https://docs.nvidia.com/deeplearning/tensorrt/) · [edgeai-tidl-tools](https://github.com/TexasInstruments/edgeai-tidl-tools) · [ONNX Runtime QNN EP](https://onnxruntime.ai/docs/execution-providers/QNN-ExecutionProvider.html) · [rzv_drp-ai_tvm](https://github.com/renesas-rz/rzv_drp-ai_tvm)

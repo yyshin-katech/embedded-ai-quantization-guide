@@ -1,0 +1,12 @@
+{
+  "model": "resnet50",
+  "soc": "rzv2h",
+  "precision": "int8",
+  "latency_ms": NaN,
+  "peak_mem_mb": NaN,
+  "accuracy": NaN,
+  "engine_build_s": 0.0,
+  "latency_p95_ms": NaN,
+  "trt_version": "",
+  "notes": "not implemented: DRP-AI TVM compile hook \u2014 \ubcf4\ub4dc \ud544\uc694"
+}

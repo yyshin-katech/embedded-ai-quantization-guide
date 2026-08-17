@@ -1,0 +1,12 @@
+{
+  "model": "resnet50",
+  "soc": "rtx",
+  "precision": "fp32",
+  "latency_ms": 1.837,
+  "peak_mem_mb": 8.4,
+  "accuracy": 0.7688,
+  "engine_build_s": 12.8,
+  "latency_p95_ms": 1.8832,
+  "trt_version": "10.16.1.11",
+  "notes": "polygraphy TrtRunner; mem_api=device_memory_size_v2"
+}

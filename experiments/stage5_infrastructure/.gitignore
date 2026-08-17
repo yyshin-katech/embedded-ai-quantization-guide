@@ -1,0 +1,11 @@
+# 파이썬/테스트 캐시
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# TRT 캘리브 캐시(재생성 가능한 빌드 산출물)
+bench/.trt_cache/
+
+# 결과·리포트·골든·baseline은 커밋한다(정본 SSOT):
+#   bench/results/*.json, bench/report/matrix.*, bench/tests/baseline_matrix.csv,
+#   bench/tests/test_regression/test_matrix_matches_golden.csv
