@@ -1,0 +1,76 @@
+{
+  "modelopt_version": "0.45.0",
+  "quantize_signature": "(model: torch.nn.modules.module.Module, config: dict[str, typing.Union[typing.Any, modelopt.torch.quantization.config.QuantizeConfig]], forward_loop: collections.abc.Callable[[torch.nn.modules.module.Module], None] | None = None) -> torch.nn.modules.module.Module",
+  "cfg_presets_with_CFG": [
+    "FP8_2D_BLOCKWISE_WEIGHT_ONLY_CFG",
+    "FP8_AFFINE_KV_CFG",
+    "FP8_DEFAULT_CFG",
+    "FP8_KV_CFG",
+    "FP8_PER_CHANNEL_PER_TOKEN_CFG",
+    "INT4_AWQ_CFG",
+    "INT4_BLOCKWISE_WEIGHT_ONLY_CFG",
+    "INT8_DEFAULT_CFG",
+    "INT8_SMOOTHQUANT_CFG",
+    "INT8_WEIGHT_ONLY_CFG",
+    "MAMBA_MOE_FP8_AGGRESSIVE_CFG",
+    "MAMBA_MOE_FP8_CONSERVATIVE_CFG",
+    "MAMBA_MOE_NVFP4_AGGRESSIVE_CFG",
+    "MAMBA_MOE_NVFP4_CONSERVATIVE_CFG",
+    "MXFP4_DEFAULT_CFG",
+    "MXFP4_MLP_WEIGHT_ONLY_CFG",
+    "MXFP6_DEFAULT_CFG",
+    "MXFP8_DEFAULT_CFG",
+    "MXINT8_DEFAULT_CFG",
+    "NVFP4_AFFINE_KV_CFG",
+    "NVFP4_AWQ_CLIP_CFG",
+    "NVFP4_AWQ_FULL_CFG",
+    "NVFP4_AWQ_LITE_CFG",
+    "NVFP4_DEFAULT_CFG",
+    "NVFP4_EXPERTS_ONLY_CFG",
+    "NVFP4_KV_CFG",
+    "NVFP4_KV_ROTATE_CFG",
+    "NVFP4_MLP_ONLY_CFG",
+    "NVFP4_MLP_WEIGHT_ONLY_CFG",
+    "NVFP4_OMLP_ONLY_CFG",
+    "NVFP4_SVDQUANT_DEFAULT_CFG",
+    "NVFP4_W4A4_WEIGHT_LOCAL_HESSIAN_CFG",
+    "NVFP4_W4A4_WEIGHT_MSE_FP8_SWEEP_CFG",
+    "W4A16_NVFP4_CFG",
+    "W4A8_AWQ_BETA_CFG",
+    "W4A8_MXFP4_FP8_CFG",
+    "W4A8_NVFP4_FP8_CFG"
+  ],
+  "INT8_SMOOTHQUANT_CFG": {
+    "exists": true,
+    "top_keys": [
+      "quant_cfg",
+      "algorithm"
+    ],
+    "algorithm": "smoothquant",
+    "axes": {
+      "*weight_quantizer": {
+        "num_bits": 8,
+        "axis": 0
+      },
+      "*input_quantizer": {
+        "num_bits": 8,
+        "axis": null
+      }
+    }
+  },
+  "INT8_DEFAULT_CFG": {
+    "exists": true,
+    "algorithm": "max",
+    "axes": {
+      "*weight_quantizer": {
+        "num_bits": 8,
+        "axis": 0
+      },
+      "*input_quantizer": {
+        "num_bits": 8,
+        "axis": null
+      }
+    }
+  },
+  "draft_override_valid": false
+}

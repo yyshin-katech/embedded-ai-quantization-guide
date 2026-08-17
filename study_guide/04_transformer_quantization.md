@@ -157,7 +157,7 @@ SmoothQuant 적용 전/후에 **같은 레이어의 activation absmax를 채널�
 
 - **적용 전**: 채널 absmax 히스토그램이 대부분 `~3`에 몰려 있고 **몇 개 채널만 50~100으로 튀는** 뾰족한 spike.
 - **적용 후**: `s_j`로 나눈 X̂의 채널 absmax가 **10~20 수준으로 평탄화**(spike가 사라짐). 대신 Ŵ의 채널 absmax는 소폭 상승했지만 여전히 INT8 범위에 안착.
-- 정량 지표: 채널 absmax의 **max/median 비율**이 (예) 30배 → 3배로 줄면 성공. per-tensor scale이 더 이상 소수 채널에 끌려가지 않는다.
+- 정량 지표: 채널 absmax의 **max/median 비율**이 줄면 성공(줄어드는 폭은 모델 의존 — LLM은 30배→3배급, **DETR k_proj 실측은 더 완만한 3.69×→1.96×**, §4.4). per-tensor scale이 더 이상 소수 채널에 끌려가지 않는다.
 
 > 💡 팁: SmoothQuant는 원래 LLM(W8A8)용으로 나왔지만 **원리는 ViT/DETR의 LayerNorm outlier에도 그대로 적용**된다. "activation outlier를 채널 스케일로 눌러 weight로 넘긴다"가 핵심. 적용 코드는 아래 4.4에 있다.
 
@@ -423,6 +423,8 @@ polygraphy run detr_sim.onnx --onnxrt
 
 ### 4.4 우회 2 — SmoothQuant 적용 (activation outlier 완화)
 
+> ✅ **이 절은 실측 검증됨(2026-08-17, RTX 3080 · modelopt 0.45.0).** `facebook/detr-resnet-50`을 torch fake-quant 자기일관 3원(FP32 / per-tensor INT8 `max` / 동일 입도 + SmoothQuant)으로 **COCO val2017 전량 5,000장** mAP까지 재고, modelopt API·α 스윕·스무딩 전후 absmax를 확인했다. **핵심**: §4.5에서 op-선택 mixed가 +0.36 mAP뿐이던 폭락을 SmoothQuant는 **gap의 59.9%(+0.0544 mAP)** 되찾는다 → "진짜 레버 = activation 입도"(§4.5 판정 4) 확증. 초안의 "⚠️ API 확인 필요"·"다음 검증 과제"를 **실측으로 종결**한다. 상세·SVG·per-size: [실측 리포트](../logs/stage2_smoothquant_report.html) · 스크립트: [`experiments/stage2_smoothquant/`](../experiments/stage2_smoothquant/).
+
 INT8 PTQ 전에 SmoothQuant로 LayerNorm outlier를 눌러두면 정확도 하락이 줄어든다(원리는 2.2). **원본 repo** 또는 **프로덕션 툴** 중 택1.
 
 **옵션 A) NVIDIA Model Optimizer (modelopt)** — SmoothQuant를 quant config로 내장 지원(2026 기준 유지·활성. repo: `https://github.com/NVIDIA/Model-Optimizer`).
@@ -433,10 +435,13 @@ import torch
 import modelopt.torch.quantization as mtq
 from export_common import model, calib_loader   # calib_loader: 대표 이미지 몇 배치
 
-# INT8 SmoothQuant 프리셋. alpha 기본 0.5(균형점). config는 dict이므로 override 가능
-config = mtq.INT8_SMOOTHQUANT_CFG
-# alpha 조정이 필요하면(2.2.2 스윕) 아래처럼 override 지점을 실제 키로 확인 후 수정:
+# INT8 SmoothQuant 프리셋(modelopt 0.45.0 실측). algorithm은 문자열 "smoothquant"이고,
+# 🔴 문자열 프리셋의 기본 α는 1.0이다(논문 권장 0.5가 아님 — activation을 '전량' weight로 이전).
+import copy
+config = copy.deepcopy(mtq.INT8_SMOOTHQUANT_CFG)   # 프리셋은 모듈 전역 → deepcopy 후 수정(전역 오염 방지)
+# α 스윕(2.2.2): dict-override로 지정(mtq.quantize는 문자열/dict 모두 수용 — 실측). 논문 권장 0.5:
 # config["algorithm"] = {"method": "smoothquant", "alpha": 0.5}
+# ※ DETR/COCO 실측(리포트 §5)에선 오히려 α=1.0(66.6%) > α=0.5(49.8%) — 최적 α는 모델·데이터 의존.
 
 def forward_loop(m):
     for batch in calib_loader:      # 캘리브레이션 데이터로 activation 통계 수집
@@ -446,9 +451,10 @@ model = mtq.quantize(model, config, forward_loop)   # 스무딩+QDQ 노드 삽�
 mtq.print_quant_summary(model)                       # 레이어별 양자화 요약 출력
 print("SmoothQuant calibration done")
 
-# 이후 legacy 경로로 QDQ 그래프를 내보내 TensorRT/ORT로 넘김 (dynamo=False 권장)
+# 이후 legacy 경로로 QDQ 그래프를 내보내 TensorRT/ORT로 넘김
+# 🔴 torch 2.11 export 기본은 dynamo=True(요청 opset 무시·18 강제) → 반드시 dynamo=False 명시(§4.5 실측)
 torch.onnx.export(model, (torch.randn(1,3,800,1066),), "detr_sq_int8.onnx",
-                  opset_version=17, do_constant_folding=True)
+                  opset_version=17, do_constant_folding=True, dynamo=False)
 ```
 
 **전후 activation 분포를 직접 비교**(2.2.3의 검증)하는 최소 스니펫:
@@ -466,21 +472,23 @@ def hook(name):
     return _h
 
 # 스무딩 적용 '전' 모델과 '후' 모델 각각에서 같은 레이어에 hook을 걸어 1배치 통과 후 비교
-# ratio = absmax.max() / absmax.median()  # 30배(전) -> 3배(후) 면 성공
+# ratio = absmax.max() / absmax.median()  # 전>후로 ratio가 눌리면 성공(줄폭은 모델 의존 — DETR k_proj 실측 3.69×→1.96×, ↓)
 ```
 
-예상 관찰:
+실측 관찰(RTX 3080 · `k_proj` · 캘리브/측정 분리 셋 — [`sq_03`](../experiments/stage2_smoothquant/sq_03_absmax_smooth.py)):
 
 ```
-[before] layer=encoder.layers.0.self_attn.q_proj  channel-absmax  max=98.4  median=3.1  ratio=31.7x
-[after ] layer=encoder.layers.0.self_attn.q_proj  channel-absmax  max=14.2  median=4.8  ratio=2.96x
+[before] layer=encoder.layers.0.self_attn.k_proj  channel-absmax  max=38.879  median=10.525  ratio=3.69x
+[after ] layer=encoder.layers.0.self_attn.k_proj  channel-absmax  max=1.653   median=0.844   ratio=1.96x
 ```
 
-> ⚠️ 확인 필요: `modelopt`의 프리셋 상수명·API는 버전에 따라 바뀐다(예: `INT8_SMOOTHQUANT_CFG`, `mtq.quantize` 시그니처, alpha 지정 위치). 설치 후 아래로 실제 노출 config를 확인하고, 공식 예제(`NVIDIA/Model-Optimizer` repo의 `examples/`)를 기준으로 맞출 것.
+> 삽화용(31.7×→2.96×)이 아닌 **실측값**. 채널 spike(max/median)가 3.69×→1.96×로 절반 가까이 눌린다 = outlier가 weight로 이전됐다.
+
+> ✅ 실측 확인(modelopt **0.45.0**, [`sq_01`](../experiments/stage2_smoothquant/sq_01_modelopt_api.py)): `INT8_SMOOTHQUANT_CFG` = `{quant_cfg, algorithm:"smoothquant"}`, `mtq.quantize(model, config: dict, forward_loop=None)`. **핵심 A/B**: `INT8_DEFAULT_CFG`(algorithm `"max"`)와 **algorithm만** 다르고 비트폭·축(weight per-ch axis 0 · act per-tensor axis null)은 동일 → `max`↔`smoothquant`만 바꾸면 **순수 SmoothQuant 효과**가 격리된다. dict-override(`{"method":"smoothquant","alpha":a}`)는 문자열/dict 모두 유효(소스 `model_quant.py:511`·`mode.py:377-380`, [`sq_04`](../experiments/stage2_smoothquant/sq_04_alpha_sweep.py)가 실증).
 > ```bash
 > python -c "import modelopt.torch.quantization as mtq; print([c for c in dir(mtq) if 'CFG' in c])"
 > ```
-> 2026-07 기준 modelopt는 **SmoothQuant/AWQ/SVDQuant/FP8/INT4** 를 지원한다(INT8 SmoothQuant는 MIT HAN Lab·NVIDIA 공동).
+> 0.45.0 기준 modelopt는 **SmoothQuant/AWQ/SVDQuant/FP8/INT4/NVFP4** 등을 지원한다(INT8 SmoothQuant는 MIT HAN Lab·NVIDIA 공동).
 
 **옵션 B) 원본 SmoothQuant repo (`mit-han-lab/smoothquant`)** — 개념 이해용. `generate_act_scales.py`로 activation 스케일을 뽑고, 그 스케일로 스무딩을 적용한 뒤 W8A8 추론.
 
@@ -493,6 +501,18 @@ python smoothquant/examples/generate_act_scales.py --model-name <hf-model> ...
 ```
 
 > 💡 팁: 원본 repo는 **LLM(OPT/LLaMA)** 예제 중심이라 DETR/ViT에 그대로 안 붙는다. **원리(2.2절 수식)만 원본에서 익히고**, 실제 비전 모델 적용은 modelopt/Neural Compressor 같은 툴로 하는 것이 실전적이다.
+
+**실측 결과 — SmoothQuant가 폭락을 되찾는가 (COCO val2017 전량 5,000장 · torch fake-quant · [`sq_02`](../experiments/stage2_smoothquant/sq_02_triplet_map.py)):**
+
+| 구성 | mAP | mAP_s | vs FP32 | gap 회복 |
+|------|-----|-------|---------|----------|
+| FP32 | **0.4209** | 0.2135 | — (커밋 0.4207 재현✓) | — |
+| INT8_DEFAULT (per-tensor act, `max`) | 0.3301 | 0.1255 | −0.0908 | 0% (대조군) |
+| **INT8_SMOOTHQUANT (α=1.0)** | **0.3845** | 0.1704 | −0.0364 | **+0.0544 = gap의 59.9%** |
+
+> 🔴 **판정 — SmoothQuant는 op-선택 mixed와 급이 다르다**: §4.5에서 attention 36개를 FP로 빼는 op-선택 mixed는 **+0.36 mAP**(×10⁻²=+0.0036)뿐이었다. 같은 폭락을 SmoothQuant는 **+0.0544 mAP(gap의 59.9%)** 되찾는다 — **약 15배**. 작은 객체도 mAP_s 0.1255→0.1704(+0.0449)로 함께 회복한다. 이로써 §4.5 판정 4("진짜 레버는 op 제외가 아니라 activation 입도")가 **실측으로 확증**된다. 물리적 근거는 위 absmax 3.69×→1.96× 감쇠.
+
+> ⚠️ 캐비앗: 위 절대 mAP는 **torch fake-quant(modelopt)** 경로다. 커밋된 §4.5의 **ORT QDQ 절대값**(FP32 0.4207 / all-INT8 0.2402)과 양자화 커널이 달라 **1:1 비교 대상이 아니다**(그래서 여기 INT8_DEFAULT drop −0.0908이 §4.5 ORT drop −0.1805보다 얕다). 유효 결론은 **같은 경로 안의 상대 관계** — SmoothQuant 회복분·α 방향·absmax 감쇠. (가이드 상시 캐비앗과 동일.)
 
 ### 4.5 INT8 PTQ → mAP 폭락 확인 → mixed precision 회복
 
@@ -572,7 +592,7 @@ quantize_static(
 2. **메모리 폭발**: 캘리브 입력을 고정 shape로 맞춰 (1)을 우회하면 이번엔 Percentile이 이미지당 activation 분포를 통째로 쥐고 있어 **약 3.6GB/장** — N=8에서 peak 30.9GB로 **OOM(SIGKILL)**(장비 31GB).
 3. **비유한값**: N=4로 줄여 메모리를 맞추면(peak 19GB) `numpy.histogram`이 DETR의 attention mask 채움값 등 **`inf`를 만나** `ValueError: autodetected range of [inf, inf] is not finite`.
 
-> 🔴 **판정 4 — 스톡 ORT에서 histogram 캘리브레이션은 DETR에 사실상 못 쓴다**: 살아남는 건 **MinMax(스칼라 min/max)** 뿐이고, 위 모든 mAP가 MinMax 결과다. 즉 "Percentile로 바꿔 outlier를 clip해 회복" 같은 손쉬운 노브는 **DETR에선 존재하지 않는다**. 진짜 레버는 캘리브레이터 교체가 아니라 **activation outlier 자체를 구조적으로 없애는** 쪽 — **SmoothQuant(2.2)** 로 outlier를 weight로 이전하거나(activation을 per-tensor로도 담을 수 있게 만듦), per-token/per-group activation 양자화(스톡 ORT QDQ엔 없음)로 가야 한다. **본 실습에선 SmoothQuant(modelopt) 적용을 다음 검증 과제로 남긴다**(4.4는 API 확인 필요 상태). 다만 절제 결과(판정 3)로 볼 때, op 단위가 아니라 **activation 스케일 문제 자체(2.1.1)** 를 공략해야 한다는 방향은 분명하다.
+> 🔴 **판정 4 — 스톡 ORT에서 histogram 캘리브레이션은 DETR에 사실상 못 쓴다**: 살아남는 건 **MinMax(스칼라 min/max)** 뿐이고, 위 모든 mAP가 MinMax 결과다. 즉 "Percentile로 바꿔 outlier를 clip해 회복" 같은 손쉬운 노브는 **DETR에선 존재하지 않는다**. 진짜 레버는 캘리브레이터 교체가 아니라 **activation outlier 자체를 구조적으로 없애는** 쪽 — **SmoothQuant(2.2)** 로 outlier를 weight로 이전하거나(activation을 per-tensor로도 담을 수 있게 만듦), per-token/per-group activation 양자화(스톡 ORT QDQ엔 없음)로 가야 한다. **그 방향은 §4.4에서 실측으로 확증됐다** — SmoothQuant(modelopt, α=1.0)가 이 activation 입도 문제를 직접 공략해 폭락 gap의 **59.9%(+0.0544 mAP)** 를 되찾는다(op-선택 mixed +0.0036의 약 15배). [실측 리포트](../logs/stage2_smoothquant_report.html). 다만 절제 결과(판정 3)로 볼 때, op 단위가 아니라 **activation 스케일 문제 자체(2.1.1)** 를 공략해야 한다는 방향은 분명하다.
 
 > 💡 왜 1단계 ResNet18(−0.1%p)보다 이렇게 심한가: **검출(위치 회귀)은 분류보다 양자화에 훨씬 민감**하다. 박스 좌표는 정밀도가 곧 IoU이고, DETR은 100개 쿼리를 **임계값·NMS 없이** 순위로 제출하므로 미세한 점수 교란이 순위를 흔든다. 특히 작은 객체는 미세한 공간 특징에 의존하는데, per-tensor activation 양자화가 outlier에 끌려가 그 작은 값들을 뭉갠다(2.1.1) → mAP_s −77%.
 
@@ -710,7 +730,7 @@ lidar2img = lidar2img.view(1, B, num_cam, 1, 4, 4)...   # 하드코딩 reshape
 | FP32 | 기준 | 느림 | baseline·정확도 상한 |
 | 전부 INT8 | 폭락(DETR 실측 −42.9%) | 빠름 | Transformer엔 **사실상 불가** |
 | mixed **(스톡 ORT 노드 제외)** | 🔴 **회복 실패**(DETR 실측 +0.36 mAP뿐) | 빠름(대부분 INT8) | per-tensor·op 단위 제외로는 부족 |
-| mixed **(SmoothQuant+twin-uniform 등)** | 문헌상 near-lossless(8-bit <0.5%) | 빠름 | 제대로 된 기법 조합이 전제(본 실습 미검증) |
+| mixed **(SmoothQuant 등 activation 입도)** | SmoothQuant 단독으로 gap의 **59.9% 회복**(DETR 실측, §4.4) | 빠름 | activation outlier를 구조적으로 제거하는 기법이 op-선택보다 우선 |
 | FP16 전체 | ≈FP32 | 중간 | INT8이 도저히 안 될 때의 안전판 |
 
 > 🔴 **실측 정정 (2026-08-16, DETR)**: 초안은 "mixed = baseline 근처 회복"을 권장 처방으로 뒀지만, **스톡 ONNX Runtime의 per-tensor INT8 + `nodes_to_exclude`로는 DETR에서 회복되지 않는다**(42.07→24.02, mixed 24.38, 4.5). 문헌의 "near-lossless"(PTQ4ViT 등)는 **per-channel/per-token activation 양자화 + twin-uniform + Hessian 캘리브** 같은 기법 조합의 결과이지, "문제 op만 FP로 빼기"의 결과가 아니다. 즉 **회복은 도구가 결정한다** — 스톡 ORT가 주는 노브(per-tensor + 노드 제외)와 논문이 쓰는 노브는 다르다.
@@ -748,7 +768,7 @@ lidar2img = lidar2img.view(1, B, num_cam, 1, 4, 4)...   # 하드코딩 reshape
 - [ ] `detr_int8.onnx` (전부 INT8·폭락 재현본) + `detr_mixed.onnx` (mixed·회복본)
 - [ ] `detr_sq_int8.onnx` (SmoothQuant 적용본, 옵션)
 - [ ] mAP 비교표 (FP32 vs INT8 vs mixed)
-- [ ] SmoothQuant 전후 채널 absmax 비교(ratio 30x→3x) 로그/그림
+- [ ] SmoothQuant 전후 채널 absmax 비교(실측 ratio 3.69×→1.96×, §4.4) 로그/그림
 - [ ] **`onnx_export_failures.md`** ← 포트폴리오 핵심. 아래 템플릿을 **예시 항목까지 채워** 사용.
 
 ### `onnx_export_failures.md` 템플릿 (예시 항목 채움)
@@ -769,7 +789,7 @@ lidar2img = lidar2img.view(1, B, num_cam, 1, 4, 4)...   # 하드코딩 reshape
 | 3 | export(dynamo=True)      | `torch._dynamo.exc.Unsupported ... could not be traced` | 데이터 의존 제어흐름 | `dynamo=False`로 전환 | ⏳ (DETR은 dynamo 성공) |
 | 4 | export(QDQ, dynamo)      | FakeQuantize export 실패 | dynamo QDQ 불안정 | legacy 경로로 QDQ export | ⏳ |
 | 5 | load(ORT 1.28)           | `Type 'tensor(int64)' ... is invalid` | index dtype 불일치 | GraphSurgeon cast 삽입 | ⏳ |
-| 6 | PTQ(all-int8)            | **mAP 42.07 → 24.02 폭락(−42.9%)** | per-tensor act 양자화가 망 전체 분산 | op 제외 mixed 실패(+0.36); SmoothQuant 필요 | ✅ (DETR 실측) |
+| 6 | PTQ(all-int8)            | **mAP 42.07 → 24.02 폭락(−42.9%)** | per-tensor act 양자화가 망 전체 분산 | op 제외 mixed 실패(+0.36); SmoothQuant가 gap 59.9% 회복(§4.4) | ✅ (DETR+SmoothQuant) |
 | 7 | export(MSDeformAttn)     | 표준 op 분해 후 노드 폭증·느림 | grid_sample 다회 호출 | TensorRT plugin | ⏳ |
 | 8 | TRT build(GridSample 5D) | rank-4만 지원(issue #3890) | TRT native 4D 한정 | 5D→4D 분해 / plugin | ⏳ |
 | 9 | TIDL compile             | `CHECK failed (index)<(current_size_)` | self-attn QDQ 미지원 | attn FP16 유지 | ⏳ |
@@ -793,14 +813,14 @@ lidar2img = lidar2img.view(1, B, num_cam, 1, 4, 4)...   # 하드코딩 reshape
 - **시도한 명령/코드**: `quantize_static(..., activation_type=QInt8, weight_type=QInt8, per_channel=True)` (Conv 54+MatMul 136 = 190 노드 전부)
 - **관측**: COCO val2017 mAP **FP32 0.4207 → INT8 0.2402**(−0.1805, **−42.9%**). 작은 객체 mAP_s 0.213→0.049(**−77%**). FP32가 공개값 42.0과 일치 → 계측 신뢰.
 - **원인 분석**: 소수 "문제 op"가 아니라 **per-tensor activation 양자화가 망 전체에 분산**. 절제 실측: transformer만 INT8=0.2391, backbone만 INT8=0.2653 — **두 절반이 각자 폭락 대부분을 만든다**(sub-additive). Softmax/LayerNorm은 ORT QDQ가 애초에 양자화 안 하고, DETR엔 GELU도 없음.
-- **우회 시도 & 결과**: ① `nodes_to_exclude`로 attention score matmul 36개 FP → **+0.36 mAP뿐(실패)**. ② Percentile 캘리브 회복 시도 → 동적 shape·OOM·`inf`로 **3중 실패**, MinMax만 생존. → **op 제외로는 회복 불가**, SmoothQuant(2.2)/per-token 양자화가 진짜 레버(다음 과제).
+- **우회 시도 & 결과**: ① `nodes_to_exclude`로 attention score matmul 36개 FP → **+0.36 mAP뿐(실패)**. ② Percentile 캘리브 회복 시도 → 동적 shape·OOM·`inf`로 **3중 실패**, MinMax만 생존. → **op 제외로는 회복 불가**, SmoothQuant(2.2)/per-token 양자화가 진짜 레버 → **§4.4에서 실측 확증**(SmoothQuant가 gap의 59.9% 회복).
 - **재현성**: 위 수치는 [`experiments/stage2_detr/`](../experiments/stage2_detr/) 스크립트로 재현. [실측 리포트](../logs/stage2_detr_quantization_report.html) 참조.
 
 ## Design Rules (이 로그에서 도출한 규칙)
 - [ ] BEV 모델은 처음부터 **opset ≥ 16**, 입력 **shape 고정**으로 export한다.
 - [ ] `grid_sample` 5D는 표준 opset 20 / ORT 1.27+; **TensorRT는 4D만** → 5D는 분해/plugin 전제로 설계한다.
 - [ ] Softmax/GELU/attention/LayerNorm은 **기본 FP16**, Conv/Linear만 INT8부터 시도한다. 🔴 **단, "특정 op만 FP로 빼면 회복된다"는 기대는 DETR 실측에서 반증됐다** — attention score matmul 36개를 FP로 남겨도 +0.36 mAP뿐(4.5). 손상이 망 전체에 분산돼 있어 **op 선택(granularity가 op 단위)이 아니라 activation 양자화 자체(per-tensor→per-token/SmoothQuant)를 바꿔야** 한다. 이 규칙은 "탐색 시작점"이지 "회복 보장"이 아니다.
-- [ ] LayerNorm outlier가 크면 INT8 전에 **SmoothQuant(α≈0.5)** 를 걸고, 채널 absmax ratio가 줄었는지 확인한다.
+- [ ] LayerNorm outlier가 크면 INT8 전에 **SmoothQuant**를 걸고, 채널 absmax ratio가 줄었는지 확인한다(실측 3.69×→1.96×, §4.4). 🔴 **α는 모델 의존**: 논문 권장은 0.5지만 modelopt 프리셋 기본은 **α=1.0**이고, DETR에선 α=1.0(gap 66.6% 회복)이 α=0.5(49.8%)보다 나았다 — `config["algorithm"]={"method":"smoothquant","alpha":x}`로 스윕해 고른다.
 - [ ] 양자화 QDQ export는 **legacy(`dynamo=False`)** 를 기본으로 한다.
 - [ ] Deformable Attention은 **GPU=plugin / NPU=구조변경** 을 사전 결정한다.
 - [ ] NPU 타깃이면 grid_sample/deformable/scatter/gather/dynamic shape를 **사전 점검**한다.

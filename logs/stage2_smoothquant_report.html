@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>2단계 §4.4 SmoothQuant — 실측 검증 보고서 (RTX 3080)</title>
+<style>
+:root{--bg:#0b0e14;--panel:#131720;--panel2:#0f131b;--bd:#242b38;--tx:#c9d1d9;--dim:#8b949e;--brt:#e6edf3;--accent:#58a6ff;--green:#3fb950;--amber:#d29922;--red:#ff7b72;--purple:#bc8cff;--mono:'JetBrains Mono','SF Mono',ui-monospace,'Cascadia Code',Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans KR','Malgun Gothic',sans-serif}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:var(--sans);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:980px;margin:0 auto;padding:0 20px 120px}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+.hero{padding:48px 0 26px;border-bottom:1px solid var(--bd);margin-bottom:8px}
+.kicker{font-family:var(--mono);font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+.hero h1{margin:0 0 10px;font-size:30px;line-height:1.25;color:var(--brt);letter-spacing:-.01em}
+.hero p.sub{margin:0 0 20px;color:var(--dim);font-size:15px;max-width:78ch}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font-family:var(--mono);font-size:12px;padding:5px 10px;border:1px solid var(--bd);border-radius:999px;background:var(--panel);color:var(--tx)}
+.chip b{color:var(--brt);font-weight:600}
+.chip.done{border-color:rgba(63,185,80,.5);background:rgba(63,185,80,.12);color:#7ee787}
+.chip.blocked{border-color:rgba(255,123,114,.5);background:rgba(255,123,114,.12);color:#ff9d96}
+.chip.partial{border-color:rgba(210,153,34,.5);background:rgba(210,153,34,.12);color:#e3b341}
+nav.toc{display:flex;flex-wrap:wrap;gap:8px;margin:26px 0 6px}
+nav.toc a{font-family:var(--mono);font-size:12.5px;padding:6px 11px;border:1px solid var(--bd);border-radius:8px;background:var(--panel);color:var(--tx)}
+nav.toc a:hover{border-color:var(--accent);color:var(--brt);text-decoration:none}
+h2.sec{font-size:13px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin:40px 0 12px;font-weight:600;border-top:1px solid var(--bd);padding-top:26px}
+.step{margin:26px 0 0;scroll-margin-top:16px}
+.step>h3{display:flex;align-items:center;gap:12px;font-size:19px;color:var(--brt);margin:0 0 6px;letter-spacing:-.01em}
+.num{flex:none;display:inline-grid;place-items:center;width:28px;height:28px;border-radius:8px;background:var(--accent);color:#06101f;font-family:var(--mono);font-weight:700;font-size:13px}
+.step p.lead{margin:0 0 4px;color:var(--dim);font-size:14.5px}
+table.dt{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.3px;border:1px solid var(--bd);border-radius:10px;overflow:hidden;font-family:var(--mono)}
+table.dt th,table.dt td{padding:8px 12px;text-align:right;border-bottom:1px solid var(--bd)}
+table.dt th{background:var(--panel);color:var(--dim);font-weight:600;font-size:12px;letter-spacing:.04em}
+table.dt th:first-child,table.dt td:first-child{text-align:left;color:var(--brt)}
+table.dt tr:last-child td{border-bottom:none}
+table.dt tr.hi td{background:rgba(63,185,80,.08)}
+table.dt tr.lo td{background:rgba(255,123,114,.08)}
+table.dt tr.base td{background:rgba(88,166,255,.07)}
+.g{color:var(--green)}.r{color:var(--red)}.a{color:var(--amber)}.p{color:var(--purple)}.d{color:var(--dim)}
+table.kv{width:100%;border-collapse:collapse;margin:12px 0;font-size:13.5px;border:1px solid var(--bd);border-radius:10px;overflow:hidden}
+table.kv th,table.kv td{padding:9px 13px;text-align:left;border-bottom:1px solid var(--bd);vertical-align:top}
+table.kv th{background:var(--panel);color:var(--dim);font-weight:600;width:34%;font-size:12.5px}
+table.kv td{font-family:var(--mono);font-size:12.7px;color:var(--tx)}
+table.kv tr:last-child td,table.kv tr:last-child th{border-bottom:none}
+.term{background:var(--panel2);border:1px solid var(--bd);border-radius:11px;overflow:hidden;margin:14px 0}
+.term-bar{display:flex;align-items:center;gap:7px;padding:9px 13px;background:#0c1017;border-bottom:1px solid var(--bd)}
+.dot{width:11px;height:11px;border-radius:50%}.dot.r{background:#ff5f56}.dot.y{background:#ffbd2e}.dot.g{background:#27c93f}
+.term-title{margin-left:9px;color:var(--dim);font-size:12.5px;font-family:var(--mono)}
+.term pre{margin:0;padding:15px 17px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.62;color:var(--tx);white-space:pre;tab-size:2}
+.cmt{color:#5c6773}.ok{color:var(--green)}.err{color:var(--red)}.warn{color:var(--amber)}.dim{color:var(--dim)}.hl{color:var(--purple)}.in{color:var(--brt);font-weight:600}
+.note{border-left:3px solid var(--accent);background:rgba(88,166,255,.07);padding:13px 17px;border-radius:0 9px 9px 0;margin:15px 0;font-size:14px}
+.note.trap{border-color:var(--red);background:rgba(255,123,114,.08)}
+.note.warnb{border-color:var(--amber);background:rgba(210,153,34,.08)}
+.note.tip{border-color:var(--green);background:rgba(63,185,80,.07)}
+.note.block{border-color:var(--purple);background:rgba(188,140,255,.08)}
+.note .tag{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 8px;border-radius:6px;margin-bottom:7px}
+.note.trap .tag{background:rgba(255,123,114,.18);color:#ff9d96}
+.note.warnb .tag{background:rgba(210,153,34,.18);color:#e3b341}
+.note.tip .tag{background:rgba(63,185,80,.18);color:#7ee787}
+.note.block .tag{background:rgba(188,140,255,.18);color:#d8b8ff}
+.note b{color:var(--brt)}.note code{font-family:var(--mono);font-size:12.5px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:4px}
+.chartwrap{border:1px solid var(--bd);background:var(--panel2);border-radius:12px;padding:18px 18px 14px;margin:16px 0}
+.chartwrap .ct{font-family:var(--mono);font-size:12.5px;color:var(--brt);margin:0 0 4px}
+.chartwrap .cs{font-size:12.5px;color:var(--dim);margin:0 0 12px}
+.statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:14px 0}
+.stat{border:1px solid var(--bd);background:var(--panel);border-radius:11px;padding:15px 16px}
+.stat .k{font-family:var(--mono);font-size:11.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em}
+.stat .v{font-size:23px;color:var(--brt);font-weight:700;margin-top:5px;letter-spacing:-.01em}
+.stat .n{font-size:12px;color:var(--dim);margin-top:3px}
+.stat.ok .v{color:#7ee787}.stat.warn .v{color:#e3b341}.stat.bad .v{color:#ff9d96}
+.verdict{border:1px solid var(--bd);border-radius:12px;padding:16px 18px;margin:14px 0;background:var(--panel)}
+.verdict h4{margin:0 0 6px;font-size:15px;color:var(--brt);display:flex;align-items:center;gap:9px}
+.verdict h4 .b{font-family:var(--mono);font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px}
+.verdict.yes h4 .b{background:rgba(63,185,80,.18);color:#7ee787}
+.verdict.no h4 .b{background:rgba(255,123,114,.18);color:#ff9d96}
+.verdict p{margin:0;font-size:13.8px;color:var(--tx)}
+footer{margin-top:46px;padding-top:20px;border-top:1px solid var(--bd);color:var(--dim);font-size:13px}
+.next{display:block;margin-top:12px;padding:12px 16px;border:1px solid var(--bd);border-radius:9px;color:var(--tx);background:var(--panel);font-size:13.6px}
+.next b{color:var(--accent)}
+@media (max-width:560px){.hero h1{font-size:23px}.term pre{font-size:11.4px}.stat .v{font-size:20px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <p class="kicker">실행 보고서 · 2단계 · §4.4 SmoothQuant (activation outlier 완화)</p>
+    <h1>§4.4 SmoothQuant — DETR INT8 회복 실측 검증 보고서</h1>
+    <p class="sub">DETR 실측(§4.5)이 지목한 "진짜 레버 = activation 양자화 입도"를 <b>SmoothQuant</b>로 직접 시험했다. <b>facebook/detr-resnet-50</b>을 torch fake-quant 경로에서 자기일관 3원(FP32 / per-tensor INT8 <code>max</code> / 동일 입도 + SmoothQuant)으로 <b>COCO val2017 전량 5,000장</b> mAP를 재고, modelopt 프리셋 API·스무딩 전후 채널 absmax·α 스윕까지 실측했다. 초안(<code>04_transformer_quantization.md</code> §4.4)의 "⚠️ API 확인 필요"와 "다음 검증 과제로 남긴다"를 <b>실측으로 종결</b>한다. 핵심 발견: op-선택으로는 못 되찾던 폭락을 SmoothQuant는 <b>59.9%</b> 되찾는다 — 도구 기본 α는 논문 권장(0.5)이 아니라 <b>1.0</b>.</p>
+    <div class="chips">
+      <span class="chip"><b>2026-08-17</b></span>
+      <span class="chip"><b>RTX 3080</b> · driver 595.84</span>
+      <span class="chip"><b>modelopt 0.45.0</b></span>
+      <span class="chip done">COCO val <b>5,000</b>장</span>
+      <span class="chip done">FP32 0.4209 = 커밋 0.4207 ✓</span>
+      <span class="chip partial">SmoothQuant 회복 <b>+0.0544</b></span>
+    </div>
+    <nav class="toc">
+      <a href="#s1">1 · 실행 요약</a>
+      <a href="#s2">2 · 환경·스택</a>
+      <a href="#s3">3 · modelopt API</a>
+      <a href="#s4">4 · 삼원 mAP</a>
+      <a href="#s5">5 · α 스윕</a>
+      <a href="#s6">6 · absmax 전/후</a>
+      <a href="#s7">7 · 판정·산출물</a>
+    </nav>
+  </header>
+
+  <h2 class="sec">§1 — 실행 요약</h2>
+  <section id="s1" class="step">
+    <div class="statgrid">
+      <div class="stat"><div class="k">FP32 mAP</div><div class="v">0.4209</div><div class="n">커밋값 0.4207과 일치 → 계측 신뢰</div></div>
+      <div class="stat bad"><div class="k">per-tensor INT8 (max)</div><div class="v">0.3301</div><div class="n">−0.0908 (대조군, no smooth)</div></div>
+      <div class="stat warn"><div class="k">+ SmoothQuant</div><div class="v">0.3845</div><div class="n">−0.0364 vs FP32</div></div>
+      <div class="stat ok"><div class="k">회복분 (핵심)</div><div class="v">+0.0544</div><div class="n">폭락 gap의 59.9%</div></div>
+    </div>
+    <p class="lead">DETR §4.5의 미결 처방(SmoothQuant)을 실측해 <b>방향을 확증</b>했다. 상세는 각 절.</p>
+    <table class="kv">
+      <tr><th>① API 확인 필요 해소</th><td>modelopt 0.45.0 <code>INT8_SMOOTHQUANT_CFG</code> = <code>{quant_cfg, algorithm:"smoothquant"}</code>. <code>INT8_DEFAULT_CFG</code>와 <b>algorithm만</b> 다르다(weight per-ch axis 0·act per-tensor axis null 동일) → SmoothQuant 효과를 <b>단독 격리</b>하는 깨끗한 A/B. (3절)</td></tr>
+      <tr><th>② 초안 α 오류 정정</th><td>초안 "modelopt 기본 α=0.5" → 실측 프리셋 기본은 <b>α=1.0</b>(문자열 프리셋→빈 kwargs→<code>smoothquant(alpha=1.0)</code>). 논문 권장 0.5는 <code>{"method":"smoothquant","alpha":0.5}</code> dict-override로 지정(문법 유효 실증). (3·5절)</td></tr>
+      <tr><th>③ 회복은 실재</th><td>op-선택 mixed가 +0.36 mAP뿐이던(§4.5) 폭락을, SmoothQuant는 <b>+0.0544 mAP</b>(gap의 59.9%) 되찾는다 → "진짜 레버 = activation 입도"(§4.5 판정 4) 확증. (4절)</td></tr>
+      <tr><th>④ 메커니즘 실측</th><td>대상 Linear 입력 채널 absmax spike가 <b>3.69× → 1.96×</b>로 눌린다(스무딩이 실제로 outlier를 weight로 이전). (6절)</td></tr>
+    </table>
+    <div class="note warnb"><span class="tag">캐비앗(먼저)</span> 본 보고서 절대 mAP는 <b>torch fake-quant</b> 경로(modelopt)이고 커밋된 §4.5의 ORT QDQ 절대값(0.4207/0.2402)과 <b>양자화 커널이 다르다</b>. 따라서 절대값 1:1 비교가 아니라 <b>같은 경로 안의 상대 관계</b>(SmoothQuant 회복분·α 방향·absmax 감쇠)가 유효 결론이다 — 가이드의 상시 캐비앗과 동일.</div>
+  </section>
+
+  <h2 class="sec">§2 — 환경·스택 (실측)</h2>
+  <section id="s2" class="step">
+    <table class="kv">
+      <tr><th>머신 / OS</th><td>RTX 3080 (10GB) · driver 595.84 · Ubuntu 22.04 · venv <code>~/emb-ai</code></td></tr>
+      <tr><th>프레임워크</th><td>CUDA 12.8 · torch 2.11.0+cu128 · transformers 5.15.0 · pycocotools</td></tr>
+      <tr><th>추가 설치</th><td><code>nvidia-modelopt 0.45.0</code> (+ scipy·pydantic·omegaconf·PuLP·ninja 의존). 정본 스택(torch/onnx/ort) <b>불변</b> 확인(dry-run + 설치 후 재검증).</td></tr>
+      <tr><th>모델 / 데이터</th><td><code>facebook/detr-resnet-50</code> · COCO val2017 5,000장 (<code>_workspace/coco/</code>) · 캘리브 100장(균등간격)</td></tr>
+      <tr><th>평가 프로토콜</th><td>§4.5(s2_07)와 동일: HF <code>DetrImageProcessor</code>(최단변 800) → softmax(92)·no-object 드롭·[:, :91] max → cxcywh→xyxy·(W,H) → COCOeval bbox. FP32 재현 0.4209로 검증.</td></tr>
+      <tr><th>경로 선택</th><td><b>Design X</b> = torch fake-quant 자기일관 3원. Design Y(SmoothQuant→ONNX→ORT)는 §4.5의 SDPA/dynamo export 용(龍)과 이중 양자화를 다시 만나므로 회피 — 목적이 "op-선택 대비 SmoothQuant의 <b>상대</b> 회복"이라 in-framework가 더 깨끗.</td></tr>
+    </table>
+  </section>
+
+  <h2 class="sec">§3 — modelopt API 실측 (초안 "확인 필요" 종결)</h2>
+  <section id="s3" class="step">
+    <p class="lead">초안 §4.4는 <code>config["algorithm"]={"method":"smoothquant","alpha":0.5}</code> override와 "alpha 기본 0.5"를 "⚠️ 확인 필요"로 달아뒀다. 실제 0.45.0 API를 <a href="../experiments/stage2_smoothquant/sq_01_modelopt_api.py">sq_01</a>로 기록했다.</p>
+    <table class="kv">
+      <tr><th><code>mtq.quantize</code> 시그니처</th><td><code>(model, config: dict, forward_loop=None) -> Module</code></td></tr>
+      <tr><th><code>INT8_SMOOTHQUANT_CFG</code></th><td>top keys <code>["quant_cfg","algorithm"]</code> · <b>algorithm = 문자열 "smoothquant"</b> · weight_quantizer {num_bits 8, axis 0(per-channel)} · input_quantizer {num_bits 8, axis null(per-tensor)}</td></tr>
+      <tr><th><code>INT8_DEFAULT_CFG</code></th><td>algorithm = <b>"max"</b> · axes는 위와 <b>동일</b> → 두 프리셋은 <b>algorithm만</b> 다르다(깨끗한 A/B의 근거)</td></tr>
+      <tr><th>dict-override 유효성</th><td><code>mtq.quantize</code>는 algorithm에 <b>문자열 또는 <code>{"method":...}</code> dict 모두 수용</b>(<code>model_quant.py:511</code>, <code>mode.py:377-380</code>). 초안의 dict override 문법은 <b>유효</b> — <a href="../experiments/stage2_smoothquant/sq_04_alpha_sweep.py">sq_04</a>가 α=0.5/1.0로 실제 mAP를 바꿔 <b>실증</b>(override_worked=true).</td></tr>
+      <tr><th>🔴 초안 α 정정</th><td>문자열 프리셋은 dispatch에서 <b>빈 kwargs</b>로 풀려 <code>smoothquant(model, fwd)</code>의 <b>기본 alpha=1.0</b>(<code>model_calib.py:954</code>)을 쓴다. 초안 "기본 0.5"는 <b>논문 권장값</b>(§참고문헌)을 <b>도구 기본값으로 오귀속</b>한 것 — 실제 도구 기본은 <b>1.0</b>(모든 outlier를 weight로 이전).</td></tr>
+    </table>
+    <div class="note tip"><span class="tag">A/B 설계</span> 두 프리셋이 <b>algorithm만</b> 다르므로, 같은 캘리브·같은 비트폭·같은 축에서 <code>max</code> → <code>smoothquant</code>로 바꾼 mAP 차이가 <b>순수 SmoothQuant 효과</b>다. 다른 변수가 섞이지 않는다.</div>
+  </section>
+
+  <h2 class="sec">§4 — 자기일관 삼원 mAP (핵심)</h2>
+  <section id="s4" class="step">
+    <p class="lead">모델을 팔마다 새로 로드(quantize는 in-place)하고, 동일 5,000 eval·동일 100 calib에서 세 구성을 측정(<a href="../experiments/stage2_smoothquant/sq_02_triplet_map.py">sq_02</a>).</p>
+    <div class="chartwrap">
+      <p class="ct">COCO val2017 5,000장 mAP — SmoothQuant 회복</p>
+      <p class="cs">막대 길이 ∝ mAP (0 ~ 0.45 스케일). 회색 점선 = FP32 기준선.</p>
+      <svg viewBox="0 0 800 170" width="100%" font-family="var(--sans)" aria-label="triplet mAP bar chart">
+        <g font-family="'JetBrains Mono',monospace" font-size="10" fill="#5c6773">
+          <line x1="260" y1="12" x2="260" y2="150" stroke="#1a202b"/><text x="260" y="166" text-anchor="middle">0.10</text>
+          <line x1="380" y1="12" x2="380" y2="150" stroke="#1a202b"/><text x="380" y="166" text-anchor="middle">0.20</text>
+          <line x1="500" y1="12" x2="500" y2="150" stroke="#1a202b"/><text x="500" y="166" text-anchor="middle">0.30</text>
+          <line x1="620" y1="12" x2="620" y2="150" stroke="#1a202b"/><text x="620" y="166" text-anchor="middle">0.40</text>
+        </g>
+        <line x1="645.1" y1="12" x2="645.1" y2="150" stroke="#8b949e" stroke-dasharray="4 3" opacity="0.6"/>
+        <g font-family="'JetBrains Mono',monospace" font-size="11.5">
+          <text x="132" y="33" text-anchor="end" fill="#e6edf3">FP32</text>
+          <rect x="140" y="20" width="505.1" height="26" rx="3" fill="#58a6ff"/>
+          <text x="651" y="37" fill="#e6edf3">0.4209</text>
+          <text x="132" y="73" text-anchor="end" fill="#e6edf3">INT8 (max)</text>
+          <rect x="140" y="60" width="396.1" height="26" rx="3" fill="#ff7b72"/>
+          <text x="542" y="77" fill="#ff9d96">0.3301  (−0.0908)</text>
+          <text x="132" y="113" text-anchor="end" fill="#e6edf3">+ SmoothQuant</text>
+          <rect x="140" y="100" width="461.4" height="26" rx="3" fill="#3fb950"/>
+          <text x="607" y="117" fill="#7ee787">0.3845  (+0.0544 vs INT8)</text>
+        </g>
+      </svg>
+    </div>
+    <table class="dt">
+      <thead><tr><th>구성</th><th>mAP</th><th>mAP50</th><th>mAP75</th><th>mAP_s</th><th>mAP_m</th><th>mAP_l</th></tr></thead>
+      <tbody>
+        <tr class="base"><td>FP32</td><td>0.4209</td><td>0.6233</td><td>0.4424</td><td>0.2135</td><td>0.4598</td><td>0.6106</td></tr>
+        <tr class="lo"><td>INT8_DEFAULT (max)</td><td>0.3301</td><td>0.578</td><td>0.3226</td><td class="r">0.1255</td><td>0.3503</td><td>0.5262</td></tr>
+        <tr class="hi"><td>INT8_SMOOTHQUANT (α=1.0)</td><td>0.3845</td><td>0.6004</td><td>0.4043</td><td>0.1704</td><td>0.4269</td><td>0.5822</td></tr>
+      </tbody>
+    </table>
+    <div class="verdict yes"><h4><span class="b">확증 →</span> 진짜 레버는 activation 입도였다</h4>
+      <p>§4.5에서 op-선택 mixed(attn 36개 FP)는 <b>+0.36 mAP</b>뿐이었다. 같은 폭락을 SmoothQuant는 <b>+0.0544 mAP</b>(gap의 <b>59.9%</b>) 되찾는다. "op를 몇 개 빼기"가 아니라 "<b>activation outlier 자체를 구조적으로 없애기</b>"가 옳은 방향임을 실측이 지지한다(§4.5 판정 4·5.2 핵심 해석).</p></div>
+    <div class="note"><span class="tag">주의</span> 이 삼원은 <b>같은 torch fake-quant 경로</b> 안의 대조다. 커밋된 §4.5 ORT 절대값과 직접 비교하지 말 것(캐비앗 §1). 회복분·회복%가 결론.</div>
+  </section>
+
+  <h2 class="sec">§5 — α(migration strength) 스윕</h2>
+  <section id="s5" class="step">
+    <p class="lead">도구 기본 α=1.0과 논문 권장 α=0.5의 회복 차이를, 같은 서브셋(앞 500장)에서 격리(<a href="../experiments/stage2_smoothquant/sq_04_alpha_sweep.py">sq_04</a>). dict-override가 실제로 α를 바꾸는지도 실증.</p>
+    <table class="dt">
+      <thead><tr><th>구성 (500장)</th><th>mAP</th><th>gap 대비 회복%</th><th>비고</th></tr></thead>
+      <tbody>
+        <tr class="base"><td>FP32</td><td>0.4534</td><td>—</td><td>기준</td></tr>
+        <tr class="lo"><td>INT8_DEFAULT (max)</td><td>0.3671</td><td>0%</td><td>대조군(gap=0.0863)</td></tr>
+        <tr><td>SmoothQuant α=0.5</td><td>0.4101</td><td>49.8%</td><td>논문 권장(균형)</td></tr>
+        <tr class="hi"><td>SmoothQuant α=1.0</td><td>0.4246</td><td>66.6%</td><td>modelopt 프리셋 기본</td></tr>
+      </tbody>
+    </table>
+    <div class="note tip"><span class="tag">α 판정</span> 이 DETR/COCO 서브셋에선 <b>α=1.0(modelopt 프리셋 기본)이 α=0.5(논문 권장)보다 더 회복</b>한다(66.6% vs 49.8%). LayerNorm outlier가 극심한 <b>검출 모델</b>에선 activation을 <b>전량</b> weight로 이전(α=1.0)하는 게 유리 — LLM용으로 튜닝된 0.5가 항상 최적은 아니다. dict-override가 두 α에서 서로 다른 mAP를 내므로(override_worked=true) 초안의 alpha 지정 문법 자체는 <b>유효</b>하다 — 다만 <b>어느 α가 최적인지는 모델·데이터 의존</b>이며, "그냥 프리셋"은 α=1.0을 뜻한다는 점을 알고 써야 한다.</div>
+  </section>
+
+  <h2 class="sec">§6 — 스무딩 전/후 채널 absmax (메커니즘)</h2>
+  <section id="s6" class="step">
+    <p class="lead">SmoothQuant가 실제로 activation spike를 눌러 weight로 넘기는지, 대상 Linear 입력의 <b>채널별 absmax</b>를 스무딩 전(raw)/후(× pre_quant_scale)로 비교(<a href="../experiments/stage2_smoothquant/sq_03_absmax_smooth.py">sq_03</a>). 순환 측정을 피하려 <b>캘리브 셋(64)과 측정 셋(24)을 분리</b>.</p>
+    <table class="kv">
+      <tr><th>대상 Linear</th><td><code>model.encoder.layers.0.self_attn.k_proj</code> (in_features 256)</td></tr>
+      <tr><th>스무딩 전 (raw)</th><td>max <b>38.879</b> · median 10.525 · <b>ratio 3.69×</b></td></tr>
+      <tr><th>스무딩 후 (× pqs)</th><td>max <b>1.653</b> · median 0.844 · <b>ratio 1.96×</b></td></tr>
+      <tr><th>pre_quant_scale 범위</th><td>0.0213 ~ 0.1628 (채널별 1/s, per-channel)</td></tr>
+    </table>
+    <div class="note tip"><span class="tag">메커니즘 확인</span> 채널 간 spike(max/median)가 <b>3.69× → 1.96×</b>로 절반 가까이 줄었다. per-tensor scale을 끌고 가던 outlier 채널이 <b>weight 쪽으로 이전</b>돼(§2.2 등가변환 Y=(X/s)(sW)), activation이 per-tensor INT8에 더 잘 담긴다. 이것이 4절 회복의 <b>물리적 근거</b>다. (초안 예시 31.7×→2.96×는 삽화값 — 실측 k_proj는 3.69×→1.96×.)</div>
+  </section>
+
+  <h2 class="sec">§7 — 판정 & 산출물</h2>
+  <section id="s7" class="step">
+    <div class="verdict yes"><h4><span class="b">종결 ✓</span> §4.4 "API 확인 필요"를 실측 해소</h4><p>modelopt 0.45.0 프리셋 구조·<code>mtq.quantize</code> 시그니처·dict-override 유효성·<b>기본 α=1.0</b>을 sq_01/sq_04로 확정. 초안의 "기본 0.5" 오귀속 정정.</p></div>
+    <div class="verdict yes"><h4><span class="b">확증 ✓</span> SmoothQuant는 폭락을 실제로 되찾는다</h4><p>op-선택 mixed +0.36 mAP(§4.5) → SmoothQuant +0.0544 mAP(gap 59.9%). §4.5 판정 4의 "다음 검증 과제"를 완료로 전환.</p></div>
+    <div class="verdict yes"><h4><span class="b">지지 ✓</span> 메커니즘까지 일치</h4><p>채널 absmax 3.69×→1.96× 감쇠가 회복의 물리적 근거. "activation 입도"가 op-선택보다 우선하는 레버라는 §5.2 해석과 정합.</p></div>
+    <table class="kv">
+      <tr><th>재현 스크립트</th><td><a href="../experiments/stage2_smoothquant/">experiments/stage2_smoothquant/</a> sq_common·sq_01~sq_04 + JSON</td></tr>
+      <tr><th>상위 가이드</th><td><a href="../study_guide/04_transformer_quantization.md">2단계 §4.4</a> (본 실측 반영: API 정정·회복 판정·absmax·α)</td></tr>
+      <tr><th>선행 실측</th><td><a href="stage2_detr_quantization_report.html">DETR INT8 폭락 리포트</a>(§4.5, 이 SmoothQuant가 답하는 문제) · <a href="stage2_bevformer_quantization_report.html">BEVFormer-tiny 리포트</a>(§4.6)</td></tr>
+    </table>
+    <div class="note warnb"><span class="tag">캐비앗</span> ① 절대 mAP는 torch fake-quant(modelopt) 기준 — ORT/TensorRT 절대값과 다르다. ② 회복%는 이 경로의 per-tensor <code>max</code> 대조군 대비다. ③ α 최적값은 모델·캘리브 의존. 유효 결론은 <b>상대 관계</b>: (a) SmoothQuant가 op-선택 mixed를 압도, (b) absmax spike 실제 감쇠, (c) 도구 기본 α=1.0 ≠ 논문 0.5.</div>
+    <a class="next" href="../study_guide/04_transformer_quantization.md"><b>다음 →</b> §4.4 본문에 반영 완료. 남은 심화: SmoothQuant→ONNX QDQ export→ORT/TensorRT 절대 mAP(경로 Y), per-token/group activation 양자화 비교.</a>
+  </section>
+
+  <footer>
+    2단계 §4.4 SmoothQuant 실측 검증 · RTX 3080 · 2026-08-17 · COCO val2017 5,000장 · modelopt 0.45.0 (torch fake-quant)<br>
+    본 보고서 수치는 <code>experiments/stage2_smoothquant/sq_0{1,2,3,4}_*.json</code>에서 그대로 옮겼다.
+  </footer>
+</div>
+</body>
+</html>

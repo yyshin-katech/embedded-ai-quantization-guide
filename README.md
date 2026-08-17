@@ -14,6 +14,8 @@
 >
 > ✅ **2026-08-17, 2단계 §4.6 BEVFormer-tiny(grid_sample/Deformable Attention)까지 실측**했습니다. 정본 venv로는 mmdet3d/mmcv가 안 돌아 **무컴파일 레거시 venv**(프리빌트 휠 + 드라이버 하위호환)를 따로 세우고 `fundamentalvision/BEVFormer`를 완주했습니다. op 단위 단정은 **반전 0건(초안이 맞음)** — grid_sample opset 경계·5D=opset20·ORT 1.23.2 무음 CPU 폴백·TRT rank-4 단언·MSDeformAttn 분해 전부 실측 일치. 대신 실전 함정 **2개**를 새로 채집했습니다: ① 바닐라 mmcv 커스텀 op은 **CPU 텐서로만 유효 export**(CUDA는 출력을 `Constant`로 baked→입력 소실, exit 0인데 **silent-wrong**), ② 전체 모델 export는 grid_sample이 아니라 **`point_sampling`의 `lidar2img` 사영에서 먼저 사망**(`RuntimeError: shape '[1,6,6,1,4,4]'…`). FP32 nuScenes-mini mAP **0.2647**/NDS 0.2667이나 이는 **81샘플·2 scene 고분산 스모크**(문헌비교 불가, 상대 델타만); 전체 INT8은 유효 export 경로가 없어 **범위 밖**(포크 플러그인 재빌드 전제). 실측 리포트 [`logs/stage2_bevformer_quantization_report.html`](logs/stage2_bevformer_quantization_report.html) · 실패 로그 [`experiments/stage2_bevformer/onnx_export_failures.md`](experiments/stage2_bevformer/onnx_export_failures.md).
 
+> ✅ **2026-08-17, 2단계 §4.4 SmoothQuant까지 실측**했습니다. DETR 폭락 리포트(§4.5)가 지목한 "진짜 레버 = activation 양자화 입도"를 **nvidia-modelopt 0.45.0** SmoothQuant로 직접 시험했습니다(COCO val2017 전량 5,000장, torch fake-quant 자기일관 3원). 결과: per-tensor INT8이 **0.4209→0.3301(−0.0908)** 무너진 폭락을, SmoothQuant(α=1.0)가 **0.3845로 gap의 59.9%(+0.0544 mAP)** 되찾습니다 — §4.5의 op-선택 mixed(+0.0036)의 **약 15배**로, "op 선택이 아니라 activation 입도가 레버"라는 §4.5 판정 4를 **실측 확증**합니다. 초안 오류도 정정: modelopt 프리셋 기본 α는 논문의 0.5가 아니라 **1.0**(DETR에선 α=1.0이 66.6% > α=0.5의 49.8%), absmax 감쇠 실측 **3.69×→1.96×**. ⚠️ 절대 mAP는 torch fake-quant 경로라 커밋된 §4.5 ORT QDQ 절대값(0.4207/0.2402)과 **1:1 비교 불가**(상대 관계만 유효). 실측 리포트 [`logs/stage2_smoothquant_report.html`](logs/stage2_smoothquant_report.html) · 재현 [`experiments/stage2_smoothquant/`](experiments/stage2_smoothquant/).
+
 ---
 
 ## 🚀 바로 시작

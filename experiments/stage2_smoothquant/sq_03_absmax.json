@@ -1,0 +1,20 @@
+{
+  "target": "model.encoder.layers.0.self_attn.k_proj",
+  "in_features": 256,
+  "before": {
+    "max": 38.879,
+    "median": 10.525,
+    "ratio": 3.69
+  },
+  "pre_quant_scale_found": true,
+  "after": {
+    "max": 1.653,
+    "median": 0.844,
+    "ratio": 1.96
+  },
+  "pre_quant_scale_stats": {
+    "min": 0.0213,
+    "max": 0.1628
+  },
+  "ratio_before_to_after": "3.69x -> 1.96x"
+}

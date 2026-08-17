@@ -1,0 +1,165 @@
+/home/yuyeong/emb-ai/lib/python3.10/site-packages/modelopt/torch/__init__.py:51: UserWarning: transformers 5.15.0 is not tested with current version of modelopt and may cause issues. Please install recommended version with `pip install -U nvidia-modelopt[hf]` if working with HF models.
+  _warnings.warn(
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+loading annotations into memory...
+Done (t=0.35s)
+creating index...
+index created!
+eval 500장(앞 N 고정) | calib 100장 | dev cuda
+
+=== [FP32] ===
+Loading weights:   0%|          | 0/530 [00:00<?, ?it/s]Loading weights: 100%|██████████| 530/530 [00:00<00:00, 10229.54it/s]
+[transformers] [1mDetrForObjectDetection LOAD REPORT[0m from: facebook/detr-resnet-50
+Key                                                            | Status     |  | 
+---------------------------------------------------------------+------------+--+-
+model.backbone.model.layer1.0.downsample.1.num_batches_tracked | UNEXPECTED |  | 
+model.backbone.model.layer4.0.downsample.1.num_batches_tracked | UNEXPECTED |  | 
+model.backbone.model.layer2.0.downsample.1.num_batches_tracked | UNEXPECTED |  | 
+model.backbone.model.layer3.0.downsample.1.num_batches_tracked | UNEXPECTED |  | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+Loading and preparing results...
+DONE (t=0.03s)
+creating index...
+index created!
+Running per image evaluation...
+Evaluate annotation type *bbox*
+DONE (t=2.21s).
+Accumulating evaluation results...
+DONE (t=0.59s).
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.453
+ Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets=100 ] = 0.651
+ Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets=100 ] = 0.484
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.239
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.510
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.617
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=  1 ] = 0.353
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 10 ] = 0.564
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.598
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.337
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.652
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.793
+  fp32: {'mAP': 0.4534, 'mAP50': 0.6505, 'mAP75': 0.4843, 'mAP_s': 0.2395, 'mAP_m': 0.51, 'mAP_l': 0.6167, 'n_images': 500, 'sec': 23.1}
+
+=== [INT8_DEFAULT] (max, no smooth) ===
+Loading weights:   0%|          | 0/530 [00:00<?, ?it/s]Loading weights: 100%|██████████| 530/530 [00:00<00:00, 10380.68it/s]
+[transformers] [1mDetrForObjectDetection LOAD REPORT[0m from: facebook/detr-resnet-50
+Key                                                            | Status     |  | 
+---------------------------------------------------------------+------------+--+-
+model.backbone.model.layer1.0.downsample.1.num_batches_tracked | UNEXPECTED |  | 
+model.backbone.model.layer4.0.downsample.1.num_batches_tracked | UNEXPECTED |  | 
+model.backbone.model.layer2.0.downsample.1.num_batches_tracked | UNEXPECTED |  | 
+model.backbone.model.layer3.0.downsample.1.num_batches_tracked | UNEXPECTED |  | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+Registered <class 'transformers.models.detr.modeling_detr.DetrSelfAttention'> to _QuantAttention for KV Cache quantization
+Registered <class 'transformers.models.detr.modeling_detr.DetrCrossAttention'> to _QuantAttention for KV Cache quantization
+Inserted 601 quantizers
+  int8_default quantize 12.0s
+/home/yuyeong/emb-ai/lib/python3.10/site-packages/modelopt/torch/utils/cpp_extension.py:97: UserWarning: Ninja is required to load C++ extensions (pip install ninja to get it)
+Unable to load extension modelopt_cuda_ext and falling back to CPU version.
+  warnings.warn(fail_msg)
+Loading extension modelopt_cuda_ext...
+Loading and preparing results...
+DONE (t=0.03s)
+creating index...
+index created!
+Running per image evaluation...
+Evaluate annotation type *bbox*
+DONE (t=2.25s).
+Accumulating evaluation results...
+DONE (t=0.58s).
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.367
+ Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets=100 ] = 0.607
+ Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets=100 ] = 0.374
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.143
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.403
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.545
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=  1 ] = 0.299
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 10 ] = 0.471
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.511
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.244
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.543
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.727
+  int8_default: {'mAP': 0.3671, 'mAP50': 0.6066, 'mAP75': 0.3742, 'mAP_s': 0.1434, 'mAP_m': 0.4026, 'mAP_l': 0.5452, 'n_images': 500, 'sec': 78.9}
+
+=== [SmoothQuant α=0.5] (dict-override) ===
+Loading weights:   0%|          | 0/530 [00:00<?, ?it/s]Loading weights: 100%|██████████| 530/530 [00:00<00:00, 9835.81it/s]
+[transformers] [1mDetrForObjectDetection LOAD REPORT[0m from: facebook/detr-resnet-50
+Key                                                            | Status     |  | 
+---------------------------------------------------------------+------------+--+-
+model.backbone.model.layer1.0.downsample.1.num_batches_tracked | UNEXPECTED |  | 
+model.backbone.model.layer4.0.downsample.1.num_batches_tracked | UNEXPECTED |  | 
+model.backbone.model.layer2.0.downsample.1.num_batches_tracked | UNEXPECTED |  | 
+model.backbone.model.layer3.0.downsample.1.num_batches_tracked | UNEXPECTED |  | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+Inserted 601 quantizers
+Smoothed 100 modules
+  sq_a0.5 quantize 12.1s
+Loading and preparing results...
+DONE (t=0.21s)
+creating index...
+index created!
+Running per image evaluation...
+Evaluate annotation type *bbox*
+DONE (t=2.04s).
+Accumulating evaluation results...
+DONE (t=0.58s).
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.410
+ Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets=100 ] = 0.619
+ Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets=100 ] = 0.434
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.172
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.456
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.593
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=  1 ] = 0.327
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 10 ] = 0.519
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.557
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.299
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.596
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.773
+  sq_a0.5: {'mAP': 0.4101, 'mAP50': 0.6194, 'mAP75': 0.434, 'mAP_s': 0.1718, 'mAP_m': 0.4562, 'mAP_l': 0.5925, 'n_images': 500, 'sec': 78.2}
+
+=== [SmoothQuant α=1.0] (dict-override) ===
+Loading weights:   0%|          | 0/530 [00:00<?, ?it/s]Loading weights: 100%|██████████| 530/530 [00:00<00:00, 10620.47it/s]
+[transformers] [1mDetrForObjectDetection LOAD REPORT[0m from: facebook/detr-resnet-50
+Key                                                            | Status     |  | 
+---------------------------------------------------------------+------------+--+-
+model.backbone.model.layer1.0.downsample.1.num_batches_tracked | UNEXPECTED |  | 
+model.backbone.model.layer4.0.downsample.1.num_batches_tracked | UNEXPECTED |  | 
+model.backbone.model.layer2.0.downsample.1.num_batches_tracked | UNEXPECTED |  | 
+model.backbone.model.layer3.0.downsample.1.num_batches_tracked | UNEXPECTED |  | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+Inserted 601 quantizers
+Smoothed 100 modules
+  sq_a1.0 quantize 12.5s
+Loading and preparing results...
+DONE (t=0.20s)
+creating index...
+index created!
+Running per image evaluation...
+Evaluate annotation type *bbox*
+DONE (t=2.23s).
+Accumulating evaluation results...
+DONE (t=0.58s).
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.425
+ Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets=100 ] = 0.634
+ Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets=100 ] = 0.451
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.196
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.473
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.589
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=  1 ] = 0.334
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 10 ] = 0.528
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.563
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.305
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.613
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.764
+  sq_a1.0: {'mAP': 0.4246, 'mAP50': 0.6341, 'mAP75': 0.4511, 'mAP_s': 0.1956, 'mAP_m': 0.4729, 'mAP_l': 0.5891, 'n_images': 500, 'sec': 81.0}
+
+GAP: 0.0863 | RECOVERY% by α: {"0.5": 49.8, "1.0": 66.6} | override_worked: True
+SQ04_DONE

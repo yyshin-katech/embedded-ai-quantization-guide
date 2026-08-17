@@ -1,6 +1,6 @@
 ---
 name: stage2-detr-hands-on
-description: "2단계 DETR Transformer INT8 완료(2026-08-16, 커밋 41dc49e 미푸시) — COCO val2017 5,000장. 초안 단정 3건 반전(export 블로커=SDPA·op선택 mixed 실패·손상 분산). 다음=SmoothQuant §4.4·BEVFormer §4.6"
+description: "2단계 DETR Transformer INT8 완료(2026-08-16, 커밋 41dc49e 미푸시) — COCO val2017 5,000장. 초안 단정 3건 반전(export 블로커=SDPA·op선택 mixed 실패·손상 분산). §4.4 SmoothQuant·§4.6 BEVFormer 후속 완료"
 metadata: 
   node_type: memory
   type: project
@@ -31,6 +31,7 @@ metadata:
 독립 팬인 7/7 PASS(🔴 0).
 
 **캐비앗:** 절대 mAP는 CUDA EP·MinMax 기준이라 **상대 관계만 유효**.
-**다음 과제:** SmoothQuant(§4.4, nvidia-modelopt). BEVFormer-tiny(§4.6)는 **완료**([[stage2-bevformer-hands-on]]) —
+**후속 완료:** SmoothQuant(§4.4)는 **완료**([[stage2-smoothquant-hands-on]]) — per-tensor INT8 폭락의 59.9%를
+SmoothQuant(α=1.0)가 회복, "activation 입도가 레버"(위 단정 3) 확증. BEVFormer-tiny(§4.6)도 **완료**([[stage2-bevformer-hands-on]]) —
 op 단정 반전 0·전체 INT8은 포크 필요로 범위 밖. 그 뒤 3단계(TensorRT)~7단계+캡스톤은 아직 웹 검증만 된 상태.
 커밋 규약은 [[repo-is-public-scan-before-commit]].

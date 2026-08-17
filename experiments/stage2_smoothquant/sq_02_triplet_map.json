@@ -1,0 +1,44 @@
+{
+  "eval_images": 5000,
+  "calib_images": 100,
+  "modelopt": "0.45.0",
+  "arms": {
+    "fp32": {
+      "mAP": 0.4209,
+      "mAP50": 0.6233,
+      "mAP75": 0.4424,
+      "mAP_s": 0.2135,
+      "mAP_m": 0.4598,
+      "mAP_l": 0.6106,
+      "n_images": 5000,
+      "sec": 218.1
+    },
+    "int8_default": {
+      "mAP": 0.3301,
+      "mAP50": 0.578,
+      "mAP75": 0.3226,
+      "mAP_s": 0.1255,
+      "mAP_m": 0.3503,
+      "mAP_l": 0.5262,
+      "n_images": 5000,
+      "sec": 799.9
+    },
+    "int8_smoothquant": {
+      "mAP": 0.3845,
+      "mAP50": 0.6004,
+      "mAP75": 0.4043,
+      "mAP_s": 0.1704,
+      "mAP_m": 0.4269,
+      "mAP_l": 0.5822,
+      "n_images": 5000,
+      "sec": 799.2
+    }
+  },
+  "deltas": {
+    "fp32": 0.4209,
+    "int8_default_drop": -0.0908,
+    "smoothquant_drop": -0.0364,
+    "smoothquant_recovery_vs_default": 0.0544,
+    "smoothquant_recovery_pct_of_gap": 59.9
+  }
+}
