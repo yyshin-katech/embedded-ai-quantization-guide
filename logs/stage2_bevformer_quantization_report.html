@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>2단계 BEVFormer-tiny 실측 검증 보고서 (RTX 3080)</title>
+<style>
+:root{--bg:#0b0e14;--panel:#131720;--panel2:#0f131b;--bd:#242b38;--tx:#c9d1d9;--dim:#8b949e;--brt:#e6edf3;--accent:#58a6ff;--green:#3fb950;--amber:#d29922;--red:#ff7b72;--purple:#bc8cff;--mono:'JetBrains Mono','SF Mono',ui-monospace,'Cascadia Code',Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans KR','Malgun Gothic',sans-serif}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:var(--sans);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:980px;margin:0 auto;padding:0 20px 120px}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+.hero{padding:48px 0 26px;border-bottom:1px solid var(--bd);margin-bottom:8px}
+.kicker{font-family:var(--mono);font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+.hero h1{margin:0 0 10px;font-size:30px;line-height:1.25;color:var(--brt);letter-spacing:-.01em}
+.hero p.sub{margin:0 0 20px;color:var(--dim);font-size:15px;max-width:78ch}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font-family:var(--mono);font-size:12px;padding:5px 10px;border:1px solid var(--bd);border-radius:999px;background:var(--panel);color:var(--tx)}
+.chip b{color:var(--brt);font-weight:600}
+.chip.done{border-color:rgba(63,185,80,.5);background:rgba(63,185,80,.12);color:#7ee787}
+.chip.blocked{border-color:rgba(255,123,114,.5);background:rgba(255,123,114,.12);color:#ff9d96}
+.chip.partial{border-color:rgba(210,153,34,.5);background:rgba(210,153,34,.12);color:#e3b341}
+nav.toc{display:flex;flex-wrap:wrap;gap:8px;margin:26px 0 6px}
+nav.toc a{font-family:var(--mono);font-size:12.5px;padding:6px 11px;border:1px solid var(--bd);border-radius:8px;background:var(--panel);color:var(--tx)}
+nav.toc a:hover{border-color:var(--accent);color:var(--brt);text-decoration:none}
+h2.sec{font-size:13px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin:40px 0 12px;font-weight:600;border-top:1px solid var(--bd);padding-top:26px}
+.step{margin:26px 0 0;scroll-margin-top:16px}
+.step>h3{display:flex;align-items:center;gap:12px;font-size:19px;color:var(--brt);margin:0 0 6px;letter-spacing:-.01em}
+.num{flex:none;display:inline-grid;place-items:center;width:28px;height:28px;border-radius:8px;background:var(--accent);color:#06101f;font-family:var(--mono);font-weight:700;font-size:13px}
+.step p.lead{margin:0 0 4px;color:var(--dim);font-size:14.5px}
+table.dt{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.3px;border:1px solid var(--bd);border-radius:10px;overflow:hidden;font-family:var(--mono)}
+table.dt th,table.dt td{padding:8px 12px;text-align:right;border-bottom:1px solid var(--bd)}
+table.dt th{background:var(--panel);color:var(--dim);font-weight:600;font-size:12px;letter-spacing:.04em}
+table.dt th:first-child,table.dt td:first-child{text-align:left;color:var(--brt)}
+table.dt tr:last-child td{border-bottom:none}
+table.dt tr.hi td{background:rgba(63,185,80,.08)}
+table.dt tr.lo td{background:rgba(255,123,114,.08)}
+table.dt tr.base td{background:rgba(88,166,255,.07)}
+.g{color:var(--green)}.r{color:var(--red)}.a{color:var(--amber)}.p{color:var(--purple)}.d{color:var(--dim)}
+table.kv{width:100%;border-collapse:collapse;margin:12px 0;font-size:13.5px;border:1px solid var(--bd);border-radius:10px;overflow:hidden}
+table.kv th,table.kv td{padding:9px 13px;text-align:left;border-bottom:1px solid var(--bd);vertical-align:top}
+table.kv th{background:var(--panel);color:var(--dim);font-weight:600;width:34%;font-size:12.5px}
+table.kv td{font-family:var(--mono);font-size:12.7px;color:var(--tx)}
+table.kv tr:last-child td,table.kv tr:last-child th{border-bottom:none}
+.term{background:var(--panel2);border:1px solid var(--bd);border-radius:11px;overflow:hidden;margin:14px 0}
+.term-bar{display:flex;align-items:center;gap:7px;padding:9px 13px;background:#0c1017;border-bottom:1px solid var(--bd)}
+.dot{width:11px;height:11px;border-radius:50%}.dot.r{background:#ff5f56}.dot.y{background:#ffbd2e}.dot.g{background:#27c93f}
+.term-title{margin-left:9px;color:var(--dim);font-size:12.5px;font-family:var(--mono)}
+.term pre{margin:0;padding:15px 17px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.62;color:var(--tx);white-space:pre;tab-size:2}
+.cmt{color:#5c6773}.ok{color:var(--green)}.err{color:var(--red)}.warn{color:var(--amber)}.dim{color:var(--dim)}.hl{color:var(--purple)}.in{color:var(--brt);font-weight:600}
+.note{border-left:3px solid var(--accent);background:rgba(88,166,255,.07);padding:13px 17px;border-radius:0 9px 9px 0;margin:15px 0;font-size:14px}
+.note.trap{border-color:var(--red);background:rgba(255,123,114,.08)}
+.note.warnb{border-color:var(--amber);background:rgba(210,153,34,.08)}
+.note.tip{border-color:var(--green);background:rgba(63,185,80,.07)}
+.note.block{border-color:var(--purple);background:rgba(188,140,255,.08)}
+.note .tag{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 8px;border-radius:6px;margin-bottom:7px}
+.note.trap .tag{background:rgba(255,123,114,.18);color:#ff9d96}
+.note.warnb .tag{background:rgba(210,153,34,.18);color:#e3b341}
+.note.tip .tag{background:rgba(63,185,80,.18);color:#7ee787}
+.note.block .tag{background:rgba(188,140,255,.18);color:#d8b8ff}
+.note b{color:var(--brt)}.note code{font-family:var(--mono);font-size:12.5px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:4px}
+.chartwrap{border:1px solid var(--bd);background:var(--panel2);border-radius:12px;padding:18px 18px 14px;margin:16px 0}
+.chartwrap .ct{font-family:var(--mono);font-size:12.5px;color:var(--brt);margin:0 0 4px}
+.chartwrap .cs{font-size:12.5px;color:var(--dim);margin:0 0 12px}
+.statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:14px 0}
+.stat{border:1px solid var(--bd);background:var(--panel);border-radius:11px;padding:15px 16px}
+.stat .k{font-family:var(--mono);font-size:11.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em}
+.stat .v{font-size:23px;color:var(--brt);font-weight:700;margin-top:5px;letter-spacing:-.01em}
+.stat .n{font-size:12px;color:var(--dim);margin-top:3px}
+.stat.ok .v{color:#7ee787}.stat.warn .v{color:#e3b341}.stat.bad .v{color:#ff9d96}
+.verdict{border:1px solid var(--bd);border-radius:12px;padding:16px 18px;margin:14px 0;background:var(--panel)}
+.verdict h4{margin:0 0 6px;font-size:15px;color:var(--brt);display:flex;align-items:center;gap:9px}
+.verdict h4 .b{font-family:var(--mono);font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px}
+.verdict.yes h4 .b{background:rgba(63,185,80,.18);color:#7ee787}
+.verdict.no h4 .b{background:rgba(255,123,114,.18);color:#ff9d96}
+.verdict p{margin:0;font-size:13.8px;color:var(--tx)}
+footer{margin-top:46px;padding-top:20px;border-top:1px solid var(--bd);color:var(--dim);font-size:13px}
+.next{display:block;margin-top:12px;padding:12px 16px;border:1px solid var(--bd);border-radius:9px;color:var(--tx);background:var(--panel);font-size:13.6px}
+.next b{color:var(--accent)}
+@media (max-width:560px){.hero h1{font-size:23px}.term pre{font-size:11.4px}.stat .v{font-size:20px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <p class="kicker">실행 보고서 · 2단계 · BEVFormer-tiny grid_sample &amp; Deformable Attention</p>
+    <h1>2단계 BEVFormer-tiny — 실측 검증 보고서</h1>
+    <p class="sub"><b>fundamentalvision/BEVFormer</b>(멀티뷰 카메라 → BEV 3D 검출)의 <code>bevformer_tiny</code>를 실제 RTX 3080에서 완주했다. 정본 venv로는 mmdet3d/mmcv가 안 돌아 <b>레거시 venv를 따로</b> 세웠고(무컴파일 — 프리빌트 휠), 검증을 <b>2-tier</b>로 나눴다: <b>Tier A</b> = grid_sample/MSDeformAttn <b>op 지뢰</b>를 정본 venv에서 격리 재현, <b>Tier B</b> = 실 mmcv op + BEVFormer-tiny 실모델(FP32 nuScenes-mini mAP + 전체 모델 export 벽). op 단정 <b>반전 0건</b>(초안이 맞았다) — 대신 실전 함정 2개(mmcv 커스텀 op은 <b>CPU에서만</b> 유효 export, 전체 export는 grid_sample이 아니라 <b>lidar2img 사영</b>에서 먼저 죽음)를 실측으로 채집했다.</p>
+    <div class="chips">
+      <span class="chip"><b>2026-08-17</b></span>
+      <span class="chip"><b>RTX 3080</b> 10GB · driver 595</span>
+      <span class="chip done">FP32 mini mAP <b>0.2647</b></span>
+      <span class="chip partial">op 반전 <b>0</b> · 함정 <b>+2</b></span>
+      <span class="chip blocked">전체 INT8 <b>범위 밖</b></span>
+    </div>
+    <nav class="toc">
+      <a href="#s1">§1 실행 요약</a>
+      <a href="#s2">§2 환경 (2-tier)</a>
+      <a href="#s3">§3 Tier A op 지뢰</a>
+      <a href="#s4">§4 Tier B 실 mmcv op</a>
+      <a href="#s5">§5 실모델 mAP &amp; export 벽</a>
+      <a href="#s6">§6 판정 &amp; 산출물</a>
+    </nav>
+  </header>
+
+  <h2 class="sec" id="s1">§1 — 실행 요약</h2>
+  <div class="step">
+    <div class="statgrid">
+      <div class="stat ok"><div class="k">FP32 mAP (mini val 81장)</div><div class="v">0.2647</div><div class="n">NDS 0.2667 · 스모크(벤치 아님)</div></div>
+      <div class="stat"><div class="k">Tier A op 지뢰</div><div class="v">5 / 5</div><div class="n">전부 실측 · 초안 반전 0</div></div>
+      <div class="stat warn"><div class="k">실전 함정 추가</div><div class="v">+2</div><div class="n">CPU-only export · point_sampling 벽</div></div>
+      <div class="stat bad"><div class="k">전체 모델 INT8 mAP</div><div class="v">N/A</div><div class="n">유효 export 경로 없음</div></div>
+    </div>
+    <p class="lead">한 문장: <b>op 단위 단정(§4.6.1~2)은 전부 맞았고</b>, 실모델을 붙이니 <b>"BEVFormer export 지옥"의 진짜 원인이 grid_sample 하나가 아니라 3층 구조</b>(① img_metas 사영이 forward 내부 입력 ② 시간축 재귀 stateful ③ 그 안쪽 grid_sample/MSDeformAttn)임이 드러났다. 바닐라를 그대로 내보내는 유효 경로는 없고, 포크의 tensor-화 래퍼가 정확히 이 3층을 걷어낸다.</p>
+    <table class="kv">
+      <tr><th>확정된 것 (실측)</th><td>grid_sample 4D=opset16 경계 · 5D=opset20 · ORT 1.23.2 5D CUDA 무커널→CPU 폴백 · TRT rank-4 단언 · MSDeformAttn 분해=grid_sample×num_levels+노드폭증 · 실 mmcv op CUDA 12.8 생존(프리빌트 휠) · BEVFormer-tiny FP32 mini mAP 0.2647</td></tr>
+      <tr><th>초안에 없던 함정 (신규)</th><td>① mmcv 커스텀 op은 <b>CPU 텐서로만</b> 유효 export(CUDA는 출력을 Constant로 baked, 입력 소실) ② 전체 모델 export는 <b>point_sampling의 lidar2img.view</b>에서 먼저 사망(트레이서가 batch dim 오바인딩)</td></tr>
+      <tr><th>도달 못 한 것 (정직)</th><td>전체 모델 INT8 mAP — 유효 ONNX가 안 나옴 → 포크 플러그인 툴체인 전제(범위 밖). SmoothQuant/per-token은 DETR 과제로 계속</td></tr>
+    </table>
+  </div>
+
+  <h2 class="sec" id="s2">§2 — 환경·스택 (2-tier, 실측)</h2>
+  <div class="step">
+    <p class="lead">BEVFormer 실모델은 정본 venv(torch 2.11)에서 <b>안 돈다</b>(mmcv-full 1.x/mmdet3d는 torch ≤1.13 전제). 그래서 op 검증(Tier A)은 정본에서, 실모델(Tier B)은 레거시에서.</p>
+    <table class="kv">
+      <tr><th>Tier A — 정본 venv <code>~/emb-ai</code></th><td>Ubuntu 22.04 · RTX 3080 · driver 595.84 · CUDA 12.8 · torch <b>2.11.0+cu128</b> · onnx 1.18.0(IR 11) · onnxruntime-gpu <b>1.23.2</b> · TensorRT <b>10.16.1.11</b></td></tr>
+      <tr><th>Tier B — 레거시 venv <code>~/bevf-legacy</code></th><td>python 3.10 · torch <b>1.13.1+cu117</b> · mmcv-full <b>1.7.0</b>(프리빌트 cu117/torch1.13 휠) · mmdet3d <b>1.0.0rc6</b> · mmdet 2.28.2 · numpy <b>1.23.5</b> · numba 0.58.1 · onnx 1.14.1 · onnxruntime 1.16.3</td></tr>
+    </table>
+    <div class="note tip"><span class="tag">무컴파일 (hard-won)</span> "레거시 mmcv = 옛 CUDA 툴킷 재설치"는 <b>통념</b>이다. 실제로는 <b>프리빌트 휠</b>(<code>download.openmmlab.com/mmcv/dist/cu117/torch1.13</code>)이 있어 <b>CUDA 소스 빌드를 전부 우회</b>했고, torch 1.13+cu117이 <b>드라이버 하위호환</b>으로 CUDA 12.8 머신에서 그대로 CUDA init 됐다(정본 툴킷은 12.8뿐, 11.7 없음). mmdet3d는 <code>--no-build-isolation</code> + numba/opencv/numpy 핀 고정으로 설치, BEVFormer plugin의 dd3d/detectron2 체인은 4파일 패치로 우회(bevformer_tiny엔 dd3d 불필요).</div>
+  </div>
+
+  <h2 class="sec" id="s3">§3 — Tier A: grid_sample / MSDeformAttn op 지뢰 5종</h2>
+  <div class="step">
+    <p class="lead">§4.6이 가르치는 단정은 대부분 <b>개별 op의 export 거동</b>이다. BEVFormer 전체·nuScenes 없이 정본 venv에서 최소 repro로 격리해 밟았다(b01~b05). <b>전부 실측, 초안 반전 0건.</b></p>
+    <table class="dt">
+      <thead><tr><th>#</th><th>단계</th><th>증상(로그 핵심)</th><th>판정</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>grid_sample 4D, opset≤15</td><td class="d"><code>aten::grid_sampler ... not supported. added in version 16</code></td><td class="g">경계=정확히 16</td></tr>
+        <tr><td>1b</td><td>4D, dynamo(기본) req 11</td><td class="d">에러 아님 → <b>emit 18</b>(요청 무시)</td><td class="a">opset 필요시 dynamo=False</td></tr>
+        <tr><td>2</td><td>grid_sample 5D, opset16/17/18</td><td class="d"><code>Unsupported: GridSample with 5D volumetric input</code></td><td class="g">5D=opset20부터</td></tr>
+        <tr><td>2b</td><td>5D, dynamo req 17</td><td class="d">에러 없이 opset17에 5D emit(<b>out-of-spec</b>)</td><td class="r">export 성공≠유효</td></tr>
+        <tr><td>3</td><td>5D(opset20) ORT CUDA EP</td><td class="d"><code>CUDA kernel not found in registries ... GridSample</code></td><td class="a">조용히 CPU 폴백</td></tr>
+        <tr><td>4</td><td>5D(opset20) TensorRT 파싱</td><td class="d"><code>addGridSample ... condition: nbDims == 4</code></td><td class="r">rank-4 하드단언</td></tr>
+        <tr><td>5</td><td>MSDeformAttn mmcv 폴백 분해</td><td class="d">1 논리op → <b>140 노드</b>, GridSample <b>4=num_levels</b></td><td class="a">분해=되지만 느림·NPU 불가</td></tr>
+      </tbody>
+    </table>
+    <div class="note"><span class="tag">한 줄</span> ORT 1.23.2 CUDA EP는 5D GridSample 커널이 없어(1.27+에 추가) <code>INFO</code> 로그 한 줄만 남기고 <b>조용히 CPU로 폴백</b>한다 — "되는 줄 알았는데 느린" 전형. TRT는 <code>IGridSampleLayer</code>가 <b>nbDims==4를 하드 단언</b>해 5D는 native로 절대 안 들어간다(issue #3890). 상세: <a href="../experiments/stage2_bevformer/onnx_export_failures.md">onnx_export_failures.md</a> Case 1~5.</div>
+  </div>
+
+  <h2 class="sec" id="s4">§4 — Tier B: 실제 mmcv MSDeformAttn op (B1·B2)</h2>
+  <div class="step">
+    <p class="lead">Tier A는 순수 PyTorch 폴백을 옮겨 밟은 것. Tier B는 <b>레거시 venv의 진짜 mmcv 커스텀 op</b>(<code>MultiScaleDeformableAttention</code>)을 직접 돌리고 export했다(b06).</p>
+    <div class="verdict yes"><h4><span class="b">B1 · 확인</span> 레거시 mmcv CUDA op은 컴파일 없이 CUDA 12.8에서 산다</h4><p>프리빌트 mmcv-full 1.7.0 <code>_ext</code>(.so) 로드 성공 → <code>MultiScaleDeformableAttnFunction</code>(진짜 CUDA 커널) 실행, 순수 PyTorch 분해와 <code>|Δ|max=1.4e-6</code> 일치. 드라이버 하위호환으로 정본 머신에서 바로 돈다.</p></div>
+    <div class="verdict no"><h4><span class="b">B2 · 함정</span> 실제 모듈 export는 디바이스에 따라 갈린다 — CUDA=조용히 틀린 그래프</h4><p>바닐라 mmcv엔 <code>symbolic</code>도 <code>is_in_onnx_export</code> 가드도 없고 forward가 <code>value.is_cuda</code>로 분기한다. 그래서 export 디바이스가 그래프를 가른다.</p></div>
+    <table class="dt">
+      <thead><tr><th>export 디바이스</th><th>결과</th><th>노드</th><th>그래프 입력</th><th>판정</th></tr></thead>
+      <tbody>
+        <tr class="hi"><td>CPU</td><td>표준 op 분해</td><td>244 (GridSample 4)</td><td class="d">[query, value, reference_points]</td><td class="g">✅ 유효</td></tr>
+        <tr class="lo"><td>CUDA</td><td>exit0 · checker PASS</td><td>4 (Constant1,MatMul1,Add2)</td><td class="d">[query] 만</td><td class="r">🔴 silent-wrong</td></tr>
+      </tbody>
+    </table>
+    <div class="note trap"><span class="tag">design rule</span> symbolic 없는 autograd.Function을 트레이서가 표현 못 해 <b>MSDeformAttn 출력 전체를 Constant로 baked</b> → <code>value</code>·<code>reference_points</code>가 <b>그래프 입력에서 사라진다</b>. 모델이 입력을 무시하는데 <b>에러 없이 통과</b>한다. → <b>mmcv 커스텀 op 모델은 반드시 CPU 텐서로 export</b>하고, 직후 <b>그래프 입력 목록</b>으로 <code>value</code>/<code>reference_points</code> 생존을 검증하라. 커스텀 op ONNX 노드 경로는 <code>DerryHub/BEVFormer_tensorrt</code> 포크가 <b>추가</b>하는 것이지 바닐라 mmcv엔 없다.</div>
+  </div>
+
+  <h2 class="sec" id="s5">§5 — 실모델: BEVFormer-tiny FP32 mAP &amp; 전체 모델 export 벽</h2>
+  <div class="step">
+    <h3><span class="num">a</span> FP32 mAP — 실모델은 돈다 (nuScenes-mini val 81장)</h3>
+    <p class="lead"><code>tools/create_data.py … --version v1.0-mini</code>로 temporal info pkl 생성(val=81 keyframes / 2 scene) → 네이티브 평가. checkpoint 643/643 로드.</p>
+    <div class="chartwrap">
+      <p class="ct">per-class AP — BEVFormer-tiny FP32 (nuScenes-mini val, 81장)</p>
+      <p class="cs">3개 클래스(trailer·construction_vehicle·barrier)가 <b>정확히 0.000</b> — 2개 mini scene에 희소/미검출. 이게 "81샘플 스모크"의 서명이다.</p>
+      <svg viewBox="0 0 680 320" width="100%" role="img" aria-label="per-class AP bar chart" font-family="var(--mono)">
+        <!-- axis -->
+        <line x1="150" y1="10" x2="150" y2="290" stroke="#242b38" stroke-width="1"/>
+        <line x1="150" y1="290" x2="640" y2="290" stroke="#242b38" stroke-width="1"/>
+        <!-- gridlines 0,.2,.4,.6 -->
+        <g fill="#5c6773" font-size="10">
+          <line x1="150" y1="290" x2="150" y2="293" stroke="#5c6773"/><text x="150" y="305" text-anchor="middle">0</text>
+          <line x1="313" y1="290" x2="313" y2="293" stroke="#5c6773"/><text x="313" y="305" text-anchor="middle">0.2</text>
+          <line x1="476" y1="290" x2="476" y2="293" stroke="#5c6773"/><text x="476" y="305" text-anchor="middle">0.4</text>
+          <line x1="639" y1="290" x2="639" y2="293" stroke="#5c6773"/><text x="639" y="305" text-anchor="middle">0.6</text>
+        </g>
+        <!-- bars: scale 0.6 -> 489px (x = 150 + ap/0.6*489). row h=26, start y=18 -->
+        <g font-size="11.5">
+          <text x="144" y="31" text-anchor="end" fill="#e6edf3">bus</text><rect x="150" y="20" width="469" height="16" rx="2" fill="#3fb950"/><text x="626" y="32" fill="#7ee787">0.576</text>
+          <text x="144" y="57" text-anchor="end" fill="#e6edf3">car</text><rect x="150" y="46" width="389" height="16" rx="2" fill="#3fb950"/><text x="546" y="58" fill="#7ee787">0.478</text>
+          <text x="144" y="83" text-anchor="end" fill="#e6edf3">pedestrian</text><rect x="150" y="72" width="363" height="16" rx="2" fill="#3fb950"/><text x="520" y="84" fill="#7ee787">0.446</text>
+          <text x="144" y="109" text-anchor="end" fill="#e6edf3">truck</text><rect x="150" y="98" width="317" height="16" rx="2" fill="#58a6ff"/><text x="474" y="110" fill="#58a6ff">0.389</text>
+          <text x="144" y="135" text-anchor="end" fill="#e6edf3">traffic_cone</text><rect x="150" y="124" width="288" height="16" rx="2" fill="#58a6ff"/><text x="445" y="136" fill="#58a6ff">0.354</text>
+          <text x="144" y="161" text-anchor="end" fill="#e6edf3">motorcycle</text><rect x="150" y="150" width="233" height="16" rx="2" fill="#58a6ff"/><text x="390" y="162" fill="#58a6ff">0.286</text>
+          <text x="144" y="187" text-anchor="end" fill="#e6edf3">bicycle</text><rect x="150" y="176" width="97" height="16" rx="2" fill="#d29922"/><text x="254" y="188" fill="#e3b341">0.119</text>
+          <text x="144" y="213" text-anchor="end" fill="#e6edf3">trailer</text><rect x="150" y="202" width="2" height="16" rx="2" fill="#ff7b72"/><text x="159" y="214" fill="#ff9d96">0.000</text>
+          <text x="144" y="239" text-anchor="end" fill="#e6edf3">constr_veh</text><rect x="150" y="228" width="2" height="16" rx="2" fill="#ff7b72"/><text x="159" y="240" fill="#ff9d96">0.000</text>
+          <text x="144" y="265" text-anchor="end" fill="#e6edf3">barrier</text><rect x="150" y="254" width="2" height="16" rx="2" fill="#ff7b72"/><text x="159" y="266" fill="#ff9d96">0.000</text>
+        </g>
+      </svg>
+    </div>
+    <div class="statgrid">
+      <div class="stat ok"><div class="k">mAP (mini 81장)</div><div class="v">0.2647</div><div class="n">공개 full-val 0.252 — 우연히 근접</div></div>
+      <div class="stat warn"><div class="k">NDS (mini 81장)</div><div class="v">0.2667</div><div class="n">공개 full-val <b>0.354</b> — 크게 벌어짐</div></div>
+      <div class="stat"><div class="k">평가셋</div><div class="v">81 / 2</div><div class="n">keyframes / scene (mini val)</div></div>
+    </div>
+    <div class="note trap"><span class="tag">캐비앗 (필수 병기)</span> <b>81샘플·2 scene·3클래스 0.000의 고분산 스모크</b>지 벤치마크가 아니다. mAP가 공개값과 가까운 건 <b>우연</b>이고 NDS 격차(0.267 vs 0.354)가 mini의 한계를 드러낸다. <b>절대값 문헌비교 불가</b> — 같은 슬라이스 <b>상대 델타만</b> 유효. 실행 함정 3종: <code>PYTHONPATH=&lt;repo&gt;</code> 필수 · test.py non-dist 분기가 <code>assert False</code>라 <code>torch.distributed.launch --launcher pytorch</code> 필수 · dataloader <code>workers_per_gpu=0</code>(dict_keys pickle 회피).</div>
+
+    <h3 style="margin-top:30px"><span class="num">b</span> 전체 모델 export는 grid_sample이 아니라 <code>point_sampling</code>에서 먼저 죽는다</h3>
+    <p class="lead">바닐라 BEVFormer엔 <b>ONNX export 스크립트가 아예 없다</b>(<code>tools/</code>에 onnx/deploy/pth2onnx 전무). "전체를 그냥 <code>torch.onnx.export</code>"(CPU 강제) 하면 CPU forward는 성공(<code>bev_embed (2500,1,256)</code>)하지만 export는 즉시:</p>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">b09_fullmodel_export_attempt.py — RuntimeError</span></div>
+      <pre><span class="err">RuntimeError</span>: shape '<span class="in">[1, 6, 6, 1, 4, 4]</span>' is invalid for input of size <span class="in">96</span>
+  at encoder.py:119  <span class="cmt"># point_sampling (BEV→카메라 사영)</span>
+    lidar2img = lidar2img.view(1, <span class="hl">B</span>, num_cam, 1, 4, 4)   <span class="cmt"># B가 트레이서에서 6으로 오바인딩</span>
+
+<span class="cmt"># 원인: point_sampling이 forward 내부에서 캘리브를 재구성 —</span>
+for m in img_metas: lidar2img.append(m['lidar2img'])  <span class="cmt"># img_metas = 비텐서 dict</span>
+lidar2img = np.asarray(lidar2img)                      <span class="cmt"># numpy 우회</span>
+lidar2img = reference_points.new_tensor(lidar2img)     <span class="cmt"># (B,N,4,4)</span>
+D, B, num_query = reference_points.size()[:3]          <span class="cmt"># eager:B=1 / trace:오바인딩</span></pre>
+    </div>
+    <div class="note block"><span class="tag">왜 "지옥"인가 — 3층</span> BEVFormer export가 험한 진짜 이유는 grid_sample 하나가 아니다. <b>①</b> <code>img_metas</code>(lidar2img 사영·can_bus)가 forward <b>내부 기하의 입력</b>이라 그래프에서 사라지면 안 되는데 비텐서 dict→numpy로 들어와 트레이서와 충돌(위 실측). <b>②</b> <code>forward_test</code>가 <code>self.prev_frame_info['prev_bev']</code>로 <b>시간축 재귀(stateful)</b> — 프레임 간 상태라 단일 그래프 트레이스 불가. <b>③</b> 그 <b>안쪽</b>에 §3~4의 grid_sample/MSDeformAttn 지뢰. 포크의 export 래퍼는 정확히 이 셋을 걷어낸다 — <b>lidar2img·can_bus·prev_bev를 명시적 텐서 입력으로 승격</b> + point_sampling 재작성 + 커스텀 op 플러그인. <b>바닐라를 그대로 내보내는 유효 경로는 없다.</b></div>
+    <div class="verdict no"><h4><span class="b">c · 정직한 한계</span> 전체 모델 INT8 mAP은 범위 밖</h4><p>(b)로 유효한 전체 모델 ONNX가 안 나오므로 INT8 PTQ→INT8 mAP는 도달 불가. 포크의 커스텀 op 플러그인 툴체인(TRT 8.5/CUDA 11.6 기준 → 정본 TRT 10.16/CUDA 12.8에 재빌드 필요)이 전제. op 단위 양자화 거동은 §3~4가 실 mmcv op로 이미 검증했다.</p></div>
+  </div>
+
+  <h2 class="sec" id="s6">§6 — 판정 &amp; 산출물</h2>
+  <div class="step">
+    <div class="verdict yes"><h4><span class="b">판정 1</span> §4.6 op 단정은 전부 맞았다(반전 0)</h4><p>grid_sample opset 경계·5D·ORT 폴백·TRT rank-4·MSDeformAttn 분해 — 5종 모두 실측 일치. 초안을 정정할 사실 오류는 없었고, 인용을 로그 원문 수준으로 끌어올렸다.</p></div>
+    <div class="verdict no"><h4><span class="b">판정 2</span> 실전 함정 2개는 초안에 없었다</h4><p>① mmcv 커스텀 op은 CPU에서만 유효 export(CUDA=silent-wrong Constant baked) ② 전체 export는 grid_sample이 아니라 point_sampling의 lidar2img 사영에서 먼저 죽음. 둘 다 §4.6.2/§4.6.4에 반영.</p></div>
+    <div class="verdict yes"><h4><span class="b">판정 3</span> 실모델 FP32 mAP은 측정됐다(단 스모크)</h4><p>BEVFormer-tiny FP32 mini mAP 0.2647/NDS 0.2667. 81샘플 고분산이라 절대값 문헌비교 불가 — 상대 델타만. 무컴파일 레거시 env 레시피(프리빌트 휠+드라이버 하위호환)가 재사용 자산.</p></div>
+    <table class="kv">
+      <tr><th>산출물</th><td><a href="../experiments/stage2_bevformer/onnx_export_failures.md">onnx_export_failures.md</a>(Tier A 5 + B1/B2/B3) · <a href="../experiments/stage2_bevformer/">b01~b09 스크립트·JSON</a> · <code>b08_fp32_mini_map.json</code> · <code>b09_fullmodel_export_result.json</code> · 이 리포트</td></tr>
+      <tr><th>가이드 반영</th><td><a href="../study_guide/04_transformer_quantization.md">04_transformer_quantization.md</a> §4.6(측정 배너·§4.6.2 CPU-only 함정·<b>§4.6.4 실모델</b>)</td></tr>
+      <tr><th>다음 과제</th><td>SmoothQuant(§4.4)·per-token activation 양자화(DETR 범인=분산 대응) · BEVFormer 전체 INT8은 포크 플러그인 재빌드 후</td></tr>
+    </table>
+    <a class="next" href="../study_guide/04_transformer_quantization.md#46-심화-bevformer-tiny--grid_sample--deformable-attention-지뢰"><b>→ 가이드 §4.6</b> 에서 전체 맥락(grid_sample 지원표·MSDeformAttn 분해 vs plugin·scatter/dynamic shape)과 함께 읽기</a>
+    <footer>
+      2단계 BEVFormer-tiny 실측 검증 · RTX 3080 10GB · 2026-08-17 · 2-tier(정본 <code>~/emb-ai</code> + 레거시 <code>~/bevf-legacy</code>) ·
+      절대 mAP은 nuScenes-mini 81샘플 스모크(고분산) 기준이라 <b>상대 관계만</b> 유효.
+    </footer>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,97 @@
+{
+  "torch": "1.13.1+cu117",
+  "cuda_available": true,
+  "mmcv": "1.7.1",
+  "B1": {
+    "ok": true,
+    "out_shape": [
+      1,
+      100,
+      256
+    ],
+    "max_abs_diff_vs_pytorch": 1.430511474609375e-06
+  },
+  "B2": {
+    "cpu": {
+      "device": "cpu",
+      "ok": true,
+      "n_nodes": 244,
+      "n_gridsample": 4,
+      "domains": [
+        "ai.onnx"
+      ],
+      "custom_nodes": [],
+      "graph_inputs": [
+        "query",
+        "value",
+        "reference_points"
+      ],
+      "dropped_inputs": [],
+      "top_ops": [
+        [
+          "Constant",
+          107
+        ],
+        [
+          "Reshape",
+          19
+        ],
+        [
+          "Unsqueeze",
+          18
+        ],
+        [
+          "Slice",
+          17
+        ],
+        [
+          "Concat",
+          14
+        ],
+        [
+          "Squeeze",
+          12
+        ],
+        [
+          "Add",
+          10
+        ],
+        [
+          "Transpose",
+          10
+        ]
+      ]
+    },
+    "cuda": {
+      "device": "cuda",
+      "ok": true,
+      "n_nodes": 4,
+      "n_gridsample": 0,
+      "domains": [
+        "ai.onnx"
+      ],
+      "custom_nodes": [],
+      "graph_inputs": [
+        "query"
+      ],
+      "dropped_inputs": [
+        "value",
+        "reference_points"
+      ],
+      "top_ops": [
+        [
+          "Add",
+          2
+        ],
+        [
+          "Constant",
+          1
+        ],
+        [
+          "MatMul",
+          1
+        ]
+      ]
+    }
+  }
+}

@@ -1,0 +1,62 @@
+[
+  {
+    "path": "legacy",
+    "req_opset": 16,
+    "ok": false,
+    "err": "OnnxExporterError: Unsupported: ONNX export of operator GridSample with 5D volumetric input. Please feel free to request support or submit a pull request on PyTorch GitHub: https://github.com/pytorch/pytorch/issues",
+    "emit_opset": null,
+    "op_types": null,
+    "saved": null
+  },
+  {
+    "path": "legacy",
+    "req_opset": 17,
+    "ok": false,
+    "err": "OnnxExporterError: Unsupported: ONNX export of operator GridSample with 5D volumetric input. Please feel free to request support or submit a pull request on PyTorch GitHub: https://github.com/pytorch/pytorch/issues",
+    "emit_opset": null,
+    "op_types": null,
+    "saved": null
+  },
+  {
+    "path": "legacy",
+    "req_opset": 18,
+    "ok": false,
+    "err": "OnnxExporterError: Unsupported: ONNX export of operator GridSample with 5D volumetric input. Please feel free to request support or submit a pull request on PyTorch GitHub: https://github.com/pytorch/pytorch/issues",
+    "emit_opset": null,
+    "op_types": null,
+    "saved": null
+  },
+  {
+    "path": "legacy",
+    "req_opset": 20,
+    "ok": true,
+    "err": null,
+    "emit_opset": 20,
+    "op_types": [
+      "GridSample"
+    ],
+    "saved": "_gs5d_legacy_op20.onnx"
+  },
+  {
+    "path": "dynamo",
+    "req_opset": 17,
+    "ok": true,
+    "err": null,
+    "emit_opset": 17,
+    "op_types": [
+      "GridSample"
+    ],
+    "saved": null
+  },
+  {
+    "path": "dynamo",
+    "req_opset": 20,
+    "ok": true,
+    "err": null,
+    "emit_opset": 20,
+    "op_types": [
+      "GridSample"
+    ],
+    "saved": "_gs5d_dynamo_op20.onnx"
+  }
+]

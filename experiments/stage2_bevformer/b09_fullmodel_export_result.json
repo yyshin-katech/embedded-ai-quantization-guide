@@ -1,0 +1,8 @@
+{
+  "stage": "B3 fullmodel export",
+  "device": "cpu(forced)",
+  "outcome": "export_failed",
+  "detail": "RuntimeError: shape '[1, 6, 6, 1, 4, 4]' is invalid for input of size 96",
+  "graph_inputs": null,
+  "n_nodes": null
+}

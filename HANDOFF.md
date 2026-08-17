@@ -3,7 +3,7 @@
 이 문서 하나만 읽으면 다른 머신에서 작업을 이어받을 수 있게 쓴 것입니다. 가이드 본문의 학습
 내용이 아니라 **작업 상태**를 다룹니다. 학습을 시작하려는 것이면 [`study_guide/README.md`](study_guide/README.md)로 가세요.
 
-- 기준 커밋: `10461f2` (2026-08-16) · 마지막 갱신: 2026-08-16 (QAT 회복 실험 완주 반영)
+- 기준 커밋: `f7ca2a1` (2026-08-17) · 마지막 갱신: 2026-08-17 (2단계 DETR + BEVFormer §4.6 실측 완주)
 - 이전 작업 머신: `Ubuntu 22.04.5` / `RTX 3060 12GB` / 드라이버 `595.84` (Neousys Nuvo-6108GC) — GPU 고장(§6)
 - 현재 작업 머신: `Ubuntu 22.04` / `RTX 3080 10GB` / 드라이버 `595.84` — QAT 회복 실험을 여기서 완주(GPU 이상 없음)
 
@@ -11,8 +11,12 @@
 
 ## 1. 30초 요약
 
-문서는 **0·0.5·1단계까지 실제 머신에서 완주·검증하고 커밋 완료**입니다. 2단계(Transformer
-양자화)는 아직 손으로 실행해본 적이 없습니다.
+문서는 **0·0.5·1·2단계까지 실제 머신에서 완주·검증하고 커밋 완료**입니다. 2단계(Transformer
+양자화)는 DETR INT8로 완주했고(커밋 `41dc49e`), **§4.6 BEVFormer-tiny도 실측 완주**했습니다 —
+무컴파일 레거시 venv(torch 1.13+mmcv 1.7 프리빌트 휠)로 `fundamentalvision/BEVFormer`를 돌려
+FP32 nuScenes-mini **mAP 0.2647**(81샘플 스모크·문헌비교 불가), op 단정은 **반전 0건**(초안이
+맞음)·실전 함정 **2건**(mmcv 커스텀 op은 CPU에서만 유효 export·전체 export는 `point_sampling`에서
+사망)을 확인했습니다. 전체 INT8은 유효 export가 안 나와 **범위 밖**(포크 필요).
 
 1단계에서 파생된 **QAT 회복 2팔 실험**은 이제 **완주**했습니다(2026-08-15, RTX 3080, 커밋
 `10461f2`). 이전 머신 GPU 고장으로 막혀 있던 대조군을 정상 카드에서 돌렸고, 무손실급 W8A8
@@ -23,8 +27,7 @@
 **이 교착은 다른 PC(RTX 3080)로 옮겨 해소됐습니다.** 고장은 특정 카드/섀시 증상이었고(§6),
 3080은 QAT 워크로드를 300W·95%·70°C로 완주했습니다 — SW Power Cap 점등 없음.
 
-**남은 것:** ① QAT 정제본을 `03_quantization_theory.md` §2.5에 반영 ② **2단계(Transformer
-양자화)** 착수(아직 실측 미검증). → §7
+**남은 것:** ① §4.4 SmoothQuant(modelopt) 적용 ② BEVFormer 전체 INT8(포크 플러그인 재빌드 후) ③ 3~7단계·캡스톤. → §7
 
 ---
 
@@ -276,12 +279,11 @@ sudo nvidia-smi -pl 100            # 상한을 직접 내림 — 배치와 달�
 
 1. ~~**GPU 교착 해소**~~ ✅ — RTX 3080으로 옮겨 해소(§6). 새 PC에서도 GPU 작업 전 `nvidia-smi -L`만.
 2. ~~**QAT 2팔 재실행**~~ ✅ — W4A8로 완주(§5). 회복 97.1% · 대조군 격차 −1.50%p.
-3. **결과를 §2.5에 반영** — 보고서 §11엔 렌더 완료. 남은 건 `03_quantization_theory.md` §2.5
-   본문 정제 반영: "W8A8은 회복할 손실이 없고(정직), W4A8에선 QAT가 97.1% 회복하되 동일 학습
-   FP32보다 −1.50%p 뒤진다(공짜 아님)". 억지로 이득을 만들지 마세요.
-4. **2단계 착수** — [`04_transformer_quantization.md`](study_guide/04_transformer_quantization.md). 가이드 최난이도 단계(2~3주)이고, 아직 실측
-   검증을 한 번도 안 거친 첫 문서입니다. 0·0.5·1단계에서 문서의 단정이 실측과 어긋난 게
-   각각 12·1·22건이었으니, 여기서도 상당히 나올 것으로 보는 게 맞습니다.
+3. ~~**결과를 §2.5에 반영**~~ ✅ — `03_quantization_theory.md`에 §2.5.4(실모델 QAT 회복) 신설(커밋 `eb45b33`).
+4. ~~**2단계 DETR 착수**~~ ✅ — `04_transformer_quantization.md` §4.1~4.5를 `facebook/detr-resnet-50`으로 완주(커밋 `41dc49e`). COCO val 5,000장 mAP FP32 0.4207→INT8 0.2402, 초안 단정 3건 반전. 산출물 `experiments/stage2_detr/`·`logs/stage2_detr_quantization_report.html`.
+5. ~~**§4.6 BEVFormer-tiny 실기 검증**~~ ✅ — 2-tier로 완주. Tier A(정본 venv torch 2.11)에서 grid_sample/MSDeformAttn op 지뢰 5종 실증(`experiments/stage2_bevformer/` b01~b05), Tier B(무컴파일 레거시 venv torch 1.13+mmcv-full 1.7.0 프리빌트 휠+mmdet3d 1.0.0rc6)로 실 mmcv op(b06)+실모델 FP32 mAP(b08). **op 단정 반전 0**(초안 맞음)·함정 +2(mmcv op CPU-only 유효 export·전체 export는 `point_sampling` `lidar2img`에서 사망). FP32 nuScenes-mini mAP 0.2647(81샘플 스모크). 전체 INT8은 유효 export 없어 **범위 밖**. 산출물 `logs/stage2_bevformer_quantization_report.html`·`experiments/stage2_bevformer/onnx_export_failures.md`. 데이터는 `~/bevformer_work/`(git 밖, §2).
+6. **§4.4 SmoothQuant** — DETR·BEVFormer 공통으로 "진짜 레버"로 지목된 modelopt SmoothQuant(per-token activation) 적용(미착수). §4.4는 API 확인 필요 상태.
+7. **BEVFormer 전체 INT8 / 3~7단계·캡스톤** — 전자는 포크(`DerryHub/BEVFormer_tensorrt`) 커스텀 op 플러그인 정본 재빌드 후. 후자는 아직 웹 검증만.
 
 ---
 

@@ -31,5 +31,6 @@ metadata:
 독립 팬인 7/7 PASS(🔴 0).
 
 **캐비앗:** 절대 mAP는 CUDA EP·MinMax 기준이라 **상대 관계만 유효**.
-**다음 과제(미실행):** SmoothQuant(§4.4, nvidia-modelopt) → BEVFormer-tiny(§4.6, grid_sample/deformable).
-그 뒤 3단계(TensorRT)~7단계+캡스톤은 아직 웹 검증만 된 상태. 커밋 규약은 [[repo-is-public-scan-before-commit]].
+**다음 과제:** SmoothQuant(§4.4, nvidia-modelopt). BEVFormer-tiny(§4.6)는 **완료**([[stage2-bevformer-hands-on]]) —
+op 단정 반전 0·전체 INT8은 포크 필요로 범위 밖. 그 뒤 3단계(TensorRT)~7단계+캡스톤은 아직 웹 검증만 된 상태.
+커밋 규약은 [[repo-is-public-scan-before-commit]].

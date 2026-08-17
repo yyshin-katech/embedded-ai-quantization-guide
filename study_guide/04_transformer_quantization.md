@@ -582,6 +582,13 @@ quantize_static(
 
 DETR로 흐름을 익혔다면, BEV/Occupancy 실전 난이도를 맛본다. BEVFormer-tiny를 export하면 **DETR보다 훨씬 험한** 실패를 만난다.
 
+> ✅ **이 절은 실측 검증됨(2026-08-17, RTX 3080).** 아래 grid_sample/Deformable 단정은 **op 단위 최소 재현(Tier A)** +
+> **실 mmcv 모듈(Tier B)** + **BEVFormer-tiny 실모델(FP32 nuScenes-mini mAP + 전체 모델 export 벽)** 으로 확인했다.
+> **op 단정 반전은 0건**(초안이 맞았다) — 다만 실전 함정 2개(① mmcv 커스텀 op은 **CPU에서만** 유효 export, CUDA는 조용히 상수 baked
+> ② 전체 모델 export는 grid_sample이 아니라 **`point_sampling`의 lidar2img 사영**에서 먼저 죽음)를 추가하고 인용을 로그 원문으로 끌어올렸다.
+> 재현 로그: [`experiments/stage2_bevformer/onnx_export_failures.md`](../experiments/stage2_bevformer/onnx_export_failures.md) ·
+> 실측 리포트: [`logs/stage2_bevformer_quantization_report.html`](../logs/stage2_bevformer_quantization_report.html). **실모델 부분은 §4.6.4**.
+
 ```bash
 # BEVFormer는 mmdet3d/mmcv 계열 의존이 무겁다. 공식 repo 기준으로 환경을 맞춘다.
 # 참고 구현(플러그인 포함): https://github.com/DerryHub/BEVFormer_tensorrt
@@ -598,7 +605,7 @@ git clone https://github.com/DerryHub/BEVFormer_tensorrt
 |------|--------------|-------------------|------|
 | ONNX 표준 opset 16/17 | ✅ `GridSample` | ❌ | 최초 표준화(4D만). DETR/2D BEV엔 충분 |
 | ONNX 표준 opset 20 | ✅ | ✅(스펙에 5D 추가) | 표준상 지원. 런타임 지원은 별개 |
-| **onnxruntime 1.23.2** | ✅ CUDA EP에서 실행 | ⚠️ **CPU로 조용히 fallback** | **정본**. 2026-07-31 실측: 5D는 `CUDA kernel not found in registries for Op type: GridSample` 로그를 남기고 노드가 CPU에 배치된다(에러 없이 느려짐) |
+| **onnxruntime 1.23.2** | ✅ CUDA EP에서 실행 | ⚠️ **CPU로 조용히 fallback** | **정본**. 2026-08-17 실측(b03): 5D는 `CUDA kernel not found in registries for Op type: GridSample` 로그를 남기고 노드가 CPU에 배치된다(에러 없이 느려짐) |
 | onnxruntime 1.26 | ✅(CPU/CUDA/WebGPU) | ❌ | WebGPU GridSample 추가 |
 | onnxruntime 1.27 | ✅ | ✅(CUDA, 볼류메트릭 3D) | CUDA EP에 3D GridSample 추가 |
 | onnxruntime 1.28.0 | ✅ | ✅(1.27 계승) | 좌표 NaN/Inf/범위초과의 int64 cast **hardening** 추가. **단 CUDA 13 라인**이라 이 스터디 스택에선 안 씀 |
@@ -622,6 +629,8 @@ BEVFormer의 심장인 **Multi-Scale Deformable Attention(MSDeformAttn)** 은 �
 
 > ⚠️ 대가: 분해 버전은 레벨·포인트 루프가 펼쳐져 노드 수가 폭증하고 grid_sample이 여러 번 호출돼 **느리다**. 그리고 **여전히 grid_sample이 남으므로**, grid_sample을 못 받는 NPU에서는 이것마저 안 통한다(→ 그때는 (b)).
 
+> 🔴 실측 함정(2026-08-17, mmcv-full 1.7.0): 바닐라 mmcv의 `MultiScaleDeformableAttention` 모듈은 `symbolic`도 `is_in_onnx_export` 가드도 **없고**, forward가 `value.is_cuda`로 분기한다. 그래서 **어느 디바이스 텐서로 export하느냐가 그래프를 가른다** — **CPU 텐서로 export하면** 위 (a)의 표준 분해(244노드, `GridSample`×num_levels, 입력 `[query,value,reference_points]` 전부 생존)가 나오지만, **CUDA 텐서로 export하면** 트레이서가 커스텀 autograd.Function을 표현 못 해 **MSDeformAttn 출력 전체를 `Constant`로 baked**하고(노드 4개, `value`·`reference_points`가 그래프 입력에서 **사라짐**) `onnx.checker`는 PASS하며 exit 0로 **조용히 틀린 모델**을 뱉는다. → **mmcv 커스텀 op 모델은 반드시 CPU 텐서로 export**하고, export 직후 **그래프 입력 목록**에 `value`/`reference_points`가 살아있는지 확인하라(커스텀 op ONNX 노드 경로는 `DerryHub/BEVFormer_tensorrt` 포크가 *추가*하는 것이지 바닐라 mmcv엔 없다). 또 특정 opset이 필요하면 torch 2.11 기본 dynamo가 요청 opset을 조용히 상향(예: 11→18)하므로 **`dynamo=False`** 로, export 성공은 반드시 `onnx.checker`+실런타임 로드로 재확인한다.
+
 **(b) 커스텀 op/plugin으로 감싸기** — 성능·NPU 대응을 위해 MSDeformAttn 전체를 **하나의 커스텀 op**로 export하고, 런타임(TensorRT)에서 **C++/CUDA plugin**으로 실행한다. `DerryHub/BEVFormer_tensorrt`의 `MultiscaleDeformableAttnPlugin`이 대표 예이며, 이 plugin은 **불규칙 메모리 접근(grid sampling)을 커널 내부에서 한 번에** 처리해 (a)보다 훨씬 빠르다. **이 plugin을 직접 빌드·연결해본 경험 자체가 이력서의 차별점**이다. 자세한 plugin 등록·빌드는 [3단계 TensorRT](05_tensorrt.md)에서 다룬다.
 
 > 📚 왜 하드웨어가 이걸 싫어하나(배경): MSDeformAttn의 **random-access grid sampling**은 규칙적 conv/matmul과 달리 **메모리 접근이 불규칙**해 NPU/가속기의 PE 활용률을 떨어뜨린다. 이게 DEFA(arXiv:2403.10913)·"Towards Efficient MSDA on NPU"(arXiv:2505.14022) 같은 최신 연구의 출발점이다 — 이들은 sampling point pruning·연산 융합·multi-scale 병렬로 grid sampling 병목을 완화한다. "왜 deformable attention이 NPU에서 지뢰인가"의 근거로 인용할 수 있다.
@@ -634,6 +643,51 @@ BEVFormer의 심장인 **Multi-Scale Deformable Attention(MSDeformAttn)** 은 �
 > 🔴 함정: Deformable Attention을 "ONNX 표준 op로만" 내보내려 하면(위 (a)) 대개 **노드 폭증 + 여전한 grid_sample** 때문에 배포에서 다시 막힌다. 실전 결론: **GPU(TensorRT) 타깃이면 plugin (b)** 가 정답, **NPU 타깃이면** grid_sample 자체를 못 쓰는 경우가 많아 **모델 구조를 deformable-free로 바꾸거나 벤더 전용 op**로 가야 한다(→ [4단계](06_multi_soc.md)).
 
 > ⚠️ 확인 필요: `DerryHub/BEVFormer_tensorrt`의 README는 **TensorRT 8.5.x / CUDA 11.6 / PyTorch 1.12.1** 기준이다(구버전). 정본 스택(**TensorRT 10.16.x LTS · CUDA 12.8**)에서는 plugin을 **재빌드**해야 하며 plugin API(`IPluginV2` → `IPluginV3` 계열)가 바뀌었을 수 있다. plugin은 [3단계 TensorRT](05_tensorrt.md)의 커스텀 플러그인 절과 함께 다룬다.
+
+#### 4.6.4 실모델 검증 — BEVFormer-tiny를 진짜로 돌려보면 (nuScenes-mini, 실측)
+
+위 §4.6.1~3은 **op 단위**의 이야기다. 그럼 **전체 모델**을 실제로 돌리면 어떻게 되나? 정본 venv(torch 2.11)로는 mmdet3d/mmcv가 안 돌아, **레거시 venv**(python 3.10 · torch 1.13.1+cu117 · mmcv-full 1.7.0 · mmdet3d 1.0.0rc6)를 따로 만들어 `fundamentalvision/BEVFormer`의 `bevformer_tiny`(33.52M, checkpoint 643/643 로드)를 RTX 3080에서 완주했다.
+
+> 💡 무컴파일 팁(hard-won): "레거시 mmcv = 옛 CUDA 툴킷 재설치"라는 통념과 달리, **프리빌트 휠**(`download.openmmlab.com/mmcv/dist/cu117/torch1.13`)이 있어 **CUDA 소스 빌드를 전부 우회**한다. torch 1.13+cu117이 **드라이버 하위호환**으로 CUDA 12.8 머신에서 그대로 CUDA init된다(정본 툴킷은 12.8뿐, 11.7 없음). 실 mmcv `MultiScaleDeformableAttnFunction`(진짜 CUDA 커널)도 여기서 돌아 순수 PyTorch 분해와 `|Δ|max=1.4e-6` 일치.
+
+**(1) FP32 mAP — 실모델은 돈다.** `tools/create_data.py … --version v1.0-mini`로 temporal info pkl을 만들고(val=**81 keyframes / 2 scene**) 네이티브 평가:
+
+| 지표 | BEVFormer-tiny FP32 (nuScenes-mini val 81장) | 공개값(full val 6,019장) |
+|------|:---:|:---:|
+| **mAP** | **0.2647** | 0.252 |
+| **NDS** | **0.2667** | 0.354 |
+| per-class mAP | car 0.478 · bus 0.576 · pedestrian 0.446 · truck 0.389 · traffic_cone 0.354 · motorcycle 0.286 · bicycle 0.119 · **trailer/construction_vehicle/barrier 0.000** | — |
+
+> 🔴 캐비앗(반드시 병기): 이건 **81샘플·2 scene·3클래스 0.000의 고분산 스모크**지 벤치마크가 아니다. mAP 0.2647이 공개 full-val 0.252와 **가까운 건 우연**이고, NDS는 0.2667 vs 공개 **0.354**로 크게 벌어진다(mini엔 TP-의존 오차·속도추정이 빈약). **절대값은 문헌 비교 불가** — 같은 mini 슬라이스에서의 **상대 FP32↔INT8 델타**만 의미 있다(DETR의 CUDA-EP/MinMax 캐비앗과 동일 성격). 실행엔 3가지 함정이 있었다: `create_data.py`는 `PYTHONPATH=<repo>` 필수 · test.py는 non-dist 분기가 `assert False`라 **`torch.distributed.launch --launcher pytorch`** 필수 · dataloader는 `dict_keys` pickle 회피로 **`workers_per_gpu=0`**.
+
+**(2) 전체 모델 export는 grid_sample이 아니라 `point_sampling`에서 먼저 죽는다.** 바닐라 BEVFormer엔 **ONNX export 스크립트가 아예 없다**(`tools/`에 onnx/deploy/pth2onnx 전무 — export 경로는 포크가 *추가*하는 것). 그래서 "전체를 그냥 `torch.onnx.export`" 하면(§4.6.2 규칙대로 **CPU 텐서 강제**) 어디서 막히나 실측했다. **CPU forward는 성공**(`bev_embed (2500,1,256)` 산출 — 연산 자체는 돈다)하지만 export는 즉시:
+
+```text
+RuntimeError: shape '[1, 6, 6, 1, 4, 4]' is invalid for input of size 96
+  at projects/mmdet3d_plugin/bevformer/modules/encoder.py:119  (point_sampling)
+    lidar2img = lidar2img.view(1, B, num_cam, 1, 4, 4)
+```
+
+왜? `point_sampling`(BEV 격자를 6개 카메라 픽셀로 사영)이 forward **내부**에서 캘리브를 이렇게 재구성한다:
+
+```python
+for m in img_metas: lidar2img.append(m['lidar2img'])   # img_metas = 비텐서 dict
+lidar2img = np.asarray(lidar2img)                       # numpy 우회
+lidar2img = reference_points.new_tensor(lidar2img)      # (B, N, 4, 4)
+D, B, num_query = reference_points.size()[:3]           # 파이썬 int 차원
+lidar2img = lidar2img.view(1, B, num_cam, 1, 4, 4)...   # 하드코딩 reshape
+```
+
+즉 **`lidar2img`/`can_bus`는 메타데이터가 아니라 그래프의 기능적 입력**(사영 기하)인데, 이게 **비텐서 img_metas → numpy → new_tensor**로 들어온다. eager에선 `B=1`이 상수로 잡히지만, **ONNX 트레이서는 파이썬-int 차원(B)을 num_cam=6으로 잘못 바인딩** → `view(1,6,6,1,4,4)`(=3456) vs 실제 96(=6×4×4) 불일치. **eager 성공 ≠ export 성공**의 교과서 사례다.
+
+> 🔴 결론 — BEVFormer export가 "지옥"인 **진짜** 이유(3층):
+> 1. **img_metas가 forward 내부 기하의 입력**(lidar2img 사영·can_bus)이라 그래프에서 사라지면 안 되는데, 비텐서 dict → numpy로 들어와 트레이서와 충돌한다(위 실측).
+> 2. `forward_test`가 `self.prev_frame_info['prev_bev']`로 **시간축 재귀(stateful)** 한다 — 프레임 간 상태라 단일 그래프로 트레이스 불가.
+> 3. 그리고 그 **안쪽**에 §4.6.1~2의 grid_sample/MSDeformAttn 지뢰가 있다.
+>
+> `DerryHub/BEVFormer_tensorrt` 포크가 하는 일이 정확히 이 셋을 걷어내는 것이다 — **lidar2img·can_bus·prev_bev를 명시적 텐서 입력으로 승격**하고 `point_sampling`을 트레이서-안전하게 재작성하고 MSDeformAttn/grid_sample을 **플러그인**으로 감싼다. **바닐라를 그대로 내보내는 유효 경로는 없다.**
+
+**(3) 전체 모델 INT8 mAP은 이 실습 범위 밖(정직한 한계).** (2)로 유효한 전체 모델 ONNX가 안 나오므로 그 위의 INT8 PTQ→INT8 mAP는 **도달 불가**다. 전체 모델 INT8은 포크의 커스텀 op 플러그인 툴체인(위 §4.6.3 "확인 필요")이 전제다. 따라서 실모델 산출은 **FP32 mini mAP + export 벽의 실측 지점**까지이며, **op 단위 양자화/export 거동은 §4.6.1~2가 실 mmcv op로 이미 검증**했다. (전체 재현·per-class·SVG: [실측 리포트](../logs/stage2_bevformer_quantization_report.html), 스크립트·JSON: [`experiments/stage2_bevformer/`](../experiments/stage2_bevformer/).)
 
 ---
 

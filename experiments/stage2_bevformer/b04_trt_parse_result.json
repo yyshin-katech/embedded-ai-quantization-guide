@@ -1,0 +1,21 @@
+{
+  "4D (opset17)": {
+    "file": "_gs4d_op17.onnx",
+    "parse_ok": true,
+    "errors": []
+  },
+  "5D volumetric (legacy opset20)": {
+    "file": "_gs5d_legacy_op20.onnx",
+    "parse_ok": false,
+    "errors": [
+      "Invalid Node - /GridSample\nINetworkDefinition::addGridSample: Error Code 3: API Usage Error (Parameter check failed, condition: input.getDimensions().nbDims == 4.  In addGridSample at /_src/optimizer/api/network.cpp:1803)"
+    ]
+  },
+  "5D volumetric (dynamo opset20)": {
+    "file": "_gs5d_dynamo_op20.onnx",
+    "parse_ok": false,
+    "errors": [
+      "Invalid Node - node_GridSample_0\nINetworkDefinition::addGridSample: Error Code 3: API Usage Error (Parameter check failed, condition: input.getDimensions().nbDims == 4.  In addGridSample at /_src/optimizer/api/network.cpp:1803)"
+    ]
+  }
+}

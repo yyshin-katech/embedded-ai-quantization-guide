@@ -1,0 +1,91 @@
+{
+  "opset13": {
+    "req_opset": 13,
+    "ok": false,
+    "err": "UnsupportedOperatorError: Exporting the operator 'aten::grid_sampler' to ONNX opset version 13 is not supported. Support for this operator was added in version 16, try exporting with this version"
+  },
+  "opset16": {
+    "req_opset": 16,
+    "ok": true,
+    "err": null,
+    "n_nodes": 140,
+    "n_gridsample": 4,
+    "emit_opset": 16,
+    "top_ops": [
+      [
+        "Constant",
+        66
+      ],
+      [
+        "Reshape",
+        15
+      ],
+      [
+        "Slice",
+        13
+      ],
+      [
+        "Concat",
+        10
+      ],
+      [
+        "Transpose",
+        10
+      ],
+      [
+        "Shape",
+        9
+      ],
+      [
+        "Gather",
+        4
+      ],
+      [
+        "GridSample",
+        4
+      ]
+    ]
+  },
+  "opset17": {
+    "req_opset": 17,
+    "ok": true,
+    "err": null,
+    "n_nodes": 140,
+    "n_gridsample": 4,
+    "emit_opset": 17,
+    "top_ops": [
+      [
+        "Constant",
+        66
+      ],
+      [
+        "Reshape",
+        15
+      ],
+      [
+        "Slice",
+        13
+      ],
+      [
+        "Concat",
+        10
+      ],
+      [
+        "Transpose",
+        10
+      ],
+      [
+        "Shape",
+        9
+      ],
+      [
+        "Gather",
+        4
+      ],
+      [
+        "GridSample",
+        4
+      ]
+    ]
+  }
+}

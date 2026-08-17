@@ -1,0 +1,119 @@
+[
+  {
+    "path": "legacy",
+    "req_opset": 9,
+    "ok": false,
+    "err": "UnsupportedOperatorError: Exporting the operator 'aten::grid_sampler' to ONNX opset version 9 is not supported. Support for this operator was added in version 16, try exporting with this version",
+    "emit_opset": null,
+    "has_gridsample": null,
+    "n_nodes": null
+  },
+  {
+    "path": "legacy",
+    "req_opset": 11,
+    "ok": false,
+    "err": "UnsupportedOperatorError: Exporting the operator 'aten::grid_sampler' to ONNX opset version 11 is not supported. Support for this operator was added in version 16, try exporting with this version",
+    "emit_opset": null,
+    "has_gridsample": null,
+    "n_nodes": null
+  },
+  {
+    "path": "legacy",
+    "req_opset": 13,
+    "ok": false,
+    "err": "UnsupportedOperatorError: Exporting the operator 'aten::grid_sampler' to ONNX opset version 13 is not supported. Support for this operator was added in version 16, try exporting with this version",
+    "emit_opset": null,
+    "has_gridsample": null,
+    "n_nodes": null
+  },
+  {
+    "path": "legacy",
+    "req_opset": 14,
+    "ok": false,
+    "err": "UnsupportedOperatorError: Exporting the operator 'aten::grid_sampler' to ONNX opset version 14 is not supported. Support for this operator was added in version 16, try exporting with this version",
+    "emit_opset": null,
+    "has_gridsample": null,
+    "n_nodes": null
+  },
+  {
+    "path": "legacy",
+    "req_opset": 15,
+    "ok": false,
+    "err": "UnsupportedOperatorError: Exporting the operator 'aten::grid_sampler' to ONNX opset version 15 is not supported. Support for this operator was added in version 16, try exporting with this version",
+    "emit_opset": null,
+    "has_gridsample": null,
+    "n_nodes": null
+  },
+  {
+    "path": "legacy",
+    "req_opset": 16,
+    "ok": true,
+    "err": null,
+    "emit_opset": 16,
+    "has_gridsample": true,
+    "n_nodes": 1,
+    "op_types": [
+      "GridSample"
+    ]
+  },
+  {
+    "path": "legacy",
+    "req_opset": 17,
+    "ok": true,
+    "err": null,
+    "emit_opset": 17,
+    "has_gridsample": true,
+    "n_nodes": 1,
+    "op_types": [
+      "GridSample"
+    ]
+  },
+  {
+    "path": "legacy",
+    "req_opset": 18,
+    "ok": true,
+    "err": null,
+    "emit_opset": 18,
+    "has_gridsample": true,
+    "n_nodes": 1,
+    "op_types": [
+      "GridSample"
+    ]
+  },
+  {
+    "path": "legacy",
+    "req_opset": 20,
+    "ok": true,
+    "err": null,
+    "emit_opset": 20,
+    "has_gridsample": true,
+    "n_nodes": 1,
+    "op_types": [
+      "GridSample"
+    ]
+  },
+  {
+    "path": "dynamo",
+    "req_opset": 11,
+    "ok": true,
+    "err": null,
+    "emit_opset": 18,
+    "has_gridsample": true,
+    "n_nodes": 1,
+    "op_types": [
+      "GridSample"
+    ]
+  },
+  {
+    "path": "dynamo",
+    "req_opset": 17,
+    "ok": true,
+    "err": null,
+    "emit_opset": 17,
+    "has_gridsample": true,
+    "n_nodes": 1,
+    "op_types": [
+      "GridSample"
+    ]
+  }
+]

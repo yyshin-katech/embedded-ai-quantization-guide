@@ -1,0 +1,21 @@
+{
+  "experiment": "B3 — BEVFormer-tiny FP32 mAP on nuScenes v1.0-mini val",
+  "env": "legacy venv ~/bevf-legacy (py3.10, torch 1.13.1+cu117, mmcv-full 1.7.0, mmdet3d 1.0.0rc6)",
+  "machine": "AI-LAP / RTX 3080 10GB, driver 595, CUDA 12.8 (torch cu117 backward-compat)",
+  "model": "facebook/DerryHub-style vanilla fundamentalvision/BEVFormer, bevformer_tiny (33.52M params)",
+  "checkpoint": "bevformer_tiny_epoch_24.pth (643/643 params, 0 missing/unexpected)",
+  "eval_set": "v1.0-mini val split = 81 keyframes from 2 scenes (NOT the 6019-sample full val)",
+  "command": "python -m torch.distributed.launch --nproc_per_node=1 tools/test.py bevformer_tiny.py <ckpt> --launcher pytorch --eval bbox --cfg-options data.workers_per_gpu=0",
+  "results": {
+    "mAP": 0.2647,
+    "NDS": 0.2667,
+    "mATE": 0.8565, "mASE": 0.7685, "mAOE": 1.2584, "mAVE": 0.7330, "mAAE": 0.2986
+  },
+  "per_class_mAP": {
+    "car": 0.478, "truck": 0.389, "bus": 0.576, "pedestrian": 0.446,
+    "motorcycle": 0.286, "bicycle": 0.119, "traffic_cone": 0.354,
+    "trailer": 0.000, "construction_vehicle": 0.000, "barrier": 0.000
+  },
+  "official_reference_full_val": {"mAP": 0.252, "NDS": 0.354, "note": "6019 samples — NOT comparable"},
+  "caveat": "81-sample / 2-scene MINI SMOKE, high variance. mAP≈official is coincidental; NDS 0.267 vs official 0.354 and 3 classes at exactly 0.000 (absent/undetected in 2 mini scenes) prove this is a smoke test, not a benchmark. Only relative FP32↔INT8 deltas on the SAME mini slice would be meaningful."
+}
