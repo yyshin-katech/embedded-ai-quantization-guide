@@ -1,6 +1,6 @@
 ---
 name: stage8-capstone-hands-on
-description: "8단계 캡스톤 BEVDet 실측(2026-08-18, AI-LAP RTX 3080, 커밋 64e4c84 푸시완료): 커스텀 CUDA op bev_pool_v2를 sudo·Docker 없이 user-space cu117 툴체인(제3의 길)으로 컴파일→nuScenes-mini FP32 walking skeleton 관통. 정식 가중치 Baidu-locked→init 가중치라 mAP 0.0000(예상값), latency p50 34.06ms(공식 33.3ms 교차확증). INT8/TRT-plugin 범위 밖"
+description: "8단계 캡스톤 BEVDet 실측(2026-08-18, AI-LAP RTX 3080, 커밋 64e4c84 푸시완료): 커스텀 CUDA op bev_pool_v2를 sudo·Docker 없이 user-space cu117 툴체인(제3의 길)으로 컴파일→nuScenes-mini FP32 walking skeleton 관통. 정식 가중치 Baidu-locked→init 가중치라 mAP 0.0000(예상값), latency p50 34.06ms(공식 33.3ms 교차확증). 후속 세션서 INT8/TRT-plugin 6벽(W1~W6) 관통: 커스텀 TRTBEVPoolV2 플러그인 직접 빌드(58896B)+export shim(W5)+build_serialized_network(W6)로 FP32→FP16→INT8 엔진 사다리 실측(지연 14.68→4.91→2.63ms ×5.58·엔진 245/90/47MB), init 가중치라 지연·크기·출력편차만 유효(tech-reviewer 팬인 PASS)"
 metadata:
   node_type: memory
   type: project
@@ -46,16 +46,38 @@ backbone[ImageNet 실사전학습] + `init_weights()` head[랜덤])로 stock `to
   내 일치, peak 420.9 MiB, 44.25M params)가 공식 README **BEVDet-R50 total 33.3ms(RTX 3090)**와 근접 → 랜덤 head라도
   실연산량은 정식과 동일 교차확증. `bench_fp32_latency.py` 재실행으로 스크립트 충실성 확인.
 
-**INT8/TRT-plugin 범위 밖(정직한 폴백):** §4-4 3경로 모두 벽 — A1(`convert_bevdet_to_TRT.py --int8`)·B(DerryHub)는
-커스텀 TRT 플러그인 `TRTBEVPoolv2`를 TRT 8.5+CUDA 11.x로 빌드(정본은 TRT 10.16, §4.6 포크 플러그인 벽과 동일),
-A2(ModelOpt QDQ)는 `bev_pool_v2`가 표준 ONNX op 아니라 export 자체 §4-3 벽. 이 머신 INT8 축은 이미 3·5단계
-([[stage3-tensorrt-hands-on]]·[[stage5-infrastructure-hands-on]])·4단계([[stage4-qualcomm-aihub-hands-on]])서 완결 →
-BEVDet INT8은 TRT-8.5-plugin 툴체인 확보 시 다음 과제.
+**INT8/TRT-plugin 관통(후속 세션, 미커밋):** 1차가 "다음 과제"로 남긴 §4-4 **경로 A1**(`convert_bevdet_to_TRT.py
+--int8`, §4.6 [[stage2-bevformer-hands-on]] 포크 플러그인과 동일 벽)을 user-space에 TRT-8.5-plugin 툴체인을 실제
+조립해 관통. **격리 legacy env `~/bevf-legacy`:** TensorRT **8.5.3.1**·cuDNN 8.6·pycuda cu117(user-space). **진짜 벽은
+W3·W5, W6은 벽 아님:**
+- **W3(플러그인 직접 빌드):** 풀 mmdeploy CMake 트리 우회 — 필요한 op의 2개 TU(`trt_bev_pool_kernel.cu`+`trt_bev_pool.cpp`)가
+  self-contained라 cu117 nvcc(`-arch=sm_86 -std=c++14`)+g++(`-std=c++17`) 직접 컴파일·링크(`-lnvinfer -l:libcudart.so.11.0`)
+  → **`libmmdeploy_tensorrt_ops.so` 58,896 B**, `mmdeploy::TRTBEVPoolV2Creator`(bev_pool_v2 v1) 등록. → `build_trt_plugin.sh`
+- **W5(export 트레이서 사망=진짜 export 벽):** `torch.onnx.export` 추적 중 nested `QuickCumsumCuda`(symbolic 없는 CUDA
+  autograd.Function)에서 **`RuntimeError:_Map_base::at`+segfault** → `TRTBEVPoolv2.forward`를 **export 전용
+  `feat.new_zeros(depth.shape[0],out_h,out_w,feat.shape[-1])` shim**으로 monkeypatch. `symbolic`이 `mmdeploy::bev_pool_v2`
+  노드 emit·실연산은 추론 시 플러그인이 수행 → **엔진 정확도 무영향**(표준 mmdeploy custom-op export 기법). → `convert_bevdet_trt.py`
+- **W6(벽 아니라 API 문제):** convert `from_onnx`의 deprecated `builder.build_engine`가 TRT 8.5.3서 segfault → 모던
+  `builder.build_serialized_network`로 교체하니 플러그인 레이어 포함 완전 빌드. "플러그인 탓" 가설 먼저 배제하라는 설계규칙.
+- export: `trtbevdet.onnx` **176,901,052 B**(opset 11). INT8 캘리브 ENTROPY_CALIBRATION_2·mini 81장. 종료 시 pycuda+TRT
+  teardown 순서 segfault(무해, work 완료 후)→`os._exit(0)`로 청소.
+
+**실측(가중치-무관 유효 산출물, batch1 CUDA event-timed 15warm+60iter):**
+- 지연 p50 FP32 **14.680**→FP16 **4.905(×2.99)**→INT8 **2.630ms(×5.58**, FP16 대비 ×1.87); 엔진 **245.0/90.1/46.7MB**(×2.72/×5.24↓).
+- 출력편차 vs FP32(6 head): FP16 corr≥0.9994·rel_max≤0.010(무시)·INT8 corr **0.985~1.000**(height head output_1=0.98528
+  최저·dim head output_2 rel_max=0.21836 최대 — 양자화 오차 전파, 민감도 진입점).
+- 교차확증: TRT FP32 엔진 14.68ms가 1차 PyTorch eager **34.06ms**보다 **2.3× 빠름**(커널 퓨전·파이썬 오버헤드 제거).
+- 온디스크 5종(플러그인 58896·onnx 176901052·엔진 245037266/90060319/46734194) **바이트 단위 SSOT 일치**.
+- 산출물: `logs/stage8_capstone_int8_report.html`(신규 §1~7·SVG 2종)·구 FP32 리포트 5곳 포인터 정정·`08_capstone.md`
+  §4-3/§4-4/§9 🔬 콜아웃 3(승번 0)·`experiments/stage8_capstone/`(scripts +4·results +2 `int8_build.json`/`trt_ladder.json`·
+  `capstone_constraints.md` 벽5). 경로 A2(ModelOpt QDQ)·B(DerryHub)는 미시도 — 이번 관통은 경로 A1 한정.
 
 **캐비앗(불변):** ① 절대 mAP/NDS는 init 가중치+mini 81장 → 무의미(파이프라인 검증용, 문헌비교 불가). ② latency는
 event-timed·forward-only·batch1 → 다른 단계(TRT event-timed/하네스 wall-clock)와 1:1 비교 불가, 구조·상대만. ③
-`bev_pool_v2_ext.so` legacy env 전용(emb-ai 오염 0). ④ INT8/TRT-plugin 다음 과제.
+`bev_pool_v2_ext.so`(FP32 CUDA op)·`libmmdeploy_tensorrt_ops.so`(INT8 TRT 플러그인)·TRT 엔진·pycuda는 legacy env
+전용(emb-ai 오염 0). ④ INT8은 지연·크기·출력편차만 유효(절대 정확도는 Baidu 가중치 대기).
 
-**커밋 64e4c84 푸시완료** — 스캔 후 요청으로 수행([[repo-is-public-scan-before-commit]], 스크립트/문서 전건 시크릿 0건).
-tech-reviewer 팬인 PASS(🔴0·🟡1해소·🟢2) 후 통합 완료(README·study_guide/README·CLAUDE 변경이력·이 메모리). **남은 과제:** Baidu 가중치 확보 시 절대 mAP 재실행 · BEVDet
-INT8은 TRT 8.5+커스텀 플러그인 툴체인 대기 · TI TDA4VM·Renesas RZ/V2H 벤더 NPU는 보드 대기.
+**커밋 상태:** FP32 walking skeleton은 **커밋 64e4c84 푸시완료**(스캔 후 요청 수행, [[repo-is-public-scan-before-commit]],
+시크릿 0건). **INT8/TRT 관통분은 미커밋** — tech-reviewer 팬인 PASS(🔴0·🟡1[FP16 corr ≥0.9995→≥0.9994 통일]해소·🟢다수)
+후 통합 완료(README·study_guide/README·CLAUDE 변경이력·이 메모리), 커밋·푸시는 규약대로 요청 시만. **남은 과제:** Baidu
+가중치 확보 시 절대 mAP 재실행(동일 하네스로 INT8 정확도까지) · 경로 A2/B · TI TDA4VM·Renesas RZ/V2H 벤더 NPU는 보드 대기.

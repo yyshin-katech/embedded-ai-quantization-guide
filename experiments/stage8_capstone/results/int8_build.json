@@ -1,0 +1,86 @@
+{
+  "_comment": "8단계 캡스톤 BEVDet INT8/TRT 관통 SSOT — AI-LAP RTX 3080, 2026-08-18. 지연 원자료는 trt_ladder.json.",
+  "machine": "AI-LAP RTX 3080 (sm_86), Ubuntu 22.04",
+  "toolchain": {
+    "env": "~/bevf-legacy (격리 legacy venv)",
+    "tensorrt": "8.5.3.1",
+    "cudnn": "8.6 (libcudnn.so.8)",
+    "torch": "1.13.1+cu117",
+    "mmcv_full": "1.7.0",
+    "mmdet3d": "1.0.0rc4 (BEVDet dev3.0 bundled)",
+    "python": "3.10.12",
+    "pycuda": "cu117 (user-space 빌드, W4)",
+    "nvcc_for_plugin": "V11.7.99 (~/capstone-bev/cu117, W3)",
+    "trt_headers_libs": "~/capstone-bev/trt85"
+  },
+  "plugin": {
+    "so": "~/capstone-bev/mmdeploy-bevdet/build/lib/libmmdeploy_tensorrt_ops.so",
+    "bytes": 58896,
+    "registers": "mmdeploy::TRTBEVPoolV2Creator (bev_pool_v2, version 1)",
+    "translation_units": ["trt_bev_pool_kernel.cu", "trt_bev_pool.cpp"],
+    "build_method": "self-contained nvcc+g++ (풀 mmdeploy CMake 트리 우회)",
+    "recipe": "scripts/build_trt_plugin.sh"
+  },
+  "walls": {
+    "W1_trt85": "TensorRT 8.5.3.1 (pip 휠) — crossed",
+    "W2_cudnn86": "cuDNN 8.6 — crossed",
+    "W3_plugin_build": "mmdeploy fork bevpoolv2 플러그인 직접 컴파일 — crossed (build_trt_plugin.sh)",
+    "W4_pycuda": "pycuda cu117 user-space — crossed",
+    "W5_onnx_export": "torch 1.13 tracer가 nested QuickCumsumCuda(symbolic 없는 CUDA autograd.Function)에서 RuntimeError:_Map_base::at + segfault → TRTBEVPoolv2.forward를 export 전용 new_zeros shim으로 monkeypatch (symbolic이 mmdeploy::bev_pool_v2 노드 emit, 실연산은 추론 시 TRT 플러그인이 수행) — crossed",
+    "W6_engine_build": "convert의 deprecated builder.build_engine가 TRT 8.5.3에서 segfault → 모던 builder.build_serialized_network로 교체하니 플러그인 레이어 포함 완전 빌드. 진짜 벽 아니었음(API 문제) — crossed"
+  },
+  "export": {
+    "onnx": "trtbevdet.onnx",
+    "onnx_bytes": 176901052,
+    "opset": 11,
+    "plugin_node": "mmdeploy::bev_pool_v2",
+    "shim": "TRTBEVPoolv2.forward -> feat.new_zeros(depth.shape[0], out_height, out_width, feat.shape[-1]) (export 전용)"
+  },
+  "calibration": {
+    "algorithm": "ENTROPY_CALIBRATION_2",
+    "samples": 81,
+    "source": "nuScenes-mini val 전량 (create_calib_input_data가 img는 per-sample, ranks/metas는 sample-0 재사용)",
+    "per_batch_seconds_approx": 0.15,
+    "int32_index_tensors": "interval_starts/interval_lengths 등 INT32 인덱스 텐서는 'Missing scale and zero-point' 경고(=양자화 안 함, 정상)"
+  },
+  "engines": {
+    "FP32": {"file": "trtbevdet.engine", "bytes": 245037266},
+    "FP16": {"file": "trtbevdet_fp16.engine", "bytes": 90060319},
+    "INT8": {"file": "trtbevdet_int8.engine", "bytes": 46734194}
+  },
+  "latency_ladder_p50_ms": {
+    "FP32": 14.679728031158447,
+    "FP16": 4.905359983444214,
+    "INT8": 2.6298080682754517,
+    "note": "batch1, CUDA event-timed, 15 warmup + 60 iter, bench_trt_engines.py"
+  },
+  "speedup_vs_fp32": {
+    "FP16": 2.9926,
+    "INT8": 5.5820
+  },
+  "speedup_int8_vs_fp16": 1.8653,
+  "engine_shrink_vs_fp32": {
+    "FP16": 2.7208,
+    "INT8": 5.2432
+  },
+  "output_diff_vs_fp32": {
+    "_comment": "6개 head 출력. init 가중치라 절대값은 무의미하나, FP32 대비 corr/rel_max는 양자화 오차 전파의 가중치-무관 지표.",
+    "FP16_corr_range": [0.9994798158924203, 0.9999961211442886],
+    "FP16_rel_max_worst": 0.009911757707402094,
+    "INT8_corr_range": [0.9852841085504697, 0.9998585344175845],
+    "INT8_rel_max_worst": 0.218357314408739,
+    "INT8_lowest_corr_head": "output_1 (height, corr 0.98528)",
+    "INT8_highest_relmax_head": "output_2 (dim, rel_max 0.2184)"
+  },
+  "cross_check": {
+    "trt_fp32_engine_ms": 14.68,
+    "pytorch_eager_fp32_ms": 34.06,
+    "note": "동일 RTX 3080. TRT FP32 엔진이 PyTorch eager forward보다 2.3배 빠름(커널 퓨전·파이썬 오버헤드 제거) — fp32_latency.json 교차확증"
+  },
+  "caveats": [
+    "init 가중치(torchvision backbone + 랜덤 head) → 절대 mAP≈0, 절대 예측 무의미. 유효 산출물은 가중치-무관 latency 사다리·엔진 크기·FP32대비 출력편차뿐.",
+    "지연은 CUDA event-timed·forward-only(엔진 execute_v2)·batch1 → 3·5단계 ResNet50 사다리와 절대 1:1 비교 불가(모델·해상도 상이), 구조·상대만.",
+    "mini 81장 캘리브 → INT8 스케일은 소표본. Baidu 정식 가중치 확보 시 동일 하네스로 정확도까지 재실행 가능.",
+    "모든 빌드·추론은 legacy env 전용. 정본 emb-ai(torch 2.11+cu128) 오염 0."
+  ]
+}

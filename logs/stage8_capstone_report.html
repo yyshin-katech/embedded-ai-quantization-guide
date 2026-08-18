@@ -62,7 +62,7 @@ b.hl{color:var(--brt)}
 <div class="hero">
   <p class="kicker">8단계 · 캡스톤 · BEVDet end-to-end 실측 (walking skeleton)</p>
   <h1>BEVDet 캡스톤 — 커스텀 CUDA op을 sudo 없이 관통시키다</h1>
-  <p class="sub">794줄 초안(미검증)을 실제 AI-LAP RTX 3080에서 관통시켰다. 벽은 문서가 예고한 곳이 아니었다 — <b class="hl">BEVDet의 <code>bev_pool_v2</code> 커스텀 CUDA op은 torch≤1.13+CUDA≤11.7을 요구하는데 이 머신의 유일 toolkit은 CUDA 12.8</b>이라, 문서 §3이 준 2안(Docker cu116 / blackwell 패치)이 <b class="hl">둘 다 불가</b>했다. 이 보고서는 그 벽을 <b class="hl">user-space cu117 툴체인(제3의 길)</b>으로 넘어 nuScenes-mini에서 FP32 파이프라인을 <b class="hl">walking skeleton</b>(문서 §9 완주 기준)으로 관통시킨 기록이다. 절대 정확도와 TRT-plugin INT8은 <b class="hl">정직한 폴백</b>.</p>
+  <p class="sub">794줄 초안(미검증)을 실제 AI-LAP RTX 3080에서 관통시켰다. 벽은 문서가 예고한 곳이 아니었다 — <b class="hl">BEVDet의 <code>bev_pool_v2</code> 커스텀 CUDA op은 torch≤1.13+CUDA≤11.7을 요구하는데 이 머신의 유일 toolkit은 CUDA 12.8</b>이라, 문서 §3이 준 2안(Docker cu116 / blackwell 패치)이 <b class="hl">둘 다 불가</b>했다. 이 보고서는 그 벽을 <b class="hl">user-space cu117 툴체인(제3의 길)</b>으로 넘어 nuScenes-mini에서 FP32 파이프라인을 <b class="hl">walking skeleton</b>(문서 §9 완주 기준)으로 관통시킨 기록이다. 절대 정확도는 <b class="hl">정직한 폴백</b>(Baidu-locked). <b class="hl">TRT-plugin INT8은 후속 세션에서 관통</b> — 지연 사다리·엔진 크기·출력편차는 <a href="stage8_capstone_int8_report.html">INT8 관통 전용 보고서</a>.</p>
   <div class="chips">
     <span class="chip done">FP32 walking skeleton <b>관통</b></span>
     <span class="chip done">커스텀 CUDA op <b>빌드 성공</b></span>
@@ -70,7 +70,7 @@ b.hl{color:var(--brt)}
     <span class="chip">데이터 <b>nuScenes-mini 81val</b></span>
     <span class="chip">스택 <b>torch 1.13.1+cu117</b></span>
     <span class="chip partial">정식 가중치 <b>Baidu-locked</b></span>
-    <span class="chip partial">INT8·TRT-plugin <b>범위 밖</b></span>
+    <span class="chip done">INT8·TRT-plugin <b>후속 관통 →</b></span>
   </div>
 </div>
 
@@ -95,7 +95,7 @@ b.hl{color:var(--brt)}
   <li><b class="hl">헤드라인 (제3의 길, §3):</b> 문서 §3의 Docker cu116·blackwell 패치가 둘 다 막힌 머신에서, micromamba <code>cuda-nvcc=11.7</code>(V11.7.99) + pip <code>nvidia-cuda-runtime-cu11</code>(실제 <code>libcudart.so.11.0</code>) + micromamba python 헤더로 <code>CUDA_HOME</code>을 조립 → <code>torch._check_cuda_version</code>의 MAJOR 불일치 hard-error를 우회하고 커스텀 CUDA op 빌드. <b class="hl">정본 emb-ai venv 오염 0</b>(격리 legacy env).</li>
   <li><b class="hl">두 번째 벽 (spconv):</b> 카메라 전용 BEVDet인데 bundled mmdet3d <code>detectors/__init__.py</code>가 LiDAR-fusion 검출기(DAL)를 <b class="hl">eager import</b> → spconv 필요. 6개 <code>__init__</code> 다중패치보다 <code>spconv-cu117</code> 설치가 깨끗.</li>
   <li><b class="hl">walking skeleton 완주 (§4):</b> mini info pkl 생성(323 train/81 val, 태그 <code>bevdetv3</code>—초안 v2 아님)→FP32 eval 하네스가 exit 0으로 관통. <code>bev_pool_v2</code> CUDA op이 GPU에서 실제 실행(<code>view_transformer.py</code>의 LSS 경로 확인).</li>
-  <li><b class="r">정직한 폴백 (§4·§6):</b> BEVDet-R50 정식 가중치는 <b class="hl">Baidu Pan 전용</b>(헤드리스 접근 불가). init 가중치(torchvision backbone + 랜덤 head)라 <b class="hl">mAP 0.0000은 예상값</b>(버그 아님) — 파이프라인은 완결, 절대 정확도만 가중치 대기. TRT-8.5-plugin INT8도 범위 밖(사용자 사전합의).</li>
+  <li><b class="r">정직한 폴백 (§4·§6):</b> BEVDet-R50 정식 가중치는 <b class="hl">Baidu Pan 전용</b>(헤드리스 접근 불가). init 가중치(torchvision backbone + 랜덤 head)라 <b class="hl">mAP 0.0000은 예상값</b>(버그 아님) — 파이프라인은 완결, 절대 정확도만 가중치 대기. TRT-8.5-plugin INT8은 <b class="hl">후속 세션에서 관통</b>(<a href="stage8_capstone_int8_report.html">INT8 보고서</a>) — 단 지연·크기·출력편차만 유효(절대 정확도는 여전히 가중치 대기).</li>
 </ul>
 
 <!-- ══════════════ §2 ══════════════ -->
@@ -283,9 +283,9 @@ python setup.py build_ext --inplace
   <p>문서 §3은 Docker cu116·blackwell 패치 2안만 준다. <b class="hl">Docker 없고 sudo 없는 머신</b>에서도 user-space cu117 툴체인 조립으로 레거시 커스텀 CUDA op을 빌드할 수 있음을 실증 — 이 경로가 §3의 제3의 선택지로 문서에 삽입됐다.</p>
 </div>
 
-<div class="card red">
-  <h4>판정 3 — 절대 정확도·INT8은 정직한 폴백 (범위 밖)</h4>
-  <p><b>절대 mAP/NDS:</b> BEVDet-R50 정식 가중치 Baidu-locked → 파이프라인은 완결이나 절대 정확도는 가중치 대기. <b>INT8/TRT-plugin:</b> §4-4의 3경로(BEVDet <code>--int8</code> TRT8.x / ModelOpt QDQ / DerryHub) 모두 <b class="hl">TRT 8.5 + 커스텀 <code>TRTBEVPoolv2</code> 플러그인</b> 툴체인 필요 → §4.6 BEVFormer와 동일 벽. 사용자 사전합의(중간 스코프=FP32까지)대로 <b class="hl">다음 과제</b>로 폴백. 이 머신의 INT8 축은 이미 3·5단계(ResNet50)·4단계(HTP)에서 완결.</p>
+<div class="card amber">
+  <h4>판정 3 — 절대 정확도는 폴백, INT8/TRT-plugin은 후속 세션 관통</h4>
+  <p><b>절대 mAP/NDS:</b> BEVDet-R50 정식 가중치 Baidu-locked → 파이프라인은 완결이나 절대 정확도는 여전히 가중치 대기. <b>INT8/TRT-plugin:</b> §4-4 경로 A1(BEVDet <code>--int8</code> TRT8.x)이 요구하던 <b class="hl">TRT 8.5 + 커스텀 <code>TRTBEVPoolv2</code> 플러그인</b> 툴체인을 <b class="hl">후속 세션에서 user-space에 실제 조립해 관통</b>(W1~W6) → FP32→FP16→INT8 지연 사다리(14.68→4.91→2.63ms)·엔진 크기·출력편차 실측. 전체 서술은 <a href="stage8_capstone_int8_report.html">INT8 관통 전용 보고서</a>. 단 init 가중치라 <b class="hl">지연·크기·오차전파만 유효</b>(절대 정확도 아님). 이 머신의 INT8 축은 3·5단계(ResNet50)·4단계(HTP)에 이어 여기서도 완결.</p>
 </div>
 
 <h3 style="font-size:15px;color:var(--brt);margin:22px 0 6px">산출물</h3>
@@ -303,7 +303,7 @@ python setup.py build_ext --inplace
     <li>절대 mAP/NDS는 init 가중치 + mini 81장 → <b class="hl">무의미</b>(파이프라인 검증용). 문헌 대조 불가.</li>
     <li>latency는 CUDA event-timed·forward-only·batch1 → 다른 단계(TRT event-timed / 하네스 wall-clock)와 <b class="hl">1:1 비교 불가</b>, 구조·상대만.</li>
     <li><code>bev_pool_v2_ext.so</code>는 legacy env 전용 아티팩트 — 정본 emb-ai venv <b class="hl">오염 0</b>.</li>
-    <li>INT8/TRT-plugin은 범위 밖(다음 과제). Baidu 가중치 확보 시 절대 정확도 재실행 가능.</li>
+    <li>INT8/TRT-plugin은 <b class="hl">후속 세션에서 관통</b>(<a href="stage8_capstone_int8_report.html">INT8 보고서</a>) — 지연·크기·출력편차만 유효. Baidu 가중치 확보 시 절대 정확도까지 재실행 가능.</li>
   </ul>
 </div>
 

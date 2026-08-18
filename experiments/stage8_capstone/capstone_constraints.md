@@ -3,7 +3,8 @@
 794줄 초안(미검증)을 실제로 관통시키며 부딪힌 벽·해법·설계규칙. SSOT = `results/*.json`.
 헤드라인: **문서 §3이 제시한 2안(Docker cu116 / blackwell 패치)이 이 머신엔 둘 다 불가 → user-space cu117
 툴체인(제3의 길)으로 커스텀 CUDA op을 sudo·Docker 없이 컴파일하고 FP32 파이프라인을 walking skeleton으로
-관통**. 절대 정확도는 Baidu-locked 가중치 벽에서 정직하게 폴백.
+관통**. 절대 정확도는 Baidu-locked 가중치 벽에서 정직하게 폴백. **후속 세션**에서 벽 5(INT8/TRT plugin)까지
+관통 — 커스텀 플러그인 툴체인을 조립해 FP32→FP16→INT8 TRT 엔진 사다리를 실측(아래 벽 5).
 
 ---
 
@@ -87,16 +88,44 @@ BEVDet 공식 README의 **BEVDet-R50 total 33.3ms(RTX 3090)**와 근접 → 랜�
 
 ---
 
-## 벽 5 — INT8/TRT plugin (범위 밖, 정직한 폴백)
+## 벽 5 — INT8/TRT plugin (후속 세션 관통 ✅)
 
-문서 §4-4의 INT8 3경로 모두 이 머신에선 벽:
-- **A1 (`tools/convert_bevdet_to_TRT.py --int8`)**: `TRTBEVPoolv2` 커스텀 **TRT 플러그인**을 TensorRT 8.5 +
-  CUDA 11.x 툴체인으로 빌드해야 함(정본은 TRT 10.16). §4.6 BEVFormer의 "포크 커스텀 op 플러그인 툴체인"과 동일 벽.
-- **A2 (ModelOpt QDQ)**: bev_pool_v2가 표준 ONNX op가 아니라 export 자체가 §4-3 벽(커스텀 심볼릭 필요).
-- **B (DerryHub plugins)**: 별도 플러그인 레포 + TRT 8.x.
+문서 §4-4의 INT8 경로 **A1**(`tools/convert_bevdet_to_TRT.py --int8`)은 `TRTBEVPoolv2` 커스텀 **TRT 플러그인**을
+TensorRT 8.5 + CUDA 11.x 툴체인으로 빌드해야 하는 벽이었다(정본은 TRT 10.16). 최초 세션엔 "다음 과제"로 폴백했으나,
+**후속 세션에서 이 플러그인 툴체인을 user-space에 실제로 조립해 경로 A1을 끝까지 관통**시켰다 —
+FP32→FP16→**INT8** TRT 엔진 3종을 빌드하고 지연 사다리를 측정. (경로 A2 ModelOpt QDQ·B DerryHub는 미시도.)
 
-→ **사용자 사전합의대로 범위 밖**(중간 스코프 = 실제 FP32 baseline까지). "TRT-8.5-plugin INT8은 다음 과제"로
-정직하게 폴백. 이 머신에서 실측 가능한 INT8 축은 이미 3·5단계(ResNet50 polygraphy)·4단계(HTP)에서 완결.
+관통은 **6개 벽(W1~W6) 순차 통과**로 구성됐다:
+
+| 벽 | 내용 | 해법 |
+|----|------|------|
+| **W1** | TensorRT 8.5.3.1 | pip 휠(tensorrt 8.5.3.1)로 legacy env에 설치 |
+| **W2** | cuDNN 8.6 | 런타임 `libcudnn.so.8` |
+| **W3** | mmdeploy fork bevpoolv2 플러그인 빌드 | 풀 mmdeploy CMake 트리 **우회** — 2개 TU(`trt_bev_pool_kernel.cu`+`trt_bev_pool.cpp`)가 self-contained → user-space cu117 nvcc(`-arch=sm_86 -std=c++14`) + g++(`-std=c++17`) 직접 컴파일·링크(`-lnvinfer`, `-l:libcudart.so.11.0`) → **`libmmdeploy_tensorrt_ops.so` 58,896 B**, `mmdeploy::TRTBEVPoolV2Creator`(bev_pool_v2 v1) 등록. → `scripts/build_trt_plugin.sh` |
+| **W4** | pycuda | user-space cu117로 빌드(convert/bench가 요구) |
+| **W5** | ONNX export 트레이서 사망 | `torch.onnx.export` 추적 중 nested `QuickCumsumCuda`(symbolic 없는 CUDA autograd.Function)에서 **`RuntimeError: _Map_base::at` + segfault**. → `TRTBEVPoolv2.forward`를 **export 전용 shim**(`feat.new_zeros(depth.shape[0], out_h, out_w, feat.shape[-1])`)으로 monkeypatch. `symbolic`이 `mmdeploy::bev_pool_v2` 노드를 emit하고 **실연산은 추론 시 TRT 플러그인**이 수행하므로 엔진 정확도는 무영향(표준 mmdeploy custom-op export 기법). → `scripts/convert_bevdet_trt.py` |
+| **W6** | 엔진 빌드 segfault | convert의 `from_onnx`가 deprecated `builder.build_engine(network, config)` 사용 → TRT 8.5.3에서 이 네트워크에 대해 segfault. **진짜 벽이 아니라 API 문제**였다 — 모던 `builder.build_serialized_network(network, config)`로 교체하니 플러그인 레이어 포함 **완전 빌드**. |
+
+**INT8 캘리브레이션.** ENTROPY_CALIBRATION_2, nuScenes-**mini val 81장**. `create_calib_input_data`가 img는
+per-sample, ranks/metas(인덱스)는 sample-0을 재사용 → 플러그인 enqueue 중 OOB 없음. INT32 인덱스 텐서
+(interval_starts/lengths 등)는 `Missing scale and zero-point` 경고 = **양자화 안 함(정상)**.
+
+**결과 (지연 사다리, batch1, CUDA event-timed, N=60; SSOT `results/trt_ladder.json`·`results/int8_build.json`):**
+
+| 정밀도 | 지연 p50 | vs FP32 | 엔진 크기 | FP32 대비 출력 corr |
+|--------|---------|---------|-----------|---------------------|
+| FP32 | 14.680 ms | — | 245.0 MB | — |
+| FP16 | 4.905 ms | **×2.99** | 90.1 MB (×2.72↓) | ≥0.9994 (거의 동일) |
+| INT8 | 2.630 ms | **×5.58** (FP16 대비 ×1.87) | 46.7 MB (×5.24↓) | 0.985~1.000 (rel_max≤0.22, height head 최저 0.985) |
+
+**교차확증.** TRT FP32 엔진 14.68 ms는 PyTorch eager forward **34.06 ms**(벽 4)보다 2.3× 빠름 — 커널 퓨전·파이썬
+오버헤드 제거. 랜덤 head라도 실연산 그래프가 동일하므로 사다리는 **가중치와 무관하게 유효**.
+
+**설계규칙.** ① 레거시 mmdeploy 커스텀 op은 풀 CMake 트리 없이 **해당 op의 TU만 직접 컴파일**하는 게 빠르다
+(bevpoolv2는 2 TU self-contained). ② symbolic 있는 custom autograd.Function이라도 **forward가 nested no-symbolic
+CUDA op을 호출하면 트레이서가 죽는다** → forward를 shape-only shim으로 갈아끼우면 symbolic만 emit되고 실연산은
+런타임 플러그인이 맡는다(export/inference 분리). ③ TRT 8.5의 `build_engine` segfault는 **플러그인 탓이 아닐 수
+있다** — deprecated API를 `build_serialized_network`로 바꿔 먼저 배제하라.
 
 ---
 
@@ -111,6 +140,21 @@ cd ~/capstone-bev/BEVDet && export PYTHONPATH=$PWD
 PY=~/bevf-legacy/bin/python   # torch 1.13.1+cu117, mmdet3d 1.0.0rc4, spconv-cu117 2.3.6
 ```
 
+**INT8/TRT 사다리 재현(벽 5):** 플러그인 .so + TRT/cudnn 런타임을 `LD_LIBRARY_PATH`에 얹는다.
+
+```bash
+SP=~/bevf-legacy/lib/python3.10/site-packages
+export CUDA_HOME=~/capstone-bev/cuda-home; export PATH=$CUDA_HOME/bin:$PATH
+export LD_LIBRARY_PATH=$CUDA_HOME/lib64:$SP/tensorrt:$SP/nvidia/cudnn/lib:$SP/nvidia/cublas/lib:$SP/nvidia/cuda_runtime/lib:$SP/nvidia/cuda_nvrtc/lib:$SP/nvidia/curand/lib
+export PYTHONPATH=~/capstone-bev/mmdeploy-bevdet:~/capstone-bev/BEVDet
+cd ~/capstone-bev/BEVDet
+bash scripts/build_trt_plugin.sh                                  # W3: 플러그인 .so
+for M in fp32 fp16 int8; do BEVDET_MODE=$M $PY scripts/convert_bevdet_trt.py; done  # W5+W6: 엔진 3종
+$PY scripts/dump_bench_sample.py                                  # 벤치 입력 샘플
+$PY scripts/bench_trt_engines.py                                  # 지연 사다리 → results/trt_ladder.json
+```
+
 **캐비앗(불변):** ① 절대 mAP/NDS는 init 가중치 + mini 81장 → 무의미(파이프라인 검증용). ② latency는 CUDA
 event-timed·forward-only·batch1 → 다른 단계와 1:1 비교 불가, 구조·상대만. ③ bev_pool_v2_ext.so는 legacy env
-전용 아티팩트(정본 emb-ai 오염 0). ④ INT8/TRT-plugin은 범위 밖(다음 과제).
+전용 아티팩트(정본 emb-ai 오염 0). ④ INT8/TRT-plugin은 **후속 세션에서 관통**(벽 5) — 단 init 가중치·mini
+81장 캘리브라 지연 사다리·엔진 크기·FP32대비 출력편차만 유효(절대 정확도 아님).

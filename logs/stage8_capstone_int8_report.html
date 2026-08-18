@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>8단계 캡스톤 INT8 — BEVDet 커스텀 TRT 플러그인 6벽 관통 + 지연 사다리 (FP32→FP16→INT8)</title>
+<style>
+:root{--bg:#0b0e14;--panel:#131720;--panel2:#0f131b;--bd:#242b38;--tx:#c9d1d9;--dim:#8b949e;--brt:#e6edf3;--accent:#58a6ff;--green:#3fb950;--amber:#d29922;--red:#ff7b72;--purple:#bc8cff;--mono:'JetBrains Mono','SF Mono',ui-monospace,'Cascadia Code',Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans KR','Malgun Gothic',sans-serif}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:var(--sans);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:980px;margin:0 auto;padding:0 20px 120px}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+.hero{padding:48px 0 26px;border-bottom:1px solid var(--bd);margin-bottom:8px}
+.kicker{font-family:var(--mono);font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+.hero h1{margin:0 0 10px;font-size:30px;line-height:1.25;color:var(--brt);letter-spacing:-.01em}
+.hero p.sub{margin:0 0 20px;color:var(--dim);font-size:15px;max-width:80ch}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font-family:var(--mono);font-size:12px;padding:5px 10px;border:1px solid var(--bd);border-radius:999px;background:var(--panel);color:var(--tx)}
+.chip b{color:var(--brt);font-weight:600}
+.chip.done{border-color:rgba(63,185,80,.5);background:rgba(63,185,80,.12);color:#7ee787}
+.chip.blocked{border-color:rgba(255,123,114,.5);background:rgba(255,123,114,.12);color:#ff9d96}
+.chip.partial{border-color:rgba(210,153,34,.5);background:rgba(210,153,34,.12);color:#e3b341}
+nav.toc{display:flex;flex-wrap:wrap;gap:8px;margin:26px 0 6px}
+nav.toc a{font-family:var(--mono);font-size:12.5px;padding:6px 11px;border:1px solid var(--bd);border-radius:8px;background:var(--panel);color:var(--tx)}
+nav.toc a:hover{border-color:var(--accent);color:var(--brt);text-decoration:none}
+h2.sec{font-size:13px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin:40px 0 12px;font-weight:600;border-top:1px solid var(--bd);padding-top:26px}
+table.dt{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.3px;border:1px solid var(--bd);border-radius:10px;overflow:hidden;font-family:var(--mono)}
+table.dt th,table.dt td{padding:8px 12px;text-align:right;border-bottom:1px solid var(--bd)}
+table.dt th{background:var(--panel);color:var(--dim);font-weight:600;font-size:12px;letter-spacing:.04em}
+table.dt th:first-child,table.dt td:first-child{text-align:left;color:var(--brt)}
+table.dt tr:last-child td{border-bottom:none}
+table.dt tr.hi td{background:rgba(63,185,80,.08)}
+table.dt tr.lo td{background:rgba(255,123,114,.08)}
+table.dt tr.grey td{background:rgba(139,148,158,.08);color:var(--dim)}
+table.dt tr.base td{background:rgba(88,166,255,.07)}
+.g{color:var(--green)}.r{color:var(--red)}.a{color:var(--amber)}.p{color:var(--purple)}.d{color:var(--dim)}
+.card{background:var(--panel);border:1px solid var(--bd);border-radius:12px;padding:18px 20px;margin:16px 0}
+.card.accent{border-left:3px solid var(--accent)}
+.card.green{border-left:3px solid var(--green)}
+.card.red{border-left:3px solid var(--red)}
+.card.amber{border-left:3px solid var(--amber)}
+.card h4{margin:0 0 8px;color:var(--brt);font-size:15px}
+.card p{margin:6px 0}
+pre{background:var(--panel2);border:1px solid var(--bd);border-radius:10px;padding:14px 16px;overflow-x:auto;font-family:var(--mono);font-size:12.6px;line-height:1.5;color:var(--tx);margin:12px 0}
+pre .c{color:var(--dim)}pre .k{color:var(--purple)}pre .s{color:#a5d6ff}pre .e{color:var(--red)}pre .o{color:var(--green)}
+code{font-family:var(--mono);font-size:.92em;background:var(--panel2);border:1px solid var(--bd);border-radius:5px;padding:1px 5px;color:var(--brt)}
+ul{margin:8px 0;padding-left:22px}li{margin:5px 0}
+.small{font-size:12.8px;color:var(--dim)}
+.svgwrap{background:var(--panel2);border:1px solid var(--bd);border-radius:10px;padding:16px;margin:14px 0;overflow-x:auto}
+.foot{margin-top:56px;padding-top:22px;border-top:1px solid var(--bd);color:var(--dim);font-size:12.6px}
+.tag{font-family:var(--mono);font-size:11px;padding:2px 7px;border-radius:5px;border:1px solid var(--bd);background:var(--panel);color:var(--dim)}
+b.hl{color:var(--brt)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="hero">
+  <p class="kicker">8단계 · 캡스톤 · BEVDet INT8/TRT 관통 (후속 세션)</p>
+  <h1>BEVDet INT8 — 커스텀 TRT 플러그인 6벽을 넘어 실 엔진 사다리로</h1>
+  <p class="sub">FP32 walking skeleton(<a href="stage8_capstone_report.html">1차 보고서</a>)이 "다음 과제"로 남긴 <b class="hl">INT8/TRT-plugin</b>을 후속 세션에서 관통시켰다. 문서 §4-4 경로 A1(<code>convert_bevdet_to_TRT.py --int8</code>)은 <code>bev_pool_v2</code> 커스텀 <b class="hl">TensorRT 8.5 플러그인</b>을 직접 빌드해야 하는 벽 — 이를 <b class="hl">6개 벽(W1~W6)</b>을 차례로 넘어 통과하고, <b class="hl">FP32→FP16→INT8 TRT 엔진 3종</b>을 빌드해 지연 사다리·엔진 크기·FP32 대비 출력편차를 실측했다. init 가중치라 절대 정확도는 여전히 폴백 — 유효 산출물은 <b class="hl">가중치와 무관한</b> 지연·크기·오차전파.</p>
+  <div class="chips">
+    <span class="chip done">INT8/TRT-plugin <b>관통</b></span>
+    <span class="chip done">TRT 엔진 <b>FP32·FP16·INT8</b></span>
+    <span class="chip">INT8 <b>×5.58 vs FP32</b></span>
+    <span class="chip">플러그인 <b>직접 빌드(W3)</b></span>
+    <span class="chip">export <b>shim(W5)</b></span>
+    <span class="chip">TensorRT <b>8.5.3.1</b></span>
+    <span class="chip partial">절대 정확도 <b>Baidu-locked(폴백 유지)</b></span>
+  </div>
+</div>
+
+<nav class="toc">
+  <a href="#s1">§1 실행요약</a>
+  <a href="#s2">§2 6벽 사다리 (W1~W6)</a>
+  <a href="#s3">§3 export shim (W5)</a>
+  <a href="#s4">§4 build API + 캘리브 (W6)</a>
+  <a href="#s5">§5 지연 사다리</a>
+  <a href="#s6">§6 출력편차 (오차전파)</a>
+  <a href="#s7">§7 판정·산출물</a>
+</nav>
+
+<!-- ══════════════ §1 ══════════════ -->
+<h2 class="sec" id="s1">§1 — 실행 요약</h2>
+
+<div class="card accent">
+  <h4>한 줄 요약</h4>
+  <p>BEVDet INT8의 벽은 <b class="hl">양자화 알고리즘이 아니라 "커스텀 op을 TensorRT 8.5 플러그인으로 빌드·export·엔진화하는 툴체인"</b>이었다. 풀 mmdeploy CMake 없이 bevpoolv2 2개 TU만 직접 컴파일(<b class="hl">W3</b>), torch 1.13 트레이서가 죽는 지점을 export 전용 shim으로 우회(<b class="hl">W5</b>), deprecated <code>build_engine</code> segfault를 <code>build_serialized_network</code>로 교체(<b class="hl">W6</b>) → FP32/FP16/<b class="hl">INT8</b> 엔진 3종 빌드. INT8은 FP32 대비 <b class="hl">지연 ×5.58 / 엔진 ×5.24 축소</b>, FP32 대비 출력 corr 0.985~1.000.</p>
+</div>
+
+<ul>
+  <li><b class="hl">6벽 관통 (§2):</b> W1 TRT 8.5.3.1 · W2 cuDNN 8.6 · W3 플러그인 직접 빌드(<code>libmmdeploy_tensorrt_ops.so</code> 58,896 B, <code>TRTBEVPoolV2Creator</code> 등록) · W4 pycuda cu117 · W5 export shim · W6 build API. 각 벽의 증상·해법은 <code>capstone_constraints.md</code> 벽 5.</li>
+  <li><b class="hl">W5 = 진짜 export 벽 (§3):</b> <code>torch.onnx.export</code> 추적 중 nested <code>QuickCumsumCuda</code>(symbolic 없는 CUDA autograd.Function)에서 <code>RuntimeError: _Map_base::at</code> + segfault. <code>TRTBEVPoolv2.forward</code>를 shape-only <code>new_zeros</code> shim으로 갈아끼우면 <b class="hl">symbolic만 <code>mmdeploy::bev_pool_v2</code> 노드를 emit</b>하고 실연산은 추론 시 플러그인이 수행 → 엔진 정확도 무영향(표준 mmdeploy 기법).</li>
+  <li><b class="hl">W6 = 벽이 아니었다 (§4):</b> convert의 <code>from_onnx</code>가 쓰는 deprecated <code>builder.build_engine</code>가 TRT 8.5.3에서 segfault. 플러그인 탓이 아니라 <b class="hl">API 탓</b> — <code>build_serialized_network</code>로 바꾸니 플러그인 레이어 포함 완전 빌드. INT8 캘리브는 ENTROPY_2·mini 81장.</li>
+  <li><b class="hl">지연 사다리 (§5):</b> FP32 <b class="hl">14.68</b> → FP16 <b class="hl">4.91</b>(×2.99) → INT8 <b class="hl">2.63 ms</b>(×5.58 vs FP32, ×1.87 vs FP16), batch1 event-timed. TRT FP32 엔진(14.68ms)은 PyTorch eager(34.06ms)보다 2.3× 빠름 — 교차확증.</li>
+  <li><b class="r">캐비앗 (§6·§7):</b> init 가중치 → 절대 mAP≈0(무의미). 유효한 건 <b class="hl">가중치-무관 지연·엔진 크기·FP32대비 출력 corr/rel_max</b>. INT8 출력편차는 height head corr 0.985가 최저, dim head rel_max 0.218이 최대 — 양자화 오차 전파를 보여준다.</li>
+</ul>
+
+<!-- ══════════════ §2 ══════════════ -->
+<h2 class="sec" id="s2">§2 — 6벽 사다리 (W1 → W6)</h2>
+
+<p class="small">1차 세션은 "INT8은 TRT 8.5 + 커스텀 플러그인 툴체인 필요 → 다음 과제"로 폴백했다. 후속 세션은 그 툴체인을 <b class="hl">user-space에 실제로 조립</b>해 경로 A1을 끝까지 통과시켰다. 6벽 중 <b class="hl">진짜 새 벽은 W3·W5</b>이고, W6은 벽처럼 보였으나 deprecated API 문제였다.</p>
+
+<table class="dt">
+  <tr><th>벽</th><th style="text-align:left">내용 → 해법</th></tr>
+  <tr><td class="g">W1</td><td style="text-align:left">TensorRT <b>8.5.3.1</b> (pip 휠) — legacy env 설치</td></tr>
+  <tr><td class="g">W2</td><td style="text-align:left">cuDNN <b>8.6</b> (<code>libcudnn.so.8</code>) 런타임</td></tr>
+  <tr><td class="g">W3</td><td style="text-align:left"><b>mmdeploy fork bevpoolv2 플러그인 빌드</b> — 풀 CMake 트리 우회. 2개 TU(<code>trt_bev_pool_kernel.cu</code> + <code>trt_bev_pool.cpp</code>)가 self-contained → cu117 nvcc(<code>-arch=sm_86 -std=c++14</code>) + g++(<code>-std=c++17</code>) 직접 컴파일·링크(<code>-lnvinfer -l:libcudart.so.11.0</code>) → <b class="hl"><code>libmmdeploy_tensorrt_ops.so</code> 58,896 B</b>, <code>mmdeploy::TRTBEVPoolV2Creator</code>(<code>bev_pool_v2</code> v1) 등록</td></tr>
+  <tr><td class="g">W4</td><td style="text-align:left"><b>pycuda</b> user-space cu117 빌드 (convert/bench 요구)</td></tr>
+  <tr class="lo"><td class="a">W5</td><td style="text-align:left"><b>ONNX export 트레이서 사망</b> — nested <code>QuickCumsumCuda</code>에서 <code>_Map_base::at</code> + segfault → forward를 export 전용 shim으로 (§3)</td></tr>
+  <tr class="lo"><td class="a">W6</td><td style="text-align:left"><b>엔진 빌드 segfault</b> — deprecated <code>build_engine</code> → <code>build_serialized_network</code> (§4). 벽 아님(API)</td></tr>
+</table>
+
+<div class="card green">
+  <h4>W3 — 커스텀 플러그인을 풀 CMake 없이 빌드</h4>
+  <p>mmdeploy 전체 빌드 트리(수십 op·의존)를 세우는 대신, <b class="hl">필요한 op의 TU만 직접 컴파일</b>했다. bevpoolv2는 커널 <code>.cu</code>와 플러그인 <code>.cpp</code> 2개로 self-contained라 nvcc·g++ 직접 호출로 충분하다. 레시피 → <code>scripts/build_trt_plugin.sh</code>.</p>
+</div>
+
+<pre><span class="c"># W3: bevpoolv2 TRT 플러그인 직접 빌드 (핵심 3스텝)</span>
+<span class="c"># [1] nvcc: 커널 → kernel.o (sm_86, c++14, fPIC)</span>
+$NVCC -c trt_bev_pool_kernel.cu -o kernel.o -arch=sm_86 -std=c++14 -Xcompiler -fPIC -I$TRT85/include ...
+<span class="c"># [2] g++: 플러그인 → plugin.o (c++17)</span>
+g++ -c trt_bev_pool.cpp -o plugin.o -fPIC -std=c++17 -O2 -I$TRT85/include ...
+<span class="c"># [3] link → libmmdeploy_tensorrt_ops.so (MODULE)</span>
+g++ -shared kernel.o plugin.o -o libmmdeploy_tensorrt_ops.so \
+  -L$TRT85/lib -lnvinfer -lnvinfer_plugin -l:libcudart.so.11.0 -l:libcublas.so.11 -l:libcudnn.so.8
+<span class="o"># → 58,896 B, nm -D: T mmdeploy::TRTBEVPoolV2Creator (bev_pool_v2 v1)</span></pre>
+
+<!-- ══════════════ §3 ══════════════ -->
+<h2 class="sec" id="s3">§3 — export shim (W5, 진짜 export 벽)</h2>
+
+<p class="step p lead"><code>torch.onnx.export</code>가 <code>TRTBEVPoolv2.forward</code>를 추적하는 순간 죽었다. 원인은 forward가 내부에서 호출하는 <b class="hl"><code>QuickCumsumCuda</code></b> — <code>symbolic</code>이 없는 CUDA <code>autograd.Function</code>이라, torch 1.13 JIT 트레이서가 이를 그래프 노드로 기록하려다 내부 <code>std::map::at</code>에서 <code>RuntimeError: _Map_base::at</code>를 던지고 segfault한다.</p>
+
+<div class="card amber">
+  <h4>해법 — forward를 shape-only shim으로 (export/inference 분리)</h4>
+  <p><code>TRTBEVPoolv2</code>는 이미 <code>symbolic</code>(→ <code>g.op('mmdeploy::bev_pool_v2', ...)</code>)을 가지고 있다. export 동안엔 <b class="hl">forward의 실제 CUDA 연산이 필요 없다</b> — 트레이서는 출력 <b class="hl">shape</b>만 알면 되고, 그래프 노드는 symbolic이 emit한다. 그래서 forward를 올바른 shape의 <code>new_zeros</code>로 갈아끼우면 트레이서가 죽지 않고, 실연산은 <b class="hl">추론 시 TRT 플러그인</b>이 수행한다. 이것이 표준 mmdeploy custom-op export 기법이다.</p>
+</div>
+
+<pre><span class="c"># W5: export 전용 shim (실연산 대신 shape-correct zeros)</span>
+<span class="k">def</span> _export_shim_forward(g, depth, feat, ranks_depth, ranks_feat, ranks_bev,
+                         interval_starts, interval_lengths, out_height=128, out_width=128):
+    feat = feat.unsqueeze(0); depth = depth.unsqueeze(0)
+    out_shape = (depth.shape[0], out_height, out_width, feat.shape[-1])
+    <span class="k">return</span> feat.new_zeros(out_shape)   <span class="c"># 실 CUDA op 미실행 → 트레이서 안 죽음</span>
+bp.TRTBEVPoolv2.forward = staticmethod(_export_shim_forward)
+<span class="o"># symbolic은 그대로 mmdeploy::bev_pool_v2 노드 emit → onnx 176.9 MB, checker PASS</span></pre>
+
+<p class="small">결과 <code>trtbevdet.onnx</code> = 176,901,052 B (opset 11), <code>mmdeploy::bev_pool_v2</code> 노드 포함. 실연산은 엔진 추론 시 W3에서 빌드한 플러그인이 담당하므로 <b class="hl">엔진 정확도에 영향 없음</b>.</p>
+
+<!-- ══════════════ §4 ══════════════ -->
+<h2 class="sec" id="s4">§4 — build API (W6) + INT8 캘리브</h2>
+
+<p class="step p lead">export가 뚫린 뒤, convert의 <code>from_onnx</code>가 엔진 빌드에서 segfault했다. 처음엔 플러그인의 build-time autotuning 문제로 의심했으나, VERBOSE 빌드로 확인하니 <b class="hl">deprecated <code>builder.build_engine(network, config)</code></b>가 TRT 8.5.3에서 이 네트워크에 대해 죽는 것이었다. 모던 <code>builder.build_serialized_network(network, config)</code>로 바꾸니 <b class="hl">플러그인 레이어 포함 전체 엔진이 완전 빌드</b>됐다.</p>
+
+<pre><span class="c"># W6: deprecated build_engine → build_serialized_network</span>
+<span class="e"># engine = builder.build_engine(network, config)      # segfault (TRT 8.5.3, deprecated)</span>
+serialized = builder.build_serialized_network(network, config)   <span class="o"># 완전 빌드</span>
+open(out + '.engine', 'wb').write(bytes(serialized))
+<span class="c"># 종료 시 pycuda+TRT teardown 순서 segfault(무해) → os._exit(0)로 exit code 청소</span></pre>
+
+<div class="card">
+  <h4>INT8 캘리브레이션</h4>
+  <p><b>알고리즘</b> ENTROPY_CALIBRATION_2 · <b>표본</b> nuScenes-mini val <b class="hl">81장</b>(<code>create_calib_input_data</code>가 img는 per-sample, ranks/metas 인덱스는 sample-0 재사용 → 플러그인 enqueue OOB 없음) · 배치당 ~0.15s. INT32 인덱스 텐서(<code>interval_starts/lengths</code> 등)는 <code>Missing scale and zero-point</code> 경고 = <b class="hl">양자화 안 함(정상)</b>. FP16 서브노멀 경고(114+49 weights)도 무해.</p>
+</div>
+
+<table class="dt">
+  <tr><th>엔진</th><th>크기</th><th>vs FP32 축소</th></tr>
+  <tr class="base"><td>FP32 <code>trtbevdet.engine</code></td><td>245.0 MB</td><td class="d">—</td></tr>
+  <tr><td>FP16 <code>trtbevdet_fp16.engine</code></td><td>90.1 MB</td><td class="g">×2.72</td></tr>
+  <tr class="hi"><td>INT8 <code>trtbevdet_int8.engine</code></td><td>46.7 MB</td><td class="g">×5.24</td></tr>
+</table>
+
+<!-- ══════════════ §5 ══════════════ -->
+<h2 class="sec" id="s5">§5 — 지연 사다리 (batch1, CUDA event-timed)</h2>
+
+<p class="step p lead">세 엔진을 같은 입력(nuScenes-mini 첫 샘플: 6-cam img + 5 ranks)으로 <code>execute_v2</code>, 15 warmup + 60 iter CUDA-event 측정. 정확도는 가중치에 의존하지만 <b class="hl">지연은 계산 그래프에만 의존</b> — 랜덤 head라도 실연산량은 정식과 동일.</p>
+
+<div class="svgwrap">
+<svg viewBox="0 0 760 210" width="760" height="210" font-family="var(--mono)" role="img" aria-label="BEVDet TRT latency ladder FP32/FP16/INT8">
+  <!-- factor 40 px/ms; baseline x=110 -->
+  <line x1="110" y1="24" x2="110" y2="176" stroke="#242b38" stroke-width="1"/>
+  <!-- FP32 14.6797*40=587.19 -->
+  <text x="102" y="47" text-anchor="end" fill="#e6edf3" font-size="12.5">FP32</text>
+  <rect x="110" y="32" width="587.19" height="28" rx="4" fill="rgba(88,166,255,.5)" stroke="#58a6ff" stroke-width="1.2"/>
+  <text x="703" y="51" fill="#e6edf3" font-size="12.5" font-weight="700">14.68 ms</text>
+  <!-- FP16 4.9054*40=196.21 -->
+  <text x="102" y="97" text-anchor="end" fill="#e6edf3" font-size="12.5">FP16</text>
+  <rect x="110" y="82" width="196.21" height="28" rx="4" fill="rgba(63,185,80,.45)" stroke="#3fb950" stroke-width="1.2"/>
+  <text x="316" y="101" fill="#7ee787" font-size="12.5" font-weight="700">4.91 ms · ×2.99</text>
+  <!-- INT8 2.6298*40=105.19 -->
+  <text x="102" y="147" text-anchor="end" fill="#e6edf3" font-size="12.5">INT8</text>
+  <rect x="110" y="132" width="105.19" height="28" rx="4" fill="rgba(188,140,255,.5)" stroke="#bc8cff" stroke-width="1.2"/>
+  <text x="225" y="151" fill="#d2b3ff" font-size="12.5" font-weight="700">2.63 ms · ×5.58</text>
+  <text x="110" y="197" fill="#8b949e" font-size="11">factor 40 px/ms, batch1, 15 warmup + 60 iter. INT8은 FP16 대비 ×1.87 추가.</text>
+</svg>
+</div>
+
+<table class="dt">
+  <tr><th>정밀도</th><th>p50</th><th>mean</th><th>min</th><th>vs FP32</th></tr>
+  <tr class="base"><td>FP32</td><td>14.680 ms</td><td>14.688</td><td>14.550</td><td class="d">—</td></tr>
+  <tr><td>FP16</td><td>4.905 ms</td><td>4.909</td><td>4.878</td><td class="g">×2.99</td></tr>
+  <tr class="hi"><td>INT8</td><td>2.630 ms</td><td>2.633</td><td>2.535</td><td class="g">×5.58</td></tr>
+</table>
+
+<div class="card accent">
+  <h4>교차확증 — TRT FP32 엔진 vs PyTorch eager</h4>
+  <p>같은 RTX 3080에서 TRT FP32 엔진 <b class="hl">14.68 ms</b>는 1차 보고서의 PyTorch eager forward <b class="hl">34.06 ms</b>보다 <b class="hl">2.3× 빠르다</b> — 커널 퓨전·파이썬 오버헤드 제거. 두 값 모두 같은 계산 그래프(랜덤 head 포함)이므로, TRT 최적화의 순수 효과를 격리한다.</p>
+</div>
+
+<!-- ══════════════ §6 ══════════════ -->
+<h2 class="sec" id="s6">§6 — 출력편차 (양자화 오차 전파)</h2>
+
+<p class="step p lead">절대 예측은 무의미하지만, <b class="hl">FP32 엔진 출력 대비 FP16·INT8 출력의 편차</b>는 가중치와 무관하게 "양자화가 각 head에 얼마나 오차를 주입하나"를 보여준다. 6개 detection head 출력(reg·height·dim·rot·vel·heatmap)의 상대오차(rel_max)를 INT8에서 측정:</p>
+
+<div class="svgwrap">
+<svg viewBox="0 0 760 230" width="760" height="230" font-family="var(--mono)" role="img" aria-label="INT8 per-head rel_max vs FP32">
+  <!-- factor 1000 px/(rel_max); baseline x=150 -->
+  <line x1="150" y1="16" x2="150" y2="196" stroke="#242b38" stroke-width="1"/>
+  <!-- output_0 reg 0.0692*1000=69.2 -->
+  <text x="142" y="34" text-anchor="end" fill="#c9d1d9" font-size="12">reg</text>
+  <rect x="150" y="22" width="69.23" height="18" rx="3" fill="rgba(188,140,255,.5)" stroke="#bc8cff" stroke-width="1"/>
+  <text x="225" y="35" fill="#8b949e" font-size="11">0.069 · corr 0.9995</text>
+  <!-- output_1 height 0.0947 -->
+  <text x="142" y="62" text-anchor="end" fill="#c9d1d9" font-size="12">height</text>
+  <rect x="150" y="50" width="94.72" height="18" rx="3" fill="rgba(255,123,114,.5)" stroke="#ff7b72" stroke-width="1"/>
+  <text x="250" y="63" fill="#ff9d96" font-size="11">0.095 · corr 0.9853 (최저)</text>
+  <!-- output_2 dim 0.2184 -->
+  <text x="142" y="90" text-anchor="end" fill="#c9d1d9" font-size="12">dim</text>
+  <rect x="150" y="78" width="218.36" height="18" rx="3" fill="rgba(255,123,114,.55)" stroke="#ff7b72" stroke-width="1"/>
+  <text x="374" y="91" fill="#ff9d96" font-size="11">0.218 (최대) · corr 0.9993</text>
+  <!-- output_3 rot 0.1987 -->
+  <text x="142" y="118" text-anchor="end" fill="#c9d1d9" font-size="12">rot</text>
+  <rect x="150" y="106" width="198.70" height="18" rx="3" fill="rgba(210,153,34,.5)" stroke="#d29922" stroke-width="1"/>
+  <text x="354" y="119" fill="#e3b341" font-size="11">0.199 · corr 0.9999</text>
+  <!-- output_4 vel 0.0711 -->
+  <text x="142" y="146" text-anchor="end" fill="#c9d1d9" font-size="12">vel</text>
+  <rect x="150" y="134" width="71.05" height="18" rx="3" fill="rgba(188,140,255,.5)" stroke="#bc8cff" stroke-width="1"/>
+  <text x="227" y="147" fill="#8b949e" font-size="11">0.071 · corr 0.9997</text>
+  <!-- output_5 heatmap 0.1081 -->
+  <text x="142" y="174" text-anchor="end" fill="#c9d1d9" font-size="12">heatmap</text>
+  <rect x="150" y="162" width="108.10" height="18" rx="3" fill="rgba(210,153,34,.5)" stroke="#d29922" stroke-width="1"/>
+  <text x="264" y="175" fill="#e3b341" font-size="11">0.108 · corr 0.9998</text>
+  <text x="150" y="216" fill="#8b949e" font-size="11">factor 1000 px/rel_max. FP16은 전 head rel_max≤0.010·corr≥0.9994(막대 없이 무시할 수준).</text>
+</svg>
+</div>
+
+<table class="dt">
+  <tr><th>head</th><th>INT8 rel_max</th><th>INT8 corr</th><th>FP16 corr</th></tr>
+  <tr><td>output_0 reg</td><td>0.0692</td><td>0.99954</td><td class="d">0.99998</td></tr>
+  <tr class="lo"><td>output_1 height</td><td>0.0947</td><td class="r">0.98528</td><td class="d">0.99948</td></tr>
+  <tr class="lo"><td>output_2 dim</td><td class="r">0.2184</td><td>0.99934</td><td class="d">0.99998</td></tr>
+  <tr><td>output_3 rot</td><td>0.1987</td><td>0.99986</td><td class="d">1.00000</td></tr>
+  <tr><td>output_4 vel</td><td>0.0711</td><td>0.99974</td><td class="d">0.99999</td></tr>
+  <tr><td>output_5 heatmap</td><td>0.1081</td><td>0.99982</td><td class="d">1.00000</td></tr>
+</table>
+<p class="small">FP16은 전 head가 FP32와 <b class="hl">거의 동일</b>(corr ≥0.9994, rel_max ≤0.010). INT8은 <b class="hl">height head</b>(corr 0.985)가 상관 최저, <b class="hl">dim head</b>(rel_max 0.218)가 상대오차 최대 — 정식 가중치라면 이 head들이 양자화에 가장 민감할 후보다(민감도 분석 §4-5의 실측 진입점).</p>
+
+<!-- ══════════════ §7 ══════════════ -->
+<h2 class="sec" id="s7">§7 — 판정 · 산출물</h2>
+
+<div class="card green">
+  <h4>판정 1 — 경로 A1(BEVDet 공식 스크립트) INT8 관통</h4>
+  <p>문서 §4-4 경로 A1(<code>convert_bevdet_to_TRT.py --int8</code>)을 실제로 통과. 1차 보고서가 "다음 과제"로 남긴 <b class="hl">TRT-8.5-plugin INT8</b>을, 커스텀 플러그인을 user-space에 직접 빌드(W3)하고 export shim(W5)·build API(W6)로 우회해 FP32/FP16/INT8 엔진 3종을 실측 사다리로 만들었다.</p>
+</div>
+
+<div class="card accent">
+  <h4>판정 2 — 진짜 벽은 W3·W5, W6은 벽이 아니었다</h4>
+  <p>W3(플러그인을 풀 CMake 없이 2 TU 직접 빌드)와 W5(트레이서 <code>_Map_base::at</code> → export shim)가 새 지식. W6은 플러그인 문제로 보였으나 <b class="hl">deprecated <code>build_engine</code>의 segfault</b>였다 — <code>build_serialized_network</code>로 즉시 해소. "플러그인 탓" 가설을 먼저 배제하라는 설계규칙.</p>
+</div>
+
+<div class="card red">
+  <h4>판정 3 — 절대 정확도는 여전히 폴백, 상대만 유효</h4>
+  <p>init 가중치(torchvision backbone + 랜덤 head) → 절대 mAP≈0. 이번 산출물의 유효 범위는 <b class="hl">가중치-무관 지연 사다리·엔진 크기·FP32대비 출력편차</b>. mini 81장 캘리브라 INT8 스케일도 소표본. Baidu 정식 가중치 확보 시 <b class="hl">동일 하네스로 정확도까지</b> 재실행 가능. 지연은 event-timed·batch1·forward-only라 3·5단계 ResNet50 사다리와 절대 1:1 비교 불가(모델·해상도 상이), 구조·상대만.</p>
+</div>
+
+<h3 style="font-size:15px;color:var(--brt);margin:22px 0 6px">산출물</h3>
+<ul>
+  <li><code>logs/stage8_capstone_int8_report.html</code> — 이 문서(§1~7 + SVG 2종: 지연 사다리·head별 오차전파)</li>
+  <li><code>experiments/stage8_capstone/capstone_constraints.md</code> 벽 5 — INT8/TRT 관통(W1~W6 표·레시피·설계규칙)로 갱신</li>
+  <li><code>scripts/</code> — <code>build_trt_plugin.sh</code>(W3)·<code>convert_bevdet_trt.py</code>(W5+W6)·<code>dump_bench_sample.py</code>·<code>bench_trt_engines.py</code></li>
+  <li><code>results/</code> — <code>int8_build.json</code>(벽·플러그인·캘리브·엔진·비율 SSOT)·<code>trt_ladder.json</code>(지연·크기·corr 원자료)</li>
+  <li><code>study_guide/08_capstone.md</code> §4-3·§4-4·§9 🔬 INT8 관통 콜아웃 삽입(승번 0)</li>
+</ul>
+
+<div class="card">
+  <h4>캐비앗 (불변)</h4>
+  <ul style="margin:4px 0">
+    <li>init 가중치 + mini 81장 → 절대 mAP/NDS·절대 예측 <b class="hl">무의미</b>. 유효: 가중치-무관 지연·엔진 크기·FP32대비 출력 corr/rel_max.</li>
+    <li>지연은 CUDA event-timed·<code>execute_v2</code>·batch1 → 다른 단계와 <b class="hl">1:1 비교 불가</b>, 구조·상대만.</li>
+    <li>플러그인 .so·TRT 엔진·pycuda는 legacy env 전용 — 정본 emb-ai(torch 2.11+cu128) <b class="hl">오염 0</b>.</li>
+    <li>경로 A2(ModelOpt QDQ)·B(DerryHub)는 미시도 — 이번 관통은 경로 A1 한정.</li>
+  </ul>
+</div>
+
+<div class="foot">
+  <p>8단계 캡스톤 · BEVDet INT8/TRT 관통 · AI-LAP RTX 3080 · <span class="tag">2026-08-18</span></p>
+  <p>6벽(W1~W6) 관통 · 커스텀 플러그인 직접 빌드 · FP32 14.68 → FP16 4.91 → INT8 2.63 ms(×5.58) · 절대 정확도는 Baidu 가중치 대기. 상대·구조 관계만 유효. 1차 FP32 보고서 → <a href="stage8_capstone_report.html">stage8_capstone_report.html</a>.</p>
+</div>
+
+</div>
+</body>
+</html>
