@@ -1,6 +1,6 @@
 ---
 name: stage2-bevformer-hands-on
-description: "2단계 §4.6 BEVFormer-tiny 실측 완료(2026-08-17) — nuScenes-mini FP32 mAP 0.2647. op 단정 반전 0(초안 맞음)·실전 함정 +2(mmcv op CPU-only export·전체 export는 point_sampling에서 사망). 무컴파일 레거시 env 레시피. 전체 INT8은 범위 밖(포크 필요). 다음=SmoothQuant §4.4"
+description: "2단계 §4.6 BEVFormer-tiny 실측 완료(2026-08-17, 커밋 04e1432 푸시완료) — nuScenes-mini FP32 mAP 0.2647. op 단정 반전 0(초안 맞음)·실전 함정 +2(mmcv op CPU-only export·전체 export는 point_sampling에서 사망). 무컴파일 레거시 env 레시피. 전체 INT8은 범위 밖(포크 필요). SmoothQuant §4.4는 후속 완료(커밋됨)"
 metadata:
   node_type: memory
   type: project

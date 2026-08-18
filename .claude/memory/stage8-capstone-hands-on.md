@@ -41,7 +41,7 @@ val**(8/2 scenes). **초안 오류:** 태그가 `bevdetv2`가 아니라 **`bevde
 backbone[ImageNet 실사전학습] + `init_weights()` head[랜덤])로 stock `tools/test.py` 관통(81 val):
 - **mAP 0.0000 / NDS 0.0260**(전 클래스 AP 0.000)은 **버그 아니라 예상값** — backbone만 진짜, LSS·BEV encoder·head 랜덤.
 - **검증됨:** 툴체인·데이터·`bev_pool_v2` CUDA op(GPU 실행)·nuScenes eval 하네스 exit 0 관통(기능적 완결성).
-- **안 됨:** 절대 mAP 문헌대조(공개 ≈ mAP 0.298/NDS 0.379) — Baidu 가중치 확보 시 동일 하네스 재실행.
+- **안 됨:** 절대 mAP 문헌대조(공개 ≈ mAP 0.298/NDS 0.379) — **정식 가중치 재실행은 스킵**(2026-08-18 사용자 합의, Baidu Pan 헤드리스 접근 불가). 필요 시 동일 하네스로 재개 가능.
 - **latency는 가중치 무관 유효:** FP32 forward **p50 34.0603ms**(batch1, CUDA event-timed, N=30; 재실행 34.2944ms 지터
   내 일치, peak 420.9 MiB, 44.25M params)가 공식 README **BEVDet-R50 total 33.3ms(RTX 3090)**와 근접 → 랜덤 head라도
   실연산량은 정식과 동일 교차확증. `bench_fp32_latency.py` 재실행으로 스크립트 충실성 확인.
@@ -75,9 +75,8 @@ W3·W5, W6은 벽 아님:**
 **캐비앗(불변):** ① 절대 mAP/NDS는 init 가중치+mini 81장 → 무의미(파이프라인 검증용, 문헌비교 불가). ② latency는
 event-timed·forward-only·batch1 → 다른 단계(TRT event-timed/하네스 wall-clock)와 1:1 비교 불가, 구조·상대만. ③
 `bev_pool_v2_ext.so`(FP32 CUDA op)·`libmmdeploy_tensorrt_ops.so`(INT8 TRT 플러그인)·TRT 엔진·pycuda는 legacy env
-전용(emb-ai 오염 0). ④ INT8은 지연·크기·출력편차만 유효(절대 정확도는 Baidu 가중치 대기).
+전용(emb-ai 오염 0). ④ INT8은 지연·크기·출력편차만 유효 — **절대 정확도 재실행은 스킵**(Baidu 가중치, 2026-08-18 사용자 합의).
 
 **커밋 상태:** FP32 walking skeleton은 **커밋 64e4c84 푸시완료**(스캔 후 요청 수행, [[repo-is-public-scan-before-commit]],
 시크릿 0건). **INT8/TRT 관통분도 커밋 463df43 푸시완료**(스캔 후 요청 수행, 시크릿 0건) — tech-reviewer 팬인 PASS(🔴0·🟡1[FP16 corr ≥0.9995→≥0.9994 통일]해소·🟢다수)
-후 통합 완료(README·study_guide/README·CLAUDE 변경이력·이 메모리). **남은 과제:** Baidu
-가중치 확보 시 절대 mAP 재실행(동일 하네스로 INT8 정확도까지) · 경로 A2/B · TI TDA4VM·Renesas RZ/V2H 벤더 NPU는 보드 대기.
+후 통합 완료(README·study_guide/README·CLAUDE 변경이력·이 메모리). **남은 과제:** ~~Baidu 가중치 절대 mAP 재실행~~ → **스킵 결정**(2026-08-18 사용자 합의, Baidu Pan 헤드리스 불가) · 경로 A2/B는 선택 · TI TDA4VM·Renesas RZ/V2H 벤더 NPU는 보드 대기.
