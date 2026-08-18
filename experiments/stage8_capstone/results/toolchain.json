@@ -1,0 +1,50 @@
+{
+  "what": "BEVDet bev_pool_v2 커스텀 CUDA op을 sudo·Docker 없이 user-space에서 컴파일한 툴체인",
+  "machine": "AI-LAP (RTX 3080, sm_86)",
+  "host_toolkit": "CUDA 12.8 (driver+toolkit) — 유일 설치본",
+  "wall": {
+    "symptom": "torch._check_cuda_version: 컴파일된 PyTorch(cu117)와 nvcc(host CUDA 12.8)의 MAJOR 불일치(12 vs 11) → RuntimeError (minor 불일치는 warning, major는 hard error)",
+    "why": "BEVDet dev3.0의 bundled mmdet3d(1.0.0rc4)는 torch<=1.13 + CUDA<=11.7 계열에만 묶인 커스텀 CUDA 커널을 요구 — §4.6 BEVFormer와 구조적으로 동일한 근본 원인",
+    "doc_gap": "문서 §3은 (a) Docker cu116 또는 (b) blackwell 패치 2안만 제시 — 이 머신엔 Docker 없음, 정본 venv 오염 불가 → 둘 다 불가"
+  },
+  "solution_third_path": "user-space cu117 툴체인 조립 (sudo·Docker 불요, 4.3GB CUDA runfile 회피)",
+  "components": {
+    "nvcc": "micromamba cuda-nvcc=11.7 → nvcc release 11.7 V11.7.99 (완전한 프론트엔드, ptxas만 있는 pip nvidia-cuda-nvcc-cu11 휠과 대비)",
+    "libcudart": "pip nvidia-cuda-runtime-cu11==11.7.99 → 실제 libcudart.so.11.0 (SONAME 정상, torch 번들 libcudart-<hash>.so.11.0는 -lcudart로 링크 불가)",
+    "python_headers": "micromamba python=3.10 env (~/capstone-bev/pyhdr) → Python.h via CPATH (python3.10-dev 미설치·sudo 불요 우회)",
+    "cuda_home": "~/capstone-bev/cuda-home 조립: bin/include/nvvm → cu117/, lib64는 실디렉토리(cu117/lib/*.so*,*.a 심링크 + libcudart.so → pip runtime libcudart.so.11.0)"
+  },
+  "build_env_vars": {
+    "CUDA_HOME": "~/capstone-bev/cuda-home",
+    "PATH": "$CUDA_HOME/bin:$PATH",
+    "TORCH_CUDA_ARCH_LIST": "8.6",
+    "CPATH": "~/capstone-bev/pyhdr/include/python3.10",
+    "build_cmd": "cd ~/capstone-bev/BEVDet && python setup.py build_ext --inplace",
+    "runtime_LD_LIBRARY_PATH": "$SP/nvidia/cuda_runtime/lib:$LD_LIBRARY_PATH  (SP=~/bevf-legacy/.../site-packages)"
+  },
+  "nvcc_version": "release 11.7, V11.7.99 (cuda_11.7.r11.7)",
+  "built_so": {
+    "path": "mmdet3d/ops/bev_pool_v2/bev_pool_v2_ext.cpython-310-x86_64-linux-gnu.so",
+    "size_bytes": 9131040,
+    "exports": ["bev_pool_v2_forward", "bev_pool_v2_backward"],
+    "linked_cudart": "libcudart.so.11.0 (pip nvidia-cuda-runtime-cu11)",
+    "standalone_load": "OK (torch 1.13.1+cu117, cuda avail True)"
+  },
+  "legacy_venv": {
+    "path": "~/bevf-legacy",
+    "python": "3.10.12",
+    "torch": "1.13.1+cu117",
+    "mmcv_full": "1.7.0 (mminstall.txt는 <=1.6.0 요구하나 mmdet3d 1.0.0rc4 import·런타임 정상)",
+    "mmdet": "2.28.2",
+    "mmsegmentation": "0.30.0",
+    "mmdet3d": "1.0.0rc4 (BEVDet dev3.0 bundled)",
+    "numpy": "1.23.5",
+    "onnx": "1.14.1",
+    "onnxruntime": "1.16.3",
+    "nuscenes_devkit": "1.2.0",
+    "spconv": "spconv-cu117 2.3.6 (+cumm-cu117 0.4.11) — bundled mmdet3d detectors/__init__.py가 LiDAR-fusion 검출기(DAL)를 eager import → 카메라 전용 BEVDet도 spconv 필요",
+    "numba": "0.58.1"
+  },
+  "second_wall_spconv": "mmdet3d.models.detectors.__init__ 가 모든 검출기를 eager import → DAL이 spconv 요구 → ModuleNotFoundError. spconv 의존 6곳 캐스케이드(detectors/middle_encoders/roi_heads/ops)라 __init__ 다중패치보다 spconv-cu117 설치가 깨끗(격리 legacy env)",
+  "caveat": "이 툴체인은 정본 emb-ai venv(ORT 1.23.2/torch 2.11+cu128)와 완전 격리 — 오염 없음. bev_pool_v2_ext.so는 이 legacy env 전용 아티팩트"
+}

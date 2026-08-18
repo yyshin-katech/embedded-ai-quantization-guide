@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>8단계 캡스톤 — BEVDet end-to-end 실측 검증 보고서 (user-space cu117 · walking skeleton)</title>
+<style>
+:root{--bg:#0b0e14;--panel:#131720;--panel2:#0f131b;--bd:#242b38;--tx:#c9d1d9;--dim:#8b949e;--brt:#e6edf3;--accent:#58a6ff;--green:#3fb950;--amber:#d29922;--red:#ff7b72;--purple:#bc8cff;--mono:'JetBrains Mono','SF Mono',ui-monospace,'Cascadia Code',Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans KR','Malgun Gothic',sans-serif}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:var(--sans);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:980px;margin:0 auto;padding:0 20px 120px}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+.hero{padding:48px 0 26px;border-bottom:1px solid var(--bd);margin-bottom:8px}
+.kicker{font-family:var(--mono);font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+.hero h1{margin:0 0 10px;font-size:30px;line-height:1.25;color:var(--brt);letter-spacing:-.01em}
+.hero p.sub{margin:0 0 20px;color:var(--dim);font-size:15px;max-width:80ch}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font-family:var(--mono);font-size:12px;padding:5px 10px;border:1px solid var(--bd);border-radius:999px;background:var(--panel);color:var(--tx)}
+.chip b{color:var(--brt);font-weight:600}
+.chip.done{border-color:rgba(63,185,80,.5);background:rgba(63,185,80,.12);color:#7ee787}
+.chip.blocked{border-color:rgba(255,123,114,.5);background:rgba(255,123,114,.12);color:#ff9d96}
+.chip.partial{border-color:rgba(210,153,34,.5);background:rgba(210,153,34,.12);color:#e3b341}
+nav.toc{display:flex;flex-wrap:wrap;gap:8px;margin:26px 0 6px}
+nav.toc a{font-family:var(--mono);font-size:12.5px;padding:6px 11px;border:1px solid var(--bd);border-radius:8px;background:var(--panel);color:var(--tx)}
+nav.toc a:hover{border-color:var(--accent);color:var(--brt);text-decoration:none}
+h2.sec{font-size:13px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin:40px 0 12px;font-weight:600;border-top:1px solid var(--bd);padding-top:26px}
+.step{margin:26px 0 0;scroll-margin-top:16px}
+.step>h3{display:flex;align-items:center;gap:12px;font-size:19px;color:var(--brt);margin:0 0 6px;letter-spacing:-.01em}
+.num{flex:none;display:inline-grid;place-items:center;width:28px;height:28px;border-radius:8px;background:var(--accent);color:#06101f;font-family:var(--mono);font-weight:700;font-size:13px}
+.step p.lead{margin:0 0 4px;color:var(--dim);font-size:14.5px}
+table.dt{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.3px;border:1px solid var(--bd);border-radius:10px;overflow:hidden;font-family:var(--mono)}
+table.dt th,table.dt td{padding:8px 12px;text-align:right;border-bottom:1px solid var(--bd)}
+table.dt th{background:var(--panel);color:var(--dim);font-weight:600;font-size:12px;letter-spacing:.04em}
+table.dt th:first-child,table.dt td:first-child{text-align:left;color:var(--brt)}
+table.dt tr:last-child td{border-bottom:none}
+table.dt tr.hi td{background:rgba(63,185,80,.08)}
+table.dt tr.lo td{background:rgba(255,123,114,.08)}
+table.dt tr.grey td{background:rgba(139,148,158,.08);color:var(--dim)}
+table.dt tr.base td{background:rgba(88,166,255,.07)}
+.g{color:var(--green)}.r{color:var(--red)}.a{color:var(--amber)}.p{color:var(--purple)}.d{color:var(--dim)}
+.card{background:var(--panel);border:1px solid var(--bd);border-radius:12px;padding:18px 20px;margin:16px 0}
+.card.accent{border-left:3px solid var(--accent)}
+.card.green{border-left:3px solid var(--green)}
+.card.red{border-left:3px solid var(--red)}
+.card.amber{border-left:3px solid var(--amber)}
+.card h4{margin:0 0 8px;color:var(--brt);font-size:15px}
+.card p{margin:6px 0}
+pre{background:var(--panel2);border:1px solid var(--bd);border-radius:10px;padding:14px 16px;overflow-x:auto;font-family:var(--mono);font-size:12.6px;line-height:1.5;color:var(--tx);margin:12px 0}
+pre .c{color:var(--dim)}pre .k{color:var(--purple)}pre .s{color:#a5d6ff}pre .e{color:var(--red)}pre .o{color:var(--green)}
+code{font-family:var(--mono);font-size:.92em;background:var(--panel2);border:1px solid var(--bd);border-radius:5px;padding:1px 5px;color:var(--brt)}
+ul{margin:8px 0;padding-left:22px}li{margin:5px 0}
+.small{font-size:12.8px;color:var(--dim)}
+.svgwrap{background:var(--panel2);border:1px solid var(--bd);border-radius:10px;padding:16px;margin:14px 0;overflow-x:auto}
+.foot{margin-top:56px;padding-top:22px;border-top:1px solid var(--bd);color:var(--dim);font-size:12.6px}
+.tag{font-family:var(--mono);font-size:11px;padding:2px 7px;border-radius:5px;border:1px solid var(--bd);background:var(--panel);color:var(--dim)}
+b.hl{color:var(--brt)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="hero">
+  <p class="kicker">8단계 · 캡스톤 · BEVDet end-to-end 실측 (walking skeleton)</p>
+  <h1>BEVDet 캡스톤 — 커스텀 CUDA op을 sudo 없이 관통시키다</h1>
+  <p class="sub">794줄 초안(미검증)을 실제 AI-LAP RTX 3080에서 관통시켰다. 벽은 문서가 예고한 곳이 아니었다 — <b class="hl">BEVDet의 <code>bev_pool_v2</code> 커스텀 CUDA op은 torch≤1.13+CUDA≤11.7을 요구하는데 이 머신의 유일 toolkit은 CUDA 12.8</b>이라, 문서 §3이 준 2안(Docker cu116 / blackwell 패치)이 <b class="hl">둘 다 불가</b>했다. 이 보고서는 그 벽을 <b class="hl">user-space cu117 툴체인(제3의 길)</b>으로 넘어 nuScenes-mini에서 FP32 파이프라인을 <b class="hl">walking skeleton</b>(문서 §9 완주 기준)으로 관통시킨 기록이다. 절대 정확도와 TRT-plugin INT8은 <b class="hl">정직한 폴백</b>.</p>
+  <div class="chips">
+    <span class="chip done">FP32 walking skeleton <b>관통</b></span>
+    <span class="chip done">커스텀 CUDA op <b>빌드 성공</b></span>
+    <span class="chip">모델 <b>BEVDet-R50</b></span>
+    <span class="chip">데이터 <b>nuScenes-mini 81val</b></span>
+    <span class="chip">스택 <b>torch 1.13.1+cu117</b></span>
+    <span class="chip partial">정식 가중치 <b>Baidu-locked</b></span>
+    <span class="chip partial">INT8·TRT-plugin <b>범위 밖</b></span>
+  </div>
+</div>
+
+<nav class="toc">
+  <a href="#s1">§1 실행요약</a>
+  <a href="#s2">§2 환경·스택</a>
+  <a href="#s3">§3 커스텀 CUDA op (제3의 길)</a>
+  <a href="#s4">§4 데이터·walking skeleton</a>
+  <a href="#s5">§5 지연 교차확증</a>
+  <a href="#s6">§6 판정·산출물</a>
+</nav>
+
+<!-- ══════════════ §1 ══════════════ -->
+<h2 class="sec" id="s1">§1 — 실행 요약</h2>
+
+<div class="card accent">
+  <h4>한 줄 요약</h4>
+  <p>BEVDet 캡스톤의 진짜 관문은 양자화가 아니라 <b class="hl">"레거시 커스텀 CUDA op을 최신 드라이버 머신에서 빌드하는 것"</b>이었다. Docker도 sudo도 없이 — nvcc·libcudart·Python.h 세 조각을 <b class="hl">user-space에 조달</b>하고 <code>CUDA_HOME</code>을 손으로 조립해 <b class="hl"><code>bev_pool_v2</code>를 컴파일(9.13 MB .so)</b>, nuScenes-mini에서 <b class="hl">export→CUDA op(GPU 실행)→eval 하네스</b>를 exit 0으로 관통시켰다(walking skeleton 완주). FP32 forward <b class="hl">p50 34.06 ms</b>는 공식 README의 33.3 ms(RTX 3090)와 근접해 실연산을 교차확증한다.</p>
+</div>
+
+<ul>
+  <li><b class="hl">헤드라인 (제3의 길, §3):</b> 문서 §3의 Docker cu116·blackwell 패치가 둘 다 막힌 머신에서, micromamba <code>cuda-nvcc=11.7</code>(V11.7.99) + pip <code>nvidia-cuda-runtime-cu11</code>(실제 <code>libcudart.so.11.0</code>) + micromamba python 헤더로 <code>CUDA_HOME</code>을 조립 → <code>torch._check_cuda_version</code>의 MAJOR 불일치 hard-error를 우회하고 커스텀 CUDA op 빌드. <b class="hl">정본 emb-ai venv 오염 0</b>(격리 legacy env).</li>
+  <li><b class="hl">두 번째 벽 (spconv):</b> 카메라 전용 BEVDet인데 bundled mmdet3d <code>detectors/__init__.py</code>가 LiDAR-fusion 검출기(DAL)를 <b class="hl">eager import</b> → spconv 필요. 6개 <code>__init__</code> 다중패치보다 <code>spconv-cu117</code> 설치가 깨끗.</li>
+  <li><b class="hl">walking skeleton 완주 (§4):</b> mini info pkl 생성(323 train/81 val, 태그 <code>bevdetv3</code>—초안 v2 아님)→FP32 eval 하네스가 exit 0으로 관통. <code>bev_pool_v2</code> CUDA op이 GPU에서 실제 실행(<code>view_transformer.py</code>의 LSS 경로 확인).</li>
+  <li><b class="r">정직한 폴백 (§4·§6):</b> BEVDet-R50 정식 가중치는 <b class="hl">Baidu Pan 전용</b>(헤드리스 접근 불가). init 가중치(torchvision backbone + 랜덤 head)라 <b class="hl">mAP 0.0000은 예상값</b>(버그 아님) — 파이프라인은 완결, 절대 정확도만 가중치 대기. TRT-8.5-plugin INT8도 범위 밖(사용자 사전합의).</li>
+</ul>
+
+<!-- ══════════════ §2 ══════════════ -->
+<h2 class="sec" id="s2">§2 — 환경·스택 (실측)</h2>
+
+<table class="dt">
+  <tr><th>항목</th><th>값 / 비고</th></tr>
+  <tr><td>머신</td><td>AI-LAP (RTX 3080, sm_86), Ubuntu 22.04, 호스트 toolkit <b class="hl">CUDA 12.8</b>(유일)</td></tr>
+  <tr><td>legacy venv</td><td><code>~/bevf-legacy</code> — torch <b class="hl">1.13.1+cu117</b>, python 3.10.12 (정본 emb-ai와 격리)</td></tr>
+  <tr><td>모델 스택</td><td>mmdet3d <b class="hl">1.0.0rc4</b>(BEVDet dev3.0 bundled) · mmcv-full 1.7.0 · mmdet 2.28.2 · mmseg 0.30.0</td></tr>
+  <tr><td>보조</td><td>spconv-cu117 2.3.6 · cumm-cu117 0.4.11 · numpy 1.23.5 · nuscenes-devkit 1.2.0</td></tr>
+  <tr><td>빌드 툴체인</td><td>nvcc <b class="hl">V11.7.99</b>(micromamba cuda-nvcc=11.7) · libcudart.so.11.0(pip nvidia-cuda-runtime-cu11) · Python.h(micromamba, CPATH)</td></tr>
+  <tr><td>CUDA_HOME</td><td><code>~/capstone-bev/cuda-home</code> — bin/include/nvvm→cu117 심링크, lib64 실디렉토리(<code>libcudart.so</code>→pip 런타임)</td></tr>
+  <tr><td>모델</td><td>BEVDet-R50 (configs/bevdet/bevdet-r50.py, <b class="hl">44.25M</b> params)</td></tr>
+  <tr><td>데이터</td><td>nuScenes-<b class="hl">mini</b> val 81장 (§4.6 BEVFormer가 쓰던 mini 심링크 재사용)</td></tr>
+</table>
+
+<p class="small">모든 커스텀 CUDA 빌드·추론은 격리 <code>~/bevf-legacy</code> env에서만 일어난다. 정본 <code>emb-ai</code>(ORT 1.23.2/torch 2.11+cu128)는 손대지 않았다 — <code>bev_pool_v2_ext.so</code>는 legacy env 전용 아티팩트.</p>
+
+<!-- ══════════════ §3 ══════════════ -->
+<h2 class="sec" id="s3">§3 — 커스텀 CUDA op 컴파일: 제3의 길 (핵심)</h2>
+
+<p class="step p lead">BEVDet의 <code>bev_pool_v2</code>(LSS pooling)는 <b class="hl">python fallback이 없는 커스텀 CUDA 커널</b>이다. 빌드하려면 nvcc가 필요한데:</p>
+
+<div class="card red">
+  <h4>벽 — torch MAJOR CUDA 불일치 (hard-error)</h4>
+  <p>torch 1.13.1은 cu117로 빌드됐고, 이 머신의 유일 nvcc는 CUDA 12.8. <code>torch.utils.cpp_extension._check_cuda_version</code>가 컴파일러 MAJOR(12) ≠ torch build MAJOR(11)에서 <b class="r">RuntimeError로 중단</b>한다(minor 불일치는 warning, MAJOR는 hard-error). <b class="hl">§4.6 BEVFormer와 동일한 근본원인</b> — 레거시 mmcv/mmdet3d 커스텀 커널은 torch≤1.13+CUDA≤11.7에 묶여 있다.</p>
+  <p class="small">문서 §3 초안이 준 길은 (a) Docker <code>nvcr.io … cu116</code> 또는 (b) blackwell 패치뿐. 이 머신엔 <b class="hl">Docker 없음</b>, 정본 venv <b class="hl">오염 불가</b> → 둘 다 막힘.</p>
+</div>
+
+<div class="card green">
+  <h4>해법 — user-space cu117 툴체인 조립 (sudo·Docker·4.3GB runfile 전부 회피)</h4>
+  <p>커스텀 CUDA op을 빌드하는 데 필요한 <b class="hl">세 조각</b>을 각각 user-space에 조달하고 <code>CUDA_HOME</code>을 손으로 조립한다:</p>
+</div>
+
+<table class="dt">
+  <tr><th>조각</th><th>출처</th><th>왜 이걸로</th></tr>
+  <tr><td>nvcc</td><td>micromamba <code>cuda-nvcc=11.7</code> → V11.7.99</td><td>완전한 프론트엔드. pip <code>nvidia-cuda-nvcc-cu11</code>은 ptxas만 있어 불충분</td></tr>
+  <tr><td>libcudart</td><td>pip <code>nvidia-cuda-runtime-cu11==11.7.99</code></td><td>실제 <code>libcudart.so.11.0</code>. torch 번들 <code>libcudart-&lt;hash&gt;.so</code>는 <code>-lcudart</code> 링크 불가</td></tr>
+  <tr><td>Python.h</td><td>micromamba <code>python=3.10</code> → CPATH</td><td><code>python3.10-dev</code> 미설치·sudo 불요 우회</td></tr>
+  <tr><td>CUDA_HOME</td><td><code>~/capstone-bev/cuda-home</code> 조립</td><td>bin/include/nvvm→cu117, lib64에 <code>libcudart.so</code>→pip 런타임</td></tr>
+</table>
+
+<pre><span class="c"># 빌드 env — 핵심은 -lcudart가 실제 SONAME libcudart.so.11.0으로 해결되게 하는 것</span>
+<span class="k">export</span> CUDA_HOME=~/capstone-bev/cuda-home
+<span class="k">export</span> PATH=$CUDA_HOME/bin:$PATH
+<span class="k">export</span> TORCH_CUDA_ARCH_LIST=8.6            <span class="c"># RTX 3080 sm_86</span>
+<span class="k">export</span> CPATH=~/capstone-bev/pyhdr/include/python3.10
+<span class="k">cd</span> ~/capstone-bev/BEVDet
+nvcc --version                           <span class="c"># → release 11.7, V11.7.99</span>
+python setup.py build_ext --inplace
+<span class="o"># 산출: bev_pool_v2_ext.*.so  9,131,040 bytes  (forward/backward export)</span></pre>
+
+<div class="card amber">
+  <h4>두 번째 벽 — spconv (카메라 전용인데 LiDAR-fusion을 eager import)</h4>
+  <p>모델 빌드 시 <code>ModuleNotFoundError: No module named 'spconv'</code>. 원인: bundled mmdet3d <code>models/detectors/__init__.py</code>가 <b class="hl">모든</b> 검출기를 eager import → 그중 <code>DAL</code>(LiDAR-camera fusion)이 spconv 요구. spconv 의존이 detectors/middle_encoders/roi_heads/ops <b class="hl">6곳 캐스케이드</b>. → 6개 <code>__init__</code> 다중패치보다 <code>pip install spconv-cu117</code>(2.3.6 + cumm 0.4.11)가 깨끗.</p>
+  <p class="small"><b>설계규칙:</b> OpenMMLab detectors <code>__init__</code>은 eager-import-all — 쓰지도 않는 모달리티의 의존까지 끌고 온다. 누락 의존은 "이 모델이 그걸 쓴다"가 아니라 "패키지가 그걸 import한다"는 신호. 설치가 패치보다 싸다.</p>
+</div>
+
+<!-- ══════════════ §4 ══════════════ -->
+<h2 class="sec" id="s4">§4 — 데이터 · FP32 walking skeleton</h2>
+
+<p class="step p lead">문서 §9의 완주 기준은 "먼저 BEVDet FP16(여기선 FP32)을 dGPU에서 <b>끝까지 관통</b> = walking skeleton". 그 관문을 실제로 통과시킨다.</p>
+
+<h3 style="font-size:15px;color:var(--brt);margin:18px 0 6px">데이터 — mini info pkl 생성 (벽 3)</h3>
+<p class="small"><code>create_data_bevdet.py</code>는 <code>v1.0-trainval</code> 하드코딩 + 무거운 <code>create_groundtruth_database</code> 호출이라 mini 실행 불가. 3곳 패치본(<code>create_data_bevdet_mini.py</code>)으로 우회. 실행엔 <code>PYTHONPATH=$PWD</code>(repo root) 필수 — <code>python tools/x.py</code>는 repo root를 sys.path에 안 넣어 <code>tools.data_converter</code> import 실패.</p>
+
+<table class="dt">
+  <tr><th>파일</th><th>samples</th><th>scenes</th><th>split</th><th>bytes</th></tr>
+  <tr><td>bevdetv3-nuscenes_infos_train.pkl</td><td>323</td><td>8</td><td>mini_train</td><td>6,252,981</td></tr>
+  <tr><td>bevdetv3-nuscenes_infos_val.pkl</td><td>81</td><td>2</td><td>mini_val</td><td>1,839,463</td></tr>
+</table>
+<p class="small"><b>초안 오류:</b> §4-1은 <code>bevdetv2-nuscenes_infos_*.pkl</code>라 적었으나 dev3.0 실제 태그는 <b class="hl"><code>bevdetv3-nuscenes</code></b>(config도 v3 참조). v2는 구버전 잔재.</p>
+
+<h3 style="font-size:15px;color:var(--brt);margin:22px 0 6px">walking skeleton — 무엇이 진짜고 무엇이 랜덤인가</h3>
+<p class="small">파이프라인은 <b class="hl">끝까지 실행</b>된다(모든 블록 exit 0). 단 <b class="hl">가중치</b>는 backbone만 진짜(ImageNet 사전학습)고 나머지는 랜덤(정식 가중치 Baidu-locked). 아래가 그 구조:</p>
+
+<div class="svgwrap">
+<svg viewBox="0 0 900 210" width="900" height="210" font-family="var(--mono)" role="img" aria-label="BEVDet walking skeleton pipeline">
+  <!-- arrows -->
+  <defs><marker id="ah" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#8b949e"/></marker></defs>
+  <!-- blocks: x positions -->
+  <!-- 1 input -->
+  <rect x="8" y="60" width="120" height="66" rx="9" fill="rgba(88,166,255,.10)" stroke="#58a6ff" stroke-width="1.4"/>
+  <text x="68" y="88" text-anchor="middle" fill="#e6edf3" font-size="13" font-weight="700">6-cam img</text>
+  <text x="68" y="107" text-anchor="middle" fill="#8b949e" font-size="11">nuScenes mini</text>
+  <line x1="130" y1="93" x2="156" y2="93" stroke="#8b949e" stroke-width="1.5" marker-end="url(#ah)"/>
+  <!-- 2 backbone REAL -->
+  <rect x="158" y="60" width="130" height="66" rx="9" fill="rgba(63,185,80,.13)" stroke="#3fb950" stroke-width="1.8"/>
+  <text x="223" y="84" text-anchor="middle" fill="#7ee787" font-size="13" font-weight="700">ResNet50</text>
+  <text x="223" y="101" text-anchor="middle" fill="#7ee787" font-size="10.5">backbone · 진짜</text>
+  <text x="223" y="116" text-anchor="middle" fill="#8b949e" font-size="9.5">torchvision ImageNet</text>
+  <line x1="290" y1="93" x2="316" y2="93" stroke="#8b949e" stroke-width="1.5" marker-end="url(#ah)"/>
+  <!-- 3 bev_pool_v2 CUDA -->
+  <rect x="318" y="52" width="150" height="82" rx="9" fill="rgba(188,140,255,.12)" stroke="#bc8cff" stroke-width="1.8"/>
+  <text x="393" y="78" text-anchor="middle" fill="#d2b3ff" font-size="12.5" font-weight="700">LSS · bev_pool_v2</text>
+  <text x="393" y="95" text-anchor="middle" fill="#d2b3ff" font-size="10.5">커스텀 CUDA op</text>
+  <text x="393" y="111" text-anchor="middle" fill="#7ee787" font-size="10">✓ GPU 실행 확인</text>
+  <text x="393" y="125" text-anchor="middle" fill="#8b949e" font-size="9.5">가중치는 랜덤</text>
+  <line x1="470" y1="93" x2="496" y2="93" stroke="#8b949e" stroke-width="1.5" marker-end="url(#ah)"/>
+  <!-- 4 BEV encoder random -->
+  <rect x="498" y="60" width="120" height="66" rx="9" fill="rgba(210,153,34,.12)" stroke="#d29922" stroke-width="1.4"/>
+  <text x="558" y="88" text-anchor="middle" fill="#e3b341" font-size="12.5" font-weight="700">BEV encoder</text>
+  <text x="558" y="107" text-anchor="middle" fill="#8b949e" font-size="10">랜덤 init</text>
+  <line x1="620" y1="93" x2="646" y2="93" stroke="#8b949e" stroke-width="1.5" marker-end="url(#ah)"/>
+  <!-- 5 head random -->
+  <rect x="648" y="60" width="120" height="66" rx="9" fill="rgba(210,153,34,.12)" stroke="#d29922" stroke-width="1.4"/>
+  <text x="708" y="88" text-anchor="middle" fill="#e3b341" font-size="12.5" font-weight="700">CenterPoint</text>
+  <text x="708" y="107" text-anchor="middle" fill="#8b949e" font-size="10">head · 랜덤 init</text>
+  <line x1="770" y1="93" x2="796" y2="93" stroke="#8b949e" stroke-width="1.5" marker-end="url(#ah)"/>
+  <!-- 6 eval -->
+  <rect x="798" y="60" width="94" height="66" rx="9" fill="rgba(63,185,80,.10)" stroke="#3fb950" stroke-width="1.4"/>
+  <text x="845" y="84" text-anchor="middle" fill="#7ee787" font-size="12" font-weight="700">nuScenes</text>
+  <text x="845" y="100" text-anchor="middle" fill="#7ee787" font-size="10.5">eval 하네스</text>
+  <text x="845" y="115" text-anchor="middle" fill="#7ee787" font-size="10">✓ exit 0</text>
+  <!-- legend -->
+  <rect x="8" y="168" width="13" height="13" rx="3" fill="rgba(63,185,80,.13)" stroke="#3fb950"/>
+  <text x="28" y="179" fill="#8b949e" font-size="11.5">진짜 가중치(backbone)·하네스 관통</text>
+  <rect x="270" y="168" width="13" height="13" rx="3" fill="rgba(188,140,255,.12)" stroke="#bc8cff"/>
+  <text x="290" y="179" fill="#8b949e" font-size="11.5">커스텀 CUDA op — GPU 실행(가중치 랜덤)</text>
+  <rect x="590" y="168" width="13" height="13" rx="3" fill="rgba(210,153,34,.12)" stroke="#d29922"/>
+  <text x="610" y="179" fill="#8b949e" font-size="11.5">랜덤 init(정식 가중치 Baidu-locked)</text>
+</svg>
+</div>
+
+<table class="dt">
+  <tr><th>FP32 eval (81 val)</th><th>값</th><th>해석</th></tr>
+  <tr class="lo"><td>mAP</td><td>0.0000</td><td rowspan="2" style="text-align:left;vertical-align:middle"><b class="hl">예상값</b> — backbone만 진짜, LSS·BEV·head 랜덤 → 검출 0은 정상(버그 아님)</td></tr>
+  <tr class="lo"><td>NDS</td><td>0.0260</td></tr>
+  <tr><td>mATE / mASE</td><td>1.0442 / 0.9705</td><td class="d">랜덤 예측 → 오차 지표 포화</td></tr>
+  <tr><td>mAOE / mAVE / mAAE</td><td>1.0837 / 0.8942 / 0.8750</td><td class="d">동일</td></tr>
+  <tr class="hi"><td>eval 관통</td><td class="g">exit 0</td><td style="text-align:left">export→bev_pool_v2 CUDA op(GPU)→eval 하네스 <b class="hl">walking skeleton 완주</b></td></tr>
+</table>
+
+<div class="card accent">
+  <h4>무엇이 검증됐고, 무엇이 안 됐나 (정직)</h4>
+  <p><b class="hl">검증됨:</b> 툴체인·데이터·커스텀 CUDA op(GPU 실행)·eval 하네스의 <b class="hl">기능적 완결성</b>(파이프라인이 끝까지 돈다).</p>
+  <p><b class="r">안 됨:</b> 절대 mAP/NDS 문헌대조(공개 BEVDet-R50 ≈ mAP 0.298/NDS 0.379). BEVDet-R50 정식 가중치는 <b class="hl">Baidu Pan 전용</b>(헤드리스 접근 불가, WebSearch 2회로 미러 못 찾음) → 사용자 사전승인 fall-back 지점. 가중치 확보 시 동일 하네스로 재실행하면 절대 정확도가 채워진다.</p>
+</div>
+
+<!-- ══════════════ §5 ══════════════ -->
+<h2 class="sec" id="s5">§5 — 지연 교차확증 (가중치와 무관하게 유효)</h2>
+
+<p class="step p lead">정확도는 가중치에 의존하지만 <b class="hl">latency는 forward 계산 그래프</b>에만 의존한다 — 랜덤 head라도 실연산량은 정식 모델과 동일. FP32 forward 지연(batch1, CUDA event-timed, N=30)을 공식 README와 대조:</p>
+
+<div class="svgwrap">
+<svg viewBox="0 0 760 180" width="760" height="180" font-family="var(--mono)" role="img" aria-label="FP32 latency cross-validation">
+  <!-- factor 16 px/ms; baseline x=150 -->
+  <!-- axis -->
+  <line x1="150" y1="30" x2="150" y2="150" stroke="#242b38" stroke-width="1"/>
+  <!-- bar 1: 실측 34.06ms → 34.06*16=544.96 -->
+  <text x="142" y="62" text-anchor="end" fill="#e6edf3" font-size="12.5">실측 p50 (3080)</text>
+  <rect x="150" y="46" width="544.96" height="30" rx="4" fill="rgba(88,166,255,.55)" stroke="#58a6ff" stroke-width="1.2"/>
+  <text x="704" y="66" fill="#e6edf3" font-size="12.5" font-weight="700">34.06 ms</text>
+  <!-- bar 2: README 33.3ms → 33.3*16=532.8 -->
+  <text x="142" y="112" text-anchor="end" fill="#8b949e" font-size="12.5">README (3090)</text>
+  <rect x="150" y="96" width="532.8" height="30" rx="4" fill="rgba(139,148,158,.35)" stroke="#8b949e" stroke-width="1.2"/>
+  <text x="692" y="116" fill="#8b949e" font-size="12.5">33.3 ms</text>
+  <!-- caption -->
+  <text x="150" y="168" fill="#8b949e" font-size="11">두 막대가 거의 겹침 → 랜덤 head라도 실연산량은 정식과 동일. factor 16 px/ms, 배치1.</text>
+</svg>
+</div>
+
+<table class="dt">
+  <tr><th>FP32 latency (batch1, event-timed, N=30)</th><th>값</th></tr>
+  <tr class="hi"><td>p50</td><td>34.06 ms</td></tr>
+  <tr><td>mean / min / max</td><td>34.18 / 33.91 / 35.55 ms</td></tr>
+  <tr><td>재실행 p50 (지터 확인)</td><td class="d">34.29 ms (지터 내 일치)</td></tr>
+  <tr><td>peak GPU mem</td><td>420.9 MiB</td></tr>
+  <tr><td>params</td><td>44.25 M</td></tr>
+  <tr class="base"><td>공식 README BEVDet-R50 total (RTX 3090)</td><td>33.3 ms</td></tr>
+</table>
+<p class="small">실측 34.06 ms(3080)가 공식 33.3 ms(3090)와 근접 — 3080이 3090보다 소폭 느린 것과도 정합. <b class="hl">latency는 실연산을 교차확증</b>하므로 가중치 미확보와 무관하게 유효하다.</p>
+
+<!-- ══════════════ §6 ══════════════ -->
+<h2 class="sec" id="s6">§6 — 판정 · 산출물</h2>
+
+<div class="card green">
+  <h4>판정 1 — walking skeleton 완주 (문서 §9 기준 충족)</h4>
+  <p>커스텀 CUDA op 빌드→데이터→export→GPU 추론→eval 하네스가 <b class="hl">끝까지 관통</b>. 문서 §9의 완주 기준("먼저 끝까지 관통 = walking skeleton, 4-target all-success는 보너스")을 충족한다.</p>
+</div>
+
+<div class="card accent">
+  <h4>판정 2 — 제3의 길이 문서 §3의 빈칸을 채운다</h4>
+  <p>문서 §3은 Docker cu116·blackwell 패치 2안만 준다. <b class="hl">Docker 없고 sudo 없는 머신</b>에서도 user-space cu117 툴체인 조립으로 레거시 커스텀 CUDA op을 빌드할 수 있음을 실증 — 이 경로가 §3의 제3의 선택지로 문서에 삽입됐다.</p>
+</div>
+
+<div class="card red">
+  <h4>판정 3 — 절대 정확도·INT8은 정직한 폴백 (범위 밖)</h4>
+  <p><b>절대 mAP/NDS:</b> BEVDet-R50 정식 가중치 Baidu-locked → 파이프라인은 완결이나 절대 정확도는 가중치 대기. <b>INT8/TRT-plugin:</b> §4-4의 3경로(BEVDet <code>--int8</code> TRT8.x / ModelOpt QDQ / DerryHub) 모두 <b class="hl">TRT 8.5 + 커스텀 <code>TRTBEVPoolv2</code> 플러그인</b> 툴체인 필요 → §4.6 BEVFormer와 동일 벽. 사용자 사전합의(중간 스코프=FP32까지)대로 <b class="hl">다음 과제</b>로 폴백. 이 머신의 INT8 축은 이미 3·5단계(ResNet50)·4단계(HTP)에서 완결.</p>
+</div>
+
+<h3 style="font-size:15px;color:var(--brt);margin:22px 0 6px">산출물</h3>
+<ul>
+  <li><code>logs/stage8_capstone_report.html</code> — 이 문서(§1~6 + SVG 2종)</li>
+  <li><code>experiments/stage8_capstone/capstone_constraints.md</code> — 벽 5종·툴체인 레시피·설계규칙</li>
+  <li><code>experiments/stage8_capstone/scripts/</code> — <code>build_bev_pool_v2.sh</code>(제3의 길)·<code>create_data_mini_patch.md</code>·<code>run_fp32_baseline.sh</code>·<code>bench_fp32_latency.py</code></li>
+  <li><code>experiments/stage8_capstone/results/</code> — <code>toolchain.json</code>·<code>create_data_mini.json</code>·<code>fp32_baseline_eval.json</code>·<code>fp32_latency.json</code> (SSOT)</li>
+  <li><code>study_guide/08_capstone.md</code> §3·§4-1·§4-2·§4-4·§9 🔬 실측 콜아웃 삽입(승번 0)</li>
+</ul>
+
+<div class="card">
+  <h4>캐비앗 (불변)</h4>
+  <ul style="margin:4px 0">
+    <li>절대 mAP/NDS는 init 가중치 + mini 81장 → <b class="hl">무의미</b>(파이프라인 검증용). 문헌 대조 불가.</li>
+    <li>latency는 CUDA event-timed·forward-only·batch1 → 다른 단계(TRT event-timed / 하네스 wall-clock)와 <b class="hl">1:1 비교 불가</b>, 구조·상대만.</li>
+    <li><code>bev_pool_v2_ext.so</code>는 legacy env 전용 아티팩트 — 정본 emb-ai venv <b class="hl">오염 0</b>.</li>
+    <li>INT8/TRT-plugin은 범위 밖(다음 과제). Baidu 가중치 확보 시 절대 정확도 재실행 가능.</li>
+  </ul>
+</div>
+
+<div class="foot">
+  <p>8단계 캡스톤 · BEVDet end-to-end 실측 · AI-LAP RTX 3080 · <span class="tag">2026-08-18</span></p>
+  <p>walking skeleton 완주(문서 §9) · 커스텀 CUDA op user-space cu117 빌드 · FP32 p50 34.06ms · 절대 정확도·INT8은 정직한 폴백. 상대·구조 관계만 유효.</p>
+</div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,21 @@
+{
+  "what": "BEVDet용 nuScenes-mini info pkl 생성 (LSS view-transform이 요구하는 카메라 intrinsic·ego2global·img aug 메타 포함)",
+  "tool": "tools/create_data_bevdet_mini.py (create_data_bevdet.py의 mini 패치본)",
+  "why_patch": "정본 create_data_bevdet.py는 main 블록 version='v1.0-trainval'·add_ann_adj_info의 nuscenes_version='v1.0-trainval' 하드코딩 + create_groundtruth_database(LiDAR seg, mini에 불필요·무거움) 호출 → mini 실행 불가",
+  "patches": [
+    "version='v1.0-trainval' → 'v1.0-mini' (main 블록)",
+    "add_ann_adj_info nuscenes_version='v1.0-trainval' → 'v1.0-mini'",
+    "create_groundtruth_database(...) 호출 주석처리 (mini 스모크엔 불필요)",
+    "extra_tag='bevdetv3-nuscenes' 유지 → config test ann_file 'bevdetv3-nuscenes_infos_val.pkl'과 정합"
+  ],
+  "env": {
+    "PYTHONPATH": "$PWD (repo root — tools.data_converter import 위해, `python tools/x.py`는 repo root를 sys.path에 안 넣음)",
+    "data_root": "data/nuscenes/ (maps·samples·sweeps·v1.0-mini 심링크 → ~/bevformer_work/BEVFormer/data/nuscenes/*)"
+  },
+  "outputs": {
+    "bevdetv3-nuscenes_infos_train.pkl": {"samples": 323, "scenes": 8, "split": "mini_train", "size_bytes": 6252981},
+    "bevdetv3-nuscenes_infos_val.pkl": {"samples": 81, "scenes": 2, "split": "mini_val", "size_bytes": 1839463}
+  },
+  "note_v3_not_v2": "문서 §4-1 초안은 'bevdetv2-nuscenes_infos_*.pkl'라 적었으나 BEVDet dev3.0 create_data_bevdet.py의 실제 extra_tag는 'bevdetv3-nuscenes' → config(bevdet-r50.py)도 v3 파일명 참조. v2는 구버전 잔재",
+  "caveat": "mini=323 train/81 val (10 scenes). §4.6 BEVFormer mini 스모크와 동일 규모 — 절대 mAP 문헌비교 불가, 파이프라인 관통 검증용"
+}

@@ -1,0 +1,31 @@
+{
+  "what": "BEVDet-R50 FP32 forward latency (batch 1, CUDA event-timed) — bev_pool_v2 커스텀 CUDA op이 GPU에서 실제 실행됨을 정량 증명",
+  "model": "BEVDet-R50 (params 44.25M)",
+  "device": "RTX 3080",
+  "batch": 1,
+  "precision": "FP32",
+  "timing": "torch.cuda.Event(enable_timing=True) start/end + synchronize, warmup 후 N=30",
+  "latency_ms": {
+    "p50": 34.0603,
+    "mean": 34.1793,
+    "min": 33.9079,
+    "max": 35.5486
+  },
+  "n_iters": 30,
+  "peak_mem_MiB": 420.9,
+  "params_M": 44.25,
+  "reproduced": {
+    "note": "bench_fp32_latency.py 재실행으로 확인 — 지터 내 일치(스크립트 충실성 증명)",
+    "rerun_p50_ms": 34.2944,
+    "rerun_mean_ms": 34.4163,
+    "rerun_peak_mem_MiB": 420.9,
+    "rerun_params_M": 44.25
+  },
+  "cross_validation": {
+    "readme_bevdet_r50_total_ms": 33.3,
+    "readme_device": "RTX 3090",
+    "interpretation": "실측 p50 34.06ms(RTX 3080)가 BEVDet 공식 README의 BEVDet-R50 total 33.3ms(RTX 3090)와 근접 → 랜덤 head라도 forward 계산량은 정식 모델과 동일(구조·연산 그래프 불변), latency는 가중치 값과 무관 → 실측 유효",
+    "note_3080_vs_3090": "3080이 3090보다 소폭 느린 것과 정합(같은 급, 다른 SKU)"
+  },
+  "caveat": "절대 지연=wall이 아닌 CUDA event-timed forward-only·배치1·mini 입력. 다른 단계(TRT event-timed/하네스 wall-clock)와 1:1 비교 불가, 상대 관계·구조 검증용. init 가중치라 정확도 무효하나 latency 구조는 유효"
+}

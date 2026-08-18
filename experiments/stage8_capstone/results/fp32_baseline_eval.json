@@ -1,0 +1,30 @@
+{
+  "what": "BEVDet-R50 FP32 baseline — nuScenes-mini val 81장 end-to-end eval (tools/test.py, bev_pool_v2 CUDA op이 GPU에서 실행)",
+  "model": "BEVDet-R50 (configs/bevdet/bevdet-r50.py, params 44.25M)",
+  "checkpoint": "work_dirs/capstone/init_r50.pth (torchvision://resnet50 backbone + init_weights() head)",
+  "eval_set": "nuScenes-mini val (81 samples / 2 scenes)",
+  "device": "RTX 3080",
+  "metrics": {
+    "mAP": 0.0000,
+    "NDS": 0.0260,
+    "mATE": 1.0442,
+    "mASE": 0.9705,
+    "mAOE": 1.0837,
+    "mAVE": 0.8942,
+    "mAAE": 0.8750
+  },
+  "per_class_AP": {
+    "car": 0.000, "truck": 0.000, "construction_vehicle": 0.000, "bus": 0.000,
+    "trailer": 0.000, "barrier": 0.000, "motorcycle": 0.000, "bicycle": 0.000,
+    "pedestrian": 0.000, "traffic_cone": 0.000
+  },
+  "eval_throughput_task_per_s": 16.6,
+  "headline": "walking skeleton 완주 — export→bev_pool_v2 CUDA op(GPU 실행)→nuScenes eval 하네스가 exit 0으로 끝까지 관통. 문서 §9 완주 기준(walking skeleton) 충족",
+  "honest_accuracy_interpretation": {
+    "mAP_0_is_expected": "backbone만 torchvision ImageNet 사전학습, LSS view-transform·BEV encoder·detection head는 init_weights() 랜덤 → 검출 성능 0은 정상·예상된 값(버그 아님)",
+    "why_no_real_checkpoint": "BEVDet-R50 detection 정식 가중치는 Baidu Pan 전용(헤드리스 환경 접근 불가). WebSearch 2회로 접근 가능 미러 못 찾음 → 절대 mAP는 정직한 폴백(사용자 사전승인 fall-back 지점)",
+    "what_is_validated": "파이프라인 기능적 완결성(툴체인·데이터·커스텀 CUDA op·eval 하네스). 절대 정확도는 가중치 확보 시 재실행 가능",
+    "what_is_NOT_validated": "절대 mAP/NDS 문헌 대조(공개 BEVDet-R50 mAP ~0.298/NDS ~0.379) — Baidu-locked 가중치 필요"
+  },
+  "caveat": "mini 81장 + init 가중치 → 절대 정확도 무의미. latency(fp32_latency.json)는 가중치 무관하게 구조 유효"
+}

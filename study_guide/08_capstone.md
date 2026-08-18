@@ -60,7 +60,7 @@
 | baseline (mini는 낮음) | R50: mAP 0.283 / NDS 0.350* | val: mAP 0.441 / NDS 0.504* | tiny: mAP 0.252 / NDS 0.354* |
 | 추천 대상 | **처음/시간 부족** | 중급 | 완주 자신 있을 때 |
 
-\* 수치는 **full nuScenes val** 기준 공식값(mmdetection3d/논문/DerryHub repo). `v1.0-mini`(10 scene)로 학습·평가하면 이보다 크게 낮게 나오는 게 정상이다 — mini는 재현·파이프라인 검증용이지 SOTA 재현용이 아니다(§5-0 참고).
+\* 수치는 **full nuScenes val** 기준 공식값(mmdetection3d/논문/DerryHub repo). `v1.0-mini`(10 scene)로 학습·평가하면 이보다 크게 낮게 나오는 게 정상이다 — mini는 재현·파이프라인 검증용이지 SOTA 재현용이 아니다(§5-0 참고). 또한 BEVDet-R50 공개값은 **config별로 갈린다** — 위 0.283/0.350은 논문·mmdet3d 계열이고, dev3.0 `bevdet-r50.py`(§4-2에서 실제로 돌린 config)의 모델주 공개값은 **mAP 0.298 / NDS 0.379**다. §4-2 실측 콜아웃이 후자를 기준으로 삼는 이유다.
 
 > 💡 팁: **BEVDet부터 시작하라.** LSS pooling(`bev_pool_v2`) 커스텀 op 하나만 해결하면 TensorRT까지 공식 스크립트(`convert_bevdet_to_TRT.py`)가 INT8까지 지원한다. BEVFormer-tiny는 "deformable attention을 어떻게 배포하나"라는 가장 값진 경험을 주지만, mmdeploy가 안 받아줘서 커스텀 플러그인이 필요하다(§4-4 경로 B). 시간이 있으면 BEVDet 완주 후 BEVFormer-tiny를 "도전 과제"로 얹어라.
 
@@ -167,6 +167,8 @@ nvcc --version       # CUDA 12.8 확인
 
 > ⚠️ 주의 (TRT 10.x의 INT8 방식 변화 — 중요): **TensorRT 10.1부터 구현식(implicit) INT8 양자화와 `IInt8EntropyCalibrator2` 등 캘리브레이터 API가 deprecated**됐고, **명시식(explicit) 양자화 = QDQ 노드 삽입**으로 대체됐다(2026-07 기준, TRT 10.3 릴리스노트). 즉 정본 10.16 호스트에서 "Entropy calibration 200프레임"을 하려면 옛날처럼 빌더에 calibrator를 꽂는 게 아니라, **NVIDIA TensorRT Model Optimizer(ModelOpt)로 Entropy 캘리브레이션을 돌려 QDQ가 박힌 ONNX를 만든 뒤** 그걸 `trtexec`로 빌드한다(§4-4 경로 A2). DerryHub 경로(TRT 8.5)는 구현식 calibrator를 그대로 쓰므로 "옛 방식의 참고 구현"으로 남는다. 출처: [TensorRT 10.3 Release Notes](https://docs.nvidia.com/deeplearning/tensorrt/latest/getting-started/release-notes-10/10.3.0.html), [Working with Quantized Types](https://docs.nvidia.com/deeplearning/tensorrt/10.x.x/inference-library/work-quantized-types.html).
 
+> 🔬 **실측 반영 (2026-08-18, AI-LAP RTX 3080 — Docker 없는 머신의 제3의 길):** 위 (a)Docker cu116·(b)blackwell 패치는 **Docker가 없고 sudo도 없는 머신에선 둘 다 막힌다**. 실제로 이 프로젝트를 관통시킨 경로는 문서에 없던 **③ user-space cu117 툴체인 조립**이었다. `bev_pool_v2` 커스텀 CUDA op을 빌드하려면 nvcc가 필요한데, 이 머신의 유일 toolkit은 **CUDA 12.8** → torch 1.13.1+cu117의 `_check_cuda_version`가 컴파일러 MAJOR(12)≠torch build MAJOR(11)에서 **RuntimeError로 중단**(§4.6 BEVFormer와 동일 근본원인). 해법은 빌드에 필요한 **세 조각을 user-space에 조달**하고 `CUDA_HOME`을 손으로 조립하는 것: **① nvcc** = micromamba `cuda-nvcc=11.7`(V11.7.99, 완전한 프론트엔드 — pip `nvidia-cuda-nvcc-cu11`은 ptxas만 있어 불충분) · **② libcudart** = pip `nvidia-cuda-runtime-cu11==11.7.99`(실제 `libcudart.so.11.0` — torch 번들 `libcudart-<hash>.so`는 `-lcudart` 링크 불가) · **③ Python.h** = micromamba `python=3.10` 헤더를 `CPATH`로(=`python3.10-dev`·sudo 불요 우회). `CUDA_HOME=~/capstone-bev/cuda-home`(bin/include/nvvm→cu117 심링크, lib64에 `libcudart.so`→pip 런타임) + `TORCH_CUDA_ARCH_LIST=8.6` → `python setup.py build_ext --inplace` → **`bev_pool_v2_ext.so` 9.13 MB 빌드 성공**. 정본 emb-ai venv(torch 2.11+cu128) **오염 0**(격리 legacy env). **두 번째 벽:** 카메라 전용 BEVDet인데 bundled mmdet3d `detectors/__init__.py`가 LiDAR-fusion 검출기(DAL)를 **eager import** → spconv 요구 → `pip install spconv-cu117`로 해소(6개 `__init__` 다중패치보다 깨끗). 전체 레시피·설계규칙은 [`experiments/stage8_capstone/capstone_constraints.md`](../experiments/stage8_capstone/capstone_constraints.md), 보고서 [`logs/stage8_capstone_report.html`](../logs/stage8_capstone_report.html) §3.
+
 ---
 
 ## 4) 단계별 실습
@@ -245,6 +247,8 @@ python tools/create_data_bevdet.py     # BEVDet 전용 스크립트
 # 산출물: data/nuscenes/bevdetv2-nuscenes_infos_{train,val}.pkl
 ```
 
+> 🔬 **실측 반영 (2026-08-18):** BEVDet **dev3.0**의 실제 태그는 `bevdetv2`가 아니라 **`bevdetv3-nuscenes`**(`create_data_bevdet.py`의 `extra_tag`, config `bevdet-r50.py`도 v3 파일명 참조 — 위 v2는 구버전 잔재). 또 `create_data_bevdet.py`는 `version='v1.0-trainval'`·`add_ann_adj_info`의 `nuscenes_version='v1.0-trainval'` **하드코딩** + 무거운 `create_groundtruth_database` 호출이라 mini엔 그대로 못 쓴다 → **3곳 패치본**(`v1.0-mini`×2 + gt_database 주석, [`create_data_mini_patch.md`](../experiments/stage8_capstone/scripts/create_data_mini_patch.md))으로 우회. 실행엔 **`export PYTHONPATH=$PWD`(repo root) 필수** — `python tools/x.py`는 repo root를 sys.path에 안 넣어 `tools.data_converter` import가 실패한다. mini 산출: **`bevdetv3-nuscenes_infos_{train,val}.pkl` = 323 train / 81 val**(8/2 scenes).
+
 > 💡 팁: mini는 train/val이 각각 몇 백 프레임 수준이라 학습이 몇 분~수십 분이면 끝난다. **학습은 옵션**이다 — 공식 full 체크포인트를 그냥 로드해 mini val로 평가만 해도 파이프라인 검증엔 충분하다. 학습을 굳이 한다면 "mini로 few-epoch fine-tune 후 mAP가 어떻게 변하나"를 블로그 소재로 삼을 수 있지만, 완주 조건은 아니다.
 
 > ⚠️ 주의: `render_sample_data`가 `matplotlib` backend 문제로 헤드리스 환경에서 멈추면, 스크립트 맨 위에 `import matplotlib; matplotlib.use('Agg')`를 넣어라. 컨테이너/SSH 환경에서 흔한 함정이다.
@@ -280,6 +284,8 @@ json.dump(baseline, open("reports/baseline_fp32.json", "w"), indent=2)
 ```
 
 > 이 수치가 **모든 비교의 기준선(baseline)**이다. "논문값"이 아니라 **"내 파이프라인의 FP32 값"**을 기준으로 삼는다(mini라서 논문보다 낮은 게 정상 — §5-0).
+
+> 🔬 **실측 반영 (2026-08-18, AI-LAP RTX 3080 — walking skeleton 완주 + 정직한 폴백):** 위 "공식 체크포인트 획득"이 이 프로젝트의 **하드 월**이었다. BEVDet-R50 정식 detection 가중치는 **Baidu Pan 전용**(헤드리스 환경 접근 불가, WebSearch 2회로 접근 가능 미러 못 찾음). → 절대 mAP는 정직하게 폴백하고, **파이프라인 관통(walking skeleton, §9)**을 대신 완주시켰다. `init_r50.pth`(torchvision ResNet50 backbone[ImageNet 실사전학습] + `init_weights()` head[랜덤])로 stock `tools/test.py`를 돌리면 **export→`bev_pool_v2` CUDA op(GPU 실행)→nuScenes eval 하네스가 exit 0으로 관통**한다. 그 결과 **mAP 0.0000 / NDS 0.0260**(전 클래스 AP 0.000)은 **버그가 아니라 예상값** — backbone만 진짜고 LSS·BEV encoder·detection head가 랜덤이라 검출 0이 정상이다. **검증된 것:** 툴체인·데이터·커스텀 CUDA op·eval 하네스의 기능적 완결성. **안 된 것:** 절대 mAP 문헌대조(공개 ≈ mAP 0.298/NDS 0.379) — Baidu 가중치 확보 시 동일 하네스로 재실행하면 채워진다. **latency는 가중치와 무관하게 유효:** FP32 forward **p50 34.06 ms**(batch1, CUDA event-timed, N=30; 재실행 34.29ms 지터 내 일치, peak 420.9 MiB, 44.25M params)가 공식 README의 **BEVDet-R50 total 33.3 ms(RTX 3090)**와 근접 → 랜덤 head라도 실연산량은 정식과 동일함을 교차확증. SSOT [`fp32_baseline_eval.json`](../experiments/stage8_capstone/results/fp32_baseline_eval.json)·[`fp32_latency.json`](../experiments/stage8_capstone/results/fp32_latency.json), 보고서 [`logs/stage8_capstone_report.html`](../logs/stage8_capstone_report.html) §4~5.
 
 ### 4-3. ONNX Export — 커스텀 op 처리 (2단계 기법)
 
@@ -324,6 +330,8 @@ assert max_abs < 1e-2, "parity 실패 → 심볼릭/op 매핑 확인"
 ### 4-4. INT8 PTQ — Entropy Calibration, 200 프레임 (1·3단계 이론)
 
 [1단계 양자화 이론](03_quantization_theory.md)의 **Entropy(KL) calibration**과 per-tensor/per-channel 개념을 여기서 실제로 돌린다. calibration 프레임은 mini train에서 **대표성 있게 200장**을 뽑는다(다양한 scene·시간대·주야). 200이라는 수는 "통계가 수렴하기엔 충분하고 시간은 아끼는" 경험적 균형점이다 — 너무 적으면(<50) 활성값 히스토그램이 불안정하고, 너무 많으면(>1000) 캘리브레이션만 오래 걸리고 mAP 개선은 미미하다.
+
+> 🔬 **실측 반영 (2026-08-18 — INT8은 이번 스코프 밖, 정직한 폴백):** 이번 실기 검증은 사용자 합의로 **FP32 walking skeleton까지**(§4-2)를 목표로 했고, 아래 INT8 3경로는 이 머신에선 모두 벽이라 **다음 과제로 폴백**했다. **경로 A1**(`convert_bevdet_to_TRT.py --int8`)·**경로 B**(DerryHub)는 `bev_pool_v2`/deformable attn의 **커스텀 TRT 플러그인(`TRTBEVPoolv2`)을 TensorRT 8.5 + CUDA 11.x 툴체인으로 빌드**해야 하는데(정본 호스트는 TRT 10.16), 이는 §4.6 BEVFormer가 부딪힌 "포크 커스텀 op 플러그인 툴체인" 벽과 **동일**하다. **경로 A2**(ModelOpt QDQ)는 `bev_pool_v2`가 표준 ONNX op이 아니라 export 자체가 §4-3 벽(커스텀 심볼릭 필요). → 이 머신에서 실측 가능한 **INT8 축은 이미 [3단계](05_tensorrt.md)·[5단계](07_infrastructure.md)(ResNet50 polygraphy)·[4단계](06_multi_soc.md)(Hexagon HTP)에서 완결**돼 있으므로, 캡스톤에서의 INT8은 그 자산으로 대체하고 BEVDet INT8은 TRT-8.5-plugin 툴체인 확보 시로 미룬다. 상세 [`capstone_constraints.md`](../experiments/stage8_capstone/capstone_constraints.md) 벽 5.
 
 **calibration 프레임 샘플링(대표성 확보)**:
 ```python
@@ -748,6 +756,8 @@ JD의 ①멀티카메라 3D검출 ②Transformer 배포 ③INT8 양자화 ④멀
 > ✅ ①②③④를 채우면 JD의 ①②③④를 그대로 커버한다. 매핑을 명시하면(리포 README에 "이 항목이 JD의 이 요구를 증명한다" 표를 넣으면) 리크루터가 매칭을 대신 안 해도 된다. **4개 타깃 전부 성공은 보너스**지, 완주 조건이 아니다. "TensorRT는 됐고, TIDL/QNN/DRP-AI는 여기까지 되고 여기서 이 op 때문에 막혔다"를 **논리적으로 설명할 수 있으면** 이미 지원 가능한 상태다.
 
 > 🔴 함정: 완벽주의로 W1에서 몇 주를 태우지 마라. **먼저 BEVDet FP16을 dGPU에서 끝까지 관통**시켜 파이프라인 뼈대(walking skeleton)를 만든 뒤, INT8·민감도·멀티타깃을 붙여 나가는 순서가 안전하다. "동작하는 얇은 관통"이 "완벽한 한 단계"보다 낫다. W1~W2에서 막히면 BEVFormer 도전을 접고 BEVDet 하나로 완주부터 확정하라.
+
+> 🔬 **실측 반영 (2026-08-18 — walking skeleton 완주 확인):** 위 완주 기준을 실제로 통과시켰다. AI-LAP RTX 3080에서 **커스텀 CUDA op 빌드(제3의 길, §3)→mini 데이터(§4-1)→FP32 관통(§4-2)**이 exit 0으로 끝까지 돌아, 문서가 정의한 "동작하는 얇은 관통"을 만들었다(FP16 대신 FP32로 관통 — 원리 동일). 정식 가중치(Baidu-locked)·INT8·멀티타깃은 이 뼈대 위에 붙일 다음 층으로, 문서의 순서 권고("먼저 관통, 나중에 확장")를 그대로 따른다. 이 단계에서 **"어디까지 되고 어디서 왜 막혔는지 논리적으로 설명 가능"**(§9 판정 문구)한 상태 — 벽 5종은 [`capstone_constraints.md`](../experiments/stage8_capstone/capstone_constraints.md)에 로그 원문과 함께 정리했다.
 
 ---
 
