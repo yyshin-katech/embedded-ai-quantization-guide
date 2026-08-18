@@ -1,6 +1,6 @@
 ---
 name: stage8-capstone-hands-on
-description: "8단계 캡스톤 BEVDet 실측(2026-08-18, AI-LAP RTX 3080, 미커밋): 커스텀 CUDA op bev_pool_v2를 sudo·Docker 없이 user-space cu117 툴체인(제3의 길)으로 컴파일→nuScenes-mini FP32 walking skeleton 관통. 정식 가중치 Baidu-locked→init 가중치라 mAP 0.0000(예상값), latency p50 34.06ms(공식 33.3ms 교차확증). INT8/TRT-plugin 범위 밖"
+description: "8단계 캡스톤 BEVDet 실측(2026-08-18, AI-LAP RTX 3080, 커밋 64e4c84 푸시완료): 커스텀 CUDA op bev_pool_v2를 sudo·Docker 없이 user-space cu117 툴체인(제3의 길)으로 컴파일→nuScenes-mini FP32 walking skeleton 관통. 정식 가중치 Baidu-locked→init 가중치라 mAP 0.0000(예상값), latency p50 34.06ms(공식 33.3ms 교차확증). INT8/TRT-plugin 범위 밖"
 metadata:
   node_type: memory
   type: project
@@ -56,6 +56,6 @@ BEVDet INT8은 TRT-8.5-plugin 툴체인 확보 시 다음 과제.
 event-timed·forward-only·batch1 → 다른 단계(TRT event-timed/하네스 wall-clock)와 1:1 비교 불가, 구조·상대만. ③
 `bev_pool_v2_ext.so` legacy env 전용(emb-ai 오염 0). ④ INT8/TRT-plugin 다음 과제.
 
-**커밋 미수행**(규약 [[repo-is-public-scan-before-commit]] — 요청 시만). tech-reviewer 팬인 검증 진행/완료 후 통합
-(README·study_guide/README·CLAUDE 변경이력·이 메모리). **남은 과제:** Baidu 가중치 확보 시 절대 mAP 재실행 · BEVDet
+**커밋 64e4c84 푸시완료** — 스캔 후 요청으로 수행([[repo-is-public-scan-before-commit]], 스크립트/문서 전건 시크릿 0건).
+tech-reviewer 팬인 PASS(🔴0·🟡1해소·🟢2) 후 통합 완료(README·study_guide/README·CLAUDE 변경이력·이 메모리). **남은 과제:** Baidu 가중치 확보 시 절대 mAP 재실행 · BEVDet
 INT8은 TRT 8.5+커스텀 플러그인 툴체인 대기 · TI TDA4VM·Renesas RZ/V2H 벤더 NPU는 보드 대기.
