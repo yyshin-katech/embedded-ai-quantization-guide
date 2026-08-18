@@ -46,7 +46,7 @@ backbone[ImageNet 실사전학습] + `init_weights()` head[랜덤])로 stock `to
   내 일치, peak 420.9 MiB, 44.25M params)가 공식 README **BEVDet-R50 total 33.3ms(RTX 3090)**와 근접 → 랜덤 head라도
   실연산량은 정식과 동일 교차확증. `bench_fp32_latency.py` 재실행으로 스크립트 충실성 확인.
 
-**INT8/TRT-plugin 관통(후속 세션, 미커밋):** 1차가 "다음 과제"로 남긴 §4-4 **경로 A1**(`convert_bevdet_to_TRT.py
+**INT8/TRT-plugin 관통(후속 세션, 커밋 463df43 푸시완료):** 1차가 "다음 과제"로 남긴 §4-4 **경로 A1**(`convert_bevdet_to_TRT.py
 --int8`, §4.6 [[stage2-bevformer-hands-on]] 포크 플러그인과 동일 벽)을 user-space에 TRT-8.5-plugin 툴체인을 실제
 조립해 관통. **격리 legacy env `~/bevf-legacy`:** TensorRT **8.5.3.1**·cuDNN 8.6·pycuda cu117(user-space). **진짜 벽은
 W3·W5, W6은 벽 아님:**
@@ -78,6 +78,6 @@ event-timed·forward-only·batch1 → 다른 단계(TRT event-timed/하네스 wa
 전용(emb-ai 오염 0). ④ INT8은 지연·크기·출력편차만 유효(절대 정확도는 Baidu 가중치 대기).
 
 **커밋 상태:** FP32 walking skeleton은 **커밋 64e4c84 푸시완료**(스캔 후 요청 수행, [[repo-is-public-scan-before-commit]],
-시크릿 0건). **INT8/TRT 관통분은 미커밋** — tech-reviewer 팬인 PASS(🔴0·🟡1[FP16 corr ≥0.9995→≥0.9994 통일]해소·🟢다수)
-후 통합 완료(README·study_guide/README·CLAUDE 변경이력·이 메모리), 커밋·푸시는 규약대로 요청 시만. **남은 과제:** Baidu
+시크릿 0건). **INT8/TRT 관통분도 커밋 463df43 푸시완료**(스캔 후 요청 수행, 시크릿 0건) — tech-reviewer 팬인 PASS(🔴0·🟡1[FP16 corr ≥0.9995→≥0.9994 통일]해소·🟢다수)
+후 통합 완료(README·study_guide/README·CLAUDE 변경이력·이 메모리). **남은 과제:** Baidu
 가중치 확보 시 절대 mAP 재실행(동일 하네스로 INT8 정확도까지) · 경로 A2/B · TI TDA4VM·Renesas RZ/V2H 벤더 NPU는 보드 대기.
