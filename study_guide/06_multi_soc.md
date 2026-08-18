@@ -452,6 +452,27 @@ outputs = infer_job.download_output_data()
 > 💡 **팁 — 로컬 검증 → AI Hub 실측, 2단 구성이 표준**
 > QNN EP로 로컬에서 "양자화 + 그래프 로드(disable_cpu_ep_fallback로 fallback 0 확인)"까지 검증하고, **latency/정확도 실측만 AI Hub**로 넘긴다. AI Hub 프로파일 잡의 per-layer timing은 TIDL의 `runtimes_visualization.svg`와 같은 목적 — "어디서 시간이 새는가"를 본다. AI Hub는 미리 컴파일된 ONNX Runtime 모델(QNN 바이너리 임베드)도 프로파일할 수 있어, 위 `qnn_infer.py` 산출물과 자연스럽게 이어진다.
 
+#### 🔬 실측 (Qualcomm 축): AI Hub로 Hexagon HTP 실기기 프로파일 — QCS8550 · SA8775P ADP
+
+> **이건 진짜 벤더-NPU 실측이다.** §2-2가 "모든 op가 CPU로 폴백된 바닥값(offload 0%)"이었다면, 여기서는 같은 ResNet50(3·5단계 자산)을 AI Hub 클라우드의 **실제 Snapdragon Hexagon HTP** 두 종에 올려 **on-device 지연 + NPU offload%**를 측정했다. 위 `qai_hub_profile.py` 골격을 그대로 돌린 결과다(`--target_runtime qnn_context_binary`, qai_hub 0.54.0).
+
+**헤드라인: 두 디바이스 모두 100% NPU offload, INT8이 fp16 대비 ×1.77·×2.03.**
+
+| 디바이스 · 정밀도 | on-device 지연 | INT8 배속 | NPU offload | cycles |
+|---|--:|:--|:--|--:|
+| **QCS8550** (Proxy) · FP32→fp16 | 1864 µs | — | **100%** (125/125) | 4,677,822 |
+| **QCS8550** · INT8 QDQ | **1052 µs** | **×1.77** | **100%** (128/128) | 3,754,903 |
+| **SA8775P ADP**(자동차) · FP32→fp16 | 3056 µs | — | **100%** (125/125) | 6,192,577 |
+| **SA8775P ADP** · INT8 QDQ | **1505 µs** | **×2.03** | **100%** (128/128) | 4,462,570 |
+
+- **깨끗한 CNN이라 폴백 0** — 이 단계의 이상형("Offloaded ≈ Total, subgraph 최소")을 벤더 실기기에서 정량 달성. §2-2 CPU 바닥값 위에 "가속기가 실제로 얼마나 버는가"가 얹힌다. INT8 배속은 execution_cycles로 교차 확증(FP32 사이클 > INT8 사이클).
+- **HTP엔 native fp32가 없다** — FP32 ONNX도 그래프 첫머리에 `..._FLOAT_32_converted_..._FLOAT_16` 노드가 삽입돼 **fp16으로 실행**된다. 그래서 "FP32 대비 배속"은 엄밀히 "fp16 대비 int8 배속"이다.
+- **🔴 함정 1 — AI Hub 프론트엔드는 ORT/TRT보다 엄격.** ORT 양자화기가 넣은 `logits`가 value_info+graph-IO 양쪽에 있으면(ONNX 스펙 위반) **컴파일이 거부**된다(`Tensors {'logits'} occur in value_info but also in model IO`). ORT·TRT는 통과시킨다. → IO와 충돌하는 value_info를 제거하고 제출(`onnx.checker` PASS, 계산 불변).
+- **🔴 함정 2 (silent-wrong) — 외부 QDQ를 지참하면 on-device INT8 정확도가 조용히 붕괴.** compile/profile은 통과(100% offload)해도, ORT가 만든 INT8 QDQ를 HTP로 임포트하면 **on-device top-1이 0.75→0.005로 붕괴**한다(200장). 같은 경로의 **FP32(fp16)는 충실**(0.745, ORT와 96% 일치)하므로 입력·전처리·파싱은 정상 — 범인은 "외부 QDQ scale을 HTP 임포트가 존중하지 않음". exit 0·정상 shape라 조용하다. **올바른 경로는 지참 QDQ가 아니라 AI Hub 자체 `submit_quantize_job`**(HTP-native QDQ): 같은 200장에서 **top-1 0.735·ORT 일치 0.94로 회복**(FP32 0.745·ORT-CPU 0.750에 근접, 외부 QDQ 0.005 붕괴와 대조) → 붕괴가 임포트 특유였음을 확정. 게다가 native-quant는 더 leaner해 **748 µs**(외부-QDQ INT8 1052µs보다 빠름)로, HTP-native 양자화가 더 최적화된 그래프를 만든다.
+
+> 📄 전체 실측·SVG·판정: [`../logs/stage4_qualcomm_aihub_report.html`](../logs/stage4_qualcomm_aihub_report.html) · 데이터·스크립트·설계규칙: [`../experiments/stage4_qualcomm_aihub/`](../experiments/stage4_qualcomm_aihub/)
+> **캐비앗:** 절대 지연은 on-device `estimated_inference_time`(HTP 추정)·배치1, top-1은 200장 서브셋 → **상대 관계(INT8 배속·offload·FP32충실 vs INT8붕괴)만 유효**. AI Hub는 Qualcomm 전용이라 이 실측은 세 벤더 중 **Qualcomm 축**만 채운다(TI TDA4VM·Renesas RZ/V2H는 4-A·4-C, 보드/툴체인 대기). "QCS8550 (Proxy)"는 프록시 디바이스, "SA8775P ADP"는 실제 자동차 보드.
+
 ---
 
 ### 4-C. Renesas DRP-AI — `rzv_drp-ai_tvm`

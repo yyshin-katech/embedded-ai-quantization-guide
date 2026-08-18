@@ -1,0 +1,10 @@
+{
+  "device": "QCS8550 (Proxy)",
+  "n": 200,
+  "output_key": "output_0",
+  "npu_top1_vs_gt": 0.005,
+  "ort_top1_vs_gt": 0.75,
+  "npu_vs_ort_agreement": 0.005,
+  "npu_ort_disagree_count": 199,
+  "inference_job": "https://workbench.aihub.qualcomm.com/jobs/j5mmxn675/"
+}

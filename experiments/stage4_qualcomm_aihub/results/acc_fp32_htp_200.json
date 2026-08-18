@@ -1,0 +1,9 @@
+{
+  "n": 200,
+  "device": "QCS8550 (Proxy)",
+  "fp32_htp_top1_vs_gt": 0.745,
+  "ort_top1_vs_gt": 0.75,
+  "fp32_vs_ort_agreement": 0.96,
+  "fp32_distinct": 183,
+  "inference_job": "https://workbench.aihub.qualcomm.com/jobs/j5qyq627g/"
+}

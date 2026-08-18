@@ -1,0 +1,40 @@
+{
+  "device": "QCS8550 (Proxy)",
+  "runtime": "--target_runtime qnn_context_binary",
+  "compile": {
+    "int8": {
+      "success": false,
+      "code": "FAILED",
+      "job_id": "jp2wyk06p",
+      "url": "https://workbench.aihub.qualcomm.com/jobs/jp2wyk06p/"
+    },
+    "fp32": {
+      "success": true,
+      "code": "SUCCESS",
+      "job_id": "jpyx31r05",
+      "url": "https://workbench.aihub.qualcomm.com/jobs/jpyx31r05/"
+    }
+  },
+  "profile": {
+    "fp32": {
+      "job_id": "jp8xyqmqg",
+      "url": "https://workbench.aihub.qualcomm.com/jobs/jp8xyqmqg/",
+      "success": true,
+      "summary": {
+        "estimated_inference_time_us": 1864,
+        "estimated_peak_memory_range_bytes": null,
+        "first_load_time_us": 235518,
+        "compile_memory_range": null,
+        "layer_count": 125,
+        "layers_by_compute_unit": {
+          "NPU": 125
+        },
+        "time_us_by_compute_unit": {
+          "NPU": 0
+        },
+        "npu_layer_fraction": 1.0,
+        "npu_time_fraction": 0.0
+      }
+    }
+  }
+}

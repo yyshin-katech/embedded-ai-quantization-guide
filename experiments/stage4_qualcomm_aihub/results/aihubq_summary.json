@@ -1,0 +1,35 @@
+{
+  "device": "QCS8550 (Proxy)",
+  "path": "AI Hub native quantize (INT8 w+a)",
+  "quantize": {
+    "job_id": "jp1jz48kp",
+    "url": "https://workbench.aihub.qualcomm.com/jobs/jp1jz48kp/",
+    "success": true
+  },
+  "compile": {
+    "job_id": "jgnnv69vg",
+    "url": "https://workbench.aihub.qualcomm.com/jobs/jgnnv69vg/",
+    "success": true
+  },
+  "profile": {
+    "job_id": "jpyx314r5",
+    "url": "https://workbench.aihub.qualcomm.com/jobs/jpyx314r5/",
+    "summary": {
+      "estimated_inference_time_us": 748,
+      "layer_count": 127,
+      "layers_by_compute_unit": {
+        "NPU": 127
+      },
+      "npu_layer_fraction": 1.0,
+      "sum_execution_cycles": 1985339
+    }
+  },
+  "accuracy": {
+    "n": 200,
+    "inference_job": "https://workbench.aihub.qualcomm.com/jobs/jglxmv0eg/",
+    "int8_htp_top1_vs_gt": 0.735,
+    "ort_top1_vs_gt": 0.75,
+    "int8_vs_ort_agreement": 0.94,
+    "int8_distinct": 184
+  }
+}

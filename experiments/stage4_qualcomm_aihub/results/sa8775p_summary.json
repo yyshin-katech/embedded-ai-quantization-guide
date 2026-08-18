@@ -1,0 +1,50 @@
+{
+  "device": "SA8775P ADP",
+  "runtime": "--target_runtime qnn_context_binary",
+  "compile": {
+    "fp32": {
+      "success": true,
+      "code": "SUCCESS",
+      "job_id": "j5w76e34g",
+      "url": "https://workbench.aihub.qualcomm.com/jobs/j5w76e34g/"
+    },
+    "int8": {
+      "success": true,
+      "code": "SUCCESS",
+      "job_id": "jg9mnlym5",
+      "url": "https://workbench.aihub.qualcomm.com/jobs/jg9mnlym5/"
+    }
+  },
+  "profile": {
+    "fp32": {
+      "job_id": "jp41rld2p",
+      "url": "https://workbench.aihub.qualcomm.com/jobs/jp41rld2p/",
+      "success": true,
+      "summary": {
+        "estimated_inference_time_us": 3056,
+        "first_load_time_us": 397059,
+        "layer_count": 125,
+        "layers_by_compute_unit": {
+          "NPU": 125
+        },
+        "npu_layer_fraction": 1.0,
+        "sum_execution_cycles": 6192577
+      }
+    },
+    "int8": {
+      "job_id": "jpyx31j05",
+      "url": "https://workbench.aihub.qualcomm.com/jobs/jpyx31j05/",
+      "success": true,
+      "summary": {
+        "estimated_inference_time_us": 1505,
+        "first_load_time_us": 443582,
+        "layer_count": 128,
+        "layers_by_compute_unit": {
+          "NPU": 128
+        },
+        "npu_layer_fraction": 1.0,
+        "sum_execution_cycles": 4462570
+      }
+    }
+  }
+}

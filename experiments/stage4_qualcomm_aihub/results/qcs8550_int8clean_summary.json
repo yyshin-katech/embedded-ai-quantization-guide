@@ -1,0 +1,30 @@
+{
+  "device": "QCS8550 (Proxy)",
+  "runtime": "--target_runtime qnn_context_binary",
+  "model": "/home/yuyeong/embedded-ai-quantization-guide/_workspace/stage3/resnet50_int8_qdq_aihub.onnx",
+  "compile": {
+    "success": true,
+    "code": "SUCCESS",
+    "job_id": "jglxmv22g",
+    "url": "https://workbench.aihub.qualcomm.com/jobs/jglxmv22g/"
+  },
+  "profile": {
+    "job_id": "j5674yznp",
+    "url": "https://workbench.aihub.qualcomm.com/jobs/j5674yznp/",
+    "success": true,
+    "summary": {
+      "estimated_inference_time_us": 1052,
+      "estimated_peak_memory_range": null,
+      "first_load_time_us": 214137,
+      "layer_count": 128,
+      "layers_by_compute_unit": {
+        "NPU": 128
+      },
+      "time_us_by_compute_unit": {
+        "NPU": 0
+      },
+      "npu_layer_fraction": 1.0,
+      "npu_time_fraction": 0.0
+    }
+  }
+}

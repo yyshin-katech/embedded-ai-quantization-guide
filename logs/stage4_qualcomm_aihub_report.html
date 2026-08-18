@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>4단계 Qualcomm AI Hub — 실측 검증 보고서 (QCS8550 · SA8775P Hexagon HTP)</title>
+<style>
+:root{--bg:#0b0e14;--panel:#131720;--panel2:#0f131b;--bd:#242b38;--tx:#c9d1d9;--dim:#8b949e;--brt:#e6edf3;--accent:#58a6ff;--green:#3fb950;--amber:#d29922;--red:#ff7b72;--purple:#bc8cff;--mono:'JetBrains Mono','SF Mono',ui-monospace,'Cascadia Code',Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans KR','Malgun Gothic',sans-serif}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:var(--sans);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:980px;margin:0 auto;padding:0 20px 120px}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+.hero{padding:48px 0 26px;border-bottom:1px solid var(--bd);margin-bottom:8px}
+.kicker{font-family:var(--mono);font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+.hero h1{margin:0 0 10px;font-size:30px;line-height:1.25;color:var(--brt);letter-spacing:-.01em}
+.hero p.sub{margin:0 0 20px;color:var(--dim);font-size:15px;max-width:80ch}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font-family:var(--mono);font-size:12px;padding:5px 10px;border:1px solid var(--bd);border-radius:999px;background:var(--panel);color:var(--tx)}
+.chip b{color:var(--brt);font-weight:600}
+.chip.done{border-color:rgba(63,185,80,.5);background:rgba(63,185,80,.12);color:#7ee787}
+.chip.blocked{border-color:rgba(255,123,114,.5);background:rgba(255,123,114,.12);color:#ff9d96}
+.chip.partial{border-color:rgba(210,153,34,.5);background:rgba(210,153,34,.12);color:#e3b341}
+nav.toc{display:flex;flex-wrap:wrap;gap:8px;margin:26px 0 6px}
+nav.toc a{font-family:var(--mono);font-size:12.5px;padding:6px 11px;border:1px solid var(--bd);border-radius:8px;background:var(--panel);color:var(--tx)}
+nav.toc a:hover{border-color:var(--accent);color:var(--brt);text-decoration:none}
+h2.sec{font-size:13px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin:40px 0 12px;font-weight:600;border-top:1px solid var(--bd);padding-top:26px}
+.step{margin:26px 0 0;scroll-margin-top:16px}
+.step>h3{display:flex;align-items:center;gap:12px;font-size:19px;color:var(--brt);margin:0 0 6px;letter-spacing:-.01em}
+.num{flex:none;display:inline-grid;place-items:center;width:28px;height:28px;border-radius:8px;background:var(--accent);color:#06101f;font-family:var(--mono);font-weight:700;font-size:13px}
+.step p.lead{margin:0 0 4px;color:var(--dim);font-size:14.5px}
+table.dt{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.3px;border:1px solid var(--bd);border-radius:10px;overflow:hidden;font-family:var(--mono)}
+table.dt th,table.dt td{padding:8px 12px;text-align:right;border-bottom:1px solid var(--bd)}
+table.dt th{background:var(--panel);color:var(--dim);font-weight:600;font-size:12px;letter-spacing:.04em}
+table.dt th:first-child,table.dt td:first-child{text-align:left;color:var(--brt)}
+table.dt tr:last-child td{border-bottom:none}
+table.dt tr.hi td{background:rgba(63,185,80,.08)}
+table.dt tr.lo td{background:rgba(255,123,114,.08)}
+table.dt tr.grey td{background:rgba(139,148,158,.08);color:var(--dim)}
+table.dt tr.base td{background:rgba(88,166,255,.07)}
+.g{color:var(--green)}.r{color:var(--red)}.a{color:var(--amber)}.p{color:var(--purple)}.d{color:var(--dim)}
+.card{background:var(--panel);border:1px solid var(--bd);border-radius:12px;padding:18px 20px;margin:16px 0}
+.card.accent{border-left:3px solid var(--accent)}
+.card.green{border-left:3px solid var(--green)}
+.card.red{border-left:3px solid var(--red)}
+.card.amber{border-left:3px solid var(--amber)}
+.card h4{margin:0 0 8px;color:var(--brt);font-size:15px}
+.card p{margin:6px 0}
+pre{background:var(--panel2);border:1px solid var(--bd);border-radius:10px;padding:14px 16px;overflow-x:auto;font-family:var(--mono);font-size:12.6px;line-height:1.5;color:var(--tx);margin:12px 0}
+pre .c{color:var(--dim)}pre .k{color:var(--purple)}pre .s{color:#a5d6ff}pre .e{color:var(--red)}pre .o{color:var(--green)}
+code{font-family:var(--mono);font-size:.92em;background:var(--panel2);border:1px solid var(--bd);border-radius:5px;padding:1px 5px;color:var(--brt)}
+ul{margin:8px 0;padding-left:22px}li{margin:5px 0}
+.small{font-size:12.8px;color:var(--dim)}
+.svgwrap{background:var(--panel2);border:1px solid var(--bd);border-radius:10px;padding:16px;margin:14px 0;overflow-x:auto}
+.foot{margin-top:56px;padding-top:22px;border-top:1px solid var(--bd);color:var(--dim);font-size:12.6px}
+.tag{font-family:var(--mono);font-size:11px;padding:2px 7px;border-radius:5px;border:1px solid var(--bd);background:var(--panel);color:var(--dim)}
+b.hl{color:var(--brt)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="hero">
+  <p class="kicker">4단계 · 멀티 SoC · Qualcomm 벤더 NPU 실측 (클라우드 실기기)</p>
+  <h1>Qualcomm AI Hub — Hexagon HTP 실측 검증 보고서</h1>
+  <p class="sub">CPU 폴백 프록시(Raspberry Pi 5)가 준 것은 <b class="hl">offload 0%의 바닥값</b>이었다. 이 보고서는 그 위 — <b class="hl">벤더 NPU가 실제로 얼마나 빠른가(on-device latency)와 얼마나 많이 가속기로 올라가는가(NPU offload%)</b> — 를 <b class="hl">보드 없이</b> Qualcomm AI Hub 클라우드의 실기기(QCS8550 프록시 · SA8775P ADP 자동차 보드)에서 ResNet50으로 실측한다. 산출물은 3·5단계 자산과 동일한 INT8 QDQ / FP32 ONNX.</p>
+  <div class="chips">
+    <span class="chip done">지연·offload <b>확보</b></span>
+    <span class="chip">모델 <b>ResNet50</b></span>
+    <span class="chip">디바이스 <b>QCS8550 · SA8775P ADP</b></span>
+    <span class="chip">런타임 <b>QNN context binary → HTP</b></span>
+    <span class="chip">qai_hub <b>0.54.0</b></span>
+    <span class="chip partial">TI·Renesas <b>보드 대기</b></span>
+  </div>
+</div>
+
+<nav class="toc">
+  <a href="#s1">§1 실행요약</a>
+  <a href="#s2">§2 환경·스택</a>
+  <a href="#s3">§3 지연·offload</a>
+  <a href="#s4">§4 정확도 진단</a>
+  <a href="#s5">§5 툴체인 발견</a>
+  <a href="#s6">§6 판정·산출물</a>
+</nav>
+
+<!-- ══════════════ §1 ══════════════ -->
+<h2 class="sec" id="s1">§1 — 실행 요약</h2>
+
+<div class="card accent">
+  <h4>한 줄 요약</h4>
+  <p>같은 ResNet50을 Qualcomm AI Hub로 <b class="hl">실제 Snapdragon Hexagon HTP</b> 두 종(QCS8550 프록시 · <b class="hl">SA8775P 자동차 ADP</b>)에 컴파일·프로파일하니 — <b class="hl">두 디바이스 모두 100% NPU offload</b>(폴백 0), INT8이 FP32(HTP에선 fp16) 대비 <b class="hl">×1.77(QCS8550) · ×2.03(SA8775P)</b> 빨랐다. 이는 CPU 프록시가 못 준 <b class="hl">벤더-NPU 실측 지연 + offload%</b>다. 단, <b class="r">on-device INT8 정확도에서 조용한 함정</b>을 발견했다(§4).</p>
+</div>
+
+<ul>
+  <li><b class="hl">지연·offload (신뢰):</b> compile/profile은 그래프 구조를 충실히 보존 → 두 디바이스 100% offload, INT8 배속 ×1.77·×2.03. execution_cycles로 교차 확증(FP32 4.68M/6.19M vs INT8 3.75M/4.46M).</li>
+  <li><b class="r">정확도 함정 (silent-wrong):</b> ORT가 만든 외부 INT8 QDQ ONNX를 HTP로 임포트하면 <b class="hl">on-device top-1이 0.75→0.005로 조용히 붕괴</b>. 같은 경로의 FP32(fp16)는 충실(0.745, ORT와 96% 일치) → 입력경로·전처리·파싱은 정상이고, <b class="hl">범인은 "외부 QDQ scale을 HTP 임포트가 존중하지 않음"</b>. 올바른 경로 = AI Hub 자체 quantize job(§4).</li>
+  <li><b class="hl">툴체인 발견 3종 (§5):</b> ① AI Hub 프론트엔드가 ORT/TRT보다 엄격 — <code>logits</code>가 value_info+IO 양쪽인 ONNX를 거부(컴파일 실패) ② FP32 ONNX도 HTP에선 <b class="hl">fp16으로 실행</b>(native fp32 없음) ③ 입력 인터페이스는 <b class="hl">엄격 NCHW</b> — NHWC 피드 거부(레이아웃 가설 기각).</li>
+  <li><b class="hl">정직한 범위:</b> AI Hub는 Qualcomm 전용이므로 이 실측은 §06 세 벤더 중 <b class="hl">Qualcomm 축</b>만 채운다. TI(TDA4VM)·Renesas(RZ/V2H)는 보드/툴체인 대기.</li>
+</ul>
+
+<!-- ══════════════ §2 ══════════════ -->
+<h2 class="sec" id="s2">§2 — 환경·스택 (실측)</h2>
+
+<table class="dt">
+  <tr><th>항목</th><th>값 / 비고</th></tr>
+  <tr><td>클라이언트</td><td>qai_hub 0.54.0 (격리 venv <code>qaihub-venv</code>, 정본 emb-ai 오염 회피)</td></tr>
+  <tr><td>인증</td><td><code>qai-hub configure</code> → <code>~/.qai_hub/client.ini</code> (repo 밖, 토큰 비커밋)</td></tr>
+  <tr><td>디바이스 1</td><td>QCS8550 (Proxy) — Hexagon v73, HTP, android/aarch64. IoT·로보틱스급 Snapdragon 프록시</td></tr>
+  <tr><td>디바이스 2</td><td>SA8775P ADP — <b class="hl">자동차 Snapdragon Ride</b> 물리 보드(ADP)</td></tr>
+  <tr><td>타깃 런타임</td><td><code>--target_runtime qnn_context_binary</code> (ONNX → Hexagon HTP context binary)</td></tr>
+  <tr><td>QAIRT SDK</td><td>2.45.0 (컴파일된 모델 메타데이터에서 확인), HTP 최적화 레벨 3</td></tr>
+  <tr><td>모델</td><td>torchvision ResNet50 — FP32 ONNX(opset17, 122노드) · INT8 QDQ(415노드, 3·5단계 자산 재사용)</td></tr>
+  <tr><td>잡 3종</td><td>submit_compile_job → submit_profile_job → submit_inference_job (모두 async, 실기기 큐)</td></tr>
+</table>
+
+<p class="small">모든 잡은 클라우드 큐의 <b>실제 디바이스</b>에서 실행된다. 이 데스크톱(RTX 3080)은 잡 제출·결과 수집만 한다 — "보드 없이 벤더 NPU 실측"의 핵심 경로.</p>
+
+<!-- ══════════════ §3 ══════════════ -->
+<h2 class="sec" id="s3">§3 — 지연 · NPU offload (핵심 실측, 신뢰)</h2>
+
+<p class="step p lead">compile→profile은 그래프를 충실히 보존한다(정확도 함정과 무관). 두 디바이스, 두 정밀도의 on-device 추정 지연·컴퓨트유닛 분배·실행 사이클:</p>
+
+<table class="dt">
+  <tr><th>디바이스 · 정밀도</th><th>on-device 지연</th><th>INT8 배속</th><th>NPU offload</th><th>execution_cycles</th><th>레이어</th></tr>
+  <tr class="base"><td>QCS8550 · FP32 (→HTP fp16)</td><td>1864 µs</td><td>—</td><td>125/125 (100%)</td><td>4,677,822</td><td>125</td></tr>
+  <tr class="hi"><td>QCS8550 · INT8 QDQ</td><td>1052 µs</td><td class="g">×1.77</td><td>128/128 (100%)</td><td>3,754,903</td><td>128</td></tr>
+  <tr class="base"><td>SA8775P ADP · FP32 (→HTP fp16)</td><td>3056 µs</td><td>—</td><td>125/125 (100%)</td><td>6,192,577</td><td>125</td></tr>
+  <tr class="hi"><td>SA8775P ADP · INT8 QDQ</td><td>1505 µs</td><td class="g">×2.03</td><td>128/128 (100%)</td><td>4,462,570</td><td>128</td></tr>
+</table>
+
+<div class="svgwrap">
+<svg width="720" height="220" viewBox="0 0 720 220" xmlns="http://www.w3.org/2000/svg" font-family="'JetBrains Mono',monospace" font-size="12">
+  <!-- factor: width = latency_us * 0.18 px/us -->
+  <text x="0" y="16" fill="#8b949e" font-size="11">on-device 지연 (µs) · 막대폭 = µs × 0.18</text>
+  <!-- QCS8550 FP32 1864 -->
+  <text x="0" y="52" fill="#c9d1d9">QCS8550 FP32</text>
+  <rect x="150" y="40" width="335.5" height="18" fill="#58a6ff" opacity="0.55" rx="3"/>
+  <text x="493" y="53" fill="#e6edf3">1864 µs</text>
+  <!-- QCS8550 INT8 1052 -->
+  <text x="0" y="82" fill="#c9d1d9">QCS8550 INT8</text>
+  <rect x="150" y="70" width="189.4" height="18" fill="#3fb950" rx="3"/>
+  <text x="347" y="83" fill="#7ee787">1052 µs ×1.77</text>
+  <!-- SA8775P FP32 3056 -->
+  <text x="0" y="122" fill="#c9d1d9">SA8775P FP32</text>
+  <rect x="150" y="110" width="550.1" height="18" fill="#58a6ff" opacity="0.55" rx="3"/>
+  <text x="700" y="123" fill="#e6edf3" text-anchor="end">3056 µs</text>
+  <!-- SA8775P INT8 1505 -->
+  <text x="0" y="152" fill="#c9d1d9">SA8775P INT8</text>
+  <rect x="150" y="140" width="270.9" height="18" fill="#3fb950" rx="3"/>
+  <text x="428" y="153" fill="#7ee787">1505 µs ×2.03</text>
+  <text x="0" y="196" fill="#8b949e" font-size="11">두 디바이스 모두 <tspan fill="#7ee787">100% NPU offload</tspan> — 깨끗한 CNN이라 폴백 0. 자동차 SA8775P HTP가 프록시보다 ~1.6× 느리지만 INT8 배속 관계는 유지.</text>
+</svg>
+</div>
+
+<div class="card green">
+  <h4>읽는 법 — 이게 왜 CPU 프록시보다 위인가</h4>
+  <p>4단계 CPU 폴백 프록시(Raspberry Pi 5)는 "모든 op가 CPU로 떨어졌을 때"의 <b class="hl">offload 0% 바닥값</b>이었다. 여기서는 <b class="hl">offload 100%</b> — ResNet50의 모든 노드가 Hexagon HTP로 올라갔다. §06의 목표("Offloaded ≈ Total, subgraph 최소")를 <b class="hl">벤더 실기기에서 정량 달성</b>한 그림이다. INT8 배속(×1.77·×2.03)은 HTP의 INT8 전용 MAC이 fp16 대비 이기는, NPU의 존재 이유를 직접 보여준다.</p>
+</div>
+
+<!-- ══════════════ §4 ══════════════ -->
+<h2 class="sec" id="s4">§4 — on-device 정확도 진단: 외부 QDQ의 조용한 붕괴 (silent-wrong)</h2>
+
+<p class="step p lead">지연·offload가 좋다고 <b>수치가 맞는다는 뜻은 아니다</b>. QCS8550에서 200장(ImageNet val 서브셋)으로 on-device 예측을 ORT-CPU·정답과 대조했다:</p>
+
+<table class="dt">
+  <tr><th>경로 (QCS8550, 200장)</th><th>on-device top-1</th><th>ORT-CPU 대비</th><th>ORT 일치율</th><th>distinct 클래스</th></tr>
+  <tr class="base"><td>ORT-CPU (기준)</td><td>0.750</td><td>—</td><td>—</td><td>181</td></tr>
+  <tr class="hi"><td>FP32 (→HTP fp16)</td><td>0.745</td><td class="g">−0.005 (충실)</td><td>0.96</td><td>183</td></tr>
+  <tr class="lo"><td>INT8 · 외부 ORT-QDQ</td><td>0.005</td><td class="r">붕괴</td><td>0.005</td><td>35</td></tr>
+  <tr id="nativerow" class="hi"><td>INT8 · AI Hub 자체 quantize</td><td>0.735</td><td class="g">−0.015 (회복)</td><td>0.94</td><td>184</td></tr>
+</table>
+
+<p class="small">20장 대조군도 동일: FP32 0.75 / INT8-외부 0.0 → 스케일 무관한 구조적 붕괴. FP32가 충실하다는 것은 입력(NCHW)·전처리·업로드·출력파싱·정확도 하네스가 모두 정상이라는 뜻 — 붕괴는 <b class="hl">외부 QDQ 임포트 특유</b>다.</p>
+
+<!-- ACCURACY SVG PLACEHOLDER: filled after native-quant lands -->
+<div class="svgwrap" id="accsvg">
+<svg width="720" height="170" viewBox="0 0 720 170" xmlns="http://www.w3.org/2000/svg" font-family="'JetBrains Mono',monospace" font-size="12">
+  <text x="0" y="16" fill="#8b949e" font-size="11">on-device top-1 · 막대폭 = top-1 × 600</text>
+  <text x="0" y="46" fill="#c9d1d9">ORT-CPU 기준</text>
+  <rect x="150" y="34" width="450" height="18" fill="#58a6ff" opacity="0.55" rx="3"/><text x="608" y="47" fill="#e6edf3">0.750</text>
+  <text x="0" y="76" fill="#c9d1d9">FP32 (fp16 HTP)</text>
+  <rect x="150" y="64" width="447" height="18" fill="#3fb950" rx="3"/><text x="605" y="77" fill="#7ee787">0.745 충실</text>
+  <text x="0" y="106" fill="#c9d1d9">INT8 외부 QDQ</text>
+  <rect x="150" y="94" width="3" height="18" fill="#ff7b72" rx="3"/><text x="160" y="107" fill="#ff9d96">0.005 붕괴</text>
+  <text x="0" y="136" fill="#c9d1d9">INT8 AI Hub quant</text>
+  <rect id="nativebar" x="150" y="124" width="441" height="18" fill="#d29922" rx="3"/><text id="nativelabel" x="599" y="137" fill="#e3b341">0.735 회복</text>
+</svg>
+</div>
+
+<div class="card red">
+  <h4>범인 = 외부 QDQ scale을 HTP 임포트가 존중하지 않음</h4>
+  <p>ORT 양자화기가 만든 이 INT8 QDQ ONNX는 scale이 정상이다 — <b class="hl">동일 자산이 4단계 CPU 프록시의 x86 CPUEP에선 top-1 0.753</b>(1,000장, <code>cpu_proxy/…__x86_cpu__int8.json</code>). 같은 ONNX를 AI Hub가 QNN context binary로 컴파일하면 그래프는 돌지만(100% offload) <b class="hl">on-device 수치가 0.005로 붕괴</b>한다 — 예측이 35개 클래스에 집중(409/862/818/506/723). exit 0·정상 shape 출력이라 <b class="r">조용하다</b>. <b class="hl">권장 경로는 외부 QDQ 지참이 아니라 AI Hub 자체 <code>submit_quantize_job</code></b>(HTP-native QDQ 생성). 아래 카드가 그 대조다.</p>
+</div>
+
+<div class="card green">
+  <h4>올바른 경로 대조 — AI Hub 자체 quantize로 0.735 회복 (게다가 더 빠름)</h4>
+  <p>동일 200장에서 AI Hub의 <code>submit_quantize_job</code>(HTP-native INT8 QDQ)은 <b class="hl">top-1 0.735 · ORT 일치 0.94 · distinct 184</b> — FP32(fp16) 0.745·ORT-CPU 0.750에 <b class="hl">근접 회복</b>한다. 외부 QDQ의 0.005 붕괴가 <b class="hl">임포트 특유</b>였음을 확정하는 대조군이다.</p>
+  <p>부수 실측: native-quant는 정확할 뿐 아니라 <b class="hl">더 leaner</b> — <b>748 µs · 1,985,339 cyc · 127층(100% NPU)</b>로, 외부-QDQ INT8(1052 µs·3,754,903 cyc·128층)보다 빠르다. HTP-native 양자화가 더 최적화된 그래프를 만든다(외부 QDQ는 임포트만 될 뿐 최적 스케줄이 아님).</p>
+  <p class="small">잡: quantize <code>jp1jz48kp</code> → compile <code>jgnnv69vg</code> → profile <code>jpyx314r5</code> → inference <code>jglxmv0eg</code>.</p>
+</div>
+
+<!-- ══════════════ §5 ══════════════ -->
+<h2 class="sec" id="s5">§5 — 툴체인 발견 3종</h2>
+
+<div class="step">
+  <h3><span class="num">1</span>AI Hub 프론트엔드는 ORT/TRT보다 엄격 — value_info↔IO 충돌 거부</h3>
+  <p class="lead">ORT 양자화기가 shape-inference로 넣은 <code>logits</code>가 <code>graph.value_info</code>와 <code>graph.output</code>에 <b class="hl">동시에</b> 존재(ONNX 스펙 위반). ORT·TensorRT는 관대해 통과시키지만 AI Hub 컴파일은 실패한다:</p>
+<pre><span class="c"># 원본 INT8 QDQ 컴파일 (jp2wyk06p)</span>
+<span class="e">❌ FAILED  Tensors {'logits'} occur in value_info but also in model IO.</span>
+
+<span class="c"># 수정: IO와 충돌하는 value_info 제거 (계산 그래프 불변)</span>
+io = set(i.name for i in g.input) | set(o.name for o in g.output)
+g.value_info = [v for v <span class="k">in</span> g.value_info <span class="k">if</span> v.name <span class="k">not in</span> io]  <span class="c"># 122 → 121</span>
+onnx.checker.check_model(m)   <span class="o"># PASS</span>
+<span class="c"># 정리본 컴파일 (jglxmv22g) → SUCCESS, 100% offload</span></pre>
+  <p class="small">→ <code>clean_valueinfo_for_aihub.py</code>. 다른 툴체인에서 통과하던 QDQ ONNX라도 AI Hub行 검증을 한 번 더 거쳐야 한다.</p>
+</div>
+
+<div class="step">
+  <h3><span class="num">2</span>FP32 ONNX도 HTP에선 fp16으로 실행 (native fp32 없음)</h3>
+  <p class="lead">HTP는 fp16/int8 네이티브다. FP32 모델을 올리면 그래프 첫머리에 자동 변환 노드가 삽입된다 — 프로파일 execution_detail에서 실측:</p>
+<pre><span class="c"># profile execution_detail[1]</span>
+{'name': '<span class="s">QNN_DATATYPE_FLOAT_32_converted_input_QNN_DATATYPE_FLOAT_16</span>',
+ 'compute_unit': '<span class="o">NPU</span>', 'execution_cycles': 35758}</pre>
+  <p class="small">→ 이 보고서의 "FP32" 행은 엄밀히는 <b class="hl">fp16-on-HTP</b>다. 그래서 FP32 정확도도 ORT-CPU(진짜 fp32)와 완전 동일이 아니라 0.745(−0.005)다.</p>
+</div>
+
+<div class="step">
+  <h3><span class="num">3</span>입력 인터페이스는 엄격 NCHW — NHWC 가설 기각</h3>
+  <p class="lead">붕괴(§4)의 첫 가설은 "HTP가 channel-last를 기대한다(NHWC)"였다. 두 경로로 반증:</p>
+<pre><span class="c"># 컴파일 잡의 선언 입력</span>
+job.target_shapes = {'input': ((1, 3, 224, 224), 'float32')}   <span class="c"># NCHW</span>
+
+<span class="c"># NHWC (1,224,224,3) 피드 시도 (jgj7nve1g)</span>
+<span class="e">❌ FAILED  Cannot assign data from unexpected shape.
+           Expected [1, 3, 224, 224], got [1, 224, 224, 3].</span></pre>
+  <p class="small">→ AI Hub는 선언된 NCHW를 엄격 검증한다. 내 NCHW 피드가 올바른 형상이었고, 붕괴 원인은 레이아웃이 아니라 §4의 외부-QDQ 임포트다.</p>
+</div>
+
+<!-- ══════════════ §6 ══════════════ -->
+<h2 class="sec" id="s6">§6 — 판정 · 캐비앗 · 산출물</h2>
+
+<div class="card">
+  <h4>판정 4종</h4>
+  <ul>
+    <li><b class="hl">① 벤더-NPU 지연·offload 확보:</b> QCS8550 ×1.77 · SA8775P ×2.03, 둘 다 100% offload. CPU 프록시(offload 0%)가 못 준 "가속기가 이겨야 할 최소선" 위의 실측.</li>
+    <li><b class="r">② 외부 QDQ = on-device 정확도 함정:</b> compile/profile은 통과해도 on-device INT8 수치가 조용히 붕괴(0.005). FP32(fp16)는 충실(0.745). 지연이 좋다고 수치를 믿지 말 것.</li>
+    <li><b class="hl">③ 올바른 INT8 경로 = AI Hub 자체 quantize:</b> <span id="verdict3">top-1 0.735 · ORT 일치 0.94로 FP32(fp16) 0.745에 근접 회복(외부 QDQ 0.005 붕괴와 대조). 게다가 748µs·1.99M cyc로 외부-QDQ INT8(1052µs)보다 <b class="hl">빠름</b> — HTP-native 양자화가 더 leaner한 그래프를 만든다.</span></li>
+    <li><b class="hl">④ 정직한 범위:</b> Qualcomm 축만 실측. TI·Renesas는 보드/툴체인 대기.</li>
+  </ul>
+</div>
+
+<div class="card amber">
+  <h4>캐비앗 (절대값 비교 금지, 상대 관계만)</h4>
+  <ul>
+    <li>절대 지연은 <b>on-device estimated_inference_time</b>(HTP 스케줄러 추정)이며 배치1 기준 — 다른 단계의 wall-clock/event-timed와 1:1 비교 불가.</li>
+    <li>top-1은 <b>200장 서브셋</b>이라 부풀림 가능(1단계 함정 0). 상대 관계(FP32 충실 vs INT8 붕괴)만 유효.</li>
+    <li>"QCS8550 (Proxy)"는 프록시 디바이스, "SA8775P ADP"는 실제 자동차 보드 — 절대속도 비교보다 <b>각 디바이스 내 INT8/FP32 관계</b>가 논점.</li>
+    <li>FP32는 실제로 <b>fp16-on-HTP</b>(§5-2). "FP32 대비 배속"은 "fp16 대비 int8 배속"으로 읽어야 정확.</li>
+  </ul>
+</div>
+
+<div class="card">
+  <h4>산출물</h4>
+  <ul>
+    <li><code>logs/stage4_qualcomm_aihub_report.html</code> — 이 보고서</li>
+    <li><code>experiments/stage4_qualcomm_aihub/</code> — 스크립트(compile/profile 러너·정확도·레이아웃진단·native-quant·value_info 정리)·결과 JSON·raw 프로파일·<code>aihub_constraints.md</code>(로그 원문+설계규칙)</li>
+    <li>문서 반영: <code>study_guide/06_multi_soc.md</code> §4-B에 실측 콜아웃(승번 0, 순수 가산)</li>
+  </ul>
+</div>
+
+<div class="foot">
+  4단계 Qualcomm AI Hub 실측 · ResNet50 · QCS8550 / SA8775P ADP Hexagon HTP · qai_hub 0.54.0 · QAIRT 2.45.0<br>
+  컴파일 잡: FP32 <code>jpyx31r05</code> · INT8-정리본 <code>jglxmv22g</code>(원본 <code>jp2wyk06p</code> FAILED) · SA8775P FP32 <code>j5w76e34g</code>/INT8 <code>jg9mnlym5</code>. 프로파일: QCS8550 FP32 <code>jp8xyqmqg</code>/INT8 <code>j5674yznp</code> · SA8775P FP32 <code>jp41rld2p</code>/INT8 <code>jpyx31j05</code>. 정확도 추론: FP32-200 <code>j5qyq627g</code> · INT8외부-200 <code>j5mmxn675</code>.
+</div>
+
+</div>
+</body>
+</html>
