@@ -62,7 +62,7 @@ wall-clock/event-timed와 1:1 비교 불가. ② top-1=200장 서브셋(1단계 
 insert/0 delete)·잡ID 12개·크로스링크·캐비앗. 🟡1 = 외부QDQ ORT-CPU `0.753`이 200장 격자 밖(0.753×200=150.6 정수
 불가)·미소싱 → **실제 cpu_proxy x86 CPUEP 1,000장 값으로 출처 명시**해 해소(리뷰어 지적 후 수정).
 
-**미커밋** — 규약대로 사용자 요청 시 커밋([[repo-is-public-scan-before-commit]]). 스캔: 스크립트/문서 전건 시크릿
+**커밋 374b99b 푸시완료** — 스캔 후 요청으로 수행([[repo-is-public-scan-before-commit]]). 스캔: 스크립트/문서 전건 시크릿
 청결(AI Hub 토큰은 `~/.qai_hub/client.ini` repo 밖·모든 문서에서 `<AI_HUB_TOKEN>` 마스킹, 계정 비번은 어떤 qai_hub
 CLI/API도 안 써 미저장). 격리 venv라 정본 ORT 1.23.2 오염 없음([[machine-ai-lap-rtx3080]]).
 
