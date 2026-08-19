@@ -144,7 +144,7 @@ footer{margin-top:46px;padding-top:20px;border-top:1px solid var(--bd);color:var
     <div class="chartwrap">
       <p class="ct">INT8 상대 지연 — 자기 FP32 기준(1.00×). 왼쪽=빠름 ✓, 오른쪽=느림 ✗</p>
       <p class="cs">막대 길이 ∝ (자기 FP32 대비 배율), 스케일 260px/1.0×. 오른쪽 = 절대 지연 · 배수.</p>
-      <svg viewBox="0 0 800 300" width="100%" aria-label="int8 relative-latency sign-flip chart, 3 platforms">
+      <svg viewBox="0 0 860 300" width="100%" aria-label="int8 relative-latency sign-flip chart, 3 platforms">
         <g font-family="'JetBrains Mono',monospace" font-size="10" fill="#5c6773">
           <line x1="270" y1="12" x2="270" y2="258" stroke="#1a202b"/><text x="270" y="274" text-anchor="middle">0.5×</text>
           <line x1="400" y1="12" x2="400" y2="262" stroke="#8b949e" stroke-dasharray="4 3"/><text x="400" y="278" text-anchor="middle" fill="#8b949e">1.0× 자기 FP32</text>
@@ -261,11 +261,11 @@ $ python3 ... --model resnet50_int8_qdq_op4.onnx ...
     <div class="verdict yes"><h4><span class="b">정직화 ✓</span> i.MX8M Nano는 폴백 프록시일 뿐 NPU 아님</h4><p>Nano엔 NPU가 없어(Plus에만 탑재) CPU가 유일 경로 — 측정한 건 "구형 A-코어 폴백의 바닥값". 자동차 NPU(QCS8550/RZ-V2H/TDA4VM) 가속 수치는 전이되지 않는다. Qualcomm HTP 실측은 <a href="stage4_qualcomm_aihub_report.html">별도 보고서</a>에서 이미 벤더 NPU 축을 채웠고, 이 A53 바닥값은 그 대척점(offload 0%·구형 코어)이다.</p></div>
     <table class="kv">
       <tr><th>재현 스크립트·데이터</th><td><a href="../experiments/stage5_infrastructure/cpu_proxy/">experiments/stage5_infrastructure/cpu_proxy/</a> — <code>rpi_bench.py</code>(이식형 러너) · <code>rpi_bench_lowmem.py</code>(2GB 보드용 lazy 변형) · <code>results/</code>(rpi5·x86_cpu·<b>imx8mn_a53</b> × fp32·int8 6 JSON) · <code>raw/</code>(예측배열 포함 원본) · <code>README.md</code></td></tr>
-      <tr><th>상위 가이드</th><td><a href="../study_guide/06_multi_soc.md">4단계 06_multi_soc.md</a> §2-2(CPU 폴백) — sign-flip 표를 2-사분면 → <b>3-사분면</b>으로 확장 예정</td></tr>
+      <tr><th>상위 가이드</th><td><a href="../study_guide/06_multi_soc.md">4단계 06_multi_soc.md</a> §2-2(CPU 폴백) — sign-flip 표를 2-사분면 → <b>3-사분면</b>으로 확장(반영 완료)</td></tr>
       <tr><th>선행 실측</th><td><a href="stage4_arm_cpu_fallback_report.html">CPU 폴백 프록시 (1)</a>(Pi5·x86 원 발견) · <a href="stage4_qualcomm_aihub_report.html">Qualcomm AI Hub</a>(벤더 NPU 축) · <a href="stage5_infrastructure_report.html">5단계 벤치 인프라</a>(ResNet50 자산 원천)</td></tr>
     </table>
     <div class="note warnb"><span class="tag">캐비앗</span> ① i.MX8M Nano는 <b>ARM Cortex-A 폴백 프록시</b>일 뿐 자동차 NPU가 아니다 — NPU 수치는 전이되지 않는다. ② 절대 지연·top-1은 CPUEP·wall-clock 단일입력·배치1·1,000장 서브셋·ORT 버전 상이 기준 → <b>상대 관계(부호·배율·예측 일치율)만 유효</b>. ③ A53↔A76↔x86 절대 속도는 서로 다른 급의 기계라 논점 아님. ④ 1,000장 서브셋 top-1은 공개 50k보다 부풀려질 수 있음(1단계 함정 0). ⑤ A53 결과는 <code>lowmem</code> 변형·<code>opset</code> strip 모델로 얻었으나 둘 다 <b>결과 불변</b>(예측 비트 동일·연산 그래프 동일)을 증명 후 적용.</div>
-    <a class="next" href="../study_guide/06_multi_soc.md"><b>다음 →</b> sign-flip 3-사분면(A76 빠름 / A53·x86 느림)을 06_multi_soc.md §2-2에 반영. 남은 과제: 4단계 실물 NPU(TIDL/DRP-AI) 컴파일·offload% 실측 — TI TDA4VM·Renesas RZ/V2H 보드 확보 시. i.MX8M Nano CPU 바닥값과 Qualcomm HTP 상한선이 "가속기가 이겨야 할 최소선 ↔ 최대 이득"의 양 끝 대조축이다.</a>
+    <a class="next" href="../study_guide/06_multi_soc.md"><b>다음 →</b> sign-flip 3-사분면(A76 빠름 / A53·x86 느림)은 06_multi_soc.md §2-2에 반영 완료. 남은 과제: 4단계 실물 NPU(TIDL/DRP-AI) 컴파일·offload% 실측 — TI TDA4VM·Renesas RZ/V2H 보드 확보 시. i.MX8M Nano CPU 바닥값과 Qualcomm HTP 상한선이 "가속기가 이겨야 할 최소선 ↔ 최대 이득"의 양 끝 대조축이다.</a>
   </section>
 
   <footer>

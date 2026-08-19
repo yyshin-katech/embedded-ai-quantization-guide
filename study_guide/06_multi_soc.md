@@ -84,23 +84,26 @@
 
 > 💡 **팁 — 위 표의 "★★☆" 이하 행이 곧 fallback 후보 목록이다.** 2단계에서 ONNX를 export할 때 이 행들(특히 control flow·동적 shape·shape 마사지 op)을 미리 정리해 두면, 세 벤더 어디에 넣어도 subgraph가 덜 쪼개진다. "어느 벤더든 좋아하는 그래프"는 **Conv/MatMul 위주의, batch 고정, control flow 없는 feed-forward** 다.
 
-### 2-2. 🔬 실측 (부분·프록시): ARM Cortex-A 폴백 바닥값 — Raspberry Pi 5
+### 2-2. 🔬 실측 (부분·프록시): ARM Cortex-A 폴백 바닥값 — Pi 5(A76) + i.MX8M Nano(A53)
 
-> **이건 NPU 실측이 아니다.** 위 세 벤더 NPU(TIDL/QNN/DRP-AI)는 보드가 없어 아직 못 돌린다(4단계 본 과제, 아래 4-A~C). 하지만 세 SoC가 **공통으로 가진 것** — 미지원 op가 떨어지는 **ARM Cortex-A 폴백 경로**(§2 표 "미지원 op 처리" 행) — 은 **오늘 측정할 수 있다**. **Raspberry Pi 5**(Cortex-A76)를 프록시로 삼아, 3·5단계 자산인 **ResNet50 INT8 QDQ ONNX**를 순수 `CPUExecutionProvider`로 관통시켜 봤다. 즉 **"모든 op가 CPU로 폴백됐을 때의 바닥값"** — offload%가 0%로 떨어진 최악의 경우다.
+> **이건 NPU 실측이 아니다.** 위 세 벤더 NPU(TIDL/QNN/DRP-AI)는 보드가 없어 아직 못 돌린다(4단계 본 과제, 아래 4-A~C). 하지만 세 SoC가 **공통으로 가진 것** — 미지원 op가 떨어지는 **ARM Cortex-A 폴백 경로**(§2 표 "미지원 op 처리" 행) — 은 **오늘 측정할 수 있다**. **Raspberry Pi 5**(Cortex-A76)를 프록시로 삼아, 3·5단계 자산인 **ResNet50 INT8 QDQ ONNX**를 순수 `CPUExecutionProvider`로 관통시켜 봤다. 즉 **"모든 op가 CPU로 폴백됐을 때의 바닥값"** — offload%가 0%로 떨어진 최악의 경우다. 이어 **dotprod 없는 ARM**(NXP **i.MX8M Nano** EVK의 Cortex-A53)을 한 점 더 실측해, **"부호를 가르는 게 ISA 계열(ARM/x86)인가, dot-product 명령 유무인가"까지 갈랐다**(아래 3-사분면).
 
-**헤드라인: 같은 INT8 그래프인데 CPU ISA가 양자화 이득의 부호를 뒤집는다.**
+**헤드라인: 같은 INT8 그래프인데 CPU ISA가 양자화 이득의 부호를 뒤집는다 — 그리고 부호를 가르는 건 ISA 계열이 아니라 dot-product 명령의 유무다.**
 
 | 플랫폼 (CPU) | FP32 지연 | INT8 지연 | vs 자기 FP32 | INT8 dot-product |
 |---|--:|--:|:--|:--|
 | **Pi 5** (Cortex-A76) | 144.95 ms | **79.08 ms** | **×1.83 빠름 ✓** | `asimddp`(SDOT) **있음** |
+| **i.MX8M Nano** (Cortex-A53) | 680.20 ms | **1123.02 ms** | **1.65× 느림 ✗** | `asimddp` **없음**(ARMv8.0) |
 | x86 dev-host (i9-10900K) | 9.28 ms | **16.34 ms** | **1.76× 느림 ✗** | VNNI **없음**(AVX2까지) |
 
-- ONNX Runtime CPU 커널(MLAS)은 **정수 dot-product 명령**이 있으면 INT8을 가속하고 없으면 못 한다 — ARM `SDOT`(`asimddp`) vs x86 `VPDPBUSD`(VNNI). **A76엔 있고 Comet Lake엔 없다.** x86은 dot-product 가속을 못 받는 데다 `QuantizeLinear`/`DequantizeLinear` 노드 비용까지 얹혀 **FP32보다 되레 느려진다**. 같은 그래프·같은 런타임인데 **ISA의 INT8 명령 하나**가 부호를 가른다.
-- **함의:** NPU는 INT8 전용 MAC이라 INT8이 항상 이긴다(존재 이유). 부호 반전은 **폴백된 부분**에서 벌어진다 → **폴백이 많을수록 A-코어의 dotprod 유무가 최종 성능을 좌우**한다. dotprod 있는 A76(여러 최신 오토모티브 SoC의 A-코어)이면 폴백조차 INT8이 유리하지만, dotprod 없는 구형 A53/A72면 **폴백 INT8이 되레 독**이다. 그래서 이 단계에서 offload%만큼이나 **"폴백이 어느 A-코어로 떨어지는가"**도 봐야 한다.
-- **덤: `CPUExecutionProvider`의 크로스플랫폼 동일성은 FP32에서만 성립.** 같은 1,000장 예측을 x86↔ARM 1:1 대조하니 **FP32는 1000/1000(100%) 완전 일치**하지만 **INT8은 958/1000(95.8%, 42장 상이)** — 정수 누산·재양자화 반올림이 ISA별로 미세하게 갈린다. **INT8 정확도를 서로 다른 타겟에서 비트 단위로 기대하면 안 된다.**
+- ONNX Runtime CPU 커널(MLAS)은 **정수 dot-product 명령**이 있으면 INT8을 가속하고 없으면 못 한다 — ARM `SDOT`(`asimddp`, ARMv8.2+) vs x86 `VPDPBUSD`(VNNI). **A76엔 있고, A53(ARMv8.0)·Comet Lake엔 없다.** dot-product 없는 경로는 스칼라/일반 SIMD로 떨어지고 그 위에 `QuantizeLinear`/`DequantizeLinear` 노드 비용까지 얹혀 **FP32보다 되레 느려진다**. 같은 그래프·같은 런타임인데 **ISA의 INT8 명령 하나**가 부호를 가른다.
+- **핵심: 부호를 가르는 건 "ARM이냐 x86이냐"가 아니라 dotprod 유무다.** Pi 5의 A76과 i.MX8M Nano의 A53은 **같은 ARMv8 계열**인데 부호가 반대다 — A53(dotprod ×)이 x86(VNNI ×)과 같은 "느려짐" 부호를 낸다. 즉 통념 **"ARM이면 INT8이 유리"는 ARM 안에서 반박**된다. 결정 인자는 코어가 **ARMv8.2의 dot-product 확장을 구현했는지** 하나다.
+- **함의:** NPU는 INT8 전용 MAC이라 INT8이 항상 이긴다(존재 이유). 부호 반전은 **폴백된 부분**에서 벌어진다 → **폴백이 많을수록 A-코어의 dotprod 유무가 최종 성능을 좌우**한다. dotprod 있는 A76(여러 최신 오토모티브 SoC의 A-코어)이면 폴백조차 INT8이 유리하지만, **dotprod 없는 구형 A53(위 i.MX8M Nano로 직접 실측)이면 폴백 INT8이 되레 독**이다. 그래서 이 단계에서 offload%만큼이나 **"폴백이 어느 A-코어(ARMv8.0 vs 8.2+)로 떨어지는가"**도 봐야 한다.
+- **덤: `CPUExecutionProvider`의 크로스플랫폼 동일성은 FP32에서만 성립.** 같은 1,000장 예측을 세 플랫폼(ORT 1.17.1/1.23.2/1.28.0) 1:1 대조하니 **FP32는 세 쌍 모두 1000/1000(100%)** 완전 일치하지만 **INT8은 imx↔pi5 965 · imx↔x86 961 · x86↔pi5 958(≈96%)** — 정수 누산·재양자화 반올림이 ISA별로 미세하게 갈린다. 서로 다른 ORT 3버전에서도 FP32가 100%이므로 갈림은 버전이 아니라 ISA의 INT8 경로다. **INT8 정확도를 서로 다른 타겟에서 비트 단위로 기대하면 안 된다.**
+- **실물 저사양 보드의 벽 2건**(i.MX8M Nano, 2GB no-swap·ORT 1.17.1 — x86 개발기에선 안 보이는 벽): **(a)** FP32가 602MB float32 배열에서 **OOM(SIGKILL)** → 이미지 1장씩 lazy 전처리하는 `rpi_bench_lowmem.py`로 해소(전처리 elementwise라 예측 비트 동일); **(b)** INT8 QDQ의 `opset_import`가 미사용 `ai.onnx.ml v5`를 선언해 **ORT 1.17.1(상한 opset 4)이 로드 거부** → 미사용 opset 항목 strip(415 노드 전부 기본 도메인이라 연산 그래프 불변). **엣지에선 "메모리 상한"과 "런타임의 opset 상한"이 실물 보드에서만 드러나는 두 벽**이다.
 
-> 📄 전체 실측·그림·재현: [`../logs/stage4_arm_cpu_fallback_report.html`](../logs/stage4_arm_cpu_fallback_report.html) · 데이터·스크립트: [`../experiments/stage5_infrastructure/cpu_proxy/`](../experiments/stage5_infrastructure/cpu_proxy/)
-> **캐비앗:** Pi는 폴백 프록시일 뿐 자동차 NPU가 아니다(가속 수치 전이 불가). 절대 지연·top-1은 CPUEP·wall-clock·배치1·1,000장 서브셋·ORT 버전 상이(1.28.0/1.23.2) 기준 → **상대 관계(부호·배율·예측 일치율)만 유효**. NPU 실측은 보드 확보 시 4-A~C에서(그때 이 CPU 바닥값이 "가속기가 이겨야 할 최소선"으로 대조축이 된다).
+> 📄 전체 실측·그림·재현: [`../logs/stage4_arm_cpu_fallback_report.html`](../logs/stage4_arm_cpu_fallback_report.html)(Pi 5·x86 원 발견) · [`../logs/stage4_imx8mn_a53_report.html`](../logs/stage4_imx8mn_a53_report.html)(A53 — 3-사분면 완성·벽 2건) · 데이터·스크립트: [`../experiments/stage5_infrastructure/cpu_proxy/`](../experiments/stage5_infrastructure/cpu_proxy/)
+> **캐비앗:** Pi 5·i.MX8M Nano는 폴백 프록시일 뿐 자동차 NPU가 아니다(Nano엔 NPU가 없다 — i.MX8M **Plus**에만 탑재; 가속 수치 전이 불가). 절대 지연·top-1은 CPUEP·wall-clock·배치1·1,000장 서브셋·ORT 버전 상이(1.17.1/1.23.2/1.28.0) 기준 → **상대 관계(부호·배율·예측 일치율)만 유효**. NPU 실측은 보드 확보 시 4-A~C에서(그때 이 CPU 바닥값이 "가속기가 이겨야 할 최소선"으로 대조축이 된다).
 
 ---
 
