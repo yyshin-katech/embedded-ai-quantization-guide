@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>4단계 ARM Cortex-A 폴백 (2) — i.MX8M Nano Cortex-A53 실측 검증 보고서</title>
+<style>
+:root{--bg:#0b0e14;--panel:#131720;--panel2:#0f131b;--bd:#242b38;--tx:#c9d1d9;--dim:#8b949e;--brt:#e6edf3;--accent:#58a6ff;--green:#3fb950;--amber:#d29922;--red:#ff7b72;--purple:#bc8cff;--mono:'JetBrains Mono','SF Mono',ui-monospace,'Cascadia Code',Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans KR','Malgun Gothic',sans-serif}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:var(--sans);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:980px;margin:0 auto;padding:0 20px 120px}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+.hero{padding:48px 0 26px;border-bottom:1px solid var(--bd);margin-bottom:8px}
+.kicker{font-family:var(--mono);font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+.hero h1{margin:0 0 10px;font-size:30px;line-height:1.25;color:var(--brt);letter-spacing:-.01em}
+.hero p.sub{margin:0 0 20px;color:var(--dim);font-size:15px;max-width:78ch}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font-family:var(--mono);font-size:12px;padding:5px 10px;border:1px solid var(--bd);border-radius:999px;background:var(--panel);color:var(--tx)}
+.chip b{color:var(--brt);font-weight:600}
+.chip.done{border-color:rgba(63,185,80,.5);background:rgba(63,185,80,.12);color:#7ee787}
+.chip.blocked{border-color:rgba(255,123,114,.5);background:rgba(255,123,114,.12);color:#ff9d96}
+.chip.partial{border-color:rgba(210,153,34,.5);background:rgba(210,153,34,.12);color:#e3b341}
+nav.toc{display:flex;flex-wrap:wrap;gap:8px;margin:26px 0 6px}
+nav.toc a{font-family:var(--mono);font-size:12.5px;padding:6px 11px;border:1px solid var(--bd);border-radius:8px;background:var(--panel);color:var(--tx)}
+nav.toc a:hover{border-color:var(--accent);color:var(--brt);text-decoration:none}
+h2.sec{font-size:13px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin:40px 0 12px;font-weight:600;border-top:1px solid var(--bd);padding-top:26px}
+.step{margin:26px 0 0;scroll-margin-top:16px}
+.step>h3{display:flex;align-items:center;gap:12px;font-size:19px;color:var(--brt);margin:0 0 6px;letter-spacing:-.01em}
+.num{flex:none;display:inline-grid;place-items:center;width:28px;height:28px;border-radius:8px;background:var(--accent);color:#06101f;font-family:var(--mono);font-weight:700;font-size:13px}
+.step p.lead{margin:0 0 4px;color:var(--dim);font-size:14.5px}
+table.dt{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.3px;border:1px solid var(--bd);border-radius:10px;overflow:hidden;font-family:var(--mono)}
+table.dt th,table.dt td{padding:8px 12px;text-align:right;border-bottom:1px solid var(--bd)}
+table.dt th{background:var(--panel);color:var(--dim);font-weight:600;font-size:12px;letter-spacing:.04em}
+table.dt th:first-child,table.dt td:first-child{text-align:left;color:var(--brt)}
+table.dt tr:last-child td{border-bottom:none}
+table.dt tr.hi td{background:rgba(63,185,80,.08)}
+table.dt tr.lo td{background:rgba(255,123,114,.08)}
+table.dt tr.grey td{background:rgba(139,148,158,.08);color:var(--dim)}
+table.dt tr.base td{background:rgba(88,166,255,.07)}
+.g{color:var(--green)}.r{color:var(--red)}.a{color:var(--amber)}.p{color:var(--purple)}.d{color:var(--dim)}
+table.kv{width:100%;border-collapse:collapse;margin:12px 0;font-size:13.5px;border:1px solid var(--bd);border-radius:10px;overflow:hidden}
+table.kv th,table.kv td{padding:9px 13px;text-align:left;border-bottom:1px solid var(--bd);vertical-align:top}
+table.kv th{background:var(--panel);color:var(--dim);font-weight:600;width:34%;font-size:12.5px}
+table.kv td{font-family:var(--mono);font-size:12.7px;color:var(--tx)}
+table.kv tr:last-child td,table.kv tr:last-child th{border-bottom:none}
+.term{background:var(--panel2);border:1px solid var(--bd);border-radius:11px;overflow:hidden;margin:14px 0}
+.term-bar{display:flex;align-items:center;gap:7px;padding:9px 13px;background:#0c1017;border-bottom:1px solid var(--bd)}
+.dot{width:11px;height:11px;border-radius:50%}.dot.r{background:#ff5f56}.dot.y{background:#ffbd2e}.dot.g{background:#27c93f}
+.term-title{margin-left:9px;color:var(--dim);font-size:12.5px;font-family:var(--mono)}
+.term pre{margin:0;padding:15px 17px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.62;color:var(--tx);white-space:pre;tab-size:2}
+.cmt{color:#5c6773}.ok{color:var(--green)}.err{color:var(--red)}.warn{color:var(--amber)}.dim{color:var(--dim)}.hl{color:var(--purple)}.in{color:var(--brt);font-weight:600}
+.note{border-left:3px solid var(--accent);background:rgba(88,166,255,.07);padding:13px 17px;border-radius:0 9px 9px 0;margin:15px 0;font-size:14px}
+.note.trap{border-color:var(--red);background:rgba(255,123,114,.08)}
+.note.warnb{border-color:var(--amber);background:rgba(210,153,34,.08)}
+.note.tip{border-color:var(--green);background:rgba(63,185,80,.07)}
+.note.block{border-color:var(--purple);background:rgba(188,140,255,.08)}
+.note .tag{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 8px;border-radius:6px;margin-bottom:7px}
+.note.trap .tag{background:rgba(255,123,114,.18);color:#ff9d96}
+.note.warnb .tag{background:rgba(210,153,34,.18);color:#e3b341}
+.note.tip .tag{background:rgba(63,185,80,.18);color:#7ee787}
+.note.block .tag{background:rgba(188,140,255,.18);color:#d8b8ff}
+.note b{color:var(--brt)}.note code{font-family:var(--mono);font-size:12.5px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:4px}
+.chartwrap{border:1px solid var(--bd);background:var(--panel2);border-radius:12px;padding:18px 18px 14px;margin:16px 0}
+.chartwrap .ct{font-family:var(--mono);font-size:12.5px;color:var(--brt);margin:0 0 4px}
+.chartwrap .cs{font-size:12.5px;color:var(--dim);margin:0 0 12px}
+.statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:14px 0}
+.stat{border:1px solid var(--bd);background:var(--panel);border-radius:11px;padding:15px 16px}
+.stat .k{font-family:var(--mono);font-size:11.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em}
+.stat .v{font-size:23px;color:var(--brt);font-weight:700;margin-top:5px;letter-spacing:-.01em}
+.stat .n{font-size:12px;color:var(--dim);margin-top:3px}
+.stat.ok .v{color:#7ee787}.stat.warn .v{color:#e3b341}.stat.bad .v{color:#ff9d96}
+.verdict{border:1px solid var(--bd);border-radius:12px;padding:16px 18px;margin:14px 0;background:var(--panel)}
+.verdict h4{margin:0 0 6px;font-size:15px;color:var(--brt);display:flex;align-items:center;gap:9px}
+.verdict h4 .b{font-family:var(--mono);font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px}
+.verdict.yes h4 .b{background:rgba(63,185,80,.18);color:#7ee787}
+.verdict.no h4 .b{background:rgba(255,123,114,.18);color:#ff9d96}
+.verdict p{margin:0;font-size:13.8px;color:var(--tx)}
+footer{margin-top:46px;padding-top:20px;border-top:1px solid var(--bd);color:var(--dim);font-size:13px}
+.next{display:block;margin-top:12px;padding:12px 16px;border:1px solid var(--bd);border-radius:9px;color:var(--tx);background:var(--panel);font-size:13.6px}
+.next b{color:var(--accent)}
+@media (max-width:560px){.hero h1{font-size:23px}.term pre{font-size:11.4px}.stat .v{font-size:20px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <p class="kicker">실행 보고서 · 4단계 · ARM Cortex-A 폴백 실측 (2) — i.MX8M Nano · Cortex-A53</p>
+    <h1>ARM Cortex-A 폴백 (2) — 빈 사분면을 채우다: dotprod 없는 A53</h1>
+    <p class="sub">앞선 <a href="stage4_arm_cpu_fallback_report.html">CPU 폴백 프록시 (1)</a>은 부호 반전을 <b>ARM(Pi 5·dotprod 있음) vs x86(VNNI 없음)</b> 축에서 보였다. 남은 질문은 <b>"부호를 가르는 게 ISA 계열(ARM/x86)인가, dot-product 명령 유무인가?"</b>였다. 이를 가르려면 <b>dotprod 없는 ARM</b>이 필요했다 — <b>NXP i.MX8M Nano</b>의 <b>Cortex-A53</b>(ARMv8.0-A, <code>asimddp</code> 없음, NPU 없음)이 정확히 그 빈칸이다. 같은 ResNet50 INT8 QDQ를 실기(실물 EVK)에서 <code>CPUExecutionProvider</code>로 관통시킨 결과: A53는 INT8이 <b>1.65× 느려진다</b>. → 부호를 가르는 건 <b>ISA 계열이 아니라 dot-product 명령의 유무</b>임을 <b>ARM 내부(A76 vs A53)에서</b> 확정.</p>
+    <div class="chips">
+      <span class="chip"><b>2026-08-19</b></span>
+      <span class="chip"><b>i.MX8M Nano LPD4 EVK</b></span>
+      <span class="chip"><b>Cortex-A53 · no asimddp</b></span>
+      <span class="chip"><b>ONNX Runtime 1.17.1</b></span>
+      <span class="chip blocked">A53 INT8 1.65× 느림</span>
+      <span class="chip done">sign-flip 3-사분면 완성</span>
+      <span class="chip done">FP32 예측 3쌍 100%</span>
+      <span class="chip partial">CPU 폴백 프록시(≠NPU)</span>
+    </div>
+    <nav class="toc">
+      <a href="#s1">1 · 실행 요약</a>
+      <a href="#s2">2 · 환경·스택</a>
+      <a href="#s3">3 · 부호 반전 3-사분면 완성(핵심)</a>
+      <a href="#s4">4 · 크로스플랫폼 3-플랫폼 일치</a>
+      <a href="#s5">5 · 2GB no-swap · ORT 1.17.1 벽 2건</a>
+      <a href="#s6">6 · 판정·산출물</a>
+    </nav>
+  </header>
+
+  <h2 class="sec">§1 — 실행 요약</h2>
+  <section id="s1" class="step">
+    <div class="statgrid">
+      <div class="stat bad"><div class="k">A53 INT8 speedup</div><div class="v">×0.61</div><div class="n">680.20ms→1123.02ms · dotprod 없어 1.65× 느림</div></div>
+      <div class="stat ok"><div class="k">sign-flip 사분면</div><div class="v">3 / 3</div><div class="n">ARM 내부(A76 vs A53)에서 부호가 갈림</div></div>
+      <div class="stat ok"><div class="k">FP32 예측 일치</div><div class="v">1000/1000</div><div class="n">imx↔x86·imx↔pi5 모두 100%(3쌍 완전)</div></div>
+      <div class="stat warn"><div class="k">INT8 예측 일치</div><div class="v">≈96%</div><div class="n">imx↔pi5 965 · imx↔x86 961 (ISA 민감)</div></div>
+    </div>
+    <p class="lead">CPU 폴백 프록시 (1)이 남긴 빈칸 <b>"dot-product 없는 ARM"</b>을 실물 <b>i.MX8M Nano EVK</b>(Cortex-A53)로 채웠다. 결과는 통념(<b>"ARM이면 INT8이 유리"</b>)을 <b>ARM 안에서</b> 반박한다: 같은 INT8 그래프가 A76에선 빨라지고 A53에선 느려진다 — 갈림은 코어에 <code>asimddp</code>(SDOT)가 있느냐 없느냐다.</p>
+    <table class="kv">
+      <tr><th>발견 1 · <span class="g">부호는 dotprod가 가른다</span></th><td>이제 세 사분면이 채워졌다 — <b>Pi 5 A76</b>(<code>asimddp</code> 있음) INT8 <b class="g">×1.83 빠름</b> · <b>i.MX8M A53</b>(<code>asimddp</code> <b>없음</b>) INT8 <b class="r">1.65× 느림</b> · <b>x86 i9</b>(VNNI 없음) INT8 <b class="r">1.76× 느림</b>. A76과 A53는 <b>같은 ARMv8 계열</b>인데 부호가 갈린다 → 결정 인자는 "ARM이냐 x86이냐"가 아니라 <b>정수 dot-product 명령(SDOT/UDOT/VPDPBUSD)의 유무</b>임이 확정.</td></tr>
+      <tr><th>발견 2 · <span class="g">FP32는 3-플랫폼 비트 동일</span></th><td>같은 1,000장·같은 CPUEP로 세 플랫폼(ORT 1.17.1/1.23.2/1.28.0) 예측을 1:1 대조: <b>FP32는 세 쌍 모두 1000/1000(100%)</b> — 서로 다른 ORT 버전·ISA에서도 완전 동일. 반면 <b>INT8은 imx↔pi5 965/1000·imx↔x86 961/1000(≈96%)</b>로 갈린다. 버전이 아니라 <b>INT8 정수 경로의 ISA 민감성</b>이 원인임을 3-플랫폼으로 재확증.</td></tr>
+      <tr><th>발견 3 · <span class="a">2GB no-swap · ORT 1.17.1 벽 2건</span></th><td>실물 저사양 보드라 프록시 (1)엔 없던 벽 2건이 나왔다 — (a) <b>2GB LPDDR4·swap 0</b>에서 FP32가 602MB float32 배열을 올리다 <b>OOM(rc=137)</b> → <code>rpi_bench_lowmem.py</code>(이미지 1장씩 lazy 전처리, 결과 비트 동일)로 해소; (b) INT8 QDQ의 <code>opset_import</code>가 미사용 <code>ai.onnx.ml v5</code>를 선언 → <b>ORT 1.17.1(ai.onnx.ml 상한 4)이 로드 거부</b> → 미사용 opset 항목 제거(415 노드 전부 기본 도메인 → 연산 불변)로 해소.</td></tr>
+    </table>
+    <div class="note warnb"><span class="tag">캐비앗(먼저)</span> i.MX8M Nano는 <b>ARM Cortex-A 폴백 프록시일 뿐 자동차 NPU가 아니다</b> — Nano엔 애초에 NPU가 없어(i.MX8M <b>Plus</b>에만 있음) CPU 경로가 유일하다. 측정한 건 "<b>모든 op가 CPU로 폴백됐을 때의 바닥값</b>"이다. 또한 절대 지연·top-1은 <b>CPUEP · wall-clock 단일입력 · 배치1 · 1,000장 서브셋 · ORT 버전 상이(1.17.1/1.23.2/1.28.0)</b> 기준이라 <b>상대 관계(부호·배율·예측 일치율)만 유효</b>하다. A53↔A76↔x86 절대 속도 비교는 서로 다른 급의 기계라 논점이 아니다.</div>
+  </section>
+
+  <h2 class="sec">§2 — 환경·스택 (실측)</h2>
+  <section id="s2" class="step">
+    <table class="kv">
+      <tr><th>엣지 실기 (신규)</th><td><b>NXP i.MX8M Nano LPDDR4 EVK</b>(8MNANOLPD4-EVK) · <b>Cortex-A53</b> ×4 @ 1.5GHz · <b>2GB LPDDR4 · swap 0B</b> · <b>NPU 없음</b>(Nano는 i.MX8M Plus와 달리 NPU 미탑재) · Python 3.12</td></tr>
+      <tr><th>A53 CPU 기능</th><td><code>/proc/cpuinfo</code> Features = <code>fp asimd evtstrm aes pmull sha1 sha2 crc32 cpuid</code> — <b><code>asimddp</code>(dotprod=SDOT/UDOT) 없음</b>. Cortex-A53 = <b>ARMv8.0-A</b>라 dot-product 확장(ARMv8.2) 자체가 없다 → INT8 dot-product 가속 불가</td></tr>
+      <tr><th>A53 런타임</th><td>ONNX Runtime <b>1.17.1</b>(시스템 패키지, aarch64) · provider <code>CPUExecutionProvider</code> · intra-op 기본(4스레드) — <code>ai.onnx.ml</code> 도메인 상한 <b>opset 4</b></td></tr>
+      <tr><th>대조 A76 (프록시 1)</th><td><b>Raspberry Pi 5</b> · <b>Cortex-A76</b>(ARMv8.2, <code>asimddp</code> <b>있음</b>) · ORT <b>1.28.0</b> · 동일 <code>CPUExecutionProvider</code></td></tr>
+      <tr><th>대조 x86 (프록시 1)</th><td><b>Intel i9-10900K</b>(Comet Lake, <b>VNNI 없음</b>·AVX2까지) · ORT <b>1.23.2</b> · 동일 <code>CPUExecutionProvider</code></td></tr>
+      <tr><th>모델 / 데이터</th><td>torchvision <b>ResNet50</b> — <code>resnet50_fp32.onnx</code>(102MB) · <code>resnet50_int8_qdq.onnx</code>(26MB, 3·5단계 자산) · 입력 <code>input</code>[1,3,224,224] · ImageNet val <b>첫 1,000장</b>(uint8 서브셋, 세 플랫폼 바이트 동일) · 전처리 crop_tv(÷255·NHWC→NCHW·ImageNet 정규화, <code>data.py</code>와 바이트 동일)</td></tr>
+      <tr><th>측정계</th><td>지연 = <code>time.perf_counter</code> wall-clock 단일입력(warmup 20 · iters 200)의 median/p95 · 정확도 = 1,000장 top-1 + 예측 클래스 배열 덤프(크로스플랫폼 일치 계산용). A53는 <code>rpi_bench_lowmem.py</code>(lazy per-image)로 실행 — 결과는 원본 <code>rpi_bench.py</code>와 비트 동일</td></tr>
+    </table>
+    <div class="note"><span class="tag">왜 A53가 결정적인가</span> 프록시 (1)의 두 "느려짐" 사례는 <b>둘 다 x86</b>(Pi=ARM=빠름, x86=느림)이라 "ARM이면 빠르고 x86이면 느리다"로도 설명 가능했다 — <b>ISA 계열</b> 가설과 <b>dotprod 유무</b> 가설이 구분되지 않았다. <b>dotprod 없는 ARM</b>(A53) 한 점이 이 둘을 가른다: A53가 느려지면 "ARM 계열"이 아니라 "dotprod 유무"가 진짜 변수다. 결과는 후자다.</div>
+  </section>
+
+  <h2 class="sec">§3 — 부호 반전 3-사분면 완성: 부호는 dot-product 명령이 가른다 (핵심)</h2>
+  <section id="s3" class="step">
+    <p class="lead">아래 막대는 각 플랫폼을 <b>자기 자신의 FP32 = 1.00×</b>로 정규화한 상대 지연이다(절대 지연은 A53 ≫ Pi5 ≫ x86 순이지만, 서로 다른 급의 기계라 논점이 아니다). 세로 점선(<b>1.0×</b>)이 "자기 FP32" 기준선 — <b>왼쪽에 멈추면 INT8이 빠른 것, 넘어서면 느린 것</b>이다. 위에서부터 <b>dotprod 있음(A76) → 없음(A53) → VNNI 없음(x86)</b> 순으로, 가속 명령이 사라지는 순간 부호가 뒤집힌다.</p>
+    <div class="chartwrap">
+      <p class="ct">INT8 상대 지연 — 자기 FP32 기준(1.00×). 왼쪽=빠름 ✓, 오른쪽=느림 ✗</p>
+      <p class="cs">막대 길이 ∝ (자기 FP32 대비 배율), 스케일 260px/1.0×. 오른쪽 = 절대 지연 · 배수.</p>
+      <svg viewBox="0 0 800 300" width="100%" aria-label="int8 relative-latency sign-flip chart, 3 platforms">
+        <g font-family="'JetBrains Mono',monospace" font-size="10" fill="#5c6773">
+          <line x1="270" y1="12" x2="270" y2="258" stroke="#1a202b"/><text x="270" y="274" text-anchor="middle">0.5×</text>
+          <line x1="400" y1="12" x2="400" y2="262" stroke="#8b949e" stroke-dasharray="4 3"/><text x="400" y="278" text-anchor="middle" fill="#8b949e">1.0× 자기 FP32</text>
+          <line x1="530" y1="12" x2="530" y2="258" stroke="#1a202b"/><text x="530" y="274" text-anchor="middle">1.5×</text>
+          <line x1="660" y1="12" x2="660" y2="258" stroke="#1a202b"/><text x="660" y="274" text-anchor="middle">2.0×</text>
+        </g>
+        <g font-family="'JetBrains Mono',monospace" font-size="11.5">
+          <text x="132" y="39" text-anchor="end" fill="#e6edf3">Pi5 FP32</text>
+          <rect x="140" y="22" width="260.0" height="26" rx="3" fill="#58a6ff"/>
+          <text x="408" y="39" fill="#c9d1d9">144.95ms · ×1.00</text>
+          <text x="132" y="73" text-anchor="end" fill="#e6edf3">Pi5 INT8</text>
+          <rect x="140" y="56" width="141.85" height="26" rx="3" fill="#3fb950"/>
+          <text x="290" y="73" fill="#7ee787">79.08ms · ×1.83 빠름 ✓ (A76·dotprod)</text>
+          <line x1="140" y1="98" x2="660" y2="98" stroke="#242b38"/>
+          <text x="132" y="127" text-anchor="end" fill="#e6edf3">A53 FP32</text>
+          <rect x="140" y="110" width="260.0" height="26" rx="3" fill="#58a6ff"/>
+          <text x="408" y="127" fill="#c9d1d9">680.20ms · ×1.00</text>
+          <text x="132" y="161" text-anchor="end" fill="#e6edf3">A53 INT8</text>
+          <rect x="140" y="144" width="429.26" height="26" rx="3" fill="#ff7b72"/>
+          <text x="577" y="161" fill="#ff9d96">1123.02ms · 1.65× 느림 ✗ (no dotprod)</text>
+          <line x1="140" y1="186" x2="660" y2="186" stroke="#242b38"/>
+          <text x="132" y="215" text-anchor="end" fill="#e6edf3">x86 FP32</text>
+          <rect x="140" y="198" width="260.0" height="26" rx="3" fill="#58a6ff"/>
+          <text x="408" y="215" fill="#c9d1d9">9.28ms · ×1.00</text>
+          <text x="132" y="249" text-anchor="end" fill="#e6edf3">x86 INT8</text>
+          <rect x="140" y="232" width="457.91" height="26" rx="3" fill="#ff7b72"/>
+          <text x="606" y="249" fill="#ff9d96">16.34ms · 1.76× 느림 ✗ (no VNNI)</text>
+        </g>
+      </svg>
+    </div>
+    <table class="dt">
+      <thead><tr><th>플랫폼 / precision</th><th>지연 median(ms)</th><th>p95(ms)</th><th>vs 자기 FP32</th><th>top-1(1000장)</th></tr></thead>
+      <tbody>
+        <tr class="base"><td>Pi5 (A76·dotprod) / fp32</td><td>144.9519</td><td>152.4119</td><td>×1.00</td><td>0.7620</td></tr>
+        <tr class="hi"><td>Pi5 (A76·dotprod) / int8</td><td>79.0827</td><td>81.2943</td><td class="g">×1.83 빠름</td><td>0.7500</td></tr>
+        <tr class="base"><td>A53 (imx8mn·no dotprod) / fp32</td><td>680.2026</td><td>684.4127</td><td>×1.00</td><td>0.7620</td></tr>
+        <tr class="lo"><td>A53 (imx8mn·no dotprod) / int8</td><td>1123.0230</td><td>1138.2552</td><td class="r">×0.61 (1.65× 느림)</td><td>0.7560</td></tr>
+        <tr class="base"><td>x86 (i9-10900K·no VNNI) / fp32</td><td>9.2765</td><td>10.0726</td><td>×1.00</td><td>0.7620</td></tr>
+        <tr class="lo"><td>x86 (i9-10900K·no VNNI) / int8</td><td>16.3376</td><td>20.1000</td><td class="r">×0.57 (1.76× 느림)</td><td>0.7530</td></tr>
+      </tbody>
+    </table>
+    <div class="note tip"><span class="tag">왜 A53만 느려지나</span> ONNX Runtime CPU 커널(MLAS)은 INT8 <code>QLinearConv</code>/<code>MatMulInteger</code>를 <b>정수 dot-product 명령</b>이 있으면 그걸로 가속한다 — ARM은 <code>SDOT</code>/<code>UDOT</code>(<code>asimddp</code>, ARMv8.2+), x86은 <code>VPDPBUSD</code>(VNNI). <b>A76엔 <code>asimddp</code>가 있어</b> INT8 conv가 FP32보다 빠르지만, <b>A53은 ARMv8.0이라 그 명령이 아예 없다</b> — INT8 경로가 스칼라/일반 SIMD로 떨어지고 그 위에 <code>QuantizeLinear</code>/<code>DequantizeLinear</code> 노드 비용까지 얹혀 <b>FP32보다 되레 1.65× 느려진다</b>. x86 i9(VNNI 없음)와 <b>같은 메커니즘·같은 부호</b>다. 즉 A76 vs A53는 "ARM이라서"가 아니라 <b>ARMv8.2의 dotprod 확장을 코어가 구현했는지</b> 하나로 갈린다.</div>
+    <div class="note warnb"><span class="tag">실무 함의</span> 오토모티브 SoC의 A-코어는 세대가 섞여 있다 — 최신 A76/A78(dotprod ○)도, 구형 <b>A53/A72(dotprod ×)</b>도 흔하다. NPU가 못 받아 <b>CPU로 폴백된 op</b>가 A53 같은 구형 코어에 떨어지면 <b>INT8이 되레 독</b>이 된다(양자화가 손해). 폴백 비중이 큰 파이프라인일수록 <b>타깃 A-코어의 ISA 레벨(ARMv8.0 vs 8.2+)</b>을 먼저 확인해야 한다. i.MX8M Nano는 그 "구형 A-코어 폴백"의 실물 하한선이다.</div>
+  </section>
+
+  <h2 class="sec">§4 — 크로스플랫폼 예측 일치: FP32는 3-플랫폼 비트 동일, INT8은 아니다</h2>
+  <section id="s4" class="step">
+    <p class="lead">프록시 (1)은 x86↔ARM <b>두 플랫폼</b> 일치를 봤다. A53가 세 번째 점을 더한다 — 서로 다른 ORT 버전(1.17.1/1.23.2/1.28.0)·서로 다른 ISA에서 같은 1,000장 예측이 어디까지 같은가?</p>
+    <div class="statgrid">
+      <div class="stat ok"><div class="k">FP32 일치 (3쌍)</div><div class="v">100.0%</div><div class="n">imx↔x86·imx↔pi5·x86↔pi5 모두 1000/1000</div></div>
+      <div class="stat warn"><div class="k">INT8 imx↔pi5</div><div class="v">96.5%</div><div class="n">965/1000 · 35장 상이</div></div>
+      <div class="stat warn"><div class="k">INT8 imx↔x86</div><div class="v">96.1%</div><div class="n">961/1000 · 39장 상이</div></div>
+      <div class="stat"><div class="k">INT8 top-1</div><div class="v">.756/.753/.750</div><div class="n">A53 / x86 / Pi5 (순증 미미)</div></div>
+    </div>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">3-플랫폼 예측 일치 — 같은 1,000장·같은 CPUEP·서로 다른 ORT 버전</span></div>
+<pre><span class="cmt"># FP32: 세 쌍 전부 완전 일치 — CPUEP FP32는 ISA·버전 무관 비트 동일</span>
+fp32  imx↔x86 = <span class="ok">1000/1000 (100.0%)</span>   imx↔pi5 = <span class="ok">1000/1000 (100.0%)</span>   x86↔pi5 = <span class="ok">1000/1000 (100.0%)</span>
+
+<span class="cmt"># INT8: 근접하나 비트 동일 아님 — ISA별 정수 누산·재양자화 반올림이 갈림</span>
+int8  imx↔x86 = <span class="warn">961/1000 (96.1%)</span>    imx↔pi5 = <span class="warn">965/1000 (96.5%)</span>    x86↔pi5 = <span class="warn">958/1000 (95.8%)</span>
+
+<span class="cmt"># top-1 (1000장 서브셋): FP32는 셋 다 동일, INT8은 미미하게 갈림</span>
+fp32  A53 <span class="ok">0.7620</span>   x86 <span class="ok">0.7620</span>   Pi5 <span class="ok">0.7620</span>      <span class="dim"># 3-플랫폼 동일</span>
+int8  A53 <span class="warn">0.7560</span>   x86 <span class="warn">0.7530</span>   Pi5 <span class="warn">0.7500</span>      <span class="dim"># ≈0.75, ISA별 미세차</span></pre>
+    </div>
+    <div class="note"><span class="tag">해석</span> FP32는 IEEE-754 연산이 세 ISA에서 사실상 동일 순서로 수행돼 <b>1,000장 전부 같은 예측</b>이 나온다 — ORT 버전이 셋 다 달라도(1.17.1/1.23.2/1.28.0) 100% 일치라, "CPUEP FP32는 크로스플랫폼 동일"이 문자 그대로 성립하고 <b>버전은 주범이 아님</b>이 재확증된다. 그러나 <b>INT8 QDQ는 다르다</b>: 정수 누산·재양자화 반올림이 <code>SDOT</code>(A76)·스칼라 정수(A53)·AVX2 정수(x86)에서 미세하게 갈려 3~4%가 뒤집힌다. 순 top-1 영향은 작지만(셋 다 ≈0.75), <b>"INT8은 FP32보다 수치가 ISA에 민감"</b>이 이제 세 점으로 확립됐다 — 서로 다른 타깃에서 INT8 정확도를 <b>비트 단위로</b> 기대하면 안 된다.</div>
+  </section>
+
+  <h2 class="sec">§5 — 실물 저사양 보드의 벽 2건: 2GB no-swap · ORT 1.17.1</h2>
+  <section id="s5" class="step">
+    <p class="lead">프록시 (1)의 Pi 5(8GB·최신 ORT)엔 없던 벽이, 실물 <b>2GB·swap 0·ORT 1.17.1</b> 보드에서 두 개 나왔다. 둘 다 <b>결과를 바꾸지 않는 최소 수정</b>으로 해소했고, 그 과정 자체가 엣지 배포의 교훈이다.</p>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">벽 1 — FP32 OOM: 2GB no-swap에서 602MB 배열이 SIGKILL</span></div>
+<pre><span class="cmt"># 첫 실행: FP32가 (1000,3,224,224) float32 배열(≈602MB)을 한 번에 올리다 사망</span>
+$ cat run.log
+[fp32] begin ...
+[fp32] <span class="err">done rc=137</span>              <span class="dim"># 137 = 128+9 = SIGKILL = OOM killer</span>
+$ free -m
+              total   used   free
+Mem:           1985   ...
+Swap:  <span class="err">          0      0      0</span>      <span class="dim"># swap 없음 → 스래싱 없이 즉시 kill</span>
+
+<span class="cmt"># 해소: rpi_bench_lowmem.py — uint8 캐시를 mmap, 이미지 1장씩 lazy 전처리</span>
+<span class="cmt">#       (1000,3,224,224) float32를 절대 materialize 안 함. 전처리는 elementwise라</span>
+<span class="cmt">#       예측은 비트 동일. peak RSS ≈ 602MB → ≈333MB, 보드가 살아있음</span>
+$ python3 rpi_bench_lowmem.py --model resnet50_fp32.onnx ...
+[aarch64] fp32: median=<span class="ok">680.2026ms</span> top1=<span class="ok">0.7620</span> <span class="ok">rc=0</span></pre>
+    </div>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">벽 2 — INT8 opset skew: 미사용 ai.onnx.ml v5를 ORT 1.17.1이 거부</span></div>
+<pre><span class="cmt"># 첫 실행: INT8 모델 로드가 opset에서 죽음</span>
+$ python3 rpi_bench_lowmem.py --model resnet50_int8_qdq.onnx ...
+<span class="err">... Opset 5 is under development and support for this is limited.</span>
+<span class="err">Current official support for domain ai.onnx.ml is till opset 4.</span>   <span class="dim"># ORT 1.17.1 상한</span>
+
+<span class="cmt"># 진단: opset_import엔 ai.onnx.ml v5(+training·com.microsoft·org.pytorch.aten)가</span>
+<span class="cmt">#       찍혀 있지만, 실제 415개 노드는 전부 기본 도메인('')만 쓴다 — 떠도는 스탬프</span>
+&gt;&gt;&gt; {op.domain: n for ...} → <span class="hl">{'': 415}</span>   <span class="dim"># ai.onnx.ml 노드 0개</span>
+
+<span class="cmt"># 해소: 미사용 opset_import 항목 제거, ('', 17)만 남김 → 연산 그래프 불변</span>
+&gt;&gt;&gt; keep = [op for op in m.opset_import if op.domain in ('', 'ai.onnx')]
+&gt;&gt;&gt; onnx.checker.check_model(m)      <span class="ok"># PASS, 415 노드 보존</span>
+$ python3 ... --model resnet50_int8_qdq_op4.onnx ...
+[aarch64] int8: median=<span class="warn">1123.0230ms</span> top1=<span class="warn">0.7560</span> <span class="ok">rc=0</span></pre>
+    </div>
+    <div class="note trap"><span class="tag">왜 중요한가</span> 두 벽 다 <b>exit 0이 아닌 정직한 실패</b>(rc=137 / 로드 예외)라 조용히 틀리지는 않았다 — 하지만 <b>양쪽 수정 모두 "결과를 바꾸지 않음"을 먼저 증명</b>하고 적용한 게 핵심이다. lowmem은 전처리가 elementwise라 예측 비트 동일, opset strip은 실제 노드가 기본 도메인뿐이라 연산 그래프가 그대로다. <b>엣지 배포에서 "메모리 상한"과 "런타임 버전의 opset 상한"은 x86 개발기에선 안 보이던 두 벽</b>이며, 실물 보드에서만 드러난다.</div>
+  </section>
+
+  <h2 class="sec">§6 — 판정 · 산출물</h2>
+  <section id="s6" class="step">
+    <div class="verdict yes"><h4><span class="b">확정 ✓</span> 부호를 가르는 건 ISA 계열이 아니라 dot-product 명령</h4><p>같은 INT8 QDQ·같은 ORT CPUEP인데 <b>A76(dotprod) INT8 ×1.83 빠름</b> vs <b>A53(no dotprod) INT8 1.65× 느림</b>. A76·A53는 같은 ARMv8 계열이므로, 프록시 (1)의 "ARM이면 빠름" 해석 가능성을 <b>ARM 내부에서 반박</b>한다. 결정 인자는 <code>SDOT</code>/<code>VPDPBUSD</code> 유무 — x86 i9(VNNI 없음)와 A53(dotprod 없음)이 같은 부호를 낸다.</p></div>
+    <div class="verdict yes"><h4><span class="b">확정 ✓</span> FP32는 3-플랫폼 비트 동일, INT8은 ISA 민감</h4><p>서로 다른 ORT 3버전에서 FP32 예측이 세 쌍 모두 1000/1000(100%) → "CPUEP FP32는 크로스플랫폼 동일"이 버전 무관하게 성립. INT8은 ≈96%로 갈려, "INT8 정확도를 비트 단위로 기대 금지"가 세 점으로 확립.</p></div>
+    <div class="verdict yes"><h4><span class="b">정직화 ✓</span> i.MX8M Nano는 폴백 프록시일 뿐 NPU 아님</h4><p>Nano엔 NPU가 없어(Plus에만 탑재) CPU가 유일 경로 — 측정한 건 "구형 A-코어 폴백의 바닥값". 자동차 NPU(QCS8550/RZ-V2H/TDA4VM) 가속 수치는 전이되지 않는다. Qualcomm HTP 실측은 <a href="stage4_qualcomm_aihub_report.html">별도 보고서</a>에서 이미 벤더 NPU 축을 채웠고, 이 A53 바닥값은 그 대척점(offload 0%·구형 코어)이다.</p></div>
+    <table class="kv">
+      <tr><th>재현 스크립트·데이터</th><td><a href="../experiments/stage5_infrastructure/cpu_proxy/">experiments/stage5_infrastructure/cpu_proxy/</a> — <code>rpi_bench.py</code>(이식형 러너) · <code>rpi_bench_lowmem.py</code>(2GB 보드용 lazy 변형) · <code>results/</code>(rpi5·x86_cpu·<b>imx8mn_a53</b> × fp32·int8 6 JSON) · <code>raw/</code>(예측배열 포함 원본) · <code>README.md</code></td></tr>
+      <tr><th>상위 가이드</th><td><a href="../study_guide/06_multi_soc.md">4단계 06_multi_soc.md</a> §2-2(CPU 폴백) — sign-flip 표를 2-사분면 → <b>3-사분면</b>으로 확장 예정</td></tr>
+      <tr><th>선행 실측</th><td><a href="stage4_arm_cpu_fallback_report.html">CPU 폴백 프록시 (1)</a>(Pi5·x86 원 발견) · <a href="stage4_qualcomm_aihub_report.html">Qualcomm AI Hub</a>(벤더 NPU 축) · <a href="stage5_infrastructure_report.html">5단계 벤치 인프라</a>(ResNet50 자산 원천)</td></tr>
+    </table>
+    <div class="note warnb"><span class="tag">캐비앗</span> ① i.MX8M Nano는 <b>ARM Cortex-A 폴백 프록시</b>일 뿐 자동차 NPU가 아니다 — NPU 수치는 전이되지 않는다. ② 절대 지연·top-1은 CPUEP·wall-clock 단일입력·배치1·1,000장 서브셋·ORT 버전 상이 기준 → <b>상대 관계(부호·배율·예측 일치율)만 유효</b>. ③ A53↔A76↔x86 절대 속도는 서로 다른 급의 기계라 논점 아님. ④ 1,000장 서브셋 top-1은 공개 50k보다 부풀려질 수 있음(1단계 함정 0). ⑤ A53 결과는 <code>lowmem</code> 변형·<code>opset</code> strip 모델로 얻었으나 둘 다 <b>결과 불변</b>(예측 비트 동일·연산 그래프 동일)을 증명 후 적용.</div>
+    <a class="next" href="../study_guide/06_multi_soc.md"><b>다음 →</b> sign-flip 3-사분면(A76 빠름 / A53·x86 느림)을 06_multi_soc.md §2-2에 반영. 남은 과제: 4단계 실물 NPU(TIDL/DRP-AI) 컴파일·offload% 실측 — TI TDA4VM·Renesas RZ/V2H 보드 확보 시. i.MX8M Nano CPU 바닥값과 Qualcomm HTP 상한선이 "가속기가 이겨야 할 최소선 ↔ 최대 이득"의 양 끝 대조축이다.</a>
+  </section>
+
+  <footer>
+    4단계 ARM Cortex-A 폴백 실측 (2) · NXP i.MX8M Nano LPDDR4 EVK(Cortex-A53·no asimddp·ARMv8.0) · 2026-08-19 · ONNX Runtime 1.17.1(aarch64) vs 1.28.0(Pi5) vs 1.23.2(x86) · ResNet50(IMAGENET1K_V1) · ImageNet val 첫 1,000장<br>
+    본 보고서 수치는 <code>experiments/stage5_infrastructure/cpu_proxy/results/resnet50__imx8mn_a53__*.json</code> 및 <code>raw/imx8mn_a53_*.json</code>(+ 기존 rpi5·x86 JSON)에서 그대로 옮겼다.
+  </footer>
+</div>
+</body>
+</html>
