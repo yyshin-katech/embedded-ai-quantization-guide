@@ -1,0 +1,12 @@
+{
+  "model": "resnet50",
+  "soc": "jetson_orin_a78ae",
+  "precision": "fp32",
+  "latency_ms": 38.47195449986884,
+  "peak_mem_mb": NaN,
+  "accuracy": 0.762,
+  "engine_build_s": 0.0,
+  "latency_p95_ms": 38.970073350003524,
+  "trt_version": "",
+  "notes": "ORT 1.23.2 CPUExecutionProvider; Cortex-A78AE dotprod(asimddp); batch1 single-input; n_eval=1000; MAXN power mode; edge ARM CPU proxy (NOT automotive NPU); 2nd dotprod-ARM (INT8 faster, confirms Pi5 A76)"
+}
