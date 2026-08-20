@@ -1,0 +1,27 @@
+{
+  "label": "solo_dla0",
+  "duration_s": 20,
+  "n_engines": 1,
+  "specs": [
+    "/home/katech/orin_bench/engines/rn50_dla_int8.plan:dla0"
+  ],
+  "wall_s": 23.281,
+  "per_engine": [
+    {
+      "spec": "/home/katech/orin_bench/engines/rn50_dla_int8.plan:dla0",
+      "dev": "dla0",
+      "throughput_qps": 778.844,
+      "gpu_compute_ms": 1.27832,
+      "exit": 0
+    }
+  ],
+  "aggregate_throughput_qps": 778.844,
+  "power_steady_mw": 14695.0,
+  "power_peak_mw": 15194,
+  "power_idle_floor_mw": 8196,
+  "gr3d_busy_median_pct": 15.0,
+  "aggregate_inf_per_s_per_w": 53.001,
+  "n_samples": 236,
+  "n_busy": 224,
+  "tegrastats_log": "/home/katech/orin_bench/raw/teg_conc_solo_dla0.log"
+}

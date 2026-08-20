@@ -118,13 +118,42 @@
 | DLA FP16 | DLA0 | 17.7344 | ×0.11 | 15.69 | 3% | 3.59 |
 | **DLA INT8** | DLA0 | **1.2783** | ×1.52 | **15.19** | 16% | **51.29** |
 
-- **DLA INT8 = 성능/와트 챔피언(51.29 inf/s/W).** iGPU INT8(33.16)의 **1.547×**, 전력은 **0.511×(절반, 15.19 W)**. 지연만 1.262× 느릴 뿐 → **전력·발열·GPU-여유가 목적이면 DLA INT8**(오토모티브 상시가동에 결정적), **순수 최저지연이면 iGPU INT8**. 게다가 DLA가 도는 동안 GPU가 비어 다른 모델/헤드를 병렬로 얹을 수 있다.
+- **DLA INT8 = 성능/와트 챔피언(51.29 inf/s/W).** iGPU INT8(33.16)의 **1.547×**, 전력은 **0.511×(절반, 15.19 W)**. 지연만 1.262× 느릴 뿐 → **전력·발열·GPU-여유가 목적이면 DLA INT8**(오토모티브 상시가동에 결정적), **순수 최저지연이면 iGPU INT8**. 게다가 DLA가 도는 동안 GPU가 비어 다른 모델/헤드를 병렬로 얹을 수 있다 — **단 조건부**(DLA 서브그래프에 GPU-폴백이 없을 때만; [§2-4](#2-4--실측-온디바이스-igpudla-동시부하--nvpmodel-전력-스윕)에서 동시부하로 정량화).
 - **오프로드가 수치로 증명된다(§5 "offload%부터 확인" 원칙의 실증).** `tegrastats`의 GR3D(GPU-3D)가 iGPU INT8 **95%** → DLA **3~16%**로 붕괴 = 연산이 GPU가 아니라 DLA에서 실제로 돈다. 배치는 **DLA-후보 2/2 오프로드**(ForeignNode 2개 = conv 백본 120층 + `/fc/Gemm`), GPU 폴백은 compute 2층뿐(AVG-pool·flatten). §4-A 함정("offload% 높음 **+** subgraph 개수 낮음"이 목표)을 DLA가 정확히 만족 — ForeignNode 2개라 조각남 없음.
 - **DLA는 INT8 전용기([3단계 §2.3](05_tensorrt.md#23-dla-deep-learning-accelerator) 실측과 동일).** 레이어 배치가 INT8·FP16 완전 동일한데 **DLA FP16이 13.87× 느리다**(17.73 vs 1.28 ms, 순수 NVDLA v2 데이터패스). DLA에 올릴 거면 무조건 INT8.
 - **작은 Ampere iGPU는 INT8 ≈ FP16(지연비 0.984).** batch1 ResNet50이 커널 launch·메모리 대역에 묶여 INT8 연산 이득이 거의 상쇄된다 — 3단계 **RTX 3080은 0.927**(INT8 8% 빠름)이었다. **정밀도 이득도 GPU 규모에 의존**(단 전력·엔진크기는 INT8이 확실히 이김).
 
 > 📄 전체 실측·SVG·판정: [`../logs/stage3_jetson_orin_ondevice_report.html`](../logs/stage3_jetson_orin_ondevice_report.html) · 데이터·스크립트·제약: [`../experiments/stage3_tensorrt/jetson_ondevice/`](../experiments/stage3_tensorrt/jetson_ondevice/) · TensorRT-측 DLA 이론+실측: [3단계 §2.3](05_tensorrt.md#23-dla-deep-learning-accelerator)
-> **캐비앗:** 지연 = `trtexec` event-timed·batch1·MAXN → 타 단계(wall-clock)와 1:1 비교 불가, 상대만. **DLA INT8은 `--int8` 암묵 캘리브(자동 레인지)라 지연·전력만 유효, 정확도 미주장**(정확도는 명시적 QDQ인 iGPU INT8·3단계 RTX·§2-2 CPU 프록시에서 확립). 전력 = 보드 총합(캐리어 오버헤드 6.7~8.7 W 포함). iGPU+DLA 동시부하(진짜 병렬 오프로드)는 미측정.
+> **캐비앗:** 지연 = `trtexec` event-timed·batch1·MAXN → 타 단계(wall-clock)와 1:1 비교 불가, 상대만. **DLA INT8은 `--int8` 암묵 캘리브(자동 레인지)라 지연·전력만 유효, 정확도 미주장**(정확도는 명시적 QDQ인 iGPU INT8·3단계 RTX·§2-2 CPU 프록시에서 확립). 전력 = 보드 총합(캐리어 오버헤드 6.7~8.7 W 포함). iGPU+DLA 동시부하(진짜 병렬 오프로드)는 [§2-4](#2-4--실측-온디바이스-igpudla-동시부하--nvpmodel-전력-스윕)에서 측정.
+
+### 2-4. 🔬 실측 (온디바이스): iGPU∥DLA 동시부하 · nvpmodel 전력 스윕
+
+> **§2-3이 남긴 두 캐비앗을 실측으로 닫는다.** §2-3은 iGPU·DLA를 **한 번에 하나씩(solo)** 재 각 백엔드의 천장만 봤다. 실제 멀티-SoC 배치의 두 질문 — **①** "DLA가 GPU를 비우니 다른 워크로드를 병렬로 얹으면 처리량이 더해지는가"(진짜 병렬 오프로드), **②** "자동차/임베디드가 실제로 도는 전력 예산에서 리더가 바뀌는가" — 을 같은 ResNet50 INT8으로 잰다. 도구는 §2-3과 동일한 실 `trtexec`, 전력은 `tegrastats` 보드-합.
+
+**① 동시부하 — iGPU∥DLA는 공짜 병렬이 아니다** (`trtexec` N개를 iGPU/DLA0/DLA1에 **동시** 기동, 20초 지속, 합산 qps = 각 프로세스 Throughput의 합, 스케일링 = 합산 ÷ 이상적 solo 합; solo 기준선 gpu 980.7 / dla0 778.8 / dla1 774.5 qps)
+
+| 구성 (동시) | 합산 qps | 이상적 합 | 스케일링 | 전력 W | 성능/와트 |
+|---|--:|--:|--:|--:|--:|
+| iGPU + DLA0 | 1069.5 | 1759.6 | **60.8%** | 29.72 | 35.99 |
+| **DLA0 + DLA1** (GPU 유휴) | **1351.5** | 1553.3 | **87.0%** | 20.46 | **66.07** |
+| iGPU + DLA0 + DLA1 | 1197.2 | 2534.1 | **47.2%** | 30.51 | 39.24 |
+
+- **iGPU를 섞으면 DLA가 붕괴한다(60.8%).** iGPU+DLA0 합산은 이상적 합의 60.8%뿐 — iGPU는 87.6% 유지하는데 **DLA0만 27.1%로 붕괴**(지연 1.28→4.75 ms, **3.71×** 팽창). 범인은 [§2-3](#2-3--실측-온디바이스-jetson-agx-orin-가속기--igpu-정밀도-사다리--dla-오프로드--성능와트)에서 본 **DLA 폴백 2층**(GlobalAveragePool+flatten)이 **포화된 iGPU 큐 뒤에 직렬화**되는 것. 큐잉 시그니처(지연 팽창)·비대칭 붕괴(DLA만)가 이를 확증. → **§2-3 §5 "offload% 높음 + subgraph 적음"이 목표라도, GPU-폴백이 1층이라도 있으면 진짜 병렬은 깨진다.**
+- **두 카메라면 DLA0+DLA1(87.0%·성능/와트 66.07 최고).** GPU를 비워두고 두 스트림을 두 DLA에 나누면 깨끗이 확장하고 전 구성 최고 성능/와트 — 폴백 2층이 **유휴 GPU에서 즉시** 처리되기 때문. iGPU까지 섞은 3개 전부(47.2%)는 iGPU가 **두 DLA의 폴백을 동시에 목 조르므로** 오히려 후퇴.
+- **설계 규칙: 진짜 iGPU∥DLA 병렬은 DLA 서브그래프의 GPU-폴백이 0층일 때만.** ResNet50은 말단 pool 때문에 깨진다 → DLA에 얹을 모델은 말단 pool/reshape를 DLA 지원 연산으로 재작성하거나, 아예 두 DLA로 나눠라.
+
+**② nvpmodel 전력 스윕 — 예산이 조이면 리더가 뒤집힌다** (전력 모드별 두 INT8 챔피언; 유효 행 MAXN·50W. 30W/15W는 재부팅 게이트라 폐기 = 값이 50W와 동일)
+
+| 모드 | iGPU INT8 | DLA INT8 |
+|---|---|---|
+| MAXN | **983.9 qps** · 1.014 ms · 29.60 W · 33.24 inf/s/W | 778.8 qps · 1.278 ms · 15.09 W · 51.61 |
+| 50W | 694.97 qps · 1.436 ms · 19.34 W · 35.94 | **756.19 qps** · 1.317 ms · 14.29 W · **52.90** |
+
+- **50W에서 DLA가 iGPU를 +8.8% 추월.** iGPU는 MAXN→50W로 처리량이 **−29.4%** 급락(전압/클럭 민감)하나, **DLA는 −2.9%**뿐(고정 함수 데이터패스라 이미 ≈14–15 W에서 돌아 예산 축소에 둔감) → MAXN에선 iGPU가 앞서지만 50W에선 순위가 뒤집힌다.
+- **성능/와트는 전 예산에서 DLA 우월(×1.55 MAXN, ×1.47 50W).** 임베디드·자동차처럼 전력이 조여 있을수록 DLA로 얹는 이득이 커진다 — §2-3의 "상시가동엔 DLA INT8" 결론을 전력 축에서 재확인.
+
+> 📄 전체 실측·SVG·판정: [`../logs/stage3_jetson_orin_concurrent_power_report.html`](../logs/stage3_jetson_orin_concurrent_power_report.html)(동시부하·전력스윕) · solo 5-엔진: [`../logs/stage3_jetson_orin_ondevice_report.html`](../logs/stage3_jetson_orin_ondevice_report.html) · 데이터·스크립트: [`../experiments/stage3_tensorrt/jetson_ondevice/`](../experiments/stage3_tensorrt/jetson_ondevice/)(`concurrent.py`·`power_sweep.py`·`conc_*.json`·`power_sweep.json`)
+> **캐비앗:** 절대 지연·처리량·전력 = MAXN(DVFS)·batch1·wall-clock 지속 → 상대만(`jetson_clocks` 미사용). DLA INT8은 `--int8` 암묵 캘리브라 지연·전력만 유효, 정확도 미주장(§2-3과 동일). 30W/15W는 재부팅 게이트라 폐기(값이 50W와 동일 = 미전환) — 삭제 않고 리포트에 회색 행으로 병기. GPU-폴백 직렬화 결론은 ResNet50의 특정 폴백 2층에 기인 → **모델 의존**.
 
 ---
 

@@ -1,0 +1,165 @@
+{
+  "model": "torchvision ResNet50",
+  "input": "1x3x224x224",
+  "batch": 1,
+  "board": "NVIDIA Jetson AGX Orin Developer Kit (64GB)",
+  "jetpack": "6.2.1 (L4T R36.4.3)",
+  "tensorrt": "10.3.0.30",
+  "precision": "INT8 (iGPU=explicit QDQ; DLA=implicit --int8)",
+  "note": "Follow-up to summary.json 5-engine solo sweep. Closes the \"iGPU+DLA \ub3d9\uc2dc\ubd80\ud558 \ubbf8\uce21\uc815\" caveat and adds the nvpmodel power-budget axis.",
+  "experiment_1_concurrent": {
+    "method": "N trtexec launched simultaneously, 20s sustained, INT8, MAXN. aggregate_qps=sum of per-engine trtexec Throughput; power=tegrastats board-total steady (idle*1.20 threshold).",
+    "solo_qps": {
+      "gpu": 980.7,
+      "dla0": 778.8,
+      "dla1": 774.5
+    },
+    "configs": [
+      {
+        "label": "gpu_dla0",
+        "aggregate_qps": 1069.481,
+        "ideal_sum_qps": 1759.6,
+        "scaling_pct": 60.8,
+        "power_steady_w": 29.72,
+        "aggregate_ppw": 35.985,
+        "gr3d_pct": 96,
+        "per_engine": {
+          "gpu": {
+            "qps": 858.733,
+            "pct_of_solo": 87.6,
+            "lat_ms": 1.03125
+          },
+          "dla0": {
+            "qps": 210.748,
+            "pct_of_solo": 27.1,
+            "lat_ms": 4.74609
+          }
+        }
+      },
+      {
+        "label": "dla0_dla1",
+        "aggregate_qps": 1351.527,
+        "ideal_sum_qps": 1553.3,
+        "scaling_pct": 87.0,
+        "power_steady_w": 20.46,
+        "aggregate_ppw": 66.067,
+        "gr3d_pct": 66.0,
+        "per_engine": {
+          "dla0": {
+            "qps": 675.763,
+            "pct_of_solo": 86.8,
+            "lat_ms": 1.47363
+          },
+          "dla1": {
+            "qps": 675.764,
+            "pct_of_solo": 87.3,
+            "lat_ms": 1.47363
+          }
+        }
+      },
+      {
+        "label": "gpu_dla0_dla1",
+        "aggregate_qps": 1197.168,
+        "ideal_sum_qps": 2534.1,
+        "scaling_pct": 47.2,
+        "power_steady_w": 30.51,
+        "aggregate_ppw": 39.239,
+        "gr3d_pct": 96.0,
+        "per_engine": {
+          "gpu": {
+            "qps": 800.846,
+            "pct_of_solo": 81.7,
+            "lat_ms": 1.04456
+          },
+          "dla0": {
+            "qps": 198.142,
+            "pct_of_solo": 25.4,
+            "lat_ms": 5.04688
+          },
+          "dla1": {
+            "qps": 198.18,
+            "pct_of_solo": 25.6,
+            "lat_ms": 5.04492
+          }
+        }
+      }
+    ],
+    "best_throughput": {
+      "config": "dla0_dla1",
+      "aggregate_qps": 1351.527,
+      "scaling_pct": 87.0
+    },
+    "best_ppw": {
+      "config": "dla0_dla1",
+      "ppw": 66.067
+    },
+    "findings": {
+      "igpu_dla_not_additive": "iGPU+DLA0 aggregate 1069.5 = 60.8% of ideal sum; DLA collapses to 27.1% (lat 1.28->4.75ms) while iGPU holds 87.6%. Cause: DLA engine has 2 GPU-fallback layers (GlobalAveragePool+flatten) that serialize behind the saturated iGPU queue.",
+      "two_dla_clean": "DLA0+DLA1 (GPU idle) scales to 87.0% (1351.5 qps), best perf/watt of all configs (66.07 inf/s/W); GPU-fallback layers run instantly on the free GPU.",
+      "all_three_worse": "iGPU+DLA0+DLA1 (1197.2) < DLA0+DLA1 (1351.5): the busy GPU strangles both DLAs fallback layers (each -75%).",
+      "design_rule": "True iGPU||DLA parallelism requires a DLA subgraph with ZERO GPU-fallback layers; ResNet50 GlobalAveragePool breaks it."
+    }
+  },
+  "experiment_2_power_sweep": {
+    "method": "nvpmodel modes x {iGPU INT8, DLA INT8}, sustained trtexec + tegrastats. No jetson_clocks (matches MAXN baseline method).",
+    "valid_modes": [
+      "MAXN",
+      "50W"
+    ],
+    "reboot_gated_modes_discarded": [
+      "30W",
+      "15W"
+    ],
+    "rows": [
+      {
+        "mode": "MAXN",
+        "engine": "gpu_int8",
+        "qps": 983.875,
+        "lat_ms": 1.01367,
+        "power_w": 29.6,
+        "ppw": 33.244
+      },
+      {
+        "mode": "MAXN",
+        "engine": "dla_int8",
+        "qps": 778.805,
+        "lat_ms": 1.27832,
+        "power_w": 15.09,
+        "ppw": 51.614
+      },
+      {
+        "mode": "50W",
+        "engine": "gpu_int8",
+        "qps": 694.971,
+        "lat_ms": 1.43555,
+        "power_w": 19.34,
+        "ppw": 35.936
+      },
+      {
+        "mode": "50W",
+        "engine": "dla_int8",
+        "qps": 756.187,
+        "lat_ms": 1.31665,
+        "power_w": 14.29,
+        "ppw": 52.902
+      }
+    ],
+    "crossover": {
+      "MAXN_leader": "iGPU",
+      "MAXN": {
+        "gpu_qps": 983.875,
+        "dla_qps": 778.805
+      },
+      "50W_leader": "DLA",
+      "50W": {
+        "gpu_qps": 694.971,
+        "dla_qps": 756.187
+      },
+      "igpu_MAXN_to_50W_qps_pct": -29.4,
+      "dla_MAXN_to_50W_qps_pct": -2.9,
+      "dla_over_igpu_50W_pct": 8.8,
+      "dla_ppw_over_igpu_MAXN_x": 1.55,
+      "dla_ppw_over_igpu_50W_x": 1.47
+    }
+  }
+}

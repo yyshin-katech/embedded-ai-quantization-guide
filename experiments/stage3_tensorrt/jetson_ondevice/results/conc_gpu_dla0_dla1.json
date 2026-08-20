@@ -1,0 +1,43 @@
+{
+  "label": "gpu_dla0_dla1",
+  "duration_s": 20,
+  "n_engines": 3,
+  "specs": [
+    "/home/katech/orin_bench/engines/rn50_gpu_int8.plan:gpu",
+    "/home/katech/orin_bench/engines/rn50_dla_int8.plan:dla0",
+    "/home/katech/orin_bench/engines/rn50_dla_int8.plan:dla1"
+  ],
+  "wall_s": 23.31,
+  "per_engine": [
+    {
+      "spec": "/home/katech/orin_bench/engines/rn50_gpu_int8.plan:gpu",
+      "dev": "gpu",
+      "throughput_qps": 800.846,
+      "gpu_compute_ms": 1.04456,
+      "exit": 0
+    },
+    {
+      "spec": "/home/katech/orin_bench/engines/rn50_dla_int8.plan:dla0",
+      "dev": "dla0",
+      "throughput_qps": 198.142,
+      "gpu_compute_ms": 5.04688,
+      "exit": 0
+    },
+    {
+      "spec": "/home/katech/orin_bench/engines/rn50_dla_int8.plan:dla1",
+      "dev": "dla1",
+      "throughput_qps": 198.18,
+      "gpu_compute_ms": 5.04492,
+      "exit": 0
+    }
+  ],
+  "aggregate_throughput_qps": 1197.168,
+  "power_steady_mw": 30510.0,
+  "power_peak_mw": 30611,
+  "power_idle_floor_mw": 8194,
+  "gr3d_busy_median_pct": 96.0,
+  "aggregate_inf_per_s_per_w": 39.239,
+  "n_samples": 237,
+  "n_busy": 224,
+  "tegrastats_log": "/home/katech/orin_bench/raw/teg_conc_gpu_dla0_dla1.log"
+}

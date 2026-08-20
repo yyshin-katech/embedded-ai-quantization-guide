@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Jetson AGX Orin — iGPU∥DLA 동시부하 · nvpmodel 전력 스윕 실측</title>
+<style>
+:root{--bg:#0b0e14;--panel:#131720;--panel2:#0f131b;--bd:#242b38;--tx:#c9d1d9;--dim:#8b949e;--brt:#e6edf3;--accent:#58a6ff;--green:#3fb950;--amber:#d29922;--red:#ff7b72;--purple:#bc8cff;--mono:'JetBrains Mono','SF Mono',ui-monospace,'Cascadia Code',Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans KR','Malgun Gothic',sans-serif}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:var(--sans);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:980px;margin:0 auto;padding:0 20px 120px}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+.hero{padding:48px 0 26px;border-bottom:1px solid var(--bd);margin-bottom:8px}
+.kicker{font-family:var(--mono);font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+.hero h1{margin:0 0 10px;font-size:30px;line-height:1.25;color:var(--brt);letter-spacing:-.01em}
+.hero p.sub{margin:0 0 20px;color:var(--dim);font-size:15px;max-width:80ch}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font-family:var(--mono);font-size:12px;padding:5px 10px;border:1px solid var(--bd);border-radius:999px;background:var(--panel);color:var(--tx)}
+.chip b{color:var(--brt);font-weight:600}
+.chip.done{border-color:rgba(63,185,80,.5);background:rgba(63,185,80,.12);color:#7ee787}
+.chip.blocked{border-color:rgba(255,123,114,.5);background:rgba(255,123,114,.12);color:#ff9d96}
+.chip.partial{border-color:rgba(210,153,34,.5);background:rgba(210,153,34,.12);color:#e3b341}
+nav.toc{display:flex;flex-wrap:wrap;gap:8px;margin:26px 0 6px}
+nav.toc a{font-family:var(--mono);font-size:12.5px;padding:6px 11px;border:1px solid var(--bd);border-radius:8px;background:var(--panel);color:var(--tx)}
+nav.toc a:hover{border-color:var(--accent);color:var(--brt);text-decoration:none}
+h2.sec{font-size:13px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin:40px 0 12px;font-weight:600;border-top:1px solid var(--bd);padding-top:26px}
+.step{margin:26px 0 0;scroll-margin-top:16px}
+.step>h3{display:flex;align-items:center;gap:12px;font-size:19px;color:var(--brt);margin:0 0 6px;letter-spacing:-.01em}
+.num{flex:none;display:inline-grid;place-items:center;width:28px;height:28px;border-radius:8px;background:var(--accent);color:#06101f;font-family:var(--mono);font-weight:700;font-size:13px}
+.step p.lead{margin:0 0 4px;color:var(--dim);font-size:14.5px}
+table.dt{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.3px;border:1px solid var(--bd);border-radius:10px;overflow:hidden;font-family:var(--mono)}
+table.dt th,table.dt td{padding:8px 12px;text-align:right;border-bottom:1px solid var(--bd)}
+table.dt th{background:var(--panel);color:var(--dim);font-weight:600;font-size:12px;letter-spacing:.04em}
+table.dt th:first-child,table.dt td:first-child{text-align:left;color:var(--brt)}
+table.dt tr:last-child td{border-bottom:none}
+table.dt tr.hi td{background:rgba(63,185,80,.08)}
+table.dt tr.lo td{background:rgba(255,123,114,.08)}
+table.dt tr.grey td{background:rgba(139,148,158,.08);color:var(--dim)}
+table.dt tr.base td{background:rgba(88,166,255,.07)}
+.g{color:var(--green)}.r{color:var(--red)}.a{color:var(--amber)}.p{color:var(--purple)}.d{color:var(--dim)}
+table.kv{width:100%;border-collapse:collapse;margin:12px 0;font-size:13.5px;border:1px solid var(--bd);border-radius:10px;overflow:hidden}
+table.kv th,table.kv td{padding:9px 13px;text-align:left;border-bottom:1px solid var(--bd);vertical-align:top}
+table.kv th{background:var(--panel);color:var(--dim);font-weight:600;width:34%;font-size:12.5px}
+table.kv td{font-family:var(--mono);font-size:12.7px;color:var(--tx)}
+table.kv tr:last-child td,table.kv tr:last-child th{border-bottom:none}
+.term{background:var(--panel2);border:1px solid var(--bd);border-radius:11px;overflow:hidden;margin:14px 0}
+.term-bar{display:flex;align-items:center;gap:7px;padding:9px 13px;background:#0c1017;border-bottom:1px solid var(--bd)}
+.dot{width:11px;height:11px;border-radius:50%}.dot.r{background:#ff5f56}.dot.y{background:#ffbd2e}.dot.g{background:#27c93f}
+.term-title{margin-left:9px;color:var(--dim);font-size:12.5px;font-family:var(--mono)}
+.term pre{margin:0;padding:15px 17px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.62;color:var(--tx);white-space:pre;tab-size:2}
+.cmt{color:#5c6773}.ok{color:var(--green)}.err{color:var(--red)}.warn{color:var(--amber)}.dim{color:var(--dim)}.hl{color:var(--purple)}.in{color:var(--brt);font-weight:600}
+.note{border-left:3px solid var(--accent);background:rgba(88,166,255,.07);padding:13px 17px;border-radius:0 9px 9px 0;margin:15px 0;font-size:14px}
+.note.trap{border-color:var(--red);background:rgba(255,123,114,.08)}
+.note.warnb{border-color:var(--amber);background:rgba(210,153,34,.08)}
+.note.tip{border-color:var(--green);background:rgba(63,185,80,.07)}
+.note.block{border-color:var(--purple);background:rgba(188,140,255,.08)}
+.note .tag{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 8px;border-radius:6px;margin-bottom:7px}
+.note.trap .tag{background:rgba(255,123,114,.18);color:#ff9d96}
+.note.warnb .tag{background:rgba(210,153,34,.18);color:#e3b341}
+.note.tip .tag{background:rgba(63,185,80,.18);color:#7ee787}
+.note.block .tag{background:rgba(188,140,255,.18);color:#d8b8ff}
+.note b{color:var(--brt)}.note code{font-family:var(--mono);font-size:12.5px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:4px}
+.chartwrap{border:1px solid var(--bd);background:var(--panel2);border-radius:12px;padding:18px 18px 14px;margin:16px 0}
+.chartwrap .ct{font-family:var(--mono);font-size:12.5px;color:var(--brt);margin:0 0 4px}
+.chartwrap .cs{font-size:12.5px;color:var(--dim);margin:0 0 12px}
+.statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:14px 0}
+.stat{border:1px solid var(--bd);background:var(--panel);border-radius:11px;padding:15px 16px}
+.stat .k{font-family:var(--mono);font-size:11.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em}
+.stat .v{font-size:23px;color:var(--brt);font-weight:700;margin-top:5px;letter-spacing:-.01em}
+.stat .n{font-size:12px;color:var(--dim);margin-top:3px}
+.stat.ok .v{color:#7ee787}.stat.warn .v{color:#e3b341}.stat.bad .v{color:#ff9d96}
+.verdict{border:1px solid var(--bd);border-radius:12px;padding:16px 18px;margin:14px 0;background:var(--panel)}
+.verdict h4{margin:0 0 6px;font-size:15px;color:var(--brt);display:flex;align-items:center;gap:9px}
+.verdict h4 .b{font-family:var(--mono);font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px}
+.verdict.yes h4 .b{background:rgba(63,185,80,.18);color:#7ee787}
+.verdict.no h4 .b{background:rgba(255,123,114,.18);color:#ff9d96}
+.verdict.mixed h4 .b{background:rgba(210,153,34,.18);color:#e3b341}
+.verdict p{margin:0;font-size:13.8px;color:var(--tx)}
+footer{margin-top:46px;padding-top:20px;border-top:1px solid var(--bd);color:var(--dim);font-size:13px}
+.next{display:block;margin-top:12px;padding:12px 16px;border:1px solid var(--bd);border-radius:9px;color:var(--tx);background:var(--panel);font-size:13.6px}
+.next b{color:var(--accent)}
+@media (max-width:560px){.hero h1{font-size:23px}.term pre{font-size:11.4px}.stat .v{font-size:20px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <p class="kicker">실행 보고서 · 3·4단계 온디바이스 후속 · Jetson AGX Orin · 동시부하 + 전력 스윕</p>
+    <h1>iGPU ∥ DLA 진짜 병렬인가 · 전력 예산이 리더를 뒤집는가</h1>
+    <p class="sub">앞선 <a href="stage3_jetson_orin_ondevice_report.html">온디바이스 리포트</a>는 iGPU와 DLA를 <b>한 번에 하나씩(solo)</b> 재서 각 백엔드의 천장을 확인했다(DLA INT8 51.3 inf/s/W 챔피언). 남은 두 캐비앗을 이번에 실측으로 닫는다 — <b>①</b> "DLA에 얹으면 GPU가 비어 다른 모델을 병렬로 얹을 수 있다"는 <b>진짜 병렬 오프로드</b>가 실제로 더해지는가(<code>trtexec</code> 프로세스를 iGPU·DLA0·DLA1에 <b>동시</b>에 띄워 합산 처리량·스케일링 효율 측정), <b>②</b> 자동차/임베디드가 실제로 도는 <b>전력 예산</b>(<code>nvpmodel</code>)에 따라 성능/와트 리더가 바뀌는가. 결과: <b>iGPU+DLA는 더해지지 않는다</b>(합산 60.8%, DLA가 27%로 붕괴) — 범인은 DLA 서브그래프의 <b>GPU-폴백 2층</b>이 포화된 iGPU 큐 뒤에 직렬화되는 것. 반대로 <b>DLA0+DLA1(GPU 유휴)은 87.0%로 깨끗이 확장</b>하고 <b>성능/와트 66.1로 전 구성 최고</b>. 그리고 전력을 <b>MAXN→50W</b>로 조이면 iGPU 처리량은 −29.4% 무너지지만 DLA는 −2.9%뿐이라 <b>50W에서 DLA가 iGPU를 8.8% 추월</b> — 리더가 뒤집힌다.</p>
+    <div class="chips">
+      <span class="chip">보드 <b>Jetson AGX Orin (64GB)</b></span>
+      <span class="chip">JetPack <b>6.2.1</b></span>
+      <span class="chip">TensorRT <b>10.3.0.30</b></span>
+      <span class="chip">모델 <b>ResNet50 INT8</b></span>
+      <span class="chip done">Exp 1 동시부하 ✓</span>
+      <span class="chip done">Exp 2 전력 스윕 ✓</span>
+      <span class="chip partial">30W/15W 재부팅 게이트 → 폐기</span>
+    </div>
+  </header>
+
+  <nav class="toc">
+    <a href="#s1">1 · 설계</a>
+    <a href="#s2">2 · 동시부하</a>
+    <a href="#s3">3 · 메커니즘</a>
+    <a href="#s4">4 · 전력 스윕</a>
+    <a href="#s5">5 · 종합 판정</a>
+    <a href="#s6">6 · 캐비앗 · 산출물</a>
+  </nav>
+
+  <h2 class="sec" id="s1">1 · 왜 이 두 실험인가 — solo가 못 답한 것</h2>
+  <div class="step">
+    <p class="lead">Solo 5-엔진 스윕(<a href="stage3_jetson_orin_ondevice_report.html">직전 리포트</a>)은 각 백엔드를 격리해 잰다. 두 가지를 답하지 못했다.</p>
+    <table class="kv">
+      <tr><th>Exp 1 · 동시부하<br>(iGPU ∥ DLA)</th><td>Solo는 "DLA INT8이 iGPU를 통째로 비운다"까지만 보였다. 그럼 <b>비운 iGPU에 두 번째 워크로드를 얹으면 처리량이 더해지는가?</b> 이게 멀티-SoC 배치의 핵심 가정(카메라는 DLA, 다른 헤드는 GPU)이다. <code>trtexec</code>를 iGPU/DLA0/DLA1에 <b>동시</b>에 Popen으로 띄워 20초 지속, 각 프로세스의 Throughput을 합산하고 <code>tegrastats</code> 보드 전력을 같은 창에서 잰다. <b>스케일링 효율 = 합산 ÷ 이상적 solo 합</b>.</td></tr>
+      <tr><th>Exp 2 · 전력 스윕<br>(nvpmodel)</th><td>Solo는 <b>MAXN(무제한)</b>에서만 쟀다. 자동차/임베디드는 열·전력 예산 안에서 돈다. <code>nvpmodel</code>로 전력 모드를 바꿔 가며 두 INT8 챔피언(iGPU explicit-QDQ, DLA implicit <code>--int8</code>)의 지연·처리량·성능/와트가 어떻게 움직이는지 — <b>예산이 조이면 리더가 바뀌는지</b> 잰다.</td></tr>
+    </table>
+    <div class="note"><span class="tag">공통 조건</span> 모델 = 3·5단계 자산 <b>torchvision ResNet50</b>(1×3×224×224), 배치 1, INT8. iGPU INT8 = <b>explicit QDQ</b>(정확도 유효), DLA INT8 = <code>trtexec --int8</code> <b>implicit</b>(자동 캘리브 → 지연·전력만 유효, 정확도 미주장). 전력 = <code>tegrastats</code> 보드-합(VDD_GPU_SOC+VDD_CPU_CV+VIN_SYS_5V0) steady = idle_floor×1.20 초과 샘플의 중앙값. <code>jetson_clocks</code> 미사용(DVFS 활성, solo baseline과 동일 방법).</div>
+  </div>
+
+  <h2 class="sec" id="s2">2 · Exp 1 — iGPU ∥ DLA 동시부하: 더해지지 않는다</h2>
+  <div class="step">
+    <h3><span class="num">2</span>Solo 기준선 → 동시 구성 3종</h3>
+    <p class="lead">먼저 이 하네스로 solo를 다시 재 baseline을 잡는다(직전 리포트 값과 지터 내 일치: gpu 984.7→980.7, dla 779.1→778.8). 그 위에서 동시 구성을 잰다.</p>
+    <table class="dt">
+      <thead><tr><th>구성 (동시)</th><th>합산 qps</th><th>이상적 합</th><th>스케일링</th><th>전력 W</th><th>성능/와트</th><th>GR3D%</th></tr></thead>
+      <tbody>
+        <tr class="base"><td>solo gpu</td><td>980.7</td><td>—</td><td>—</td><td>29.61</td><td>33.13</td><td>95</td></tr>
+        <tr class="base"><td>solo dla0</td><td>778.8</td><td>—</td><td>—</td><td>14.70</td><td>53.00</td><td>15</td></tr>
+        <tr class="base"><td>solo dla1</td><td>774.5</td><td>—</td><td>—</td><td>15.09</td><td>51.32</td><td>15</td></tr>
+        <tr class="lo"><td>iGPU + DLA0</td><td>1069.5</td><td>1759.6</td><td><b class="r">60.8%</b></td><td>29.72</td><td>35.99</td><td>96</td></tr>
+        <tr class="hi"><td>DLA0 + DLA1</td><td><b class="g">1351.5</b></td><td>1553.3</td><td><b class="g">87.0%</b></td><td>20.46</td><td><b class="g">66.07</b></td><td>66</td></tr>
+        <tr class="lo"><td>iGPU + DLA0 + DLA1</td><td>1197.2</td><td>2534.1</td><td><b class="r">47.2%</b></td><td>30.51</td><td>39.24</td><td>96</td></tr>
+      </tbody>
+    </table>
+
+    <div class="chartwrap">
+      <p class="ct">동시 구성 합산 처리량 vs 이상적 solo 합 (막대 = 실측 합산, 점선 = 이상적 합, factor 0.20 px/qps)</p>
+      <p class="cs">막대가 점선에 닿을수록 완벽 병렬. iGPU가 낀 두 구성은 점선에 한참 못 미친다.</p>
+      <svg viewBox="0 0 760 200" width="100%" font-family="var(--mono)" font-size="12">
+        <!-- gpu+DLA0 -->
+        <text x="10" y="35" fill="#c9d1d9">iGPU + DLA0</text>
+        <rect x="170" y="22" width="213.90" height="26" rx="3" fill="#ff7b72" opacity="0.85"/>
+        <line x1="521.92" y1="16" x2="521.92" y2="54" stroke="#8b949e" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <text x="392" y="40" fill="#ff9d96">1069.5 · 60.8%</text>
+        <!-- DLA0+DLA1 -->
+        <text x="10" y="81" fill="#c9d1d9">DLA0 + DLA1</text>
+        <rect x="170" y="68" width="270.31" height="26" rx="3" fill="#3fb950" opacity="0.9"/>
+        <line x1="480.67" y1="62" x2="480.67" y2="100" stroke="#8b949e" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <text x="449" y="86" fill="#7ee787">1351.5 · 87.0%</text>
+        <!-- 3-way -->
+        <text x="10" y="127" fill="#c9d1d9">iGPU+DLA0+DLA1</text>
+        <rect x="170" y="114" width="239.43" height="26" rx="3" fill="#ff7b72" opacity="0.85"/>
+        <line x1="676.82" y1="108" x2="676.82" y2="146" stroke="#8b949e" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <text x="418" y="132" fill="#ff9d96">1197.2 · 47.2%</text>
+        <text x="521.92" y="176" fill="#8b949e" text-anchor="middle" font-size="10.5">↑이상 1759.6</text>
+        <text x="480.67" y="190" fill="#7ee787" text-anchor="middle" font-size="10.5">↑1553.3</text>
+        <text x="676.82" y="176" fill="#8b949e" text-anchor="end" font-size="10.5">↑이상 2534.1</text>
+      </svg>
+    </div>
+
+    <div class="chartwrap">
+      <p class="ct">동시 구성 성능/와트 (막대 factor 5.0 px/(inf·s⁻¹·W⁻¹))</p>
+      <p class="cs">DLA0+DLA1(GPU 유휴)이 66.07로 압도 — 두 DLA가 각자 15W도 안 쓰며 iGPU를 절대 안 건드린다.</p>
+      <svg viewBox="0 0 560 150" width="100%" font-family="var(--mono)" font-size="12">
+        <text x="10" y="33" fill="#c9d1d9">iGPU+DLA0</text>
+        <rect x="150" y="20" width="179.93" height="24" rx="3" fill="#8b949e" opacity="0.7"/>
+        <text x="338" y="37" fill="#8b949e">35.99</text>
+        <text x="10" y="79" fill="#c9d1d9">DLA0+DLA1</text>
+        <rect x="150" y="66" width="330.33" height="24" rx="3" fill="#3fb950" opacity="0.9"/>
+        <text x="489" y="83" fill="#7ee787">66.07 (최고)</text>
+        <text x="10" y="125" fill="#c9d1d9">3개 전부</text>
+        <rect x="150" y="112" width="196.19" height="24" rx="3" fill="#8b949e" opacity="0.7"/>
+        <text x="355" y="129" fill="#8b949e">39.24</text>
+      </svg>
+    </div>
+
+    <div class="statgrid">
+      <div class="stat bad"><div class="k">iGPU+DLA0 스케일링</div><div class="v">60.8%</div><div class="n">1069.5 / 1759.6 이상</div></div>
+      <div class="stat ok"><div class="k">DLA0+DLA1 스케일링</div><div class="v">87.0%</div><div class="n">1351.5 / 1553.3 · 최고</div></div>
+      <div class="stat bad"><div class="k">DLA0 처리량 (iGPU 동반 시)</div><div class="v">27.1%</div><div class="n">778.8→210.7 qps 붕괴</div></div>
+      <div class="stat bad"><div class="k">DLA0 지연 팽창</div><div class="v">3.71×</div><div class="n">1.28→4.75 ms</div></div>
+    </div>
+  </div>
+
+  <h2 class="sec" id="s3">3 · 메커니즘 — GPU-폴백 층의 직렬화</h2>
+  <div class="step">
+    <p class="lead">왜 iGPU와 DLA가 더해지지 않는가? 세 증거가 한 원인을 가리킨다.</p>
+    <table class="dt">
+      <thead><tr><th>증거</th><th>관측</th><th>함의</th></tr></thead>
+      <tbody>
+        <tr><td style="text-align:left">① 비대칭 붕괴</td><td style="text-align:left">iGPU는 87.6% 유지(858.7 qps), DLA0만 27.1%로 붕괴</td><td style="text-align:left">대역폭 경쟁이면 둘 다 깎여야 함 → 아님</td></tr>
+        <tr><td style="text-align:left">② 지연 팽창</td><td style="text-align:left">DLA0 지연 1.28→4.75ms (<b class="r">3.71×</b>)</td><td style="text-align:left">큐잉 시그니처(대기), 처리 자체가 느려진 게 아님</td></tr>
+        <tr><td style="text-align:left">③ 2×DLA는 깨끗</td><td style="text-align:left">GPU 유휴 시 DLA0+DLA1 = 87.0%로 확장</td><td style="text-align:left">DLA 자원 자체는 안 부족 → 병목은 GPU 경유 경로</td></tr>
+      </tbody>
+    </table>
+    <div class="note trap"><span class="tag">범인 · GPU-폴백 직렬화</span> ResNet50의 DLA 엔진은 순수 DLA가 아니다 — <b>2개 층이 GPU로 폴백</b>한다(직전 리포트 실측: 백본 120층은 ForeignNode로 DLA, 그러나 말단 <b>GlobalAveragePool(REDUCE)</b>+<b>flatten(SHUFFLE)</b>은 GPU 실행). solo에선 GPU가 비어 이 2층이 즉시 처리됐다. iGPU를 자기 워크로드로 <b>포화</b>시키면(GR3D 96%) DLA의 폴백 2층이 <b>포화된 iGPU 큐 뒤에 직렬화</b>된다 → 추론마다 GPU 큐를 기다려 DLA 지연 3.71× 팽창, 처리량 27%로 붕괴. 3개 전부(1197.2 < 1351.5) 구성은 iGPU가 <b>두 DLA의 폴백 층을 동시에 목 조른다</b>(각 −75%).</div>
+    <div class="verdict no"><h4><span class="b">판정 ✗</span> "DLA에 얹으면 GPU가 비니 병렬로 더해진다" — 조건부 거짓</h4><p>DLA 서브그래프에 <b>GPU-폴백 층이 하나라도 있으면</b> 참이 아니다. iGPU를 포화시키는 순간 그 폴백 층이 직렬화되어 DLA가 붕괴한다. <b>진짜 iGPU∥DLA 병렬은 DLA 서브그래프의 GPU-폴백이 0층일 때만</b> 성립 — ResNet50은 GlobalAveragePool 때문에 깨진다. 실무 함의: (a) DLA에 얹을 모델은 폴백 0층이 되도록 마지막 pool/reshape를 재작성하거나, (b) 두 카메라 스트림을 <b>DLA0+DLA1로 나누고 GPU는 비워두는</b> 편이 처리량·성능/와트 모두 우월(87.0%·66.07).</p></div>
+  </div>
+
+  <h2 class="sec" id="s4">4 · Exp 2 — nvpmodel 전력 스윕: 예산이 리더를 뒤집는다</h2>
+  <div class="step">
+    <h3><span class="num">4</span>MAXN vs 50W — iGPU는 무너지고 DLA는 버틴다</h3>
+    <p class="lead">전력 모드별 두 INT8 챔피언. 유효 행은 MAXN·50W(라이브 전환); 30W/15W는 온라인 CPU 코어를 줄여 <b>재부팅을 요구</b>해 이번 실측에서 폐기(값이 50W와 동일 = 미전환).</p>
+    <table class="dt">
+      <thead><tr><th>모드</th><th>엔진</th><th>지연 ms</th><th>처리량 qps</th><th>전력 W</th><th>성능/와트</th></tr></thead>
+      <tbody>
+        <tr class="base"><td>MAXN</td><td style="text-align:left">iGPU INT8</td><td>1.01367</td><td>983.9</td><td>29.60</td><td>33.24</td></tr>
+        <tr class="base"><td>MAXN</td><td style="text-align:left">DLA INT8</td><td>1.27832</td><td>778.8</td><td>15.09</td><td><b class="g">51.61</b></td></tr>
+        <tr class="hi"><td>50W</td><td style="text-align:left">iGPU INT8</td><td>1.43555</td><td><b class="r">694.97</b></td><td>19.34</td><td>35.94</td></tr>
+        <tr class="hi"><td>50W</td><td style="text-align:left">DLA INT8</td><td>1.31665</td><td><b class="g">756.19</b></td><td>14.29</td><td><b class="g">52.90</b></td></tr>
+        <tr class="grey"><td>30W*</td><td style="text-align:left">iGPU / DLA</td><td>1.43164 / 1.31641</td><td>696.8 / 756.3</td><td>19.33 / 14.20</td><td>36.04 / 53.28</td></tr>
+        <tr class="grey"><td>15W*</td><td style="text-align:left">iGPU / DLA</td><td>1.43066 / 1.31763</td><td>697.5 / 755.7</td><td>19.33 / 14.29</td><td>36.08 / 52.87</td></tr>
+      </tbody>
+    </table>
+    <p class="cs" style="color:#8b949e;font-size:12.5px">* 30W/15W = 재부팅 게이트(선언은 됐으나 미적용, 값이 50W와 사실상 동일) → 폐기. 재부팅 없이 얻은 유효 대비는 <b>MAXN vs 50W</b>이며, 이 둘만으로 교차가 이미 드러난다.</p>
+
+    <div class="chartwrap">
+      <p class="ct">전력 모드별 처리량 — 리더 교차 (막대 factor 0.45 px/qps)</p>
+      <p class="cs">MAXN에선 iGPU가 앞서지만, 50W로 조이면 iGPU만 크게 무너져 <b>DLA가 추월</b>한다.</p>
+      <svg viewBox="0 0 660 190" width="100%" font-family="var(--mono)" font-size="12">
+        <!-- MAXN -->
+        <text x="10" y="33" fill="#8b949e" font-size="11">MAXN</text>
+        <rect x="120" y="20" width="442.74" height="22" rx="3" fill="#58a6ff" opacity="0.9"/>
+        <text x="568" y="36" fill="#58a6ff">iGPU 983.9</text>
+        <rect x="120" y="48" width="350.46" height="22" rx="3" fill="#bc8cff" opacity="0.9"/>
+        <text x="476" y="64" fill="#bc8cff">DLA 778.8</text>
+        <!-- 50W -->
+        <text x="10" y="115" fill="#8b949e" font-size="11">50W</text>
+        <rect x="120" y="102" width="312.74" height="22" rx="3" fill="#58a6ff" opacity="0.55"/>
+        <text x="438" y="118" fill="#8b949e">iGPU 695.0</text>
+        <rect x="120" y="130" width="340.28" height="22" rx="3" fill="#bc8cff" opacity="0.9"/>
+        <text x="466" y="146" fill="#d8b8ff">DLA 756.2 ▲추월</text>
+        <line x1="120" y1="86" x2="600" y2="86" stroke="#242b38" stroke-width="1"/>
+        <text x="120" y="178" fill="#8b949e" font-size="10.5">iGPU MAXN→50W −29.4% · DLA −2.9% · 50W에서 DLA가 iGPU +8.8%</text>
+      </svg>
+    </div>
+
+    <div class="statgrid">
+      <div class="stat bad"><div class="k">iGPU MAXN→50W</div><div class="v">−29.4%</div><div class="n">983.9→695.0 qps</div></div>
+      <div class="stat ok"><div class="k">DLA MAXN→50W</div><div class="v">−2.9%</div><div class="n">778.8→756.2 qps</div></div>
+      <div class="stat ok"><div class="k">50W: DLA over iGPU</div><div class="v">+8.8%</div><div class="n">리더 교차</div></div>
+      <div class="stat ok"><div class="k">DLA 성능/와트 우위</div><div class="v">×1.47~1.55</div><div class="n">50W / MAXN 각각</div></div>
+    </div>
+    <div class="verdict yes"><h4><span class="b">판정 ✓</span> 전력을 조이면 DLA가 성능·성능/와트 양쪽에서 리더</h4><p>iGPU는 전압/클럭에 민감해 예산이 줄면 처리량이 급락(−29.4%)하지만, <b>DLA는 고정 함수 데이터패스</b>라 이미 낮은 전력(≈14–15W)에서 돌아 예산 축소에 거의 둔감(−2.9%). 그 결과 <b>50W에서 DLA가 iGPU를 8.8% 추월</b>하고 성능/와트는 MAXN에서도 이미 ×1.55, 50W에서 ×1.47로 <b>모든 예산에서 DLA가 우월</b>. 임베디드·자동차처럼 전력이 조여 있을수록 DLA로 얹는 이득이 커진다. (30W/15W는 재부팅 게이트라 이번엔 미측정 — 다만 50W와 값이 같아 이 급에선 DLA가 이미 평탄기임을 시사.)</p></div>
+  </div>
+
+  <h2 class="sec" id="s5">5 · 종합 판정 — 배치 규칙 5가지</h2>
+  <div class="step">
+    <table class="kv">
+      <tr><th>① iGPU∥DLA는 공짜 병렬 아님</th><td>합산 60.8%. "GPU가 비니 더해진다"는 <b>DLA 서브그래프에 GPU-폴백이 없을 때만</b> 참. ResNet50은 GlobalAveragePool+flatten 2층이 폴백이라 깨진다.</td></tr>
+      <tr><th>② 두 카메라면 DLA0+DLA1</th><td>GPU를 비워두고 두 스트림을 두 DLA에 나누면 87.0% 확장·성능/와트 66.07(전 구성 최고). iGPU를 섞는 순간(3개 전부) 47.2%로 오히려 후퇴.</td></tr>
+      <tr><th>③ 폴백 0층이 설계 목표</th><td>DLA에 얹을 모델은 말단 pool/reshape를 DLA 지원 연산으로 재작성해 <b>GPU-폴백 0층</b>을 목표. 그래야 진짜 iGPU∥DLA 병렬이 성립.</td></tr>
+      <tr><th>④ 전력이 조이면 DLA로</th><td>50W에서 DLA가 iGPU를 처리량 +8.8% 추월. iGPU는 −29.4% 급락, DLA는 −2.9%. 예산이 낮을수록 DLA 이득↑.</td></tr>
+      <tr><th>⑤ 성능/와트는 항상 DLA</th><td>MAXN ×1.55, 50W ×1.47. 지연이 조금 손해(1.28 vs 1.01ms)라도 전력·성능/와트·GPU 여유(오프로드)에서 DLA가 우월.</td></tr>
+    </table>
+  </div>
+
+  <h2 class="sec" id="s6">6 · 캐비앗 · 산출물</h2>
+  <div class="step">
+    <div class="note warnb"><span class="tag">캐비앗</span>
+      <b>①</b> 절대 지연·처리량·전력은 <b>MAXN(DVFS)·배치1·wall-clock 지속</b> 기준 상대 관계만 유효(<code>jetson_clocks</code> 미사용). <b>②</b> DLA INT8은 <code>--int8</code> <b>암묵 캘리브</b>라 지연·전력만 유효, <b>정확도 미주장</b>(정확도는 explicit-QDQ iGPU INT8·3단계 RTX·4단계 CPU 프록시에서 별도 검증). <b>③</b> 동시부하 합산 qps = 각 <code>trtexec</code> 프로세스 Throughput의 합(창 겹침 보장 위해 동일 <code>--duration</code>), 전력은 tegrastats 보드-합 steady. <b>④</b> 30W/15W는 재부팅 게이트라 폐기(값이 50W와 동일 = 미전환) — 삭제하지 않고 회색 행으로 병기. <b>⑤</b> GPU-폴백 직렬화 결론은 ResNet50의 특정 폴백 2층에 기인 — 모델마다 폴백 층이 다르므로 <b>모델 의존</b>.</div>
+
+    <table class="kv">
+      <tr><th>실측 리포트</th><td>이 문서 · <a href="stage3_jetson_orin_ondevice_report.html">직전 solo 온디바이스 리포트</a>(5-엔진 사다리·DLA 챔피언)</td></tr>
+      <tr><th>스크립트</th><td><code>experiments/stage3_tensorrt/jetson_ondevice/scripts/concurrent.py</code>(동시부하 하네스) · <code>power_sweep.py</code>(nvpmodel 스윕, root 실행)</td></tr>
+      <tr><th>결과 JSON (SSOT)</th><td><code>results/conc_{solo_gpu,solo_dla0,solo_dla1,gpu_dla0,dla0_dla1,gpu_dla0_dla1}.json</code>(6) · <code>power_sweep.json</code>(유효/폐기 주석) · <code>concurrent_power_summary.json</code>(파생 요약)</td></tr>
+      <tr><th>원본 로그</th><td><code>raw/teg_conc_*.log</code>(6) · <code>raw/teg_pm_*.log</code>(8) — tegrastats 원문</td></tr>
+      <tr><th>가이드 반영</th><td><code>study_guide/05_tensorrt.md §2.3</code>(DLA 오프로드 조건부 병렬 콜아웃) · <code>study_guide/06_multi_soc.md §2-4</code>(동시부하+전력스윕 신설 절)</td></tr>
+    </table>
+
+    <a class="next" href="stage3_jetson_orin_ondevice_report.html"><b>◀ 직전</b> — Orin 온디바이스 solo 5-엔진(iGPU 정밀도 사다리 + DLA 오프로드/INT8-전용기 + 성능/전력). 이 문서는 그 두 캐비앗(동시부하·전력예산)을 닫는 후속이다.</a>
+  </div>
+
+  <footer>
+    Jetson AGX Orin (64GB) · JetPack 6.2.1 · TensorRT 10.3.0.30 · ResNet50 INT8 · 배치 1 · <code>trtexec</code> 지속 + <code>tegrastats</code> 보드-합 전력. iGPU INT8=explicit QDQ, DLA INT8=implicit <code>--int8</code>. 모든 수치의 SSOT = <code>concurrent_power_summary.json</code> + 6개 <code>conc_*.json</code> + <code>power_sweep.json</code>. 절대값은 상대 관계로만 해석(캐비앗 §6).
+  </footer>
+</div>
+</body>
+</html>

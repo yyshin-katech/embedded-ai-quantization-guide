@@ -1,0 +1,27 @@
+{
+  "label": "solo_gpu",
+  "duration_s": 20,
+  "n_engines": 1,
+  "specs": [
+    "/home/katech/orin_bench/engines/rn50_gpu_int8.plan:gpu"
+  ],
+  "wall_s": 23.392,
+  "per_engine": [
+    {
+      "spec": "/home/katech/orin_bench/engines/rn50_gpu_int8.plan:gpu",
+      "dev": "gpu",
+      "throughput_qps": 980.736,
+      "gpu_compute_ms": 1.01709,
+      "exit": 0
+    }
+  ],
+  "aggregate_throughput_qps": 980.736,
+  "power_steady_mw": 29605,
+  "power_peak_mw": 29614,
+  "power_idle_floor_mw": 7596,
+  "gr3d_busy_median_pct": 95,
+  "aggregate_inf_per_s_per_w": 33.127,
+  "n_samples": 238,
+  "n_busy": 221,
+  "tegrastats_log": "/home/katech/orin_bench/raw/teg_conc_solo_gpu.log"
+}
