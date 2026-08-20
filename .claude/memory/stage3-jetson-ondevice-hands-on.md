@@ -1,6 +1,6 @@
 ---
 name: stage3-jetson-ondevice-hands-on
-description: "3·4단계 Jetson AGX Orin 온디바이스 실측(2026-08-20, 데이터 커밋 00fd97d·문서 1a8f073 푸시완료, ResNet50): 실 trtexec 실존(stage3/5 'trtexec 부재→polygraphy' 반전)·DLA 실측(stage3 'DLA 범위 밖' 해소). DLA INT8=성능/와트 챔피언 51.29 inf/s/W(iGPU INT8의 ×1.547·전력 절반)·DLA는 INT8 전용기(FP16 13.87× 느림)·오프로드 GR3D 95%→3~16%로 증명·DLA 후보 2/2·iGPU INT8≈FP16 0.984. DLA INT8 정확도 미주장(--int8 암묵)"
+description: "3·4단계 Jetson AGX Orin 온디바이스 실측(2026-08-20, 데이터 커밋 00fd97d·문서 1a8f073 푸시완료, ResNet50): 실 trtexec 실존(stage3/5 'trtexec 부재→polygraphy' 반전)·DLA 실측(stage3 'DLA 범위 밖' 해소). DLA INT8=성능/와트 챔피언 51.29 inf/s/W(iGPU INT8의 ×1.547·전력 절반)·DLA는 INT8 전용기(FP16 13.87× 느림)·오프로드 GR3D 95%→3~16%로 증명·DLA 후보 2/2·iGPU INT8≈FP16 0.984. DLA INT8 정확도 미주장(--int8 암묵). 후속(2026-08-21, 커밋 c03c174 푸시완료): iGPU∥DLA 동시부하 = GPU-폴백 직렬화로 공짜 병렬 아님(iGPU+DLA0 60.8%·DLA 27% 붕괴, DLA0+DLA1 87.0%가 최적 66.07 inf/s/W)·nvpmodel MAXN→50W 리더 교차(iGPU -29.4% vs DLA -2.9% → 50W서 DLA +8.8%)"
 metadata: 
   node_type: memory
   type: project
@@ -57,9 +57,25 @@ pred_cls 독립 재계산 · 산술 7관계(×2.11·1.547×·0.511×·1.262×·1
 SVG) · `experiments/stage3_tensorrt/jetson_ondevice/`(scripts · results/summary.json · raw verbose 로그 · README ·
 constraints).
 
+**후속 실측(2026-08-21, `embedded-guide-orchestrator` 부분 재실행 — author-5·6 직접 + tech-reviewer 팬인, 커밋
+`c03c174` 푸시완료 `80d0bf6..c03c174`):** 위 캐비앗 ④("동시부하 미측정")를 닫고 nvpmodel 전력 축을 추가.
+SSOT=`concurrent_power_summary.json`(6 conc JSON + power_sweep.json에서 파생, 리뷰어 raw 재산출).
+- **동시부하 = 공짜 병렬 아님(GPU-폴백 직렬화):** N개 trtexec 동시 실행·20s·INT8·MAXN. **iGPU+DLA0 = ideal 합의
+  60.8%뿐** — DLA가 27%로 붕괴(lat 1.28→4.75 ms)하는데 iGPU는 87.6% 유지. 범인=위 해소2의 **GPU-폴백 2층**
+  (GlobalAveragePool+flatten)이 포화된 iGPU 큐 뒤에서 직렬화. **DLA0+DLA1(GPU 유휴) = 87.0%(1351.5 qps)로 스케일
+  + 전 구성 최고 perf/watt 66.07 inf/s/W**(폴백층이 빈 GPU에서 즉시 실행). 3-way(1197.2) < 2-DLA(1351.5): 바쁜
+  GPU가 두 DLA 폴백을 각 -75% 교살. **설계규칙: 진짜 iGPU∥DLA 병렬은 DLA 서브그래프 GPU-폴백 0층일 때만.**
+- **nvpmodel 전력 스윕 = 리더 교차:** MAXN→50W에서 **iGPU -29.4% 급락(983.9→695 qps) vs DLA -2.9%뿐 → 50W서
+  DLA가 iGPU보다 +8.8% 빠름**. DLA ppw는 iGPU 대비 ×1.55(MAXN)~×1.47(50W) 상시 우위. **30W/15W는 재부팅
+  게이트**(온라인 CPU 코어 축소, 사용자 재부팅 거부)라 미측정·값이 50W와 동일 → 리포트에 회색 행으로 폐기 병기.
+- 문서 반영: `05_tensorrt.md` §2.3 콜아웃 보강 + `06_multi_soc.md` **신설 §2-4**(승번 오염 0). 산출물
+  `logs/stage3_jetson_orin_concurrent_power_report.html`(§1~6·SVG 3종) · 동 디렉토리 scripts +2(`concurrent.py`·
+  `power_sweep.py`[root 실행]) · results +8 · raw +14. **tech-reviewer 팬인 PASS(🔴0)**: raw JSON 독립 재산출로
+  스케일링 60.78/87.01/47.24%·DLA 붕괴 27.06%·지연 3.713×·전력델타 -29.4/-2.9/+8.8%·ppw ×1.55/×1.47 1:1.
+
 **캐비앗(불변):** ① **DLA INT8은 `trtexec --int8` 암묵 캘리브(자동 레인지)라 지연·전력만 유효, 정확도 미주장** —
 정확도는 명시적 QDQ인 iGPU INT8·3단계 RTX·4단계 CPU 프록시에서 확립. ② 지연 event-timed·batch1·MAXN → 타
 단계(polygraphy·wall-clock)와 1:1 비교 불가, 상대만. ③ 전력=보드 총합(캐리어 오버헤드 6.7~8.7 W·idle floor
-7.59 W·peak 42.37 W 포함). ④ iGPU+DLA 동시부하(진짜 병렬 오프로드)는 미측정. ⑤ Jetson은 **NVIDIA edge**이지 세
-자동차 벤더(TI/Qualcomm/Renesas) NPU 아님 — [[stage4-qualcomm-aihub-hands-on]]가 Qualcomm HTP 담당, TI/Renesas는
-보드 대기.
+7.59 W·peak 42.37 W 포함). ④ iGPU+DLA 동시부하는 **위 후속 실측에서 측정 완료**(GPU-폴백 직렬화 결론은 ResNet50
+GlobalAveragePool 모델 의존). ⑤ Jetson은 **NVIDIA edge**이지 세 자동차 벤더(TI/Qualcomm/Renesas) NPU 아님 —
+[[stage4-qualcomm-aihub-hands-on]]가 Qualcomm HTP 담당, TI/Renesas는 보드 대기.
