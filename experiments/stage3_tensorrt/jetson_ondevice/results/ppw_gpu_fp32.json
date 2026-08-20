@@ -1,0 +1,22 @@
+{
+  "label": "gpu_fp32",
+  "plan": "engines/rn50_gpu_fp32.plan",
+  "dla_core": "",
+  "duration_s": 30,
+  "wall_s": 32.433,
+  "exit": 0,
+  "throughput_qps": 515.336,
+  "gpu_compute_ms": 1.9375,
+  "e2e_latency_ms": 1.98242,
+  "power_steady_mw": 42264,
+  "power_peak_mw": 42365,
+  "power_steady_gpu_soc_mw": 32748,
+  "power_steady_cpu_cv_mw": 789,
+  "power_steady_sys_5v0_mw": 8727,
+  "power_idle_floor_mw": 7595,
+  "gr3d_busy_median_pct": 98,
+  "n_samples": 323,
+  "n_busy": 307,
+  "inf_per_s_per_w": 12.193261404505016,
+  "tegrastats_log": "/home/katech/orin_bench/raw/teg_gpu_fp32.log"
+}

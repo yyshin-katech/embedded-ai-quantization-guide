@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Jetson AGX Orin 온디바이스 TensorRT — iGPU 정밀도 사다리 · DLA 오프로드 · 성능/전력 실측</title>
+<style>
+:root{--bg:#0b0e14;--panel:#131720;--panel2:#0f131b;--bd:#242b38;--tx:#c9d1d9;--dim:#8b949e;--brt:#e6edf3;--accent:#58a6ff;--green:#3fb950;--amber:#d29922;--red:#ff7b72;--purple:#bc8cff;--mono:'JetBrains Mono','SF Mono',ui-monospace,'Cascadia Code',Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans KR','Malgun Gothic',sans-serif}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:var(--sans);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:980px;margin:0 auto;padding:0 20px 120px}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+.hero{padding:48px 0 26px;border-bottom:1px solid var(--bd);margin-bottom:8px}
+.kicker{font-family:var(--mono);font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+.hero h1{margin:0 0 10px;font-size:30px;line-height:1.25;color:var(--brt);letter-spacing:-.01em}
+.hero p.sub{margin:0 0 20px;color:var(--dim);font-size:15px;max-width:80ch}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font-family:var(--mono);font-size:12px;padding:5px 10px;border:1px solid var(--bd);border-radius:999px;background:var(--panel);color:var(--tx)}
+.chip b{color:var(--brt);font-weight:600}
+.chip.done{border-color:rgba(63,185,80,.5);background:rgba(63,185,80,.12);color:#7ee787}
+.chip.blocked{border-color:rgba(255,123,114,.5);background:rgba(255,123,114,.12);color:#ff9d96}
+.chip.partial{border-color:rgba(210,153,34,.5);background:rgba(210,153,34,.12);color:#e3b341}
+nav.toc{display:flex;flex-wrap:wrap;gap:8px;margin:26px 0 6px}
+nav.toc a{font-family:var(--mono);font-size:12.5px;padding:6px 11px;border:1px solid var(--bd);border-radius:8px;background:var(--panel);color:var(--tx)}
+nav.toc a:hover{border-color:var(--accent);color:var(--brt);text-decoration:none}
+h2.sec{font-size:13px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin:40px 0 12px;font-weight:600;border-top:1px solid var(--bd);padding-top:26px}
+.step{margin:26px 0 0;scroll-margin-top:16px}
+.step>h3{display:flex;align-items:center;gap:12px;font-size:19px;color:var(--brt);margin:0 0 6px;letter-spacing:-.01em}
+.num{flex:none;display:inline-grid;place-items:center;width:28px;height:28px;border-radius:8px;background:var(--accent);color:#06101f;font-family:var(--mono);font-weight:700;font-size:13px}
+.step p.lead{margin:0 0 4px;color:var(--dim);font-size:14.5px}
+table.dt{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.3px;border:1px solid var(--bd);border-radius:10px;overflow:hidden;font-family:var(--mono)}
+table.dt th,table.dt td{padding:8px 12px;text-align:right;border-bottom:1px solid var(--bd)}
+table.dt th{background:var(--panel);color:var(--dim);font-weight:600;font-size:12px;letter-spacing:.04em}
+table.dt th:first-child,table.dt td:first-child{text-align:left;color:var(--brt)}
+table.dt tr:last-child td{border-bottom:none}
+table.dt tr.hi td{background:rgba(63,185,80,.08)}
+table.dt tr.lo td{background:rgba(255,123,114,.08)}
+table.dt tr.grey td{background:rgba(139,148,158,.08);color:var(--dim)}
+table.dt tr.base td{background:rgba(88,166,255,.07)}
+.g{color:var(--green)}.r{color:var(--red)}.a{color:var(--amber)}.p{color:var(--purple)}.d{color:var(--dim)}
+table.kv{width:100%;border-collapse:collapse;margin:12px 0;font-size:13.5px;border:1px solid var(--bd);border-radius:10px;overflow:hidden}
+table.kv th,table.kv td{padding:9px 13px;text-align:left;border-bottom:1px solid var(--bd);vertical-align:top}
+table.kv th{background:var(--panel);color:var(--dim);font-weight:600;width:34%;font-size:12.5px}
+table.kv td{font-family:var(--mono);font-size:12.7px;color:var(--tx)}
+table.kv tr:last-child td,table.kv tr:last-child th{border-bottom:none}
+.term{background:var(--panel2);border:1px solid var(--bd);border-radius:11px;overflow:hidden;margin:14px 0}
+.term-bar{display:flex;align-items:center;gap:7px;padding:9px 13px;background:#0c1017;border-bottom:1px solid var(--bd)}
+.dot{width:11px;height:11px;border-radius:50%}.dot.r{background:#ff5f56}.dot.y{background:#ffbd2e}.dot.g{background:#27c93f}
+.term-title{margin-left:9px;color:var(--dim);font-size:12.5px;font-family:var(--mono)}
+.term pre{margin:0;padding:15px 17px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.62;color:var(--tx);white-space:pre;tab-size:2}
+.cmt{color:#5c6773}.ok{color:var(--green)}.err{color:var(--red)}.warn{color:var(--amber)}.dim{color:var(--dim)}.hl{color:var(--purple)}.in{color:var(--brt);font-weight:600}
+.note{border-left:3px solid var(--accent);background:rgba(88,166,255,.07);padding:13px 17px;border-radius:0 9px 9px 0;margin:15px 0;font-size:14px}
+.note.trap{border-color:var(--red);background:rgba(255,123,114,.08)}
+.note.warnb{border-color:var(--amber);background:rgba(210,153,34,.08)}
+.note.tip{border-color:var(--green);background:rgba(63,185,80,.07)}
+.note.block{border-color:var(--purple);background:rgba(188,140,255,.08)}
+.note .tag{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 8px;border-radius:6px;margin-bottom:7px}
+.note.trap .tag{background:rgba(255,123,114,.18);color:#ff9d96}
+.note.warnb .tag{background:rgba(210,153,34,.18);color:#e3b341}
+.note.tip .tag{background:rgba(63,185,80,.18);color:#7ee787}
+.note.block .tag{background:rgba(188,140,255,.18);color:#d8b8ff}
+.note b{color:var(--brt)}.note code{font-family:var(--mono);font-size:12.5px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:4px}
+.chartwrap{border:1px solid var(--bd);background:var(--panel2);border-radius:12px;padding:18px 18px 14px;margin:16px 0}
+.chartwrap .ct{font-family:var(--mono);font-size:12.5px;color:var(--brt);margin:0 0 4px}
+.chartwrap .cs{font-size:12.5px;color:var(--dim);margin:0 0 12px}
+.statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:14px 0}
+.stat{border:1px solid var(--bd);background:var(--panel);border-radius:11px;padding:15px 16px}
+.stat .k{font-family:var(--mono);font-size:11.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em}
+.stat .v{font-size:23px;color:var(--brt);font-weight:700;margin-top:5px;letter-spacing:-.01em}
+.stat .n{font-size:12px;color:var(--dim);margin-top:3px}
+.stat.ok .v{color:#7ee787}.stat.warn .v{color:#e3b341}.stat.bad .v{color:#ff9d96}
+.verdict{border:1px solid var(--bd);border-radius:12px;padding:16px 18px;margin:14px 0;background:var(--panel)}
+.verdict h4{margin:0 0 6px;font-size:15px;color:var(--brt);display:flex;align-items:center;gap:9px}
+.verdict h4 .b{font-family:var(--mono);font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px}
+.verdict.yes h4 .b{background:rgba(63,185,80,.18);color:#7ee787}
+.verdict.no h4 .b{background:rgba(255,123,114,.18);color:#ff9d96}
+.verdict.mixed h4 .b{background:rgba(210,153,34,.18);color:#e3b341}
+.verdict p{margin:0;font-size:13.8px;color:var(--tx)}
+footer{margin-top:46px;padding-top:20px;border-top:1px solid var(--bd);color:var(--dim);font-size:13px}
+.next{display:block;margin-top:12px;padding:12px 16px;border:1px solid var(--bd);border-radius:9px;color:var(--tx);background:var(--panel);font-size:13.6px}
+.next b{color:var(--accent)}
+@media (max-width:560px){.hero h1{font-size:23px}.term pre{font-size:11.4px}.stat .v{font-size:20px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <p class="kicker">실행 보고서 · 3단계 온디바이스(4·5단계 상보) · Jetson AGX Orin · iGPU + DLA</p>
+    <h1>Orin 온디바이스 TensorRT — 실 <code>trtexec</code>로 iGPU 정밀도 사다리 + DLA 오프로드 + 성능/전력</h1>
+    <p class="sub">앞선 <a href="stage4_jetson_agx_orin_a78ae_report.html">Jetson CPU 폴백 프록시</a>는 같은 보드의 <b>Cortex-A78AE CPU</b>만 봤다(offload 0% 바닥값). 이제 <b>가속기</b> 차례다 — 통합 <b>Ampere iGPU</b>와 <b>NVDLA v2</b>. 3·5단계는 정본 pip 휠에 <code>trtexec</code> 실행파일이 없어 polygraphy로 대체했고(<a href="stage3_tensorrt_report.html">3단계</a>), DLA는 <b>RTX 3080에 코어가 0개</b>라 "범위 밖"이었다. Jetson엔 둘 다 있다: 실 <code>trtexec</code>(TRT 10.3 JetPack)와 <b>2개의 DLA 코어</b>. 같은 stage3 ResNet50 ONNX로 5개 엔진(iGPU FP32/FP16/INT8 + DLA FP16/INT8)을 <b>온디바이스 빌드</b>하고, <code>tegrastats</code>로 <b>실측 전력</b>까지 붙였다. 결과: iGPU INT8은 <b>1.01ms·29.7W·33.2 inf/s/W</b>, <b>DLA INT8은 1.28ms·15.2W·51.3 inf/s/W</b>(iGPU 대비 전력 절반·성능/와트 1.55배, GPU를 통째로 비움). 그리고 <b>NVDLA는 INT8 전용기</b> — DLA FP16은 DLA INT8보다 <b>13.9배 느리다</b>.</p>
+    <div class="chips">
+      <span class="chip"><b>2026-08-20</b></span>
+      <span class="chip"><b>Jetson AGX Orin Dev Kit (64GB)</b></span>
+      <span class="chip"><b>JetPack 6.2.1 · TRT 10.3.0.30</b></span>
+      <span class="chip"><b>ResNet50 · batch1</b></span>
+      <span class="chip done">실 trtexec 관통</span>
+      <span class="chip done">DLA 오프로드 확증(GR3D↓)</span>
+      <span class="chip done">DLA INT8 51.3 inf/s/W</span>
+      <span class="chip done">피크 42.4W 실측</span>
+      <span class="chip partial">지연=event-timed·상대만</span>
+    </div>
+    <nav class="toc">
+      <a href="#s1">1 · 실행 요약</a>
+      <a href="#s2">2 · 환경·스택</a>
+      <a href="#s3">3 · iGPU 정밀도 사다리(실 trtexec·item 2·4)</a>
+      <a href="#s4">4 · DLA 오프로드(item 1)</a>
+      <a href="#s5">5 · 성능/전력·PSU(item 3)</a>
+      <a href="#s6">6 · 판정·산출물</a>
+    </nav>
+  </header>
+
+  <!-- ================= §1 ================= -->
+  <h2 class="sec">§1 — 실행 요약</h2>
+  <section id="s1" class="step">
+    <div class="statgrid">
+      <div class="stat ok"><div class="k">DLA INT8 perf/watt</div><div class="v">51.3</div><div class="n">inf/s/W · 15.2W · iGPU INT8의 1.55배</div></div>
+      <div class="stat ok"><div class="k">iGPU INT8</div><div class="v">1.013 ms</div><div class="n">×1.91 vs FP32 · 29.7W · 33.2 inf/s/W</div></div>
+      <div class="stat ok"><div class="k">DLA 오프로드</div><div class="v">GR3D 16%</div><div class="n">DLA 실행 중 GPU 거의 유휴(iGPU는 95~98%)</div></div>
+      <div class="stat warn"><div class="k">DLA FP16 = 함정</div><div class="v">17.73 ms</div><div class="n">DLA INT8보다 13.9× 느림 — NVDLA는 INT8 전용기</div></div>
+    </div>
+    <p class="lead">사용자 요청 실기(<b>home 보드 Jetson AGX Orin</b>)로 "Orin에서 할 수 있는 것" 4가지 — ① DLA INT8 · ② 실 <code>trtexec</code> 온디바이스 · ③ 성능/와트(<code>tegrastats</code>) · ④ iGPU Ampere INT8 — 를 한 번의 브링업으로 관통했다. 4가지 모두 <b>RTX 3080 프록시로는 불가능했던</b> 것들이다(RTX엔 DLA 0개 · 정본 pip 휠엔 trtexec 부재).</p>
+    <table class="kv">
+      <tr><th>발견 1 · <span class="g">DLA INT8 = 성능/와트 챔피언</span> (item 1·3)</th><td>DLA INT8은 <b>1.28ms·15.2W·<span class="g">51.3 inf/s/W</span></b>. iGPU INT8(<b>1.01ms·29.7W·33.2</b>)보다 지연은 <b class="a">26% 느리지만</b>, 전력은 <b class="g">정확히 절반(0.51×)</b>이고 성능/와트는 <b class="g">1.55배</b>다. 게다가 DLA가 도는 동안 <b>GPU는 통째로 비어(GR3D 16%)</b> 다른 일을 시킬 수 있다. "가속기 오프로드 = 지연을 조금 내주고 전력·병렬성을 크게 번다"를 실기 정량으로 확인.</td></tr>
+      <tr><th>발견 2 · <span class="g">실 trtexec가 3·5단계 공백을 메움</span> (item 2)</th><td>3·5단계는 정본 pip 휠에 <code>trtexec</code>가 없어 polygraphy Python API로 우회했다. Jetson엔 <code>/usr/src/tensorrt/bin/trtexec</code>(TRT 10.3, JetPack)가 <b>실존</b> → 문서의 원래 <code>trtexec --int8/--fp16/--useDLACore</code> 명령을 <b>그대로</b> 관통. 5개 엔진 전부 exit 0 빌드.</td></tr>
+      <tr><th>발견 3 · <span class="g">NVDLA는 INT8 전용기</span> (item 1)</th><td>DLA FP16 <b class="r">17.73ms</b> vs DLA INT8 <b class="g">1.28ms</b> = <b>13.9배</b> 차이인데 <b>레이어 배치는 동일</b>(둘 다 DLA-후보 2/2 오프로드 = conv 백본 120층 + fc, tail 2층만 GPU 폴백). 차이는 순수 데이터패스 — NVDLA v2의 INT8 MAC 처리량이 FP16 대비 압도적. <b>DLA에선 INT8이 선택이 아니라 필수</b>(iGPU는 FP16≈INT8인 것과 정반대).</td></tr>
+      <tr><th>발견 4 · <span class="g">작은 Ampere iGPU는 INT8≈FP16</span> (item 4)</th><td>iGPU INT8 1.013ms는 FP16 1.029ms보다 <b>1.6%밖에</b> 안 빠르다(비율 0.984). RTX 3080(3단계)에선 INT8이 FP16보다 8% 빨랐다 — Orin의 작은 iGPU(2048 CUDA코어)는 이 모델에서 <b>더 강하게 launch/메모리 바운드</b>라 INT8 연산 이득이 거의 사라진다. <b>정밀도 이득도 GPU 크기에 의존</b>.</td></tr>
+    </table>
+    <div class="note"><span class="tag" style="background:rgba(88,166,255,.18);color:#9cd2ff">CAVEAT</span> 모든 지연은 <code>trtexec</code> <b>GPU-compute median</b>(디바이스 event-timed, H2D/D2H 제외) · <b>batch1</b> · <b>MAXN</b> 기준. 전력은 <code>tegrastats</code> <b>보드 총합</b>(GPU_SOC+CPU_CV+SYS_5V0, 부하 중 중앙값). iGPU INT8은 stage3 <b>명시적 QDQ</b>(실 스케일)지만 DLA INT8은 <code>trtexec --int8</code> <b>암묵 캘리브</b>(자동 레인지) — <b>지연·전력은 유효, 정확도는 주장하지 않음</b>(정확도는 stage3 RTX·stage4 CPU 프록시에서 별도 확립). 절대값은 상대 관계로만 읽을 것.</div>
+  </section>
+
+  <!-- ================= §2 ================= -->
+  <h2 class="sec">§2 — 환경·스택</h2>
+  <section id="s2" class="step">
+    <table class="kv">
+      <tr><th>보드</th><td>NVIDIA <b>Jetson AGX Orin Developer Kit</b> · 64GB 모듈(RAM 62,841MB) · <code>nvpmodel</code> <b>MAXN</b>(무제한)</td></tr>
+      <tr><th>SoC 가속기</th><td>Ampere <b>iGPU</b>(2048 CUDA · 64 Tensor 코어) · <b>2× NVDLA v2</b>(<code>nvdla0</code>/<code>nvdla1</code>) · 1× PVA</td></tr>
+      <tr><th>CPU</th><td>12× <b>Cortex-A78AE</b>(ARMv8.2, <code>asimddp</code>) — CPU 축은 <a href="stage4_jetson_agx_orin_a78ae_report.html">별도 프록시 보고서</a></td></tr>
+      <tr><th>소프트웨어</th><td>JetPack <b>6.2.1</b>(L4T R36.4.3) · CUDA <b>12.6</b>(V12.6.68) · TensorRT <b>10.3.0.30</b>(<code>libnvinfer-bin</code>) · cuDNN <b>9.3.0</b></td></tr>
+      <tr><th>도구</th><td><b><code>/usr/src/tensorrt/bin/trtexec</code></b>(TRT v100300, JetPack 동봉 — 3·5단계 RTX pip 휠엔 <b>부재</b>였던 것) · <code>tegrastats</code>(전력, sudo 불필요)</td></tr>
+      <tr><th>모델</th><td>torchvision <b>ResNet50</b> · <code>input</code> [1,3,224,224] → <code>logits</code> [1,1000] · opset 17 — <b>stage3와 동일 ONNX</b>(FP32 102MB / INT8 QDQ 26MB, Q/DQ 293개)</td></tr>
+      <tr><th>측정</th><td>지연 = <code>trtexec</code> GPU-compute median(30s 지속부하, warmUp 2s) · 전력 = <code>tegrastats --interval 100</code> 보드 총합(부하 중앙값 = 전력 임계 자동보정 윈도) · 각 엔진 독립 실행(동시부하 없음)</td></tr>
+    </table>
+  </section>
+
+  <!-- ================= §3 ================= -->
+  <h2 class="sec">§3 — iGPU 정밀도 사다리 (실 trtexec · item 2·4)</h2>
+  <section id="s3" class="step">
+    <p class="lead">실 <code>trtexec</code>로 같은 FP32 ONNX에서 FP32/FP16 엔진을, 명시적 QDQ ONNX에서 INT8 엔진을 온디바이스 빌드했다(3단계 방법론과 동일). 통합 Ampere iGPU 기준.</p>
+    <table class="dt">
+      <thead><tr><th>iGPU 정밀도</th><th>GPU-compute median</th><th>vs FP32</th><th>Throughput</th><th>엔진 크기</th></tr></thead>
+      <tbody>
+        <tr class="base"><td>FP32</td><td>1.9375 ms</td><td>×1.00</td><td>515.3 qps</td><td>98.09 MiB</td></tr>
+        <tr><td>FP16</td><td>1.0293 ms</td><td class="g">×1.88</td><td>968.9 qps</td><td>49.29 MiB</td></tr>
+        <tr class="hi"><td>INT8 (QDQ)</td><td>1.0132 ms</td><td class="g">×1.91</td><td>984.7 qps</td><td>26.18 MiB</td></tr>
+      </tbody>
+    </table>
+    <div class="chartwrap">
+      <p class="ct">지연 사다리 — batch1, 디바이스 event-timed (낮을수록 빠름)</p>
+      <p class="cs">막대폭 = 지연 ms × 288.9px. DLA INT8도 함께(§4). DLA FP16(17.73ms)은 척도 밖이라 제외.</p>
+      <svg viewBox="0 0 820 216" width="100%" role="img" aria-label="지연 막대 그래프">
+        <!-- gridlines at 0.5/1.0/1.5/2.0 ms -->
+        <line x1="144.45" y1="18" x2="144.45" y2="182" stroke="#242b38" stroke-width="1"/>
+        <line x1="288.9" y1="18" x2="288.9" y2="182" stroke="#242b38" stroke-width="1"/>
+        <line x1="433.35" y1="18" x2="433.35" y2="182" stroke="#242b38" stroke-width="1"/>
+        <line x1="577.8" y1="18" x2="577.8" y2="182" stroke="#242b38" stroke-width="1"/>
+        <text x="144.45" y="200" fill="#5c6773" font-size="10" font-family="monospace" text-anchor="middle">0.5ms</text>
+        <text x="288.9" y="200" fill="#5c6773" font-size="10" font-family="monospace" text-anchor="middle">1.0</text>
+        <text x="433.35" y="200" fill="#5c6773" font-size="10" font-family="monospace" text-anchor="middle">1.5</text>
+        <text x="577.8" y="200" fill="#5c6773" font-size="10" font-family="monospace" text-anchor="middle">2.0</text>
+        <!-- bars: y start 24, h 30, gap 8 -->
+        <g font-family="monospace" font-size="12">
+          <!-- iGPU FP32 559.74 -->
+          <rect x="0" y="24" width="559.74" height="30" rx="4" fill="#58a6ff" opacity="0.85"/>
+          <text x="567" y="43" fill="#c9d1d9">iGPU FP32 · 1.9375ms</text>
+          <!-- iGPU FP16 297.36 -->
+          <rect x="0" y="62" width="297.36" height="30" rx="4" fill="#3fb950" opacity="0.7"/>
+          <text x="305" y="81" fill="#c9d1d9">iGPU FP16 · 1.0293ms · ×1.88</text>
+          <!-- iGPU INT8 292.71 -->
+          <rect x="0" y="100" width="292.71" height="30" rx="4" fill="#3fb950"/>
+          <text x="300" y="119" fill="#7ee787">iGPU INT8 · 1.0132ms · ×1.91</text>
+          <!-- DLA INT8 369.30 -->
+          <rect x="0" y="138" width="369.30" height="30" rx="4" fill="#bc8cff"/>
+          <text x="377" y="157" fill="#d8b8ff">DLA INT8 · 1.2783ms · ×1.52 (§4)</text>
+        </g>
+      </svg>
+    </div>
+    <div class="note tip"><span class="tag">ITEM 2 — 실 trtexec</span> 5개 엔진 전부 실 <code>trtexec</code> 바이너리로 빌드(exit 0). 3·5단계에서 "정본 pip 휠에 trtexec 부재 → polygraphy로 대체"라고 기록했던 그 명령들(<code>trtexec --onnx=… --int8/--fp16 --saveEngine=…</code>)이 Jetson에선 <b>원문 그대로</b> 동작한다. <b>플래그 1건 정정</b>: 이 트림(TRT 10.3)의 빌드전용 플래그는 <code>--buildOnly</code>가 아니라 <b><code>--skipInference</code></b>(전자는 <span class="err">Unknown option</span>).</div>
+    <div class="note warnb"><span class="tag">ITEM 4 — iGPU INT8 ≈ FP16</span> 이 작은 Ampere iGPU에선 INT8이 FP16보다 <b>1.6%</b>밖에 안 빠르다(1.0132 / 1.0293 = 0.984). 3단계 RTX 3080은 INT8/FP16 = 0.927(INT8이 8% 빨랐음). batch1 ResNet50은 연산량보다 커널 launch·메모리 대역에 묶이는데, iGPU는 그 바운드가 더 세서 INT8의 연산 이득이 거의 상쇄된다. <b>단, INT8 엔진은 여전히 최소 크기</b>(26 MiB, FP32의 27%)이고 전력에선 확실히 이긴다(§5).</div>
+    <p class="lead d">참고 — 3단계 RTX 3080(polygraphy, 동일 event-timed 방법론): FP32 1.6615 → FP16 0.8459(×1.96) → INT8 0.7843ms(×2.12). Jetson iGPU는 FP32에서 1.17×, INT8에서 1.29× 느리다 — 2048 vs 8704 CUDA 코어 격차치고 batch1에선 의외로 근접(지연 바운드라 코어 수 격차가 덜 드러남). <b>다른 GPU라 절대 비교는 참고용</b>.</p>
+  </section>
+
+  <!-- ================= §4 ================= -->
+  <h2 class="sec">§4 — DLA 오프로드 (item 1)</h2>
+  <section id="s4" class="step">
+    <p class="lead">RTX 3080은 DLA 코어가 <b>0개</b>라 3단계에서 "DLA 범위 밖"이었다. Orin엔 <b>NVDLA v2 2개</b>가 있다. <code>--useDLACore=0 --allowGPUFallback</code>로 DLA0에 올리고, <code>--verbose</code>로 레이어 배치를, <code>tegrastats</code> GR3D로 오프로드를 검증했다.</p>
+    <table class="dt">
+      <thead><tr><th>엔진</th><th>백엔드</th><th>지연</th><th>Throughput</th><th>steady 전력</th><th>GR3D(GPU 3D)</th></tr></thead>
+      <tbody>
+        <tr class="hi"><td>INT8</td><td>DLA0</td><td>1.2783 ms</td><td>779.1 qps</td><td class="g">15.19 W</td><td class="g">16%</td></tr>
+        <tr class="lo"><td>FP16</td><td>DLA0</td><td class="r">17.7344 ms</td><td>56.3 qps</td><td>15.69 W</td><td class="g">3%</td></tr>
+        <tr class="grey"><td>INT8(대조)</td><td>iGPU</td><td>1.0132 ms</td><td>984.7 qps</td><td>29.70 W</td><td>95%</td></tr>
+      </tbody>
+    </table>
+    <div class="note tip"><span class="tag">오프로드 확증 (behavioral)</span> DLA 실행 중 <b>GR3D(GPU-3D 사용률)가 3%(FP16)·16%(INT8)로 붕괴</b>한다 — iGPU 엔진은 95~98%. 즉 <b>연산이 GPU가 아니라 DLA에서 실제로 돌고</b> GPU는 비어 있다. 전력에서도 DLA 런의 <code>VDD_GPU_SOC</code>는 5.6~6.0W로, iGPU 런의 21.8~32.7W보다 극적으로 낮다(SOC 레일이 DLA를 먹여도 GPU 코어가 안 돎). "가속기 오프로드"가 말이 아니라 계측으로 확인됨.</div>
+    <div class="note"><span class="tag" style="background:rgba(88,166,255,.18);color:#9cd2ff">레이어 배치 (--verbose)</span> DLA INT8·FP16 <b>둘 다 동일</b>: <code>Number of DLA node candidates offloaded: <b>2 out of 2</b></code>. DLA 서브그래프는 <b>2개 ForeignNode</b> — ① 전체 conv 백본 <code>/conv1/Conv‥/layer4.2/relu_2</code>(<b>120개 DLA 층</b>), ② <code>/fc/Gemm + bias</code>(FC도 DLA에 올라감). <b>GPU 폴백은 compute 2층뿐</b> — <code>GlobalAveragePool</code>(REDUCE→POOLING, <span class="d">"DLA cores do not support AVG Reduce"</span>)과 flatten <code>SHUFFLE</code>. 즉 배치는 같고 <b>정밀도만 다른데</b> 지연이 13.9× 벌어진다.</div>
+    <div class="note trap"><span class="tag">함정 — DLA FP16</span> DLA FP16 <b>17.73ms</b>는 DLA INT8 <b>1.28ms</b>의 <b>13.9배</b>. 배치가 동일하므로 원인은 순수 <b>NVDLA 데이터패스</b> — v2의 INT8 MAC 처리량이 FP16 대비 압도적으로 높다. <b>DLA에 올릴 거면 반드시 INT8</b>. FP16으로 DLA를 쓰면 iGPU FP32(1.94ms)보다도 9배 느린 최악의 조합이 된다(단 전력은 15.7W로 낮음 → 극저전력·저처리량 니치 외엔 쓸 이유 없음).</div>
+    <div class="note tip"><span class="tag">ITEM 1 판정</span> DLA INT8은 <b>실사용 가능</b>: 1.28ms(iGPU INT8의 1.26×)에 <b>전력 절반·GPU 프리</b>. ResNet50 같은 깔끔한 CNN은 tail 2층 빼고 전부 DLA에 얹힌다. RTX 3080에서 못 했던 축을 실 보드로 채움.</div>
+  </section>
+
+  <!-- ================= §5 ================= -->
+  <h2 class="sec">§5 — 성능/전력 · PSU (item 3)</h2>
+  <section id="s5" class="step">
+    <p class="lead"><code>tegrastats</code>로 각 엔진 30초 지속부하 중 보드 총 전력(GPU_SOC+CPU_CV+SYS_5V0)을 샘플링해 성능/와트를 냈다. 전원 공급장치 판단에 필요한 <b>실측 피크</b>도 여기서 나온다.</p>
+    <table class="dt">
+      <thead><tr><th>엔진</th><th>지연</th><th>qps</th><th>steady W</th><th>peak W</th><th>inf/s/W</th></tr></thead>
+      <tbody>
+        <tr class="base"><td>iGPU FP32</td><td>1.9375</td><td>515.3</td><td>42.26</td><td>42.37</td><td>12.19</td></tr>
+        <tr><td>iGPU FP16</td><td>1.0293</td><td>968.9</td><td>36.20</td><td>36.59</td><td>26.77</td></tr>
+        <tr><td>iGPU INT8</td><td>1.0132</td><td>984.7</td><td>29.70</td><td>29.71</td><td>33.16</td></tr>
+        <tr class="lo"><td>DLA FP16</td><td>17.7344</td><td>56.3</td><td>15.69</td><td>15.69</td><td class="r">3.59</td></tr>
+        <tr class="hi"><td>DLA INT8</td><td>1.2783</td><td>779.1</td><td class="g">15.19</td><td>15.29</td><td class="g">51.29</td></tr>
+      </tbody>
+    </table>
+    <div class="chartwrap">
+      <p class="ct">성능/와트 — inf/s/W (높을수록 효율적)</p>
+      <p class="cs">막대폭 = inf/s/W × 11.5px. DLA INT8이 iGPU INT8의 1.55배.</p>
+      <svg viewBox="0 0 820 232" width="100%" role="img" aria-label="성능 와트 막대 그래프">
+        <g font-family="monospace" font-size="12">
+          <!-- factor 11.5 -->
+          <rect x="0" y="14" width="140.19" height="28" rx="4" fill="#58a6ff" opacity="0.85"/>
+          <text x="148" y="32" fill="#c9d1d9">iGPU FP32 · 12.19</text>
+          <rect x="0" y="50" width="307.86" height="28" rx="4" fill="#3fb950" opacity="0.7"/>
+          <text x="315" y="68" fill="#c9d1d9">iGPU FP16 · 26.77</text>
+          <rect x="0" y="86" width="381.34" height="28" rx="4" fill="#3fb950"/>
+          <text x="389" y="104" fill="#7ee787">iGPU INT8 · 33.16</text>
+          <rect x="0" y="122" width="41.28" height="28" rx="4" fill="#ff7b72"/>
+          <text x="49" y="140" fill="#ff9d96">DLA FP16 · 3.59 (함정)</text>
+          <rect x="0" y="158" width="589.84" height="28" rx="4" fill="#bc8cff"/>
+          <text x="597" y="176" fill="#d8b8ff">DLA INT8 · 51.29 ★</text>
+        </g>
+        <text x="0" y="212" fill="#5c6773" font-size="10" font-family="monospace">막대폭 = inf/s/W × 11.5px · steady 보드 전력 기준</text>
+      </svg>
+    </div>
+    <div class="note"><span class="tag" style="background:rgba(88,166,255,.18);color:#9cd2ff">전력 스케일링</span> iGPU에서 정밀도를 낮출수록 <b>전력도 단조 감소</b>: FP32 42.3W → FP16 36.2W → INT8 29.7W. 더 빠르면서 더 적게 먹으니 성능/와트는 12.2 → 26.8 → 33.2로 개선. DLA INT8은 이 곡선 밖에서 <b>15.2W·51.3</b>로 따로 논다.</div>
+    <div class="note tip"><span class="tag">전원 공급장치(PSU) — 실측 답</span> ResNet50 batch1 추론 중 <b>보드 실측 피크 = 42.4W</b>(iGPU FP32), 유휴 <b>7.6W</b>. 이건 단일 모델·batch1 워크로드 기준이고, 64GB 모듈의 <b>설계 상한은 60W</b>(MAXN)라 배치 확대·iGPU+DLA+CPU 동시부하면 그쪽으로 오른다. 따라서 동봉 <b>19V 배럴잭 어댑터</b>(정격이 60W 위에 여유)로 충분하며, 서드파티라면 <b>19V·90W급</b> 권장. PSU가 빠듯하면 <code>nvpmodel</code>로 30W/15W 캡 가능(설정은 sudo 필요).</div>
+    <div class="note tip"><span class="tag">ITEM 3 판정</span> DLA INT8이 <b>성능/와트 챔피언</b>(51.3). 지연 최우선이면 iGPU INT8(1.01ms), <b>전력·배터리·GPU 확보</b>가 목적이면 DLA INT8(전력 절반, 지연 26%만 손해). 자동차/로봇 다중 모델 배치에서 DLA에 상시 CNN을 얹고 GPU를 무거운 헤드에 남기는 전형적 분업이 수치로 정당화됨.</div>
+  </section>
+
+  <!-- ================= §6 ================= -->
+  <h2 class="sec">§6 — 판정·산출물</h2>
+  <section id="s6" class="step">
+    <div class="verdict yes"><h4><span class="b">DONE</span> item 1 · DLA INT8</h4><p>DLA0에 DLA-후보 2/2 오프로드(conv 백본 120층 + fc)·tail 2층만 GPU폴백으로 관통. <b>1.28ms·15.2W·51.3 inf/s/W</b>, GR3D 16%로 오프로드 확증. NVDLA는 INT8 전용기(FP16은 13.9× 느림). RTX 3080 "DLA 범위 밖" 해소.</p></div>
+    <div class="verdict yes"><h4><span class="b">DONE</span> item 2 · 실 trtexec 온디바이스</h4><p>JetPack 동봉 <code>/usr/src/tensorrt/bin/trtexec</code>(TRT 10.3)로 5엔진 전부 빌드. 3·5단계 "trtexec 부재→polygraphy" 공백을 실 바이너리로 메움. 플래그 정정: <code>--skipInference</code>(≠<code>--buildOnly</code>).</p></div>
+    <div class="verdict yes"><h4><span class="b">DONE</span> item 3 · 성능/와트 (tegrastats)</h4><p>5엔진 × 30초 지속부하 전력 계측. DLA INT8 51.3 챔피언, iGPU 정밀도↓=전력↓ 단조. <b>실측 피크 42.4W·유휴 7.6W</b>(PSU 답).</p></div>
+    <div class="verdict yes"><h4><span class="b">DONE</span> item 4 · iGPU Ampere INT8</h4><p>1.013ms·×1.91·29.7W. 단 이 작은 iGPU에선 <b>INT8≈FP16</b>(1.6%차) — RTX(8%차)보다 launch/메모리 바운드가 세다. 정밀도 이득도 GPU 크기 의존.</p></div>
+
+    <table class="kv">
+      <tr><th>산출물 — 리포트</th><td>이 파일 <code>logs/stage3_jetson_orin_ondevice_report.html</code></td></tr>
+      <tr><th>산출물 — 실험</th><td><code>experiments/stage3_tensorrt/jetson_ondevice/</code> — <code>results/</code>(ppw_*.json 5 + summary.json SSOT) · <code>raw/</code>(trtexec 빌드/벤치 로그 5 + DLA verbose 2) · <code>scripts/</code>(ppw.py 이식형 하네스) · README · constraints.md</td></tr>
+      <tr><th>상보 보고서</th><td><a href="stage4_jetson_agx_orin_a78ae_report.html">Jetson CPU 폴백 프록시</a>(같은 보드 A78AE CPU) · <a href="stage3_tensorrt_report.html">3단계 RTX TensorRT</a>(trtexec 부재·DLA 범위밖) · <a href="stage4_qualcomm_aihub_report.html">Qualcomm Hexagon NPU</a>(벤더 가속기 상대) · <a href="stage5_infrastructure_report.html">5단계 벤치 하네스</a></td></tr>
+    </table>
+
+    <div class="note"><span class="tag" style="background:rgba(88,166,255,.18);color:#9cd2ff">캐비앗(불변)</span> ① 지연 = event-timed·batch1·MAXN이라 타 단계(stage5 wall-clock 등)와 1:1 비교 불가, 상대만. ② DLA INT8은 암묵 캘리브(자동 레인지)라 <b>지연·전력만 유효, 정확도 미주장</b>(정확도는 stage3 RTX·stage4 CPU 프록시). ③ 전력=보드 총합(SYS_5V0 6.7~8.7W는 캐리어·주변장치 오버헤드 포함). ④ 각 엔진 독립 실행 — iGPU+DLA 동시부하(진짜 병렬 오프로드)는 다음 과제. ⑤ 절대 피크 42.4W는 이 워크로드 기준, 설계 상한은 60W.</div>
+    <a class="next" href="#s1"><b>다음 후보</b> — iGPU+DLA 동시부하 실측(진짜 병렬 오프로드·합산 처리량/전력) · <code>nvpmodel</code> 15W/30W/50W별 성능/와트 곡선 · DLA INT8 실 캘리브 정확도 · study_guide 06 §다중SoC에 Jetson 가속기 행 반영</a>
+    <footer>
+      실측: 2026-08-20 · Jetson AGX Orin Dev Kit(64GB) · JetPack 6.2.1 · TensorRT 10.3.0.30 · ResNet50 batch1 · trtexec GPU-compute median + tegrastats 보드전력 · 절대값은 상대 관계로만 유효.
+    </footer>
+  </section>
+</div>
+</body>
+</html>

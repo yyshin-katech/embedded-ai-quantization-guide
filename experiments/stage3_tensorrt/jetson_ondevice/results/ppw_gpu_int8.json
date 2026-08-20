@@ -1,0 +1,22 @@
+{
+  "label": "gpu_int8",
+  "plan": "engines/rn50_gpu_int8.plan",
+  "dla_core": "",
+  "duration_s": 30,
+  "wall_s": 32.252,
+  "exit": 0,
+  "throughput_qps": 984.725,
+  "gpu_compute_ms": 1.01318,
+  "e2e_latency_ms": 1.05176,
+  "power_steady_mw": 29696.0,
+  "power_peak_mw": 29705,
+  "power_steady_gpu_soc_mw": 21797.0,
+  "power_steady_cpu_cv_mw": 1189.0,
+  "power_steady_sys_5v0_mw": 6710.0,
+  "power_idle_floor_mw": 8194,
+  "gr3d_busy_median_pct": 95.0,
+  "n_samples": 322,
+  "n_busy": 312,
+  "inf_per_s_per_w": 33.16018992456897,
+  "tegrastats_log": "/home/katech/orin_bench/raw/teg_gpu_int8.log"
+}

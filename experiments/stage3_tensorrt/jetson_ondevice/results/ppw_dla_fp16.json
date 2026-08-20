@@ -1,0 +1,22 @@
+{
+  "label": "dla_fp16",
+  "plan": "engines/rn50_dla_fp16.plan",
+  "dla_core": "0",
+  "duration_s": 30,
+  "wall_s": 32.35,
+  "exit": 0,
+  "throughput_qps": 56.3322,
+  "gpu_compute_ms": 17.7344,
+  "e2e_latency_ms": 17.8496,
+  "power_steady_mw": 15692,
+  "power_peak_mw": 15694,
+  "power_steady_gpu_soc_mw": 5976,
+  "power_steady_cpu_cv_mw": 1992,
+  "power_steady_sys_5v0_mw": 7724,
+  "power_idle_floor_mw": 8194,
+  "gr3d_busy_median_pct": 3,
+  "n_samples": 322,
+  "n_busy": 311,
+  "inf_per_s_per_w": 3.589867448381341,
+  "tegrastats_log": "/home/katech/orin_bench/raw/teg_dla_fp16.log"
+}
