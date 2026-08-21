@@ -1,0 +1,1243 @@
+$ /usr/src/tensorrt/bin/trtexec --onnx=/home/katech/orin_bench/onnx/detr_sim.onnx --int8 --fp16 --useDLACore=0 --allowGPUFallback --saveEngine=/home/katech/orin_bench/engines/detr_dla_int8_implicit.plan --warmUp=2000 --duration=10 --iterations=200 --avgRuns=100
+&&&& RUNNING TensorRT.trtexec [TensorRT v100300] # /usr/src/tensorrt/bin/trtexec --onnx=/home/katech/orin_bench/onnx/detr_sim.onnx --int8 --fp16 --useDLACore=0 --allowGPUFallback --saveEngine=/home/katech/orin_bench/engines/detr_dla_int8_implicit.plan --warmUp=2000 --duration=10 --iterations=200 --avgRuns=100
+[08/21/2026-10:49:19] [I] === Model Options ===
+[08/21/2026-10:49:19] [I] Format: ONNX
+[08/21/2026-10:49:19] [I] Model: /home/katech/orin_bench/onnx/detr_sim.onnx
+[08/21/2026-10:49:19] [I] Output:
+[08/21/2026-10:49:19] [I] === Build Options ===
+[08/21/2026-10:49:19] [I] Memory Pools: workspace: default, dlaSRAM: default, dlaLocalDRAM: default, dlaGlobalDRAM: default, tacticSharedMem: default
+[08/21/2026-10:49:19] [I] avgTiming: 8
+[08/21/2026-10:49:19] [I] Precision: FP32+FP16+INT8
+[08/21/2026-10:49:19] [I] LayerPrecisions: 
+[08/21/2026-10:49:19] [I] Layer Device Types: 
+[08/21/2026-10:49:19] [I] Calibration: Dynamic
+[08/21/2026-10:49:19] [I] Refit: Disabled
+[08/21/2026-10:49:19] [I] Strip weights: Disabled
+[08/21/2026-10:49:19] [I] Version Compatible: Disabled
+[08/21/2026-10:49:19] [I] ONNX Plugin InstanceNorm: Disabled
+[08/21/2026-10:49:19] [I] TensorRT runtime: full
+[08/21/2026-10:49:19] [I] Lean DLL Path: 
+[08/21/2026-10:49:19] [I] Tempfile Controls: { in_memory: allow, temporary: allow }
+[08/21/2026-10:49:19] [I] Exclude Lean Runtime: Disabled
+[08/21/2026-10:49:19] [I] Sparsity: Disabled
+[08/21/2026-10:49:19] [I] Safe mode: Disabled
+[08/21/2026-10:49:19] [I] Build DLA standalone loadable: Disabled
+[08/21/2026-10:49:19] [I] Allow GPU fallback for DLA: Enabled
+[08/21/2026-10:49:19] [I] DirectIO mode: Disabled
+[08/21/2026-10:49:19] [I] Restricted mode: Disabled
+[08/21/2026-10:49:19] [I] Skip inference: Disabled
+[08/21/2026-10:49:19] [I] Save engine: /home/katech/orin_bench/engines/detr_dla_int8_implicit.plan
+[08/21/2026-10:49:19] [I] Load engine: 
+[08/21/2026-10:49:19] [I] Profiling verbosity: 0
+[08/21/2026-10:49:19] [I] Tactic sources: Using default tactic sources
+[08/21/2026-10:49:19] [I] timingCacheMode: local
+[08/21/2026-10:49:19] [I] timingCacheFile: 
+[08/21/2026-10:49:19] [I] Enable Compilation Cache: Enabled
+[08/21/2026-10:49:19] [I] errorOnTimingCacheMiss: Disabled
+[08/21/2026-10:49:19] [I] Preview Features: Use default preview flags.
+[08/21/2026-10:49:19] [I] MaxAuxStreams: -1
+[08/21/2026-10:49:19] [I] BuilderOptimizationLevel: -1
+[08/21/2026-10:49:19] [I] Calibration Profile Index: 0
+[08/21/2026-10:49:19] [I] Weight Streaming: Disabled
+[08/21/2026-10:49:19] [I] Runtime Platform: Same As Build
+[08/21/2026-10:49:19] [I] Debug Tensors: 
+[08/21/2026-10:49:19] [I] Input(s)s format: fp32:CHW
+[08/21/2026-10:49:19] [I] Output(s)s format: fp32:CHW
+[08/21/2026-10:49:19] [I] Input build shapes: model
+[08/21/2026-10:49:19] [I] Input calibration shapes: model
+[08/21/2026-10:49:19] [I] === System Options ===
+[08/21/2026-10:49:19] [I] Device: 0
+[08/21/2026-10:49:19] [I] DLACore: 0
+[08/21/2026-10:49:19] [I] Plugins:
+[08/21/2026-10:49:19] [I] setPluginsToSerialize:
+[08/21/2026-10:49:19] [I] dynamicPlugins:
+[08/21/2026-10:49:19] [I] ignoreParsedPluginLibs: 0
+[08/21/2026-10:49:19] [I] 
+[08/21/2026-10:49:19] [I] === Inference Options ===
+[08/21/2026-10:49:19] [I] Batch: Explicit
+[08/21/2026-10:49:19] [I] Input inference shapes: model
+[08/21/2026-10:49:19] [I] Iterations: 200
+[08/21/2026-10:49:19] [I] Duration: 10s (+ 2000ms warm up)
+[08/21/2026-10:49:19] [I] Sleep time: 0ms
+[08/21/2026-10:49:19] [I] Idle time: 0ms
+[08/21/2026-10:49:19] [I] Inference Streams: 1
+[08/21/2026-10:49:19] [I] ExposeDMA: Disabled
+[08/21/2026-10:49:19] [I] Data transfers: Enabled
+[08/21/2026-10:49:19] [I] Spin-wait: Disabled
+[08/21/2026-10:49:19] [I] Multithreading: Disabled
+[08/21/2026-10:49:19] [I] CUDA Graph: Disabled
+[08/21/2026-10:49:19] [I] Separate profiling: Disabled
+[08/21/2026-10:49:19] [I] Time Deserialize: Disabled
+[08/21/2026-10:49:19] [I] Time Refit: Disabled
+[08/21/2026-10:49:19] [I] NVTX verbosity: 0
+[08/21/2026-10:49:19] [I] Persistent Cache Ratio: 0
+[08/21/2026-10:49:19] [I] Optimization Profile Index: 0
+[08/21/2026-10:49:19] [I] Weight Streaming Budget: 100.000000%
+[08/21/2026-10:49:19] [I] Inputs:
+[08/21/2026-10:49:19] [I] Debug Tensor Save Destinations:
+[08/21/2026-10:49:19] [I] === Reporting Options ===
+[08/21/2026-10:49:19] [I] Verbose: Disabled
+[08/21/2026-10:49:19] [I] Averages: 100 inferences
+[08/21/2026-10:49:19] [I] Percentiles: 90,95,99
+[08/21/2026-10:49:19] [I] Dump refittable layers:Disabled
+[08/21/2026-10:49:19] [I] Dump output: Disabled
+[08/21/2026-10:49:19] [I] Profile: Disabled
+[08/21/2026-10:49:19] [I] Export timing to JSON file: 
+[08/21/2026-10:49:19] [I] Export output to JSON file: 
+[08/21/2026-10:49:19] [I] Export profile to JSON file: 
+[08/21/2026-10:49:19] [I] 
+[08/21/2026-10:49:19] [I] === Device Information ===
+[08/21/2026-10:49:19] [I] Available Devices: 
+[08/21/2026-10:49:19] [I]   Device 0: "Orin" UUID: GPU-d88f5124-b913-5174-bcad-9e3fe191d8a8
+[08/21/2026-10:49:19] [I] Selected Device: Orin
+[08/21/2026-10:49:19] [I] Selected Device ID: 0
+[08/21/2026-10:49:19] [I] Selected Device UUID: GPU-d88f5124-b913-5174-bcad-9e3fe191d8a8
+[08/21/2026-10:49:19] [I] Compute Capability: 8.7
+[08/21/2026-10:49:19] [I] SMs: 16
+[08/21/2026-10:49:19] [I] Device Global Memory: 62841 MiB
+[08/21/2026-10:49:19] [I] Shared Memory per SM: 164 KiB
+[08/21/2026-10:49:19] [I] Memory Bus Width: 256 bits (ECC disabled)
+[08/21/2026-10:49:19] [I] Application Compute Clock Rate: 1.3 GHz
+[08/21/2026-10:49:19] [I] Application Memory Clock Rate: 1.3 GHz
+[08/21/2026-10:49:19] [I] 
+[08/21/2026-10:49:19] [I] Note: The application clock rates do not reflect the actual clock rates that the GPU is currently running at.
+[08/21/2026-10:49:19] [I] 
+[08/21/2026-10:49:19] [I] TensorRT version: 10.3.0
+[08/21/2026-10:49:19] [I] Loading standard plugins
+[08/21/2026-10:49:19] [I] [TRT] [MemUsageChange] Init CUDA: CPU +2, GPU +0, now: CPU 31, GPU 10217 (MiB)
+[08/21/2026-10:49:20] [I] [TRT] [MemUsageChange] Init builder kernel library: CPU +928, GPU +1093, now: CPU 1002, GPU 11355 (MiB)
+[08/21/2026-10:49:20] [I] Start parsing network model.
+[08/21/2026-10:49:20] [I] [TRT] ----------------------------------------------------------------
+[08/21/2026-10:49:20] [I] [TRT] Input filename:   /home/katech/orin_bench/onnx/detr_sim.onnx
+[08/21/2026-10:49:20] [I] [TRT] ONNX IR version:  0.0.8
+[08/21/2026-10:49:20] [I] [TRT] Opset version:    17
+[08/21/2026-10:49:20] [I] [TRT] Producer name:    pytorch
+[08/21/2026-10:49:20] [I] [TRT] Producer version: 2.11.0
+[08/21/2026-10:49:20] [I] [TRT] Domain:           
+[08/21/2026-10:49:20] [I] [TRT] Model version:    0
+[08/21/2026-10:49:20] [I] [TRT] Doc string:       
+[08/21/2026-10:49:20] [I] [TRT] ----------------------------------------------------------------
+[08/21/2026-10:49:20] [I] Finished parsing network model. Parse time: 0.149704
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/Reshape' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/Transpose' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/Transpose_1_output_0' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_0' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_3968' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.0.self_attn.q_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.0/self_attn/Reshape' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_3984' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.0.self_attn.k_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_4' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.0/self_attn/Reshape_1' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_3' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_3985' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.0.self_attn.v_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_8' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.0/self_attn/Reshape_2' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.0/self_attn/Constant_3_output_0' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_11' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_13' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] /model/encoder/layers.0/self_attn/MatMul: MatMul is unsupported on DLA, relax constraints or use Convolution layer instead.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.0/self_attn/MatMul' (MATRIX_MULTIPLY): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] /model/encoder/layers.0/self_attn/IsNaN: Unary operation: ISNAN is not supported on DLA.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.0/self_attn/IsNaN' (UNARY): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.0/self_attn/Constant_5_output_0' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_16' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.0/self_attn/Where_1' (SELECT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] /model/encoder/layers.0/self_attn/MatMul_1: MatMul is unsupported on DLA, relax constraints or use Convolution layer instead.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.0/self_attn/MatMul_1' (MATRIX_MULTIPLY): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.0/self_attn/Reshape_3' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_5' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_3994' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.0.self_attn.o_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_20' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_7' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 170) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 171) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.0.self_attn_layer_norm.weight' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.0.self_attn_layer_norm.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_24' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_26' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.0/self_attn_layer_norm/LayerNormalization' (NORMALIZATION): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_8' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_3995' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.0.mlp.fc1.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_29' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_3996' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.0.mlp.fc2.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_31' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_11' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 191) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 192) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.0.final_layer_norm.weight' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.0.final_layer_norm.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_36' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_38' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.0/final_layer_norm/LayerNormalization' (NORMALIZATION): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_12' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_3997' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.1.self_attn.q_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_41' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.1/self_attn/Reshape' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4004' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.1.self_attn.k_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_44' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.1/self_attn/Reshape_1' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_15' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4005' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.1.self_attn.v_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_48' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.1/self_attn/Reshape_2' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_51' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_53' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] /model/encoder/layers.1/self_attn/MatMul: MatMul is unsupported on DLA, relax constraints or use Convolution layer instead.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.1/self_attn/MatMul' (MATRIX_MULTIPLY): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] /model/encoder/layers.1/self_attn/IsNaN: Unary operation: ISNAN is not supported on DLA.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.1/self_attn/IsNaN' (UNARY): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_56' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.1/self_attn/Where_1' (SELECT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] /model/encoder/layers.1/self_attn/MatMul_1: MatMul is unsupported on DLA, relax constraints or use Convolution layer instead.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.1/self_attn/MatMul_1' (MATRIX_MULTIPLY): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.1/self_attn/Reshape_3' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_17' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4011' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.1.self_attn.o_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_60' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_19' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 243) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 244) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.1.self_attn_layer_norm.weight' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.1.self_attn_layer_norm.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_65' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_67' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.1/self_attn_layer_norm/LayerNormalization' (NORMALIZATION): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_20' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4012' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.1.mlp.fc1.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_70' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4013' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.1.mlp.fc2.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_72' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_23' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 264) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 265) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.1.final_layer_norm.weight' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.1.final_layer_norm.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_77' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_79' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.1/final_layer_norm/LayerNormalization' (NORMALIZATION): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_24' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4014' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.2.self_attn.q_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_82' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.2/self_attn/Reshape' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4021' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.2.self_attn.k_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_85' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.2/self_attn/Reshape_1' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_27' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4022' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.2.self_attn.v_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_89' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.2/self_attn/Reshape_2' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_92' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_94' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] /model/encoder/layers.2/self_attn/MatMul: MatMul is unsupported on DLA, relax constraints or use Convolution layer instead.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.2/self_attn/MatMul' (MATRIX_MULTIPLY): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] /model/encoder/layers.2/self_attn/IsNaN: Unary operation: ISNAN is not supported on DLA.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.2/self_attn/IsNaN' (UNARY): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_97' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.2/self_attn/Where_1' (SELECT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] /model/encoder/layers.2/self_attn/MatMul_1: MatMul is unsupported on DLA, relax constraints or use Convolution layer instead.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.2/self_attn/MatMul_1' (MATRIX_MULTIPLY): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.2/self_attn/Reshape_3' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_29' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4028' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.2.self_attn.o_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_101' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_31' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 316) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 317) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.2.self_attn_layer_norm.weight' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.2.self_attn_layer_norm.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_106' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_108' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.2/self_attn_layer_norm/LayerNormalization' (NORMALIZATION): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_32' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4029' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.2.mlp.fc1.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_111' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4030' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.2.mlp.fc2.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_113' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_35' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 337) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 338) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.2.final_layer_norm.weight' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.2.final_layer_norm.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_118' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_120' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.2/final_layer_norm/LayerNormalization' (NORMALIZATION): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_36' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4031' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.3.self_attn.q_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_123' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.3/self_attn/Reshape' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4038' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.3.self_attn.k_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_126' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.3/self_attn/Reshape_1' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_39' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4039' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.3.self_attn.v_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_130' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.3/self_attn/Reshape_2' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_133' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_135' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] /model/encoder/layers.3/self_attn/MatMul: MatMul is unsupported on DLA, relax constraints or use Convolution layer instead.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.3/self_attn/MatMul' (MATRIX_MULTIPLY): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] /model/encoder/layers.3/self_attn/IsNaN: Unary operation: ISNAN is not supported on DLA.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.3/self_attn/IsNaN' (UNARY): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_138' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.3/self_attn/Where_1' (SELECT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] /model/encoder/layers.3/self_attn/MatMul_1: MatMul is unsupported on DLA, relax constraints or use Convolution layer instead.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.3/self_attn/MatMul_1' (MATRIX_MULTIPLY): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.3/self_attn/Reshape_3' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_41' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4045' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.3.self_attn.o_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_142' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_43' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 389) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 390) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.3.self_attn_layer_norm.weight' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.3.self_attn_layer_norm.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_147' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_149' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.3/self_attn_layer_norm/LayerNormalization' (NORMALIZATION): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_44' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4046' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.3.mlp.fc1.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_152' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4047' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.3.mlp.fc2.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_154' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_47' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 410) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 411) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.3.final_layer_norm.weight' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.3.final_layer_norm.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_159' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_161' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.3/final_layer_norm/LayerNormalization' (NORMALIZATION): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_48' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4048' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.4.self_attn.q_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_164' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.4/self_attn/Reshape' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4055' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.4.self_attn.k_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_167' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.4/self_attn/Reshape_1' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_51' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4056' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.4.self_attn.v_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_171' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.4/self_attn/Reshape_2' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_174' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_176' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] /model/encoder/layers.4/self_attn/MatMul: MatMul is unsupported on DLA, relax constraints or use Convolution layer instead.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.4/self_attn/MatMul' (MATRIX_MULTIPLY): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] /model/encoder/layers.4/self_attn/IsNaN: Unary operation: ISNAN is not supported on DLA.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.4/self_attn/IsNaN' (UNARY): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_179' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.4/self_attn/Where_1' (SELECT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] /model/encoder/layers.4/self_attn/MatMul_1: MatMul is unsupported on DLA, relax constraints or use Convolution layer instead.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.4/self_attn/MatMul_1' (MATRIX_MULTIPLY): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.4/self_attn/Reshape_3' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_53' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4062' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.4.self_attn.o_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_183' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_55' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 462) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 463) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.4.self_attn_layer_norm.weight' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.4.self_attn_layer_norm.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_188' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_190' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.4/self_attn_layer_norm/LayerNormalization' (NORMALIZATION): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_56' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4063' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.4.mlp.fc1.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_193' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4064' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.4.mlp.fc2.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_195' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_59' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 483) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 484) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.4.final_layer_norm.weight' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.4.final_layer_norm.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_200' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_202' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.4/final_layer_norm/LayerNormalization' (NORMALIZATION): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_60' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4065' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.5.self_attn.q_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_205' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.5/self_attn/Reshape' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4072' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.5.self_attn.k_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_208' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.5/self_attn/Reshape_1' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_63' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4073' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.5.self_attn.v_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_212' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.5/self_attn/Reshape_2' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_215' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_217' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] /model/encoder/layers.5/self_attn/MatMul: MatMul is unsupported on DLA, relax constraints or use Convolution layer instead.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.5/self_attn/MatMul' (MATRIX_MULTIPLY): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] /model/encoder/layers.5/self_attn/IsNaN: Unary operation: ISNAN is not supported on DLA.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.5/self_attn/IsNaN' (UNARY): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_220' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.5/self_attn/Where_1' (SELECT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] /model/encoder/layers.5/self_attn/MatMul_1: MatMul is unsupported on DLA, relax constraints or use Convolution layer instead.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.5/self_attn/MatMul_1' (MATRIX_MULTIPLY): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.5/self_attn/Reshape_3' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_65' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4079' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.5.self_attn.o_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_224' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_67' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 535) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 536) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.5.self_attn_layer_norm.weight' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.5.self_attn_layer_norm.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_229' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_231' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.5/self_attn_layer_norm/LayerNormalization' (NORMALIZATION): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_68' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4080' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.5.mlp.fc1.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_234' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4081' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.5.mlp.fc2.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_236' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_71' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 556) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 557) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.5.final_layer_norm.weight' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.encoder.layers.5.final_layer_norm.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_241' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_243' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/encoder/layers.5/final_layer_norm/LayerNormalization' (NORMALIZATION): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_72' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4128' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.0.encoder_attn.k_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_247' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.0/encoder_attn/Reshape_1' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_74' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4153' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.0.encoder_attn.v_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_251' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.0/encoder_attn/Reshape_2' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_254' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.0/encoder_attn/Mul_output_0' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] /model/decoder/layers.0/encoder_attn/MatMul: MatMul is unsupported on DLA, relax constraints or use Convolution layer instead.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.0/encoder_attn/MatMul' (MATRIX_MULTIPLY): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] /model/decoder/layers.0/encoder_attn/IsNaN: Unary operation: ISNAN is not supported on DLA.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.0/encoder_attn/IsNaN' (UNARY): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_257' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.0/encoder_attn/Where_1' (SELECT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] /model/decoder/layers.0/encoder_attn/MatMul_1: MatMul is unsupported on DLA, relax constraints or use Convolution layer instead.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.0/encoder_attn/MatMul_1' (MATRIX_MULTIPLY): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.0/encoder_attn/Reshape_3' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_76' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4162' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.0.encoder_attn.o_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_261' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_78' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.0/self_attn_layer_norm/LayerNormalization_output_0' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 601) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 602) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.0.encoder_attn_layer_norm.weight' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.0.encoder_attn_layer_norm.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_266' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_268' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.0/encoder_attn_layer_norm/LayerNormalization' (NORMALIZATION): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_79' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4163' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.0.mlp.fc1.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_271' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4164' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.0.mlp.fc2.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_273' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_82' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 622) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 623) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.0.final_layer_norm.weight' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.0.final_layer_norm.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_278' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_280' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.0/final_layer_norm/LayerNormalization' (NORMALIZATION): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/Tile_output_0' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_83' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4165' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.1.self_attn.q_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_283' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.1/self_attn/Reshape' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4172' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.1.self_attn.k_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_286' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.1/self_attn/Reshape_1' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_86' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4173' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.1.self_attn.v_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_290' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.1/self_attn/Reshape_2' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_293' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_295' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] /model/decoder/layers.1/self_attn/MatMul: MatMul is unsupported on DLA, relax constraints or use Convolution layer instead.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.1/self_attn/MatMul' (MATRIX_MULTIPLY): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] /model/decoder/layers.1/self_attn/MatMul_1: MatMul is unsupported on DLA, relax constraints or use Convolution layer instead.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.1/self_attn/MatMul_1' (MATRIX_MULTIPLY): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_88' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4179' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.1.self_attn.o_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_299' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_90' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 671) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 672) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.1.self_attn_layer_norm.weight' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.1.self_attn_layer_norm.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_304' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_306' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.1/self_attn_layer_norm/LayerNormalization' (NORMALIZATION): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_91' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4180' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.1.encoder_attn.q_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_309' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.1/encoder_attn/Reshape' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4183' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.1.encoder_attn.k_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_312' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.1/encoder_attn/Reshape_1' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4184' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.1.encoder_attn.v_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_315' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.1/encoder_attn/Reshape_2' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_318' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_320' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] /model/decoder/layers.1/encoder_attn/MatMul: MatMul is unsupported on DLA, relax constraints or use Convolution layer instead.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.1/encoder_attn/MatMul' (MATRIX_MULTIPLY): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] /model/decoder/layers.1/encoder_attn/IsNaN: Unary operation: ISNAN is not supported on DLA.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.1/encoder_attn/IsNaN' (UNARY): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_323' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.1/encoder_attn/Where_1' (SELECT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] /model/decoder/layers.1/encoder_attn/MatMul_1: MatMul is unsupported on DLA, relax constraints or use Convolution layer instead.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.1/encoder_attn/MatMul_1' (MATRIX_MULTIPLY): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.1/encoder_attn/Reshape_3' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_95' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4190' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.1.encoder_attn.o_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_327' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_97' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 722) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 723) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.1.encoder_attn_layer_norm.weight' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.1.encoder_attn_layer_norm.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_332' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_334' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.1/encoder_attn_layer_norm/LayerNormalization' (NORMALIZATION): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_98' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4191' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.1.mlp.fc1.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_337' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4192' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.1.mlp.fc2.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_339' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_101' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 743) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 744) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.1.final_layer_norm.weight' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.1.final_layer_norm.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_344' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_346' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.1/final_layer_norm/LayerNormalization' (NORMALIZATION): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_102' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4193' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.2.self_attn.q_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_349' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.2/self_attn/Reshape' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4200' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.2.self_attn.k_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_352' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.2/self_attn/Reshape_1' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_105' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4201' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.2.self_attn.v_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_356' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.2/self_attn/Reshape_2' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_359' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_361' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] /model/decoder/layers.2/self_attn/MatMul: MatMul is unsupported on DLA, relax constraints or use Convolution layer instead.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.2/self_attn/MatMul' (MATRIX_MULTIPLY): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] /model/decoder/layers.2/self_attn/MatMul_1: MatMul is unsupported on DLA, relax constraints or use Convolution layer instead.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.2/self_attn/MatMul_1' (MATRIX_MULTIPLY): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_107' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4207' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.2.self_attn.o_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_365' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_109' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 791) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 792) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.2.self_attn_layer_norm.weight' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.2.self_attn_layer_norm.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_370' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_372' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.2/self_attn_layer_norm/LayerNormalization' (NORMALIZATION): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_110' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4208' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.2.encoder_attn.q_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_375' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.2/encoder_attn/Reshape' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4211' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.2.encoder_attn.k_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_378' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.2/encoder_attn/Reshape_1' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4212' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.2.encoder_attn.v_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_381' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.2/encoder_attn/Reshape_2' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_384' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_386' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] /model/decoder/layers.2/encoder_attn/MatMul: MatMul is unsupported on DLA, relax constraints or use Convolution layer instead.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.2/encoder_attn/MatMul' (MATRIX_MULTIPLY): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] /model/decoder/layers.2/encoder_attn/IsNaN: Unary operation: ISNAN is not supported on DLA.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.2/encoder_attn/IsNaN' (UNARY): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_389' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.2/encoder_attn/Where_1' (SELECT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] /model/decoder/layers.2/encoder_attn/MatMul_1: MatMul is unsupported on DLA, relax constraints or use Convolution layer instead.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.2/encoder_attn/MatMul_1' (MATRIX_MULTIPLY): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.2/encoder_attn/Reshape_3' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_114' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4218' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.2.encoder_attn.o_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_393' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_116' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 842) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 843) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.2.encoder_attn_layer_norm.weight' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.2.encoder_attn_layer_norm.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_398' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_400' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.2/encoder_attn_layer_norm/LayerNormalization' (NORMALIZATION): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_117' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4219' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.2.mlp.fc1.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_403' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4220' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.2.mlp.fc2.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_405' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_120' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 863) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 864) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.2.final_layer_norm.weight' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.2.final_layer_norm.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_410' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_412' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.2/final_layer_norm/LayerNormalization' (NORMALIZATION): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_121' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4221' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.3.self_attn.q_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_415' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.3/self_attn/Reshape' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4228' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.3.self_attn.k_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_418' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.3/self_attn/Reshape_1' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_124' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4229' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.3.self_attn.v_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_422' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.3/self_attn/Reshape_2' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_425' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_427' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] /model/decoder/layers.3/self_attn/MatMul: MatMul is unsupported on DLA, relax constraints or use Convolution layer instead.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.3/self_attn/MatMul' (MATRIX_MULTIPLY): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] /model/decoder/layers.3/self_attn/MatMul_1: MatMul is unsupported on DLA, relax constraints or use Convolution layer instead.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.3/self_attn/MatMul_1' (MATRIX_MULTIPLY): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_126' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4235' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.3.self_attn.o_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_431' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_128' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 911) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 912) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.3.self_attn_layer_norm.weight' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.3.self_attn_layer_norm.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_436' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_438' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.3/self_attn_layer_norm/LayerNormalization' (NORMALIZATION): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_129' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4236' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.3.encoder_attn.q_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_441' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.3/encoder_attn/Reshape' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4239' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.3.encoder_attn.k_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_444' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.3/encoder_attn/Reshape_1' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4240' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.3.encoder_attn.v_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_447' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.3/encoder_attn/Reshape_2' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_450' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_452' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] /model/decoder/layers.3/encoder_attn/MatMul: MatMul is unsupported on DLA, relax constraints or use Convolution layer instead.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.3/encoder_attn/MatMul' (MATRIX_MULTIPLY): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] /model/decoder/layers.3/encoder_attn/IsNaN: Unary operation: ISNAN is not supported on DLA.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.3/encoder_attn/IsNaN' (UNARY): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_455' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.3/encoder_attn/Where_1' (SELECT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] /model/decoder/layers.3/encoder_attn/MatMul_1: MatMul is unsupported on DLA, relax constraints or use Convolution layer instead.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.3/encoder_attn/MatMul_1' (MATRIX_MULTIPLY): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.3/encoder_attn/Reshape_3' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_133' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4246' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.3.encoder_attn.o_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_459' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_135' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 962) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 963) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.3.encoder_attn_layer_norm.weight' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.3.encoder_attn_layer_norm.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_464' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_466' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.3/encoder_attn_layer_norm/LayerNormalization' (NORMALIZATION): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_136' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4247' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.3.mlp.fc1.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_469' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4248' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.3.mlp.fc2.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_471' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_139' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 983) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 984) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.3.final_layer_norm.weight' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.3.final_layer_norm.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_476' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_478' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.3/final_layer_norm/LayerNormalization' (NORMALIZATION): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_140' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4249' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.4.self_attn.q_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_481' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.4/self_attn/Reshape' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4256' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.4.self_attn.k_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_484' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.4/self_attn/Reshape_1' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_143' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4257' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.4.self_attn.v_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_488' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.4/self_attn/Reshape_2' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_491' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_493' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] /model/decoder/layers.4/self_attn/MatMul: MatMul is unsupported on DLA, relax constraints or use Convolution layer instead.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.4/self_attn/MatMul' (MATRIX_MULTIPLY): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] /model/decoder/layers.4/self_attn/MatMul_1: MatMul is unsupported on DLA, relax constraints or use Convolution layer instead.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.4/self_attn/MatMul_1' (MATRIX_MULTIPLY): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_145' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4263' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.4.self_attn.o_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_497' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_147' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 1031) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 1032) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.4.self_attn_layer_norm.weight' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.4.self_attn_layer_norm.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_502' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_504' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.4/self_attn_layer_norm/LayerNormalization' (NORMALIZATION): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_148' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4264' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.4.encoder_attn.q_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_507' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.4/encoder_attn/Reshape' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4267' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.4.encoder_attn.k_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_510' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.4/encoder_attn/Reshape_1' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4268' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.4.encoder_attn.v_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_513' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.4/encoder_attn/Reshape_2' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_516' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_518' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] /model/decoder/layers.4/encoder_attn/MatMul: MatMul is unsupported on DLA, relax constraints or use Convolution layer instead.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.4/encoder_attn/MatMul' (MATRIX_MULTIPLY): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] /model/decoder/layers.4/encoder_attn/IsNaN: Unary operation: ISNAN is not supported on DLA.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.4/encoder_attn/IsNaN' (UNARY): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_521' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.4/encoder_attn/Where_1' (SELECT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] /model/decoder/layers.4/encoder_attn/MatMul_1: MatMul is unsupported on DLA, relax constraints or use Convolution layer instead.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.4/encoder_attn/MatMul_1' (MATRIX_MULTIPLY): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.4/encoder_attn/Reshape_3' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_152' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4274' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.4.encoder_attn.o_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_525' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_154' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 1082) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 1083) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.4.encoder_attn_layer_norm.weight' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.4.encoder_attn_layer_norm.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_530' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_532' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.4/encoder_attn_layer_norm/LayerNormalization' (NORMALIZATION): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_155' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4275' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.4.mlp.fc1.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_535' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4276' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.4.mlp.fc2.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_537' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_158' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 1103) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 1104) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.4.final_layer_norm.weight' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.4.final_layer_norm.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_542' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_544' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.4/final_layer_norm/LayerNormalization' (NORMALIZATION): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_159' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4277' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.5.self_attn.q_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_547' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.5/self_attn/Reshape' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4284' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.5.self_attn.k_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_550' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.5/self_attn/Reshape_1' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_162' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4285' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.5.self_attn.v_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_554' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.5/self_attn/Reshape_2' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_557' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_559' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] /model/decoder/layers.5/self_attn/MatMul: MatMul is unsupported on DLA, relax constraints or use Convolution layer instead.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.5/self_attn/MatMul' (MATRIX_MULTIPLY): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] /model/decoder/layers.5/self_attn/MatMul_1: MatMul is unsupported on DLA, relax constraints or use Convolution layer instead.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.5/self_attn/MatMul_1' (MATRIX_MULTIPLY): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_164' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4291' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.5.self_attn.o_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_563' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_166' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 1151) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '(Unnamed Layer* 1152) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.5.self_attn_layer_norm.weight' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.5.self_attn_layer_norm.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_568' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_570' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.5/self_attn_layer_norm/LayerNormalization' (NORMALIZATION): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'Reshape_167' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4292' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.5.encoder_attn.q_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_573' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.5/encoder_attn/Reshape' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4295' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.5.encoder_attn.k_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_576' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.5/encoder_attn/Reshape_1' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'onnx::MatMul_4296' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'model.decoder.layers.5.encoder_attn.v_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer 'ONNXTRT_Broadcast_579' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:20] [W] [TRT] Layer '/model/decoder/layers.5/encoder_attn/Reshape_2' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer 'ONNXTRT_Broadcast_582' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer 'ONNXTRT_Broadcast_584' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] /model/decoder/layers.5/encoder_attn/MatMul: MatMul is unsupported on DLA, relax constraints or use Convolution layer instead.
+[08/21/2026-10:49:21] [W] [TRT] Layer '/model/decoder/layers.5/encoder_attn/MatMul' (MATRIX_MULTIPLY): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] /model/decoder/layers.5/encoder_attn/IsNaN: Unary operation: ISNAN is not supported on DLA.
+[08/21/2026-10:49:21] [W] [TRT] Layer '/model/decoder/layers.5/encoder_attn/IsNaN' (UNARY): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer 'ONNXTRT_Broadcast_587' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer '/model/decoder/layers.5/encoder_attn/Where_1' (SELECT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] /model/decoder/layers.5/encoder_attn/MatMul_1: MatMul is unsupported on DLA, relax constraints or use Convolution layer instead.
+[08/21/2026-10:49:21] [W] [TRT] Layer '/model/decoder/layers.5/encoder_attn/MatMul_1' (MATRIX_MULTIPLY): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer '/model/decoder/layers.5/encoder_attn/Reshape_3' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer 'Reshape_171' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer 'onnx::MatMul_4302' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer 'model.decoder.layers.5.encoder_attn.o_proj.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer 'ONNXTRT_Broadcast_591' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer 'Reshape_173' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer '(Unnamed Layer* 1202) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer '(Unnamed Layer* 1203) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer 'model.decoder.layers.5.encoder_attn_layer_norm.weight' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer 'model.decoder.layers.5.encoder_attn_layer_norm.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer 'ONNXTRT_Broadcast_596' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer 'ONNXTRT_Broadcast_598' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer '/model/decoder/layers.5/encoder_attn_layer_norm/LayerNormalization' (NORMALIZATION): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer 'Reshape_174' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer 'onnx::MatMul_4303' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer 'model.decoder.layers.5.mlp.fc1.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer 'ONNXTRT_Broadcast_601' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer 'onnx::MatMul_4304' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer 'model.decoder.layers.5.mlp.fc2.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer 'ONNXTRT_Broadcast_603' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer 'Reshape_177' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer '(Unnamed Layer* 1223) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer '(Unnamed Layer* 1224) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer 'model.decoder.layers.5.final_layer_norm.weight' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer 'model.decoder.layers.5.final_layer_norm.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer 'ONNXTRT_Broadcast_608' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer 'ONNXTRT_Broadcast_610' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer '/model/decoder/layers.5/final_layer_norm/LayerNormalization' (NORMALIZATION): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer '(Unnamed Layer* 1230) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer '(Unnamed Layer* 1231) [Constant]' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer 'model.decoder.layernorm.weight' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer 'model.decoder.layernorm.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer 'ONNXTRT_Broadcast_614' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer 'ONNXTRT_Broadcast_616' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer '/model/decoder/layernorm/LayerNormalization' (NORMALIZATION): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer 'Reshape_178' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer 'onnx::MatMul_4305' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer 'class_labels_classifier.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer 'ONNXTRT_Broadcast_620' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer 'Reshape_180' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer 'onnx::MatMul_4306' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer 'bbox_predictor.layers.0.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer 'ONNXTRT_Broadcast_624' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer 'onnx::MatMul_4307' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer 'bbox_predictor.layers.1.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer 'ONNXTRT_Broadcast_626' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer 'onnx::MatMul_4308' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer 'bbox_predictor.layers.2.bias' (CONSTANT): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer 'ONNXTRT_Broadcast_628' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Layer 'Reshape_184' (SHUFFLE): Unsupported on DLA. Switching this layer's device type to GPU.
+[08/21/2026-10:49:21] [W] [TRT] Calibrator is not being used. Users must provide dynamic range for all tensors that are not Int32 or Bool.
+[08/21/2026-10:49:23] [W] [TRT] Input tensor has less than 4 dimensions for /model/encoder/layers.0/self_attn/Add. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:24] [W] [TRT] Segmenting subgraph due to mismatched batch size. Current layer has batch size: 1 but the rest of the DLA subgraph has batch size: 1
+[08/21/2026-10:49:24] [W] [TRT] DLA Softmax optimization is enabled because the volume of non-axis dimensions is greater than 1. This may cause a small error in the output.
+[08/21/2026-10:49:24] [W] [TRT] Input tensor has less than 4 dimensions for /model/encoder/layers.0/Add. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:25] [W] [TRT] Input tensor has less than 4 dimensions for /model/encoder/layers.0/mlp/activation_fn/Relu. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:25] [W] [TRT] Input tensor has less than 4 dimensions for /model/encoder/layers.0/Add_1. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:25] [W] [TRT] Input tensor has less than 4 dimensions for /model/encoder/layers.1/self_attn/Add. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:27] [W] [TRT] Segmenting subgraph due to mismatched batch size. Current layer has batch size: 1 but the rest of the DLA subgraph has batch size: 1
+[08/21/2026-10:49:27] [W] [TRT] DLA Softmax optimization is enabled because the volume of non-axis dimensions is greater than 1. This may cause a small error in the output.
+[08/21/2026-10:49:27] [W] [TRT] Input tensor has less than 4 dimensions for /model/encoder/layers.1/Add. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:28] [W] [TRT] Input tensor has less than 4 dimensions for /model/encoder/layers.1/mlp/activation_fn/Relu. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:28] [W] [TRT] Input tensor has less than 4 dimensions for /model/encoder/layers.1/Add_1. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:28] [W] [TRT] Input tensor has less than 4 dimensions for /model/encoder/layers.2/self_attn/Add. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:30] [W] [TRT] Segmenting subgraph due to mismatched batch size. Current layer has batch size: 1 but the rest of the DLA subgraph has batch size: 1
+[08/21/2026-10:49:30] [W] [TRT] DLA Softmax optimization is enabled because the volume of non-axis dimensions is greater than 1. This may cause a small error in the output.
+[08/21/2026-10:49:30] [W] [TRT] Input tensor has less than 4 dimensions for /model/encoder/layers.2/Add. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:30] [W] [TRT] Input tensor has less than 4 dimensions for /model/encoder/layers.2/mlp/activation_fn/Relu. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:31] [W] [TRT] Input tensor has less than 4 dimensions for /model/encoder/layers.2/Add_1. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:31] [W] [TRT] Input tensor has less than 4 dimensions for /model/encoder/layers.3/self_attn/Add. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:32] [W] [TRT] Segmenting subgraph due to mismatched batch size. Current layer has batch size: 1 but the rest of the DLA subgraph has batch size: 1
+[08/21/2026-10:49:32] [W] [TRT] DLA Softmax optimization is enabled because the volume of non-axis dimensions is greater than 1. This may cause a small error in the output.
+[08/21/2026-10:49:33] [W] [TRT] Input tensor has less than 4 dimensions for /model/encoder/layers.3/Add. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:33] [W] [TRT] Input tensor has less than 4 dimensions for /model/encoder/layers.3/mlp/activation_fn/Relu. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:34] [W] [TRT] Input tensor has less than 4 dimensions for /model/encoder/layers.3/Add_1. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:34] [W] [TRT] Input tensor has less than 4 dimensions for /model/encoder/layers.4/self_attn/Add. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:35] [W] [TRT] Segmenting subgraph due to mismatched batch size. Current layer has batch size: 1 but the rest of the DLA subgraph has batch size: 1
+[08/21/2026-10:49:35] [W] [TRT] DLA Softmax optimization is enabled because the volume of non-axis dimensions is greater than 1. This may cause a small error in the output.
+[08/21/2026-10:49:36] [W] [TRT] Input tensor has less than 4 dimensions for /model/encoder/layers.4/Add. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:36] [W] [TRT] Input tensor has less than 4 dimensions for /model/encoder/layers.4/mlp/activation_fn/Relu. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:37] [W] [TRT] Input tensor has less than 4 dimensions for /model/encoder/layers.4/Add_1. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:37] [W] [TRT] Input tensor has less than 4 dimensions for /model/encoder/layers.5/self_attn/Add. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:38] [W] [TRT] Segmenting subgraph due to mismatched batch size. Current layer has batch size: 1 but the rest of the DLA subgraph has batch size: 1
+[08/21/2026-10:49:38] [W] [TRT] DLA Softmax optimization is enabled because the volume of non-axis dimensions is greater than 1. This may cause a small error in the output.
+[08/21/2026-10:49:38] [W] [TRT] Input tensor has less than 4 dimensions for /model/encoder/layers.5/Add. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:39] [W] [TRT] Input tensor has less than 4 dimensions for /model/encoder/layers.5/mlp/activation_fn/Relu. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:39] [W] [TRT] Input tensor has less than 4 dimensions for /model/encoder/layers.5/Add_1. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:39] [W] [TRT] Input tensor has less than 4 dimensions for /model/decoder/layers.0/encoder_attn/Add_1. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:40] [W] [TRT] Segmenting subgraph due to mismatched batch size. Current layer has batch size: 1 but the rest of the DLA subgraph has batch size: 1
+[08/21/2026-10:49:40] [W] [TRT] DLA Softmax optimization is enabled because the volume of non-axis dimensions is greater than 1. This may cause a small error in the output.
+[08/21/2026-10:49:40] [W] [TRT] Input tensor has less than 4 dimensions for /model/decoder/layers.0/Add_1. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:40] [W] [TRT] Input tensor has less than 4 dimensions for /model/decoder/layers.0/mlp/activation_fn/Relu. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:40] [W] [TRT] Input tensor has less than 4 dimensions for /model/decoder/layers.0/Add_2. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:40] [W] [TRT] Input tensor has less than 4 dimensions for /model/decoder/layers.1/self_attn/Add. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:41] [W] [TRT] Segmenting subgraph due to mismatched batch size. Current layer has batch size: 1 but the rest of the DLA subgraph has batch size: 1
+[08/21/2026-10:49:41] [W] [TRT] DLA Softmax optimization is enabled because the volume of non-axis dimensions is greater than 1. This may cause a small error in the output.
+[08/21/2026-10:49:41] [W] [TRT] Input tensor has less than 4 dimensions for /model/decoder/layers.1/Add. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:41] [W] [TRT] Input tensor has less than 4 dimensions for /model/decoder/layers.1/encoder_attn/Add. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:41] [W] [TRT] Segmenting subgraph due to mismatched batch size. Current layer has batch size: 1 but the rest of the DLA subgraph has batch size: 1
+[08/21/2026-10:49:42] [W] [TRT] Segmenting subgraph due to mismatched batch size. Current layer has batch size: 1 but the rest of the DLA subgraph has batch size: 1
+[08/21/2026-10:49:42] [W] [TRT] DLA Softmax optimization is enabled because the volume of non-axis dimensions is greater than 1. This may cause a small error in the output.
+[08/21/2026-10:49:42] [W] [TRT] Input tensor has less than 4 dimensions for /model/decoder/layers.1/Add_1. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:42] [W] [TRT] Input tensor has less than 4 dimensions for /model/decoder/layers.1/mlp/activation_fn/Relu. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:42] [W] [TRT] Input tensor has less than 4 dimensions for /model/decoder/layers.1/Add_2. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:42] [W] [TRT] Input tensor has less than 4 dimensions for /model/decoder/layers.2/self_attn/Add. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:42] [W] [TRT] Segmenting subgraph due to mismatched batch size. Current layer has batch size: 1 but the rest of the DLA subgraph has batch size: 1
+[08/21/2026-10:49:42] [W] [TRT] DLA Softmax optimization is enabled because the volume of non-axis dimensions is greater than 1. This may cause a small error in the output.
+[08/21/2026-10:49:42] [W] [TRT] Input tensor has less than 4 dimensions for /model/decoder/layers.2/Add. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:42] [W] [TRT] Input tensor has less than 4 dimensions for /model/decoder/layers.2/encoder_attn/Add. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:42] [W] [TRT] Segmenting subgraph due to mismatched batch size. Current layer has batch size: 1 but the rest of the DLA subgraph has batch size: 1
+[08/21/2026-10:49:43] [W] [TRT] Segmenting subgraph due to mismatched batch size. Current layer has batch size: 1 but the rest of the DLA subgraph has batch size: 1
+[08/21/2026-10:49:43] [W] [TRT] DLA Softmax optimization is enabled because the volume of non-axis dimensions is greater than 1. This may cause a small error in the output.
+[08/21/2026-10:49:43] [W] [TRT] Input tensor has less than 4 dimensions for /model/decoder/layers.2/Add_1. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:43] [W] [TRT] Input tensor has less than 4 dimensions for /model/decoder/layers.2/mlp/activation_fn/Relu. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:43] [W] [TRT] Input tensor has less than 4 dimensions for /model/decoder/layers.2/Add_2. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:43] [W] [TRT] Input tensor has less than 4 dimensions for /model/decoder/layers.3/self_attn/Add. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:43] [W] [TRT] Segmenting subgraph due to mismatched batch size. Current layer has batch size: 1 but the rest of the DLA subgraph has batch size: 1
+[08/21/2026-10:49:43] [W] [TRT] DLA Softmax optimization is enabled because the volume of non-axis dimensions is greater than 1. This may cause a small error in the output.
+[08/21/2026-10:49:43] [W] [TRT] Input tensor has less than 4 dimensions for /model/decoder/layers.3/Add. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:43] [W] [TRT] Input tensor has less than 4 dimensions for /model/decoder/layers.3/encoder_attn/Add. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:44] [W] [TRT] Segmenting subgraph due to mismatched batch size. Current layer has batch size: 1 but the rest of the DLA subgraph has batch size: 1
+[08/21/2026-10:49:44] [W] [TRT] Segmenting subgraph due to mismatched batch size. Current layer has batch size: 1 but the rest of the DLA subgraph has batch size: 1
+[08/21/2026-10:49:44] [W] [TRT] DLA Softmax optimization is enabled because the volume of non-axis dimensions is greater than 1. This may cause a small error in the output.
+[08/21/2026-10:49:44] [W] [TRT] Input tensor has less than 4 dimensions for /model/decoder/layers.3/Add_1. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:45] [W] [TRT] Input tensor has less than 4 dimensions for /model/decoder/layers.3/mlp/activation_fn/Relu. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:45] [W] [TRT] Input tensor has less than 4 dimensions for /model/decoder/layers.3/Add_2. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:45] [W] [TRT] Input tensor has less than 4 dimensions for /model/decoder/layers.4/self_attn/Add. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:45] [W] [TRT] Segmenting subgraph due to mismatched batch size. Current layer has batch size: 1 but the rest of the DLA subgraph has batch size: 1
+[08/21/2026-10:49:45] [W] [TRT] DLA Softmax optimization is enabled because the volume of non-axis dimensions is greater than 1. This may cause a small error in the output.
+[08/21/2026-10:49:45] [W] [TRT] Input tensor has less than 4 dimensions for /model/decoder/layers.4/Add. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:45] [W] [TRT] Input tensor has less than 4 dimensions for /model/decoder/layers.4/encoder_attn/Add. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:45] [W] [TRT] Segmenting subgraph due to mismatched batch size. Current layer has batch size: 1 but the rest of the DLA subgraph has batch size: 1
+[08/21/2026-10:49:46] [W] [TRT] Segmenting subgraph due to mismatched batch size. Current layer has batch size: 1 but the rest of the DLA subgraph has batch size: 1
+[08/21/2026-10:49:46] [W] [TRT] DLA Softmax optimization is enabled because the volume of non-axis dimensions is greater than 1. This may cause a small error in the output.
+[08/21/2026-10:49:46] [W] [TRT] Input tensor has less than 4 dimensions for /model/decoder/layers.4/Add_1. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:46] [W] [TRT] Input tensor has less than 4 dimensions for /model/decoder/layers.4/mlp/activation_fn/Relu. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:46] [W] [TRT] Input tensor has less than 4 dimensions for /model/decoder/layers.4/Add_2. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:46] [W] [TRT] Input tensor has less than 4 dimensions for /model/decoder/layers.5/self_attn/Add. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:46] [W] [TRT] Segmenting subgraph due to mismatched batch size. Current layer has batch size: 1 but the rest of the DLA subgraph has batch size: 1
+[08/21/2026-10:49:46] [W] [TRT] DLA Softmax optimization is enabled because the volume of non-axis dimensions is greater than 1. This may cause a small error in the output.
+[08/21/2026-10:49:46] [W] [TRT] Input tensor has less than 4 dimensions for /model/decoder/layers.5/Add. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:46] [W] [TRT] Input tensor has less than 4 dimensions for /model/decoder/layers.5/encoder_attn/Add. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:46] [W] [TRT] Segmenting subgraph due to mismatched batch size. Current layer has batch size: 1 but the rest of the DLA subgraph has batch size: 1
+[08/21/2026-10:49:47] [W] [TRT] Segmenting subgraph due to mismatched batch size. Current layer has batch size: 1 but the rest of the DLA subgraph has batch size: 1
+[08/21/2026-10:49:47] [W] [TRT] DLA Softmax optimization is enabled because the volume of non-axis dimensions is greater than 1. This may cause a small error in the output.
+[08/21/2026-10:49:47] [W] [TRT] Input tensor has less than 4 dimensions for /model/decoder/layers.5/Add_1. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:47] [W] [TRT] Input tensor has less than 4 dimensions for /model/decoder/layers.5/mlp/activation_fn/Relu. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:47] [W] [TRT] Input tensor has less than 4 dimensions for /model/decoder/layers.5/Add_2. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:47] [W] [TRT] Input tensor has less than 4 dimensions for /bbox_predictor/Relu. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:48] [W] [TRT] Input tensor has less than 4 dimensions for /bbox_predictor/Relu_1. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:49:48] [W] [TRT] Input tensor has less than 4 dimensions for /Sigmoid. At least one shuffle layer will be inserted which cannot run on DLA.
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_103 + (Unnamed Layer* 756) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.2/self_attn/Mul
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.2/encoder_attn/Mul
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_122 + (Unnamed Layer* 876) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.3/self_attn/Mul
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.3/encoder_attn/Mul
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_141 + (Unnamed Layer* 996) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.4/self_attn/Mul
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.4/encoder_attn/Mul
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_160 + (Unnamed Layer* 1116) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.5/self_attn/Mul
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.5/encoder_attn/Mul
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_179 + (Unnamed Layer* 1242) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/encoder/layers.0/self_attn/Add
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_4 + (Unnamed Layer* 143) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/encoder/layers.0/self_attn/Softmax
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_6 + (Unnamed Layer* 167) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/encoder/layers.0/Add
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_9 + (Unnamed Layer* 182) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/encoder/layers.0/mlp/activation_fn/Relu
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_10 + (Unnamed Layer* 188) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/encoder/layers.0/Add_1
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/encoder/layers.1/self_attn/Add
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_16 + (Unnamed Layer* 218) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/encoder/layers.1/self_attn/Softmax
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_18 + (Unnamed Layer* 240) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/encoder/layers.1/Add
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_21 + (Unnamed Layer* 255) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/encoder/layers.1/mlp/activation_fn/Relu
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_22 + (Unnamed Layer* 261) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/encoder/layers.1/Add_1
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/encoder/layers.2/self_attn/Add
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_28 + (Unnamed Layer* 291) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/encoder/layers.2/self_attn/Softmax
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_30 + (Unnamed Layer* 313) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/encoder/layers.2/Add
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_33 + (Unnamed Layer* 328) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/encoder/layers.2/mlp/activation_fn/Relu
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_34 + (Unnamed Layer* 334) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/encoder/layers.2/Add_1
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/encoder/layers.3/self_attn/Add
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_40 + (Unnamed Layer* 364) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/encoder/layers.3/self_attn/Softmax
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_42 + (Unnamed Layer* 386) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/encoder/layers.3/Add
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_45 + (Unnamed Layer* 401) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/encoder/layers.3/mlp/activation_fn/Relu
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_46 + (Unnamed Layer* 407) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/encoder/layers.3/Add_1
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/encoder/layers.4/self_attn/Add
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_52 + (Unnamed Layer* 437) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/encoder/layers.4/self_attn/Softmax
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_54 + (Unnamed Layer* 459) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/encoder/layers.4/Add
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_57 + (Unnamed Layer* 474) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/encoder/layers.4/mlp/activation_fn/Relu
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_58 + (Unnamed Layer* 480) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/encoder/layers.4/Add_1
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/encoder/layers.5/self_attn/Add
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_64 + (Unnamed Layer* 510) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/encoder/layers.5/self_attn/Softmax
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_66 + (Unnamed Layer* 532) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/encoder/layers.5/Add
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_69 + (Unnamed Layer* 547) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/encoder/layers.5/mlp/activation_fn/Relu
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_70 + (Unnamed Layer* 553) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/encoder/layers.5/Add_1
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.0/encoder_attn/Add_1
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_73 + (Unnamed Layer* 569) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.0/encoder_attn/Mul_1
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_75 + (Unnamed Layer* 576) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.0/encoder_attn/Softmax
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_77 + (Unnamed Layer* 597) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.0/Add_1
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_80 + (Unnamed Layer* 613) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.0/mlp/activation_fn/Relu
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_81 + (Unnamed Layer* 619) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.0/Add_2
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.1/self_attn/Add
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_87 + (Unnamed Layer* 650) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.1/self_attn/Softmax
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_89 + (Unnamed Layer* 668) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.1/Add
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.1/encoder_attn/Add
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_92 + (Unnamed Layer* 684) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_93 + (Unnamed Layer* 691) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_94 + (Unnamed Layer* 697) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.1/encoder_attn/Softmax
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_96 + (Unnamed Layer* 719) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.1/Add_1
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_99 + (Unnamed Layer* 734) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.1/mlp/activation_fn/Relu
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_100 + (Unnamed Layer* 740) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.1/Add_2
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.2/self_attn/Add
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_106 + (Unnamed Layer* 770) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.2/self_attn/Softmax
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_108 + (Unnamed Layer* 788) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.2/Add
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.2/encoder_attn/Add
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_111 + (Unnamed Layer* 804) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_112 + (Unnamed Layer* 811) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_113 + (Unnamed Layer* 817) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.2/encoder_attn/Softmax
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_115 + (Unnamed Layer* 839) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.2/Add_1
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_118 + (Unnamed Layer* 854) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.2/mlp/activation_fn/Relu
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_119 + (Unnamed Layer* 860) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.2/Add_2
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.3/self_attn/Add
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_125 + (Unnamed Layer* 890) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.3/self_attn/Softmax
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_127 + (Unnamed Layer* 908) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.3/Add
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.3/encoder_attn/Add
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_130 + (Unnamed Layer* 924) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_131 + (Unnamed Layer* 931) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_132 + (Unnamed Layer* 937) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.3/encoder_attn/Softmax
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_134 + (Unnamed Layer* 959) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.3/Add_1
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_137 + (Unnamed Layer* 974) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.3/mlp/activation_fn/Relu
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_138 + (Unnamed Layer* 980) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.3/Add_2
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.4/self_attn/Add
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_144 + (Unnamed Layer* 1010) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.4/self_attn/Softmax
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_146 + (Unnamed Layer* 1028) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.4/Add
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.4/encoder_attn/Add
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_149 + (Unnamed Layer* 1044) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_150 + (Unnamed Layer* 1051) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_151 + (Unnamed Layer* 1057) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.4/encoder_attn/Softmax
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_153 + (Unnamed Layer* 1079) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.4/Add_1
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_156 + (Unnamed Layer* 1094) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.4/mlp/activation_fn/Relu
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_157 + (Unnamed Layer* 1100) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.4/Add_2
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.5/self_attn/Add
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_163 + (Unnamed Layer* 1130) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.5/self_attn/Softmax
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_165 + (Unnamed Layer* 1148) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.5/Add
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.5/encoder_attn/Add
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_168 + (Unnamed Layer* 1164) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_169 + (Unnamed Layer* 1171) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_170 + (Unnamed Layer* 1177) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.5/encoder_attn/Softmax
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_172 + (Unnamed Layer* 1199) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.5/Add_1
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_175 + (Unnamed Layer* 1214) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.5/mlp/activation_fn/Relu
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_176 + (Unnamed Layer* 1220) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /model/decoder/layers.5/Add_2
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_181 + (Unnamed Layer* 1248) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /bbox_predictor/Relu
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer Gemm_182 + (Unnamed Layer* 1254) [ElementWise]
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /bbox_predictor/Relu_1
+[08/21/2026-10:50:28] [W] [TRT] DLA supports only 16 subgraphs per DLA core. Switching to GPU for layer /Sigmoid
+[08/21/2026-10:50:28] [I] [TRT] Local timing cache in use. Profiling results in this builder pass will not be stored.
+[08/21/2026-10:51:34] [W] [TRT] No valid obedient candidate choices for node PWN(/model/encoder/layers.5/Add_1) that meet the preferred precision. The remaining candidate choices will be profiled.
+[08/21/2026-10:51:40] [W] [TRT] No implementation of layer PWN(/model/encoder/layers.5/Add_1)[POINTWISE] obeys the requested constraints. I.e. no conforming implementation was found for requested layer computation precision and output precision. Using fastest implementation instead.
+[08/21/2026-10:51:56] [W] [TRT] No valid obedient candidate choices for node PWN(/model/decoder/layers.5/Add_2) that meet the preferred precision. The remaining candidate choices will be profiled.
+[08/21/2026-10:51:56] [W] [TRT] No implementation of layer PWN(/model/decoder/layers.5/Add_2)[POINTWISE] obeys the requested constraints. I.e. no conforming implementation was found for requested layer computation precision and output precision. Using fastest implementation instead.
+[08/21/2026-10:51:59] [W] [TRT] No valid obedient candidate choices for node PWN(/Sigmoid) that meet the preferred precision. The remaining candidate choices will be profiled.
+[08/21/2026-10:52:04] [W] [TRT] No implementation of layer PWN(/Sigmoid)[POINTWISE] obeys the requested constraints. I.e. no conforming implementation was found for requested layer computation precision and output precision. Using fastest implementation instead.
+[08/21/2026-10:52:47] [I] [TRT] [GraphReduction] The approximate region cut reduction algorithm is called.
+[08/21/2026-10:52:47] [I] [TRT] Detected 1 inputs and 4 output network tensors.
+[08/21/2026-10:53:05] [I] [TRT] Total Host Persistent Memory: 654192
+[08/21/2026-10:53:05] [I] [TRT] Total Device Persistent Memory: 0
+[08/21/2026-10:53:05] [I] [TRT] Total Scratch Memory: 0
+[08/21/2026-10:53:05] [I] [TRT] [BlockAssignment] Started assigning block shifts. This will take 720 steps to complete.
+[08/21/2026-10:53:05] [I] [TRT] [BlockAssignment] Algorithm ShiftNTopDown took 70.1477ms to assign 13 blocks to 720 nodes requiring 26356736 bytes.
+[08/21/2026-10:53:05] [I] [TRT] Total Activation Memory: 26354688
+[08/21/2026-10:53:05] [I] [TRT] Total Weights Memory: 16975376
+[08/21/2026-10:53:05] [I] [TRT] Engine generation completed in 156.307 seconds.
+[08/21/2026-10:53:05] [I] [TRT] [MemUsageStats] Peak memory usage of TRT CPU/GPU memory allocators: CPU 112 MiB, GPU 83 MiB
+[08/21/2026-10:53:05] [I] [TRT] [MemUsageStats] Peak memory usage during Engine building and serialization: CPU: 2105 MiB
+[08/21/2026-10:53:05] [I] Engine built in 224.519 sec.
+[08/21/2026-10:53:05] [I] Created engine with size: 66.3445 MiB
+[08/21/2026-10:53:05] [I] [TRT] Loaded engine size: 66 MiB
+[08/21/2026-10:53:05] [I] Engine deserialized in 0.048652 sec.
+[08/21/2026-10:53:06] [I] [TRT] [MemUsageChange] TensorRT-managed allocation in IExecutionContext creation: CPU +0, GPU +25, now: CPU 48, GPU 41 (MiB)
+[08/21/2026-10:53:06] [I] Setting persistentCacheLimit to 0 bytes.
+[08/21/2026-10:53:06] [I] Created execution context with device memory size: 25.1338 MiB
+[08/21/2026-10:53:06] [I] Using random values for input pixel_values
+[08/21/2026-10:53:06] [I] Input binding for pixel_values with dimensions 1x3x800x1066 is created.
+[08/21/2026-10:53:06] [I] Output binding for logits with dimensions 1x100x92 is created.
+[08/21/2026-10:53:06] [I] Output binding for pred_boxes with dimensions 1x100x4 is created.
+[08/21/2026-10:53:06] [I] Output binding for onnx::MatMul_3387 with dimensions 1x100x256 is created.
+[08/21/2026-10:53:06] [I] Output binding for encoder_hidden_states with dimensions 1x850x256 is created.
+[08/21/2026-10:53:06] [I] Starting inference
+[08/21/2026-10:53:24] [I] Warmup completed 26 queries over 2000 ms
+[08/21/2026-10:53:24] [I] Timing trace has 200 queries over 15.7741 s
+[08/21/2026-10:53:24] [I] 
+[08/21/2026-10:53:24] [I] === Trace details ===
+[08/21/2026-10:53:24] [I] Trace averages of 100 runs:
+[08/21/2026-10:53:24] [I] Average on 100 runs - GPU latency: 78.4706 ms - Host latency: 79.8352 ms (enqueue 71.3676 ms)
+[08/21/2026-10:53:24] [I] Average on 100 runs - GPU latency: 78.4761 ms - Host latency: 79.8406 ms (enqueue 71.3775 ms)
+[08/21/2026-10:53:24] [I] 
+[08/21/2026-10:53:24] [I] === Performance summary ===
+[08/21/2026-10:53:24] [I] Throughput: 12.679 qps
+[08/21/2026-10:53:24] [I] Latency: min = 79.7305 ms, max = 79.9199 ms, mean = 79.8379 ms, median = 79.8396 ms, percentile(90%) = 79.873 ms, percentile(95%) = 79.8818 ms, percentile(99%) = 79.916 ms
+[08/21/2026-10:53:24] [I] Enqueue Time: min = 68.1611 ms, max = 71.6094 ms, mean = 71.3726 ms, median = 71.5273 ms, percentile(90%) = 71.5625 ms, percentile(95%) = 71.5713 ms, percentile(99%) = 71.6074 ms
+[08/21/2026-10:53:24] [I] H2D Latency: min = 1.21436 ms, max = 1.23145 ms, mean = 1.21667 ms, median = 1.21631 ms, percentile(90%) = 1.2168 ms, percentile(95%) = 1.21826 ms, percentile(99%) = 1.23145 ms
+[08/21/2026-10:53:24] [I] GPU Compute Time: min = 78.3672 ms, max = 78.5557 ms, mean = 78.4733 ms, median = 78.4756 ms, percentile(90%) = 78.5083 ms, percentile(95%) = 78.5176 ms, percentile(99%) = 78.5508 ms
+[08/21/2026-10:53:24] [I] D2H Latency: min = 0.136719 ms, max = 0.150391 ms, mean = 0.147881 ms, median = 0.148438 ms, percentile(90%) = 0.149414 ms, percentile(95%) = 0.149414 ms, percentile(99%) = 0.150391 ms
+[08/21/2026-10:53:24] [I] Total Host Walltime: 15.7741 s
+[08/21/2026-10:53:24] [I] Total GPU Compute Time: 15.6947 s
+[08/21/2026-10:53:24] [W] * Throughput may be bound by Enqueue Time rather than GPU Compute and the GPU may be under-utilized.
+[08/21/2026-10:53:24] [W]   If not already in use, --useCudaGraph (utilize CUDA graphs where possible) may increase the throughput.
+[08/21/2026-10:53:24] [I] Explanations of the performance metrics are printed in the verbose logs.
+[08/21/2026-10:53:24] [I] 
+&&&& PASSED TensorRT.trtexec [TensorRT v100300] # /usr/src/tensorrt/bin/trtexec --onnx=/home/katech/orin_bench/onnx/detr_sim.onnx --int8 --fp16 --useDLACore=0 --allowGPUFallback --saveEngine=/home/katech/orin_bench/engines/detr_dla_int8_implicit.plan --warmUp=2000 --duration=10 --iterations=200 --avgRuns=100

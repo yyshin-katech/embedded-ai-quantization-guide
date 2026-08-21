@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DETR-on-Orin — 새 모델 축: 트랜스포머 정밀도 사다리 + DLA 파편화 실측</title>
+<style>
+:root{--bg:#0b0e14;--panel:#131720;--panel2:#0f131b;--bd:#242b38;--tx:#c9d1d9;--dim:#8b949e;--brt:#e6edf3;--accent:#58a6ff;--green:#3fb950;--amber:#d29922;--red:#ff7b72;--purple:#bc8cff;--mono:'JetBrains Mono','SF Mono',ui-monospace,'Cascadia Code',Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans KR','Malgun Gothic',sans-serif}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:var(--sans);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:980px;margin:0 auto;padding:0 20px 120px}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+.hero{padding:48px 0 26px;border-bottom:1px solid var(--bd);margin-bottom:8px}
+.kicker{font-family:var(--mono);font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+.hero h1{margin:0 0 10px;font-size:30px;line-height:1.25;color:var(--brt);letter-spacing:-.01em}
+.hero p.sub{margin:0 0 20px;color:var(--dim);font-size:15px;max-width:80ch}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font-family:var(--mono);font-size:12px;padding:5px 10px;border:1px solid var(--bd);border-radius:999px;background:var(--panel);color:var(--tx)}
+.chip b{color:var(--brt);font-weight:600}
+.chip.done{border-color:rgba(63,185,80,.5);background:rgba(63,185,80,.12);color:#7ee787}
+.chip.blocked{border-color:rgba(255,123,114,.5);background:rgba(255,123,114,.12);color:#ff9d96}
+.chip.partial{border-color:rgba(210,153,34,.5);background:rgba(210,153,34,.12);color:#e3b341}
+nav.toc{display:flex;flex-wrap:wrap;gap:8px;margin:26px 0 6px}
+nav.toc a{font-family:var(--mono);font-size:12.5px;padding:6px 11px;border:1px solid var(--bd);border-radius:8px;background:var(--panel);color:var(--tx)}
+nav.toc a:hover{border-color:var(--accent);color:var(--brt);text-decoration:none}
+h2.sec{font-size:13px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin:40px 0 12px;font-weight:600;border-top:1px solid var(--bd);padding-top:26px}
+.step{margin:26px 0 0;scroll-margin-top:16px}
+.step>h3{display:flex;align-items:center;gap:12px;font-size:19px;color:var(--brt);margin:0 0 6px;letter-spacing:-.01em}
+.num{flex:none;display:inline-grid;place-items:center;width:28px;height:28px;border-radius:8px;background:var(--accent);color:#06101f;font-family:var(--mono);font-weight:700;font-size:13px}
+.step p.lead{margin:0 0 4px;color:var(--dim);font-size:14.5px}
+table.dt{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.3px;border:1px solid var(--bd);border-radius:10px;overflow:hidden;font-family:var(--mono)}
+table.dt th,table.dt td{padding:8px 12px;text-align:right;border-bottom:1px solid var(--bd)}
+table.dt th{background:var(--panel);color:var(--dim);font-weight:600;font-size:12px;letter-spacing:.04em}
+table.dt th:first-child,table.dt td:first-child{text-align:left;color:var(--brt)}
+table.dt tr:last-child td{border-bottom:none}
+table.dt tr.hi td{background:rgba(63,185,80,.08)}
+table.dt tr.lo td{background:rgba(255,123,114,.08)}
+table.dt tr.grey td{background:rgba(139,148,158,.08);color:var(--dim)}
+table.dt tr.base td{background:rgba(88,166,255,.07)}
+.g{color:var(--green)}.r{color:var(--red)}.a{color:var(--amber)}.p{color:var(--purple)}.d{color:var(--dim)}
+table.kv{width:100%;border-collapse:collapse;margin:12px 0;font-size:13.5px;border:1px solid var(--bd);border-radius:10px;overflow:hidden}
+table.kv th,table.kv td{padding:9px 13px;text-align:left;border-bottom:1px solid var(--bd);vertical-align:top}
+table.kv th{background:var(--panel);color:var(--dim);font-weight:600;width:34%;font-size:12.5px}
+table.kv td{font-family:var(--mono);font-size:12.7px;color:var(--tx)}
+table.kv tr:last-child td,table.kv tr:last-child th{border-bottom:none}
+.term{background:var(--panel2);border:1px solid var(--bd);border-radius:11px;overflow:hidden;margin:14px 0}
+.term-bar{display:flex;align-items:center;gap:7px;padding:9px 13px;background:#0c1017;border-bottom:1px solid var(--bd)}
+.dot{width:11px;height:11px;border-radius:50%}.dot.r{background:#ff5f56}.dot.y{background:#ffbd2e}.dot.g{background:#27c93f}
+.term-title{margin-left:9px;color:var(--dim);font-size:12.5px;font-family:var(--mono)}
+.term pre{margin:0;padding:15px 17px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.62;color:var(--tx);white-space:pre;tab-size:2}
+.cmt{color:#5c6773}.ok{color:var(--green)}.err{color:var(--red)}.warn{color:var(--amber)}.dim{color:var(--dim)}.hl{color:var(--purple)}.in{color:var(--brt);font-weight:600}
+.note{border-left:3px solid var(--accent);background:rgba(88,166,255,.07);padding:13px 17px;border-radius:0 9px 9px 0;margin:15px 0;font-size:14px}
+.note.trap{border-color:var(--red);background:rgba(255,123,114,.08)}
+.note.warnb{border-color:var(--amber);background:rgba(210,153,34,.08)}
+.note.tip{border-color:var(--green);background:rgba(63,185,80,.07)}
+.note.block{border-color:var(--purple);background:rgba(188,140,255,.08)}
+.note .tag{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 8px;border-radius:6px;margin-bottom:7px}
+.note.trap .tag{background:rgba(255,123,114,.18);color:#ff9d96}
+.note.warnb .tag{background:rgba(210,153,34,.18);color:#e3b341}
+.note.tip .tag{background:rgba(63,185,80,.18);color:#7ee787}
+.note.block .tag{background:rgba(188,140,255,.18);color:#d8b8ff}
+.note b{color:var(--brt)}.note code{font-family:var(--mono);font-size:12.5px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:4px}
+.chartwrap{border:1px solid var(--bd);background:var(--panel2);border-radius:12px;padding:18px 18px 14px;margin:16px 0}
+.chartwrap .ct{font-family:var(--mono);font-size:12.5px;color:var(--brt);margin:0 0 4px}
+.chartwrap .cs{font-size:12.5px;color:var(--dim);margin:0 0 12px}
+.statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:14px 0}
+.stat{border:1px solid var(--bd);background:var(--panel);border-radius:11px;padding:15px 16px}
+.stat .k{font-family:var(--mono);font-size:11.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em}
+.stat .v{font-size:23px;color:var(--brt);font-weight:700;margin-top:5px;letter-spacing:-.01em}
+.stat .n{font-size:12px;color:var(--dim);margin-top:3px}
+.stat.ok .v{color:#7ee787}.stat.warn .v{color:#e3b341}.stat.bad .v{color:#ff9d96}
+.verdict{border:1px solid var(--bd);border-radius:12px;padding:16px 18px;margin:14px 0;background:var(--panel)}
+.verdict h4{margin:0 0 6px;font-size:15px;color:var(--brt);display:flex;align-items:center;gap:9px}
+.verdict h4 .b{font-family:var(--mono);font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px}
+.verdict.yes h4 .b{background:rgba(63,185,80,.18);color:#7ee787}
+.verdict.no h4 .b{background:rgba(255,123,114,.18);color:#ff9d96}
+.verdict.mixed h4 .b{background:rgba(210,153,34,.18);color:#e3b341}
+.verdict p{margin:0;font-size:13.8px;color:var(--tx)}
+footer{margin-top:46px;padding-top:20px;border-top:1px solid var(--bd);color:var(--dim);font-size:13px}
+.next{display:block;margin-top:12px;padding:12px 16px;border:1px solid var(--bd);border-radius:9px;color:var(--tx);background:var(--panel);font-size:13.6px}
+.next b{color:var(--accent)}
+@media (max-width:560px){.hero h1{font-size:23px}.term pre{font-size:11.4px}.stat .v{font-size:20px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <p class="kicker">실행 보고서 · 3·4단계 온디바이스 · Jetson AGX Orin · 새 모델 축(DETR)</p>
+    <h1>DETR-on-Orin — 트랜스포머를 같은 보드에 올리면 무엇이 달라지는가</h1>
+    <p class="sub">앞선 <a href="stage3_jetson_orin_ondevice_report.html">Orin 온디바이스 보고서</a>는 <b>ResNet50</b>(깨끗한 CNN)으로 iGPU 정밀도 사다리와 DLA 오프로드를 실측했다. 이번엔 <b>모델을 바꾼다</b> — <code>facebook/detr-resnet-50</code>, CNN 백본 + 트랜스포머 인코더/디코더. <b>같은 보드·같은 <code>trtexec</code>·같은 플래그</b>라 지연은 1:1 비교 가능하다. 결과 세 줄: ① 무거운 트랜스포머는 <b>INT8 연산 이득이 되살아난다</b>(implicit ×2.74 — ResNet50은 INT8≈FP16였다) ② ORT <b>명시적 QDQ INT8이 파싱 자체를 못 한다</b>(<code>shiftIsAllZeros</code> — 3단계 case C가 실 트랜스포머에서 재현) ③ <b>DLA에 트랜스포머는 안 맞는다</b> — ResNet50의 깨끗한 2/2 오프로드가 DETR에선 <b>GPU 폴백 404층·16조각 파편화</b>로 무너져 iGPU FP16보다 <b>30× 느리다</b>.</p>
+    <div class="chips">
+      <span class="chip"><b>2026-08-21</b></span>
+      <span class="chip"><b>Jetson AGX Orin Dev Kit (64GB)</b></span>
+      <span class="chip"><b>JetPack 6.2.1 · TRT 10.3.0.30</b></span>
+      <span class="chip"><b>facebook/detr-resnet-50 · batch1</b></span>
+      <span class="chip done">iGPU 사다리 ×2.74(INT8)</span>
+      <span class="chip blocked">explicit QDQ 파싱 실패(case C)</span>
+      <span class="chip blocked">DLA 파편화 404폴백·16조각</span>
+      <span class="chip partial">지연=event-timed·상대만</span>
+      <span class="chip partial">INT8 정확도=stage2 인용</span>
+    </div>
+    <nav class="toc">
+      <a href="#s1">1 · 실행 요약</a>
+      <a href="#s2">2 · 환경·모델·방법</a>
+      <a href="#s3">3 · iGPU 정밀도 사다리</a>
+      <a href="#s4">4 · explicit INT8 파싱 실패(case C)</a>
+      <a href="#s5">5 · DLA 파편화(트랜스포머 vs CNN)</a>
+      <a href="#s6">6 · 판정·산출물</a>
+    </nav>
+  </header>
+
+  <!-- ================= §1 ================= -->
+  <h2 class="sec">§1 — 실행 요약</h2>
+  <section id="s1" class="step">
+    <div class="statgrid">
+      <div class="stat ok"><div class="k">iGPU INT8 (implicit)</div><div class="v">9.43 ms</div><div class="n">×2.74 vs FP32 · FP16 대비 ×1.41 (ResNet50은 INT8≈FP16)</div></div>
+      <div class="stat"><div class="k">iGPU FP32 → FP16</div><div class="v">25.85→13.28</div><div class="n">ms · ×1.95 · 지연이 ResNet50의 13× (엔진 크기 아님)</div></div>
+      <div class="stat bad"><div class="k">explicit QDQ INT8</div><div class="v">파싱 실패</div><div class="n">shiftIsAllZeros — 3단계 case C 재현(0.05초 사망)</div></div>
+      <div class="stat bad"><div class="k">DLA FP16 (트랜스포머)</div><div class="v">398.6 ms</div><div class="n">GPU폴백 404층·16조각 · iGPU FP16보다 30× 느림</div></div>
+    </div>
+    <p class="lead">사용자 요청 "새 모델 축" — 같은 Orin 보드에 <b>ResNet50 대신 DETR</b>를 올려, 정밀도 사다리·양자화 경로·DLA 적합성이 <b>모델 종류에 따라 어떻게 갈리는지</b>를 실측했다. 4가지 발견 모두 ResNet50 기준선과의 <b>대비</b>로 읽는다.</p>
+    <table class="kv">
+      <tr><th>발견 1 · <span class="g">무거운 트랜스포머는 INT8 이득이 되살아남</span> (모델 의존)</th><td>DETR FP16 <b>×1.947</b>, INT8(implicit) <b class="g">×2.742</b>(FP16→INT8 추가 ×1.408). ResNet50@224는 작은 Ampere iGPU에서 launch/메모리 바운드라 <b>INT8≈FP16(0.984, 이득 거의 0)</b>였는데, DETR@800×1066는 어텐션 대형 matmul로 <b>compute 바운드</b>라 INT8이 확실히 앞선다. <b>"작은 iGPU는 INT8 무이득"은 iGPU가 아니라 가벼운 CNN의 성질</b>이었다 — <a href="stage3_jetson_orin_ondevice_report.html">ResNet50 보고서</a> 발견 4를 모델 축에서 반증.</td></tr>
+      <tr><th>발견 2 · <span class="r">accuracy-valid INT8 경로가 파싱 불가</span> (3단계 case C 확증)</th><td><code>detr_int8.onnx</code>(ORT QInt8: zp≠0 1085/1485 + INT32 bias DQ 149개)가 <code>trtexec</code> 직접 파서에서 <b>노드 0에서 0.05초 만에</b> 사망 — <code>Assertion failed: shiftIsAllZeros(zeroPoint)</code>. 3단계에서 ResNet50·합성으로 세운 <b>case C(zp≠0)</b>가 <b>실 트랜스포머 ORT export에서 그대로 재현</b>. 결과: Jetson <code>trtexec</code>에선 정확도 유효 INT8을 QDQ 수술(3단계 <code>nodes_to_exclude</code>/ORT-EP) 없이 못 얻는다. <b>implicit</b> <code>--int8</code>은 빌드되지만 자동 레인지 → 지연만 유효.</td></tr>
+      <tr><th>발견 3 · <span class="r">DLA에 트랜스포머는 안 맞음</span> (파편화, 헤드라인)</th><td>ResNet50에 깨끗한 <b>2/2 오프로드</b>(GPU폴백 2층)를 준 그 recipe가 DETR에선 <b>DLA 326층 / GPU폴백 <span class="r">404층</span> / <span class="r">16조각</span></b>. 폴백은 트랜스포머 비-DLA 연산(250 SHUFFLE·34 MATMUL·30 LayerNorm·12 SELECT) — DLA 적격 연산을 16개 섬으로 쪼개 매 경계마다 DLA↔GPU 복사. 결과 <b class="r">398.6ms</b> = iGPU FP16(13.28ms)보다 <b>30배 느림</b>. <b>DLA는 CNN 가속기 — 트랜스포머는 iGPU에.</b></td></tr>
+      <tr><th>발견 4 · <span class="a">DLA는 여전히 INT8 전용기</span> (규칙 불변)</th><td>DLA INT8(78.48ms)은 DLA FP16(398.6ms)보다 <b>5.08×</b> 빠르다 — DLA에 남은 섬들에서 ResNet50의 "NVDLA=INT8 전용기" 규칙이 유지됨. 하지만 그래도 iGPU INT8(9.43ms)보다 <b>8.3× 느리다</b>. DLA 위에서 INT8을 켜도 파편화 페널티는 못 이긴다.</td></tr>
+    </table>
+    <div class="note"><span class="tag" style="background:rgba(88,166,255,.18);color:#9cd2ff">CAVEAT</span> 모든 지연 = <code>trtexec</code> <b>GPU Compute median</b>(디바이스 event-timed, H2D/D2H 제외) · <b>batch1</b> · <b>MAXN</b>, ResNet50 보고서와 <b>동일 플래그</b>(<code>--warmUp=2000 --duration=10 --iterations=200 --avgRuns=100</code>)라 그 보고서와만 1:1, 타 단계(polygraphy·wall-clock)와는 상대만. iGPU/DLA INT8은 <b>implicit</b> <code>--int8</code>(자동 레인지) → <b>지연·엔진크기 유효, 정확도 미주장</b>. 정확도는 <a href="stage2_detr_quantization_report.html">stage2 RTX 3080</a>에서 인용: FP32 mAP <b>0.4207</b> → INT8(ORT QDQ) <b>0.2402</b>(<b class="r">−42.9%</b>), 작은 객체 mAP_s <b class="r">−77%</b>.</div>
+  </section>
+
+  <!-- ================= §2 ================= -->
+  <h2 class="sec">§2 — 환경·모델·방법</h2>
+  <section id="s2" class="step">
+    <table class="kv">
+      <tr><th>보드·스택</th><td>NVIDIA <b>Jetson AGX Orin Dev Kit (64GB)</b> · JetPack <b>6.2.1</b>(L4T R36.4.3) · CUDA <b>12.6</b> · TensorRT <b>10.3.0.30</b>(<code>/usr/src/tensorrt/bin/trtexec</code> v100300) · cuDNN 9.3.0 · Ampere iGPU(2048 CUDA) · 2× NVDLA v2 · <code>nvpmodel MAXN</code></td></tr>
+      <tr><th>모델</th><td><code>facebook/detr-resnet-50</code> — CNN 백본(ResNet50) + 트랜스포머 encoder×6/decoder×6. ONNX <code>detr_sim.onnx</code>(FP32, opset17, 고정 <code>pixel_values</code> [1,3,800,1066], 635 노드) · <code>detr_int8.onnx</code>(ORT <code>quantize_static</code> QInt8 QDQ, per-channel). <b>stage2와 동일 자산</b>(<a href="stage2_detr_quantization_report.html">DETR INT8 보고서</a>).</td></tr>
+      <tr><th>비교 기준선</th><td><b>같은 보드 ResNet50</b>(<a href="stage3_jetson_orin_ondevice_report.html">Orin 온디바이스 보고서</a>): iGPU FP32 1.9375 / FP16 1.0293(×1.88) / INT8 1.01318ms(×1.91) · DLA 깨끗한 2/2 오프로드(120 DLA층·2 GPU폴백·2 ForeignNode)</td></tr>
+      <tr><th>측정</th><td>지연 = <code>trtexec</code> GPU Compute median(warmUp 2s·duration 10s·200 iter) · batch1 · 각 엔진 독립 빌드 · DLA 배치 = <code>--skipInference --verbose</code>로 <code>[DlaLayer]</code>/<code>[GpuLayer]</code>/<code>ForeignNode</code> 카운트</td></tr>
+      <tr><th>6개 구성</th><td>iGPU {FP32 · FP16 · INT8-explicit(<code>detr_int8</code>) · INT8-implicit(<code>detr_sim --int8</code>)} + DLA {FP16 · INT8-implicit}(<code>--useDLACore=0 --allowGPUFallback</code>)</td></tr>
+      <tr><th>SSOT</th><td><code>experiments/stage3_tensorrt/jetson_ondevice/detr/results/detr_summary.json</code></td></tr>
+    </table>
+  </section>
+
+  <!-- ================= §3 ================= -->
+  <h2 class="sec">§3 — iGPU 정밀도 사다리 (통합 Ampere iGPU)</h2>
+  <section id="s3" class="step">
+    <p class="lead">같은 FP32 ONNX에서 FP32/FP16을, 그리고 implicit <code>--int8</code>로 INT8 엔진을 온디바이스 빌드했다(explicit QDQ INT8은 §4에서 파싱 실패). ResNet50과 <b>같은 플래그</b>.</p>
+    <table class="dt">
+      <thead><tr><th>iGPU 정밀도</th><th>GPU Compute median</th><th>vs FP32</th><th>Throughput</th><th>엔진 크기</th><th>지연 vs RN50</th></tr></thead>
+      <tbody>
+        <tr class="base"><td>FP32</td><td>25.8496 ms</td><td>×1.00</td><td>38.58 qps</td><td>160.12 MiB</td><td class="d">×13.3</td></tr>
+        <tr><td>FP16</td><td>13.2754 ms</td><td class="g">×1.947</td><td>75.21 qps</td><td>81.43 MiB</td><td class="d">×12.9</td></tr>
+        <tr class="hi"><td>INT8 (implicit)</td><td>9.42871 ms</td><td class="g">×2.742</td><td>105.91 qps</td><td>58.76 MiB</td><td class="d">×9.3</td></tr>
+        <tr class="grey"><td>INT8 (explicit QDQ)</td><td>파싱 실패 (§4)</td><td>—</td><td>—</td><td>—</td><td>case C</td></tr>
+      </tbody>
+    </table>
+    <div class="chartwrap">
+      <p class="ct">iGPU 지연 사다리 — batch1, 디바이스 event-timed (낮을수록 빠름)</p>
+      <p class="cs">막대폭 = 지연 ms × 22.0px. INT8은 implicit(지연만 유효).</p>
+      <svg viewBox="0 0 820 178" width="100%" role="img" aria-label="DETR iGPU 지연 막대 그래프">
+        <line x1="0" y1="150" x2="620" y2="150" stroke="#242b38" stroke-width="1"/>
+        <line x1="110" y1="18" x2="110" y2="150" stroke="#242b38" stroke-width="1" stroke-dasharray="3 3"/>
+        <line x1="220" y1="18" x2="220" y2="150" stroke="#242b38" stroke-width="1" stroke-dasharray="3 3"/>
+        <line x1="330" y1="18" x2="330" y2="150" stroke="#242b38" stroke-width="1" stroke-dasharray="3 3"/>
+        <line x1="440" y1="18" x2="440" y2="150" stroke="#242b38" stroke-width="1" stroke-dasharray="3 3"/>
+        <line x1="550" y1="18" x2="550" y2="150" stroke="#242b38" stroke-width="1" stroke-dasharray="3 3"/>
+        <text x="110" y="166" fill="#5c6773" font-size="10" font-family="monospace" text-anchor="middle">5ms</text>
+        <text x="220" y="166" fill="#5c6773" font-size="10" font-family="monospace" text-anchor="middle">10</text>
+        <text x="330" y="166" fill="#5c6773" font-size="10" font-family="monospace" text-anchor="middle">15</text>
+        <text x="440" y="166" fill="#5c6773" font-size="10" font-family="monospace" text-anchor="middle">20</text>
+        <text x="550" y="166" fill="#5c6773" font-size="10" font-family="monospace" text-anchor="middle">25</text>
+        <g font-family="monospace" font-size="12.5">
+          <rect x="0" y="24" width="568.69" height="30" rx="4" fill="#58a6ff" opacity="0.85"/>
+          <text x="576" y="43" fill="#c9d1d9">iGPU FP32 · 25.8496ms</text>
+          <rect x="0" y="62" width="292.06" height="30" rx="4" fill="#3fb950" opacity="0.7"/>
+          <text x="300" y="81" fill="#c9d1d9">iGPU FP16 · 13.2754ms · ×1.95</text>
+          <rect x="0" y="100" width="207.43" height="30" rx="4" fill="#3fb950"/>
+          <text x="215" y="119" fill="#7ee787">iGPU INT8 · 9.4287ms · ×2.74 (implicit)</text>
+        </g>
+      </svg>
+    </div>
+    <div class="note tip"><span class="tag">모델 의존 — INT8 이득의 부활</span> ResNet50@224에서 INT8/FP16 = <b>0.984</b>(무이득, 작은 iGPU가 launch/메모리 바운드)였다. DETR@800×1066에서 INT8/FP16 = <b class="g">9.4287/13.2754 = 0.710</b> → INT8이 FP16보다 <b>×1.41 빠름</b>. 같은 iGPU인데 결과가 뒤집힌 이유는 <b>연산 강도</b> — DETR의 어텐션·대형 conv는 산술 바운드라 INT8 텐서코어 처리량이 실제로 드러난다. <b>"작은 GPU는 INT8 무이득"은 GPU가 아니라 모델(연산 강도)의 성질.</b></div>
+  </section>
+
+  <!-- ================= §4 ================= -->
+  <h2 class="sec">§4 — explicit QDQ INT8 파싱 실패 (3단계 case C 확증)</h2>
+  <section id="s4" class="step">
+    <p class="lead">정확도 유효 경로는 <b>명시적 QDQ</b>(<code>detr_int8.onnx</code>, ORT <code>quantize_static</code>). 이걸 <code>trtexec</code> 직접 파서에 넣으면 — <b>노드 0에서 즉사</b>.</p>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">trtexec --onnx=detr_int8.onnx --int8 --fp16  →  detr_gpu_int8_explicit.log</span></div>
+      <pre><span class="err">[E] [TRT] ModelImporter.cpp:948: While parsing node number 0 [DequantizeLinear -&gt; "/model/Tile_output_0_DequantizeLinear_Output"]:</span>
+<span class="dim">[E] [TRT] ModelImporter.cpp:950: --- Begin node ---</span>
+<span class="dim">    input: "/model/Tile_output_0_quantized"</span>
+<span class="dim">    input: "/model/Tile_output_0_zero_point"</span>
+<span class="dim">    op_type: "DequantizeLinear"</span>
+<span class="err">[E] [TRT] ERROR: onnxOpImporters.cpp:1491 In function QuantDequantLinearHelper:</span>
+<span class="err">[6] Assertion failed: shiftIsAllZeros(zeroPoint): TensorRT only supports symmetric</span>
+<span class="err">    quantization. The zero point for the QuantizeLinear/DequantizeLinear operator</span>
+<span class="err">    must be all zeros.</span>
+<span class="err">[E] Failed to parse onnx file</span>   <span class="cmt"># Parse time: 0.051s → 노드 0에서 사망</span>
+<span class="err">&amp;&amp;&amp;&amp; FAILED TensorRT.trtexec [TensorRT v100300]</span></pre>
+    </div>
+    <table class="kv">
+      <tr><th>범인</th><td>ORT <code>quantize_static(QuantType.QInt8)</code>는 <b>활성화 zero-point를 0이 아니게</b> 만든다(int8 범위 안의 비대칭). 인트로스펙션: <code>detr_int8.onnx</code>의 Q/DQ 1485개 중 <b>1085개가 zp≠0</b> + 149개 Conv/Gemm 전부에 <b>INT32 bias DQ</b>. 첫 DQ 노드(<code>/model/Tile</code> — DETR 위치 임베딩 타일)가 zp≠0이라 바로 <code>shiftIsAllZeros</code> 위반.</td></tr>
+      <tr><th>3단계와의 연결</th><td>3단계(RTX·polygraphy)는 <b>case B</b>(INT32 bias DQ)와 <b>case C</b>(zp≠0, <code>shiftIsAllZeros</code>)가 직접 파서의 독립 하드 블로커임을 ResNet50·합성 절제로 확립했다(<a href="stage3_tensorrt_report.html">3단계 보고서</a>). 여기서 <b>같은 case C가 실 트랜스포머의 ORT export에서 노드 0부터 그대로</b> 재현 — 통념이 아니라 재현.</td></tr>
+      <tr><th>왜 ResNet50은 파싱됐나</th><td>같은 보드에서 <code>resnet50_int8_qdq.onnx</code>는 <code>--int8</code>로 빌드됐다(1.013ms). 그 자산은 <b>대칭(zp=0)으로 export</b>됐기 때문. DETR 자산은 stage2에서 <b>정확도용으로</b> ORT 기본(QInt8 비대칭 활성화)으로 만든 것이라 zp≠0 → 파서가 거부. <b>같은 도구·다른 export 정책이 결과를 가른다.</b></td></tr>
+      <tr><th>해결 경로</th><td>정확도 유효 INT8을 Jetson trtexec로 얻으려면 (a) <b>대칭 재양자화</b>(ORT <code>extra_options</code>로 활성화 대칭 강제 — 3단계 §2.2.1) 또는 (b) <b>ORT-EP / <code>nodes_to_exclude</code></b> 경로(파서 전 QDQ 수술로 bias DQ 흡수). 이번 실측 목적은 <b>지연 사다리 + DLA 적합성</b>이므로, INT8 지연은 implicit(§3, 자동 레인지)로, 정확도는 stage2 인용으로 분리했다.</td></tr>
+    </table>
+  </section>
+
+  <!-- ================= §5 ================= -->
+  <h2 class="sec">§5 — DLA 파편화 (트랜스포머 vs CNN)</h2>
+  <section id="s5" class="step">
+    <p class="lead">같은 <code>--useDLACore=0 --allowGPUFallback</code> recipe. ResNet50엔 깨끗한 2/2 오프로드를 준 그 명령이, 트랜스포머엔 무엇을 하는가.</p>
+    <table class="dt">
+      <thead><tr><th>레이어 배치 (verbose)</th><th>ResNet50</th><th>DETR</th><th>대비</th></tr></thead>
+      <tbody>
+        <tr><td>DLA에 올라간 층</td><td>120</td><td>326</td><td class="d">—</td></tr>
+        <tr class="lo"><td>GPU 폴백 층</td><td>2</td><td class="r">404</td><td class="r">202×</td></tr>
+        <tr class="lo"><td>DLA 서브그래프(ForeignNode)</td><td>2</td><td class="r">16</td><td class="r">8×</td></tr>
+        <tr><td>DLA FP16 지연</td><td>17.73 ms</td><td class="r">398.64 ms</td><td class="r">22×</td></tr>
+        <tr class="hi"><td>DLA INT8 지연</td><td>1.28 ms</td><td class="a">78.48 ms</td><td class="d">61×</td></tr>
+      </tbody>
+    </table>
+    <div class="chartwrap">
+      <p class="ct">DLA 오프로드 vs GPU 폴백 — 레이어 배치 (막대폭 = 레이어수 × 0.8px)</p>
+      <p class="cs"><span style="color:#3fb950">■</span> DLA 오프로드 &nbsp; <span style="color:#ff7b72">■</span> GPU 폴백. ResNet50은 거의 전부 DLA(폴백 2층), DETR은 절반 이상이 GPU로 튕겨나가며 16조각으로 파편화.</p>
+      <svg viewBox="0 0 820 150" width="100%" role="img" aria-label="DLA 배치 대비 막대 그래프">
+        <g font-family="monospace" font-size="12.5">
+          <text x="0" y="34" fill="#8b949e" font-size="11">ResNet50 (CNN)</text>
+          <rect x="0" y="42" width="96.0" height="28" rx="3" fill="#3fb950"/>
+          <rect x="96.0" y="42" width="1.6" height="28" fill="#ff7b72"/>
+          <text x="105" y="61" fill="#7ee787">DLA 120 · GPU폴백 2 · 2조각 → 17.73ms</text>
+          <text x="0" y="104" fill="#8b949e" font-size="11">DETR (트랜스포머)</text>
+          <rect x="0" y="112" width="260.8" height="28" rx="3" fill="#3fb950"/>
+          <rect x="260.8" y="112" width="323.2" height="28" fill="#ff7b72"/>
+          <text x="592" y="131" fill="#ff9d96">DLA 326 · GPU폴백 404 · 16조각 → 398.64ms</text>
+        </g>
+      </svg>
+    </div>
+    <table class="kv">
+      <tr><th>GPU 폴백 404층의 정체</th><td><b>250 SHUFFLE</b>(어텐션 헤드 reshape/transpose) · 66 CONSTANT · <b>34 MATRIX_MULTIPLY</b>(Q·Kᵀ, score·V — NVDLA v2엔 동적 matmul 없음) · <b>30 NORMALIZATION</b>(LayerNorm — NVDLA v2 미지원) · 12 UNARY · 12 SELECT(마스크 <code>Where</code>). 전부 트랜스포머 고유 연산.</td></tr>
+      <tr><th>16조각의 정체</th><td>DLA 적격 연산이 16개 섬으로 쪼개짐 — 1개 = ResNet 백본(<code>conv1</code>…<code>input_projection</code>), 4개 = encoder self-attn <code>Mul</code> 블록, 11개 = FFN <code>Gemm</code> 블록. 섬 사이마다 GPU 폴백층이 끼어 <b>DLA↔GPU 텐서 복사 + 동기화</b>. 16 왕복 = 398.6ms.</td></tr>
+      <tr><th>INT8도 못 구함</th><td>DLA INT8(78.48ms)은 DLA FP16(398.6ms)보다 5.08× 빠르지만(DLA 섬들의 INT8 처리량), 여전히 iGPU INT8(9.43ms)보다 <b>8.3× 느림</b>. 파편화 페널티 > 정밀도 이득.</td></tr>
+    </table>
+    <div class="chartwrap">
+      <p class="ct">DLA는 트랜스포머에서 지연 재앙 — iGPU 대비 (막대폭 = 지연 ms × 1.4px)</p>
+      <p class="cs">기준 = iGPU FP16 13.28ms. DLA는 파편화로 배보다 배꼽이 크다.</p>
+      <svg viewBox="0 0 820 140" width="100%" role="img" aria-label="DLA 지연 재앙 막대 그래프">
+        <g font-family="monospace" font-size="12.5">
+          <rect x="0" y="14" width="18.59" height="28" rx="3" fill="#3fb950"/>
+          <text x="26" y="33" fill="#7ee787">iGPU FP16 · 13.28ms (기준)</text>
+          <rect x="0" y="50" width="109.87" height="28" rx="3" fill="#d29922"/>
+          <text x="117" y="69" fill="#e3b341">DLA INT8 · 78.48ms · iGPU INT8의 8.3×</text>
+          <rect x="0" y="86" width="558.10" height="28" rx="3" fill="#ff7b72"/>
+          <text x="566" y="105" fill="#ff9d96">DLA FP16 · 398.64ms · iGPU FP16의 30×</text>
+        </g>
+      </svg>
+    </div>
+    <div class="note trap"><span class="tag">설계 규칙 (일반화)</span> DLA는 <b>DLA 서브그래프의 GPU 폴백층이 ~0일 때만</b> 이득이다. 이는 <a href="stage3_jetson_orin_concurrent_power_report.html">동시부하 실측</a>에서 이미 ResNet50의 폴백 2층조차 동시부하 때 직렬화 병목이었던 것의 극단 사례 — DETR의 <b>404 폴백 + 16 파편</b>은 단독 실행만으로도 재앙. <b>DLA는 CNN 가속기다. 트랜스포머 detection 헤드는 iGPU에 두고, DLA엔 순수 CNN(백본·분류기)만 올려라.</b></div>
+  </section>
+
+  <!-- ================= §6 ================= -->
+  <h2 class="sec">§6 — 판정·산출물</h2>
+  <section id="s6" class="step">
+    <div class="verdict yes"><h4><span class="b">DONE</span> iGPU 정밀도 사다리 (새 모델 축)</h4><p>DETR FP32 25.85 → FP16 13.28(×1.95) → INT8 9.43ms(×2.74, implicit). ResNet50보다 13× 무겁지만 <b>INT8 이득은 오히려 큼</b>(compute 바운드). "작은 iGPU는 INT8 무이득"이 모델 의존임을 반증.</p></div>
+    <div class="verdict no"><h4><span class="b">BLOCKED→확증</span> explicit QDQ INT8</h4><p>ORT QInt8 QDQ가 <code>shiftIsAllZeros</code>로 노드 0에서 파싱 실패. 3단계 case C(zp≠0)가 실 트랜스포머에서 재현. 정확도 유효 INT8은 대칭 재양자화/ORT-EP 필요 — 지연은 implicit로, 정확도는 stage2 인용으로 분리.</p></div>
+    <div class="verdict no"><h4><span class="b">헤드라인</span> DLA에 트랜스포머는 부적합</h4><p>같은 recipe가 ResNet50 2/2 → DETR 404 GPU폴백·16조각. DLA FP16 398.6ms = iGPU FP16의 30×. DLA INT8(78.48)도 iGPU INT8의 8.3× 느림. <b>DLA=CNN 가속기</b>, 트랜스포머는 iGPU에.</p></div>
+    <div class="verdict mixed"><h4><span class="b">CITED</span> 정확도 (미측정)</h4><p>보드에 COCO 없음 + INT8은 지연 전용 → 정확도는 stage2 RTX 인용: FP32 mAP 0.4207 → INT8 0.2402(−42.9%), mAP_s −77%. on-board mAP는 다음 과제(cross-machine이라 상대만 유효할 것).</p></div>
+
+    <table class="kv">
+      <tr><th>산출물 — 리포트</th><td>이 파일 <code>logs/stage3_jetson_orin_detr_report.html</code></td></tr>
+      <tr><th>산출물 — 실험</th><td><code>experiments/stage3_tensorrt/jetson_ondevice/detr/</code> — <code>results/detr_summary.json</code>(SSOT) · <code>raw/</code>(trtexec 빌드 로그 6 + DLA verbose 2 + out) · <code>scripts/detr_bench.py</code>(이식형 하네스) · README</td></tr>
+      <tr><th>기준선·상보 보고서</th><td><a href="stage3_jetson_orin_ondevice_report.html">ResNet50 Orin 온디바이스</a>(기준선) · <a href="stage3_jetson_orin_concurrent_power_report.html">iGPU∥DLA 동시부하·전력</a> · <a href="stage2_detr_quantization_report.html">stage2 DETR INT8(정확도 출처)</a> · <a href="stage3_tensorrt_report.html">3단계 RTX(case B/C 출처)</a></td></tr>
+    </table>
+
+    <div class="note"><span class="tag" style="background:rgba(88,166,255,.18);color:#9cd2ff">캐비앗(불변)</span> ① 지연 = event-timed·batch1·MAXN → ResNet50 보고서와만 1:1(같은 플래그), 타 단계와는 상대만. ② iGPU/DLA INT8 = <b>implicit</b> <code>--int8</code>(자동 레인지)라 <b>지연·엔진크기만 유효, 정확도 미주장</b>; 정확도 유효 explicit 경로는 파싱 실패(§4). ③ 정확도는 stage2 인용(cross-machine·다른 캘리브). ④ DLA 파편화 수치(404/16)는 DETR op 믹스 고유 — 단 <b>규칙</b>(폴백 수가 DLA 이득을 좌우)은 일반화. ⑤ Jetson은 NVIDIA edge이지 세 자동차 벤더(TI/Qualcomm/Renesas) 아님.</div>
+    <a class="next" href="#s1"><b>다음 후보</b> — DETR 대칭 재양자화로 explicit INT8 정확도 유효 엔진(§4 해결경로 a) · on-board COCO mAP(cross-machine 상대) · SmoothQuant(stage2 §4.4)로 activation 입도 개선 후 재측정 · study_guide 05 §2.3 DLA에 "트랜스포머 파편화" 콜아웃 반영</a>
+    <footer>
+      실측: 2026-08-21 · Jetson AGX Orin Dev Kit(64GB) · JetPack 6.2.1 · TensorRT 10.3.0.30 · facebook/detr-resnet-50 batch1 · trtexec GPU-compute median · 정확도는 stage2 인용 · 절대값은 상대 관계로만 유효.
+    </footer>
+  </section>
+</div>
+</body>
+</html>

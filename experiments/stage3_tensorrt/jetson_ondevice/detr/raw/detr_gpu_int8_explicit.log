@@ -1,0 +1,137 @@
+$ /usr/src/tensorrt/bin/trtexec --onnx=/home/katech/orin_bench/onnx/detr_int8.onnx --int8 --fp16 --saveEngine=/home/katech/orin_bench/engines/detr_gpu_int8_explicit.plan --warmUp=2000 --duration=10 --iterations=200 --avgRuns=100
+&&&& RUNNING TensorRT.trtexec [TensorRT v100300] # /usr/src/tensorrt/bin/trtexec --onnx=/home/katech/orin_bench/onnx/detr_int8.onnx --int8 --fp16 --saveEngine=/home/katech/orin_bench/engines/detr_gpu_int8_explicit.plan --warmUp=2000 --duration=10 --iterations=200 --avgRuns=100
+[08/21/2026-10:29:45] [I] === Model Options ===
+[08/21/2026-10:29:45] [I] Format: ONNX
+[08/21/2026-10:29:45] [I] Model: /home/katech/orin_bench/onnx/detr_int8.onnx
+[08/21/2026-10:29:45] [I] Output:
+[08/21/2026-10:29:45] [I] === Build Options ===
+[08/21/2026-10:29:45] [I] Memory Pools: workspace: default, dlaSRAM: default, dlaLocalDRAM: default, dlaGlobalDRAM: default, tacticSharedMem: default
+[08/21/2026-10:29:45] [I] avgTiming: 8
+[08/21/2026-10:29:45] [I] Precision: FP32+FP16+INT8
+[08/21/2026-10:29:45] [I] LayerPrecisions: 
+[08/21/2026-10:29:45] [I] Layer Device Types: 
+[08/21/2026-10:29:45] [I] Calibration: Dynamic
+[08/21/2026-10:29:45] [I] Refit: Disabled
+[08/21/2026-10:29:45] [I] Strip weights: Disabled
+[08/21/2026-10:29:45] [I] Version Compatible: Disabled
+[08/21/2026-10:29:45] [I] ONNX Plugin InstanceNorm: Disabled
+[08/21/2026-10:29:45] [I] TensorRT runtime: full
+[08/21/2026-10:29:45] [I] Lean DLL Path: 
+[08/21/2026-10:29:45] [I] Tempfile Controls: { in_memory: allow, temporary: allow }
+[08/21/2026-10:29:45] [I] Exclude Lean Runtime: Disabled
+[08/21/2026-10:29:45] [I] Sparsity: Disabled
+[08/21/2026-10:29:45] [I] Safe mode: Disabled
+[08/21/2026-10:29:45] [I] Build DLA standalone loadable: Disabled
+[08/21/2026-10:29:45] [I] Allow GPU fallback for DLA: Disabled
+[08/21/2026-10:29:45] [I] DirectIO mode: Disabled
+[08/21/2026-10:29:45] [I] Restricted mode: Disabled
+[08/21/2026-10:29:45] [I] Skip inference: Disabled
+[08/21/2026-10:29:45] [I] Save engine: /home/katech/orin_bench/engines/detr_gpu_int8_explicit.plan
+[08/21/2026-10:29:45] [I] Load engine: 
+[08/21/2026-10:29:45] [I] Profiling verbosity: 0
+[08/21/2026-10:29:45] [I] Tactic sources: Using default tactic sources
+[08/21/2026-10:29:45] [I] timingCacheMode: local
+[08/21/2026-10:29:45] [I] timingCacheFile: 
+[08/21/2026-10:29:45] [I] Enable Compilation Cache: Enabled
+[08/21/2026-10:29:45] [I] errorOnTimingCacheMiss: Disabled
+[08/21/2026-10:29:45] [I] Preview Features: Use default preview flags.
+[08/21/2026-10:29:45] [I] MaxAuxStreams: -1
+[08/21/2026-10:29:45] [I] BuilderOptimizationLevel: -1
+[08/21/2026-10:29:45] [I] Calibration Profile Index: 0
+[08/21/2026-10:29:45] [I] Weight Streaming: Disabled
+[08/21/2026-10:29:45] [I] Runtime Platform: Same As Build
+[08/21/2026-10:29:45] [I] Debug Tensors: 
+[08/21/2026-10:29:45] [I] Input(s)s format: fp32:CHW
+[08/21/2026-10:29:45] [I] Output(s)s format: fp32:CHW
+[08/21/2026-10:29:45] [I] Input build shapes: model
+[08/21/2026-10:29:45] [I] Input calibration shapes: model
+[08/21/2026-10:29:45] [I] === System Options ===
+[08/21/2026-10:29:45] [I] Device: 0
+[08/21/2026-10:29:45] [I] DLACore: 
+[08/21/2026-10:29:45] [I] Plugins:
+[08/21/2026-10:29:45] [I] setPluginsToSerialize:
+[08/21/2026-10:29:45] [I] dynamicPlugins:
+[08/21/2026-10:29:45] [I] ignoreParsedPluginLibs: 0
+[08/21/2026-10:29:45] [I] 
+[08/21/2026-10:29:45] [I] === Inference Options ===
+[08/21/2026-10:29:45] [I] Batch: Explicit
+[08/21/2026-10:29:45] [I] Input inference shapes: model
+[08/21/2026-10:29:45] [I] Iterations: 200
+[08/21/2026-10:29:45] [I] Duration: 10s (+ 2000ms warm up)
+[08/21/2026-10:29:45] [I] Sleep time: 0ms
+[08/21/2026-10:29:45] [I] Idle time: 0ms
+[08/21/2026-10:29:45] [I] Inference Streams: 1
+[08/21/2026-10:29:45] [I] ExposeDMA: Disabled
+[08/21/2026-10:29:45] [I] Data transfers: Enabled
+[08/21/2026-10:29:45] [I] Spin-wait: Disabled
+[08/21/2026-10:29:45] [I] Multithreading: Disabled
+[08/21/2026-10:29:45] [I] CUDA Graph: Disabled
+[08/21/2026-10:29:45] [I] Separate profiling: Disabled
+[08/21/2026-10:29:45] [I] Time Deserialize: Disabled
+[08/21/2026-10:29:45] [I] Time Refit: Disabled
+[08/21/2026-10:29:45] [I] NVTX verbosity: 0
+[08/21/2026-10:29:45] [I] Persistent Cache Ratio: 0
+[08/21/2026-10:29:45] [I] Optimization Profile Index: 0
+[08/21/2026-10:29:45] [I] Weight Streaming Budget: 100.000000%
+[08/21/2026-10:29:45] [I] Inputs:
+[08/21/2026-10:29:45] [I] Debug Tensor Save Destinations:
+[08/21/2026-10:29:45] [I] === Reporting Options ===
+[08/21/2026-10:29:45] [I] Verbose: Disabled
+[08/21/2026-10:29:45] [I] Averages: 100 inferences
+[08/21/2026-10:29:45] [I] Percentiles: 90,95,99
+[08/21/2026-10:29:45] [I] Dump refittable layers:Disabled
+[08/21/2026-10:29:45] [I] Dump output: Disabled
+[08/21/2026-10:29:45] [I] Profile: Disabled
+[08/21/2026-10:29:45] [I] Export timing to JSON file: 
+[08/21/2026-10:29:45] [I] Export output to JSON file: 
+[08/21/2026-10:29:45] [I] Export profile to JSON file: 
+[08/21/2026-10:29:45] [I] 
+[08/21/2026-10:29:45] [I] === Device Information ===
+[08/21/2026-10:29:45] [I] Available Devices: 
+[08/21/2026-10:29:45] [I]   Device 0: "Orin" UUID: GPU-d88f5124-b913-5174-bcad-9e3fe191d8a8
+[08/21/2026-10:29:45] [I] Selected Device: Orin
+[08/21/2026-10:29:45] [I] Selected Device ID: 0
+[08/21/2026-10:29:45] [I] Selected Device UUID: GPU-d88f5124-b913-5174-bcad-9e3fe191d8a8
+[08/21/2026-10:29:45] [I] Compute Capability: 8.7
+[08/21/2026-10:29:45] [I] SMs: 16
+[08/21/2026-10:29:45] [I] Device Global Memory: 62841 MiB
+[08/21/2026-10:29:45] [I] Shared Memory per SM: 164 KiB
+[08/21/2026-10:29:45] [I] Memory Bus Width: 256 bits (ECC disabled)
+[08/21/2026-10:29:45] [I] Application Compute Clock Rate: 1.3 GHz
+[08/21/2026-10:29:45] [I] Application Memory Clock Rate: 1.3 GHz
+[08/21/2026-10:29:45] [I] 
+[08/21/2026-10:29:45] [I] Note: The application clock rates do not reflect the actual clock rates that the GPU is currently running at.
+[08/21/2026-10:29:45] [I] 
+[08/21/2026-10:29:45] [I] TensorRT version: 10.3.0
+[08/21/2026-10:29:45] [I] Loading standard plugins
+[08/21/2026-10:29:45] [I] [TRT] [MemUsageChange] Init CUDA: CPU +2, GPU +0, now: CPU 31, GPU 10208 (MiB)
+[08/21/2026-10:29:47] [I] [TRT] [MemUsageChange] Init builder kernel library: CPU +928, GPU +1099, now: CPU 1002, GPU 11351 (MiB)
+[08/21/2026-10:29:47] [I] Start parsing network model.
+[08/21/2026-10:29:47] [I] [TRT] ----------------------------------------------------------------
+[08/21/2026-10:29:47] [I] [TRT] Input filename:   /home/katech/orin_bench/onnx/detr_int8.onnx
+[08/21/2026-10:29:47] [I] [TRT] ONNX IR version:  0.0.8
+[08/21/2026-10:29:47] [I] [TRT] Opset version:    17
+[08/21/2026-10:29:47] [I] [TRT] Producer name:    onnx.quantize
+[08/21/2026-10:29:47] [I] [TRT] Producer version: 0.1.0
+[08/21/2026-10:29:47] [I] [TRT] Domain:           
+[08/21/2026-10:29:47] [I] [TRT] Model version:    0
+[08/21/2026-10:29:47] [I] [TRT] Doc string:       
+[08/21/2026-10:29:47] [I] [TRT] ----------------------------------------------------------------
+[08/21/2026-10:29:47] [E] [TRT] ModelImporter.cpp:948: While parsing node number 0 [DequantizeLinear -> "/model/Tile_output_0_DequantizeLinear_Output"]:
+[08/21/2026-10:29:47] [E] [TRT] ModelImporter.cpp:950: --- Begin node ---
+input: "/model/Tile_output_0_quantized"
+input: "/model/Tile_output_0_scale"
+input: "/model/Tile_output_0_zero_point"
+output: "/model/Tile_output_0_DequantizeLinear_Output"
+name: "/model/Tile_output_0_DequantizeLinear"
+op_type: "DequantizeLinear"
+
+[08/21/2026-10:29:47] [E] [TRT] ModelImporter.cpp:951: --- End node ---
+[08/21/2026-10:29:47] [E] [TRT] ModelImporter.cpp:953: ERROR: onnxOpImporters.cpp:1491 In function QuantDequantLinearHelper:
+[6] Assertion failed: shiftIsAllZeros(zeroPoint): TensorRT only supports symmetric quantization. The zero point for the QuantizeLinear/DequantizeLinear operator must be all zeros.
+[08/21/2026-10:29:47] [E] Failed to parse onnx file
+[08/21/2026-10:29:47] [I] Finished parsing network model. Parse time: 0.0510927
+[08/21/2026-10:29:47] [E] Parsing model failed
+[08/21/2026-10:29:47] [E] Failed to create engine from model or file.
+[08/21/2026-10:29:47] [E] Engine set up failed
+&&&& FAILED TensorRT.trtexec [TensorRT v100300] # /usr/src/tensorrt/bin/trtexec --onnx=/home/katech/orin_bench/onnx/detr_int8.onnx --int8 --fp16 --saveEngine=/home/katech/orin_bench/engines/detr_gpu_int8_explicit.plan --warmUp=2000 --duration=10 --iterations=200 --avgRuns=100

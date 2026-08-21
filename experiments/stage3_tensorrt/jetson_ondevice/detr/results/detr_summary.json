@@ -1,0 +1,102 @@
+{
+  "gpu_fp32": {
+    "tag": "gpu_fp32",
+    "onnx": "detr_sim.onnx",
+    "flags": [],
+    "returncode": 0,
+    "built": true,
+    "gpu_compute_median_ms": 25.8496,
+    "throughput_qps": 38.5752,
+    "engine_bytes": 167898412
+  },
+  "gpu_fp16": {
+    "tag": "gpu_fp16",
+    "onnx": "detr_sim.onnx",
+    "flags": [
+      "--fp16"
+    ],
+    "returncode": 0,
+    "built": true,
+    "gpu_compute_median_ms": 13.2754,
+    "throughput_qps": 75.2082,
+    "engine_bytes": 85388932
+  },
+  "gpu_int8_explicit": {
+    "tag": "gpu_int8_explicit",
+    "onnx": "detr_int8.onnx",
+    "flags": [
+      "--int8",
+      "--fp16"
+    ],
+    "returncode": 1,
+    "built": false,
+    "gpu_compute_median_ms": null,
+    "throughput_qps": null,
+    "engine_bytes": null,
+    "errors_tail": [
+      "[08/21/2026-10:29:47] [E] [TRT] ModelImporter.cpp:948: While parsing node number 0 [DequantizeLinear -> \"/model/Tile_output_0_DequantizeLinear_Output\"]:",
+      "[08/21/2026-10:29:47] [E] [TRT] ModelImporter.cpp:950: --- Begin node ---",
+      "[08/21/2026-10:29:47] [E] [TRT] ModelImporter.cpp:951: --- End node ---",
+      "[08/21/2026-10:29:47] [E] [TRT] ModelImporter.cpp:953: ERROR: onnxOpImporters.cpp:1491 In function QuantDequantLinearHelper:",
+      "[6] Assertion failed: shiftIsAllZeros(zeroPoint): TensorRT only supports symmetric quantization. The zero point for the QuantizeLinear/DequantizeLinear operator must be all zeros.",
+      "[08/21/2026-10:29:47] [E] Failed to parse onnx file",
+      "[08/21/2026-10:29:47] [E] Parsing model failed",
+      "[08/21/2026-10:29:47] [E] Failed to create engine from model or file.",
+      "[08/21/2026-10:29:47] [E] Engine set up failed"
+    ]
+  },
+  "gpu_int8_implicit": {
+    "tag": "gpu_int8_implicit",
+    "onnx": "detr_sim.onnx",
+    "flags": [
+      "--int8",
+      "--fp16"
+    ],
+    "returncode": 0,
+    "built": true,
+    "gpu_compute_median_ms": 9.42871,
+    "throughput_qps": 105.907,
+    "engine_bytes": 61614444
+  },
+  "dla_fp16": {
+    "tag": "dla_fp16",
+    "onnx": "detr_sim.onnx",
+    "flags": [
+      "--fp16",
+      "--useDLACore=0",
+      "--allowGPUFallback"
+    ],
+    "returncode": 0,
+    "built": true,
+    "gpu_compute_median_ms": 398.64,
+    "throughput_qps": 2.49585,
+    "engine_bytes": 157757100,
+    "placement": {
+      "dla_layers": 326,
+      "gpu_layers": 404,
+      "foreign_nodes_on_dla": 16,
+      "verbose_rc": 0
+    }
+  },
+  "dla_int8_implicit": {
+    "tag": "dla_int8_implicit",
+    "onnx": "detr_sim.onnx",
+    "flags": [
+      "--int8",
+      "--fp16",
+      "--useDLACore=0",
+      "--allowGPUFallback"
+    ],
+    "returncode": 0,
+    "built": true,
+    "gpu_compute_median_ms": 78.4756,
+    "throughput_qps": 12.679,
+    "engine_bytes": 69567236,
+    "placement": {
+      "dla_layers": 326,
+      "gpu_layers": 404,
+      "foreign_nodes_on_dla": 16,
+      "verbose_rc": 0
+    }
+  }
+}

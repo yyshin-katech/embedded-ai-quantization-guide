@@ -1,0 +1,14 @@
+[build+time] gpu_fp32           (fp32)
+   -> built=True  gpu_median=25.8496 ms  thr=38.5752 qps  eng=167898412 B
+[build+time] gpu_fp16           --fp16
+   -> built=True  gpu_median=13.2754 ms  thr=75.2082 qps  eng=85388932 B
+[build+time] gpu_int8_explicit  --int8 --fp16
+   -> built=False gpu_median=None ms  thr=None qps  eng=None B
+[build+time] gpu_int8_implicit  --int8 --fp16
+   -> built=True  gpu_median=9.42871 ms  thr=105.907 qps  eng=61614444 B
+[build+time] dla_fp16           --fp16 --useDLACore=0 --allowGPUFallback
+   -> built=True  gpu_median=398.64 ms  thr=2.49585 qps  eng=157757100 B  placement={'dla_layers': 326, 'gpu_layers': 404, 'foreign_nodes_on_dla': 16, 'verbose_rc': 0}
+[build+time] dla_int8_implicit  --int8 --fp16 --useDLACore=0 --allowGPUFallback
+   -> built=True  gpu_median=78.4756 ms  thr=12.679 qps  eng=69567236 B  placement={'dla_layers': 326, 'gpu_layers': 404, 'foreign_nodes_on_dla': 16, 'verbose_rc': 0}
+
+WROTE /home/katech/orin_bench/detr_results/detr_summary.json
