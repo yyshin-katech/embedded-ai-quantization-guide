@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>온디바이스 정확도 — Orin에서 INT8은 살아남는가 (TRT vs MLAS 경로 의존)</title>
+<style>
+:root{--bg:#0b0e14;--panel:#131720;--panel2:#0f131b;--bd:#242b38;--tx:#c9d1d9;--dim:#8b949e;--brt:#e6edf3;--accent:#58a6ff;--green:#3fb950;--amber:#d29922;--red:#ff7b72;--purple:#bc8cff;--mono:'JetBrains Mono','SF Mono',ui-monospace,'Cascadia Code',Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans KR','Malgun Gothic',sans-serif}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:var(--sans);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:980px;margin:0 auto;padding:0 20px 120px}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+.hero{padding:48px 0 26px;border-bottom:1px solid var(--bd);margin-bottom:8px}
+.kicker{font-family:var(--mono);font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+.hero h1{margin:0 0 10px;font-size:30px;line-height:1.25;color:var(--brt);letter-spacing:-.01em}
+.hero p.sub{margin:0 0 20px;color:var(--dim);font-size:15px;max-width:80ch}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font-family:var(--mono);font-size:12px;padding:5px 10px;border:1px solid var(--bd);border-radius:999px;background:var(--panel);color:var(--tx)}
+.chip b{color:var(--brt);font-weight:600}
+.chip.done{border-color:rgba(63,185,80,.5);background:rgba(63,185,80,.12);color:#7ee787}
+.chip.blocked{border-color:rgba(255,123,114,.5);background:rgba(255,123,114,.12);color:#ff9d96}
+.chip.partial{border-color:rgba(210,153,34,.5);background:rgba(210,153,34,.12);color:#e3b341}
+nav.toc{display:flex;flex-wrap:wrap;gap:8px;margin:26px 0 6px}
+nav.toc a{font-family:var(--mono);font-size:12.5px;padding:6px 11px;border:1px solid var(--bd);border-radius:8px;background:var(--panel);color:var(--tx)}
+nav.toc a:hover{border-color:var(--accent);color:var(--brt);text-decoration:none}
+h2.sec{font-size:13px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin:40px 0 12px;font-weight:600;border-top:1px solid var(--bd);padding-top:26px}
+.step{margin:26px 0 0;scroll-margin-top:16px}
+.step>h3{display:flex;align-items:center;gap:12px;font-size:19px;color:var(--brt);margin:0 0 6px;letter-spacing:-.01em}
+.num{flex:none;display:inline-grid;place-items:center;width:28px;height:28px;border-radius:8px;background:var(--accent);color:#06101f;font-family:var(--mono);font-weight:700;font-size:13px}
+.step p.lead{margin:0 0 4px;color:var(--dim);font-size:14.5px}
+table.dt{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.3px;border:1px solid var(--bd);border-radius:10px;overflow:hidden;font-family:var(--mono)}
+table.dt th,table.dt td{padding:8px 12px;text-align:right;border-bottom:1px solid var(--bd)}
+table.dt th{background:var(--panel);color:var(--dim);font-weight:600;font-size:12px;letter-spacing:.04em}
+table.dt th:first-child,table.dt td:first-child{text-align:left;color:var(--brt)}
+table.dt tr:last-child td{border-bottom:none}
+table.dt tr.hi td{background:rgba(63,185,80,.08)}
+table.dt tr.lo td{background:rgba(255,123,114,.08)}
+table.dt tr.grey td{background:rgba(139,148,158,.08);color:var(--dim)}
+table.dt tr.base td{background:rgba(88,166,255,.07)}
+.g{color:var(--green)}.r{color:var(--red)}.a{color:var(--amber)}.p{color:var(--purple)}.d{color:var(--dim)}
+table.kv{width:100%;border-collapse:collapse;margin:12px 0;font-size:13.5px;border:1px solid var(--bd);border-radius:10px;overflow:hidden}
+table.kv th,table.kv td{padding:9px 13px;text-align:left;border-bottom:1px solid var(--bd);vertical-align:top}
+table.kv th{background:var(--panel);color:var(--dim);font-weight:600;width:34%;font-size:12.5px}
+table.kv td{font-family:var(--mono);font-size:12.7px;color:var(--tx)}
+table.kv tr:last-child td,table.kv tr:last-child th{border-bottom:none}
+.term{background:var(--panel2);border:1px solid var(--bd);border-radius:11px;overflow:hidden;margin:14px 0}
+.term-bar{display:flex;align-items:center;gap:7px;padding:9px 13px;background:#0c1017;border-bottom:1px solid var(--bd)}
+.dot{width:11px;height:11px;border-radius:50%}.dot.r{background:#ff5f56}.dot.y{background:#ffbd2e}.dot.g{background:#27c93f}
+.term-title{margin-left:9px;color:var(--dim);font-size:12.5px;font-family:var(--mono)}
+.term pre{margin:0;padding:15px 17px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.62;color:var(--tx);white-space:pre;tab-size:2}
+.cmt{color:#5c6773}.ok{color:var(--green)}.err{color:var(--red)}.warn{color:var(--amber)}.dim{color:var(--dim)}.hl{color:var(--purple)}.in{color:var(--brt);font-weight:600}
+.note{border-left:3px solid var(--accent);background:rgba(88,166,255,.07);padding:13px 17px;border-radius:0 9px 9px 0;margin:15px 0;font-size:14px}
+.note.trap{border-color:var(--red);background:rgba(255,123,114,.08)}
+.note.warnb{border-color:var(--amber);background:rgba(210,153,34,.08)}
+.note.tip{border-color:var(--green);background:rgba(63,185,80,.07)}
+.note.block{border-color:var(--purple);background:rgba(188,140,255,.08)}
+.note .tag{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 8px;border-radius:6px;margin-bottom:7px}
+.note.trap .tag{background:rgba(255,123,114,.18);color:#ff9d96}
+.note.warnb .tag{background:rgba(210,153,34,.18);color:#e3b341}
+.note.tip .tag{background:rgba(63,185,80,.18);color:#7ee787}
+.note.block .tag{background:rgba(188,140,255,.18);color:#d8b8ff}
+.note b{color:var(--brt)}.note code{font-family:var(--mono);font-size:12.5px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:4px}
+.chartwrap{border:1px solid var(--bd);background:var(--panel2);border-radius:12px;padding:18px 18px 14px;margin:16px 0}
+.chartwrap .ct{font-family:var(--mono);font-size:12.5px;color:var(--brt);margin:0 0 4px}
+.chartwrap .cs{font-size:12.5px;color:var(--dim);margin:0 0 12px}
+.statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:14px 0}
+.stat{border:1px solid var(--bd);background:var(--panel);border-radius:11px;padding:15px 16px}
+.stat .k{font-family:var(--mono);font-size:11.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em}
+.stat .v{font-size:23px;color:var(--brt);font-weight:700;margin-top:5px;letter-spacing:-.01em}
+.stat .n{font-size:12px;color:var(--dim);margin-top:3px}
+.stat.ok .v{color:#7ee787}.stat.warn .v{color:#e3b341}.stat.bad .v{color:#ff9d96}
+.verdict{border:1px solid var(--bd);border-radius:12px;padding:16px 18px;margin:14px 0;background:var(--panel)}
+.verdict h4{margin:0 0 6px;font-size:15px;color:var(--brt);display:flex;align-items:center;gap:9px}
+.verdict h4 .b{font-family:var(--mono);font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px}
+.verdict.yes h4 .b{background:rgba(63,185,80,.18);color:#7ee787}
+.verdict.no h4 .b{background:rgba(255,123,114,.18);color:#ff9d96}
+.verdict.mixed h4 .b{background:rgba(210,153,34,.18);color:#e3b341}
+.verdict p{margin:0;font-size:13.8px;color:var(--tx)}
+footer{margin-top:46px;padding-top:20px;border-top:1px solid var(--bd);color:var(--dim);font-size:13px}
+.next{display:block;margin-top:12px;padding:12px 16px;border:1px solid var(--bd);border-radius:9px;color:var(--tx);background:var(--panel);font-size:13.6px}
+.next b{color:var(--accent)}
+@media (max-width:560px){.hero h1{font-size:23px}.term pre{font-size:11.4px}.stat .v{font-size:20px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <p class="kicker">실행 보고서 · 3·4단계 온디바이스 · Jetson AGX Orin · 정확도 축</p>
+    <h1>온디바이스 정확도 — Orin 실리콘 위에서 INT8은 살아남는가</h1>
+    <p class="sub">앞선 <a href="stage3_jetson_orin_ondevice_report.html">Orin 온디바이스 보고서</a>(솔로 스윕, 커밋 <code>00fd97d</code>)는 <b>지연·전력</b>만 실측하고 <b>정확도는 명시적으로 측정하지 않았다</b>(<code>summary.json</code>: <i>"DLA INT8 = implicit … accuracy not claimed"</i>). 이 빈칸을 닫는다 — <b>저장된 <code>.plan</code> 엔진</b>을, 4단계 Jetson A78AE CPU-프록시가 쓴 <b>바로 그 1000장 번들</b>(커밋 <code>49e30ff</code>)에 돌려 <b>이미지별 예측을 1:1 대조</b>한다. 과학적 훅: 4단계는 INT8 예측이 <b>정수커널 경로 의존</b>임을 <i>CPU들 사이에서</i> 밝혔다(Jetson↔Pi5 100% 같은 MLAS SDOT; Jetson↔x86 958/1000 다른 커널; FP32는 항상 100%). 여기선 훨씬 큰 경계를 넘는다 — <b>CPU 정수커널(MLAS) vs GPU/DLA 정수커널(TensorRT)</b>, <b>같은 보드·같은 QDQ scale</b>(둘 다 <code>resnet50_int8_qdq.onnx</code>)에서.</p>
+    <div class="chips">
+      <span class="chip"><b>2026-08-21</b></span>
+      <span class="chip"><b>Jetson AGX Orin Dev Kit (64GB)</b></span>
+      <span class="chip"><b>JetPack 6.2.1 · TRT 10.3.0</b></span>
+      <span class="chip"><b>ResNet50 · 1000장 · batch1</b></span>
+      <span class="chip done">iGPU INT8(explicit QDQ) 0.762 = FP32</span>
+      <span class="chip done">FP32 CPU↔GPU 1000/1000</span>
+      <span class="chip partial">TRT INT8 vs MLAS INT8 961/1000</span>
+      <span class="chip blocked">DLA implicit INT8 0.017 붕괴</span>
+    </div>
+    <nav class="toc">
+      <a href="#s1">1 · 실행 요약</a>
+      <a href="#s2">2 · 환경·데이터·방법</a>
+      <a href="#s3">3 · 온디바이스 top-1 사다리</a>
+      <a href="#s4">4 · 경로 의존: TRT INT8 vs MLAS INT8</a>
+      <a href="#s5">5 · 판정·산출물</a>
+    </nav>
+  </header>
+
+  <!-- ================= §1 ================= -->
+  <h2 class="sec">§1 — 실행 요약</h2>
+  <section id="s1" class="step">
+    <div class="statgrid">
+      <div class="stat ok"><div class="k">iGPU INT8 (explicit QDQ)</div><div class="v">0.7620</div><div class="n">= FP32 (1000장 무손실) · CPU MLAS INT8(0.750)보다 높음 · accuracy-valid</div></div>
+      <div class="stat ok"><div class="k">FP32 · CPU ↔ GPU</div><div class="v">1000/1000</div><div class="n">비트 동일 · stage4의 FP32 100%가 가속기까지 확장</div></div>
+      <div class="stat warn"><div class="k">TRT INT8 vs MLAS INT8</div><div class="v">961/1000</div><div class="n">같은 QDQ scale·같은 실리콘인데 39장 불일치 — 경로 의존이 CPU↔가속기를 넘음</div></div>
+      <div class="stat bad"><div class="k">DLA INT8 (implicit)</div><div class="v">0.0170</div><div class="n">자동 레인지 붕괴 — "accuracy NOT claimed" 캐비앗을 정량화</div></div>
+    </div>
+    <p class="lead">사용자 요청 "온디바이스 정확도 측정" — 같은 Orin 보드에서 <b>가속기(TRT) INT8 정확도</b>가 RTX/CPU-프록시 수준으로 유지되는지, 그리고 <b>TRT INT8 예측이 같은 실리콘의 MLAS INT8 예측과 일치하는지</b>를 실측했다. 5가지 발견 모두 <b>같은 1000장 번들</b> 위 상대 관계로 읽는다.</p>
+    <table class="kv">
+      <tr><th>발견 1 · <span class="a">INT8 경로 의존이 CPU↔가속기 경계를 넘는다</span> (헤드라인)</th><td>TRT INT8(GPU 정수커널)과 MLAS INT8(CPU SDOT 커널)은 <b>같은 QDQ scale</b>을 <b>같은 Orin 실리콘</b>에서 돌리는데 <b class="a">39/1000장(96.1% 일치)</b>에서 갈린다. 이 96.1%는 stage4의 Jetson↔x86 CPU 교차(958/1000 = <b>95.8%</b>)와 <b>같은 대역</b>이고, Jetson↔Pi5의 100%(같은 MLAS SDOT)가 <b>아니다</b>. 규칙이 깔끔히 일반화된다 — <b>정수커널이 다르면 ~96%, 경계가 CPU↔CPU든 CPU↔가속기든 무관</b>; 같으면 100%. INT8 top-1은 데이터패스 간 비트 재현이 <b>안 된다</b>(FP32만 된다 — 여기서 1000/1000).</td></tr>
+      <tr><th>발견 2 · <span class="g">accuracy-valid INT8이 온디바이스에서 유지 (게다가 CPU 커널을 이김)</span></th><td>온디바이스 iGPU INT8(explicit QDQ, 3단계 실 scale) top-1 = <b class="g">0.7620 = FP32</b>, 즉 1000장 입도에서 무손실 — 그리고 <b>CPU MLAS INT8(0.7500)보다 높다</b>. 39장 불일치에서 <b>TRT 정답 15 · MLAS 정답 3 · 둘 다 오답 21</b>(net +12 = 0.762−0.750). 같은 scale인데 반올림·누산이 달라, 여기선 TensorRT 정수 데이터패스가 더 충실하다.</td></tr>
+      <tr><th>발견 3 · <span class="p">"top-1 불변" ≠ "예측 불변"</span></th><td>iGPU INT8은 iGPU FP32와 top-1이 정확히 같다(0.762)지만 예측은 <b>57/1000장 뒤집힌다</b>(라벨 대비 net-neutral). top-1만 보면 실제 이미지별 churn이 가려진다 — 정직한 산출물은 <code>pred_cls</code> 배열이다. <b>부수 효과: 943≠1000이라 INT8 엔진이 FP32로 무음 폴백한 게 아님을 자체 증명</b>(게다가 3단계에서 INT8 지연 1.01ms ≠ FP32 1.94ms).</td></tr>
+      <tr><th>발견 4 · <span class="g">FP16은 사실상 무손실 · DLA fp16 데이터패스는 2장 차이</span></th><td>iGPU FP16 = FP32 대비 999/1000(1장 플립). DLA FP16 = 0.7610(iGPU FP16 대비 998/1000) — NVDLA v2 fp16 데이터패스가 iGPU와 미세하게 다르나(별개 가속기니 당연) 정확도는 등가.</td></tr>
+      <tr><th>발견 5 · <span class="r">implicit DLA INT8은 0.017로 붕괴</span> (캐비앗 정량화)</th><td><code>rn50_dla_int8.plan</code>은 <code>trtexec --int8</code> + <b>캘리브 데이터 없음</b>으로 빌드 → 자동 dynamic-range → top-1 <b class="r">0.0170</b>(near-random). <b>같은 하네스</b>가 DLA FP16 = 0.761을 주므로 하네스 버그가 아니다 — 이것이 솔로 스윕이 DLA/implicit INT8을 <b>지연 유효·정확도 미주장</b>으로 라벨한 이유다. accuracy-valid INT8 엔진은 explicit-QDQ iGPU 쪽(발견 2)이다.</td></tr>
+    </table>
+    <div class="note"><span class="tag" style="background:rgba(88,166,255,.18);color:#9cd2ff">CAVEAT</span> 절대 top-1은 <b>1000장 서브셋</b>(1단계 함정 0: 서브셋 top-1은 전체 50k 대비 부풀려짐)이라 <b>3단계 5000장 RTX 수치와 비교 불가</b> — <b>같은 번들 위 상대 관계</b>(일치율·INT8 vs FP32·TRT vs MLAS)만 결과다. <code>dla_int8</code>(0.017)은 <b>implicit 자동 레인지</b>라 캐비앗 정량화용일 뿐 DLA INT8 정확도가 아니다. Jetson은 NVIDIA edge이지 세 자동차 벤더(TI/Qualcomm/Renesas) 아님.</div>
+  </section>
+
+  <!-- ================= §2 ================= -->
+  <h2 class="sec">§2 — 환경·데이터·방법</h2>
+  <section id="s2" class="step">
+    <table class="kv">
+      <tr><th>보드·스택</th><td>NVIDIA <b>Jetson AGX Orin Dev Kit (64GB)</b> · JetPack <b>6.2.1</b>(L4T R36.4.3) · CUDA <b>12.6</b> · TensorRT <b>10.3.0</b> · 2× NVDLA v2 · <code>nvpmodel MAXN</code></td></tr>
+      <tr><th>추론 러너</th><td><code>tensorrt</code> Python API + <b><code>cuda-python</code> 12.9.7</b>(<code>from cuda.bindings import runtime as cudart</code> — 구 <code>cuda.cudart</code> 제거됨) · <code>deserialize_cuda_engine</code> → <code>execute_async_v3</code> · <b>batch1</b> · 결정론적 재실행 검증(동일 수치)</td></tr>
+      <tr><th>모델·엔진</th><td>torchvision <b>ResNet50</b> · 저장된 5개 <code>.plan</code>(솔로 스윕 커밋 <code>00fd97d</code>가 빌드): <code>rn50_gpu_{fp32,fp16,int8}.plan</code> · <code>rn50_dla_{fp16,int8}.plan</code>. <b><code>rn50_gpu_int8.plan</code>은 <code>resnet50_int8_qdq.onnx</code>에서 빌드 — CPU 프록시가 ORT에 먹인 바로 그 QDQ ONNX</b>(∴ scale 동일).</td></tr>
+      <tr><th>전처리</th><td><code>÷255 → NHWC→NCHW → ImageNet norm</code>(mean/std) — <b><code>cpu_proxy/rpi_bench.py</code>와 바이트 동일</b>. argmax top-1, <code>pred_cls</code> 1000개 dump.</td></tr>
+      <tr><th>평가셋</th><td><code>rpi_sub_u8.npy</code>(1000×224×224×3 u8) + <code>rpi_labels.npy</code> — 보드에 있는 것과 CPU-프록시 JSON 뒤의 것이 <b>같은 번들</b>. ∴ 이미지별 <code>pred_cls</code> 1:1 대조 가능.</td></tr>
+      <tr><th>CPU 비교 기준선</th><td>Jetson <b>A78AE</b> CPU-프록시(커밋 <code>49e30ff</code>, ORT <code>CPUExecutionProvider</code> MLAS SDOT): FP32 top-1 <b>0.7620</b> · INT8 top-1 <b>0.7500</b>(<code>experiments/stage5_infrastructure/cpu_proxy/raw/jetson_orin_a78ae_{fp32,int8}.json</code>의 <code>pred_cls</code>).</td></tr>
+      <tr><th>SSOT</th><td><code>experiments/stage3_tensorrt/jetson_ondevice/accuracy/results/accuracy_summary.json</code></td></tr>
+    </table>
+  </section>
+
+  <!-- ================= §3 ================= -->
+  <h2 class="sec">§3 — 온디바이스 top-1 사다리 (같은 1000장 번들)</h2>
+  <section id="s3" class="step">
+    <p class="lead">저장된 5개 엔진을 같은 번들에 돌린 top-1. accuracy-valid는 iGPU {FP32·FP16·INT8-explicit}과 DLA FP16; <b>DLA INT8은 implicit</b>(자동 레인지, 정확도 미주장)라 회색.</p>
+    <table class="dt">
+      <thead><tr><th>엔진</th><th>정밀도</th><th>top-1</th><th>vs FP32</th><th>비고</th></tr></thead>
+      <tbody>
+        <tr class="base"><td>rn50_gpu_fp32</td><td>iGPU FP32</td><td>0.7620</td><td>—</td><td class="d">= CPU-프록시 FP32</td></tr>
+        <tr><td>rn50_gpu_fp16</td><td>iGPU FP16</td><td>0.7620</td><td class="g">±0</td><td class="d">FP32 대비 1장 플립</td></tr>
+        <tr class="hi"><td>rn50_gpu_int8</td><td><b>iGPU INT8 (explicit QDQ)</b></td><td><b>0.7620</b></td><td class="g">±0</td><td class="g">accuracy-valid · CPU MLAS INT8(0.750)보다 높음</td></tr>
+        <tr><td>rn50_dla_fp16</td><td>DLA FP16</td><td>0.7610</td><td class="a">−0.001</td><td class="d">iGPU FP16 대비 2장</td></tr>
+        <tr class="grey"><td>rn50_dla_int8</td><td>DLA INT8 (implicit)</td><td>0.0170</td><td class="r">붕괴</td><td>자동 레인지 · 정확도 미주장(캐비앗)</td></tr>
+        <tr class="lo"><td class="d">(cpu-proxy)</td><td>A78AE CPU INT8 (MLAS SDOT)</td><td>0.7500</td><td class="r">−0.012</td><td class="d">커밋 49e30ff · §4 대조 기준</td></tr>
+      </tbody>
+    </table>
+    <div class="chartwrap">
+      <p class="ct">top-1 — accuracy-valid 엔진 + CPU MLAS INT8 + implicit DLA 붕괴 (높을수록 정확)</p>
+      <p class="cs">막대폭 = top-1 × 600px. 초록 = accuracy-valid INT8(explicit QDQ), 빨강 = implicit(정확도 미주장).</p>
+      <svg viewBox="0 0 780 236" width="100%" role="img" aria-label="온디바이스 top-1 막대 그래프">
+        <line x1="0" y1="208" x2="480" y2="208" stroke="#242b38" stroke-width="1"/>
+        <line x1="150" y1="14" x2="150" y2="208" stroke="#242b38" stroke-width="1" stroke-dasharray="3 3"/>
+        <line x1="300" y1="14" x2="300" y2="208" stroke="#242b38" stroke-width="1" stroke-dasharray="3 3"/>
+        <line x1="450" y1="14" x2="450" y2="208" stroke="#242b38" stroke-width="1" stroke-dasharray="3 3"/>
+        <text x="150" y="224" fill="#5c6773" font-size="10" font-family="monospace" text-anchor="middle">0.25</text>
+        <text x="300" y="224" fill="#5c6773" font-size="10" font-family="monospace" text-anchor="middle">0.50</text>
+        <text x="450" y="224" fill="#5c6773" font-size="10" font-family="monospace" text-anchor="middle">0.75</text>
+        <g font-family="monospace" font-size="12">
+          <rect x="0" y="20" width="457.2" height="26" rx="4" fill="#58a6ff" opacity="0.85"/>
+          <text x="463" y="38" fill="#c9d1d9">iGPU FP32 · 0.7620</text>
+          <rect x="0" y="52" width="457.2" height="26" rx="4" fill="#3fb950" opacity="0.6"/>
+          <text x="463" y="70" fill="#c9d1d9">iGPU FP16 · 0.7620</text>
+          <rect x="0" y="84" width="457.2" height="26" rx="4" fill="#3fb950"/>
+          <text x="463" y="102" fill="#7ee787">iGPU INT8 (explicit QDQ) · 0.7620 ✓</text>
+          <rect x="0" y="116" width="456.6" height="26" rx="4" fill="#3fb950" opacity="0.6"/>
+          <text x="463" y="134" fill="#c9d1d9">DLA FP16 · 0.7610</text>
+          <rect x="0" y="148" width="450.0" height="26" rx="4" fill="#d29922" opacity="0.8"/>
+          <text x="463" y="166" fill="#e3b341">CPU INT8 (MLAS SDOT) · 0.7500</text>
+          <rect x="0" y="180" width="10.2" height="26" rx="4" fill="#ff7b72"/>
+          <text x="18" y="198" fill="#ff9d96">DLA INT8 (implicit) · 0.0170 — 정확도 미주장</text>
+        </g>
+      </svg>
+    </div>
+    <div class="note tip"><span class="tag">읽는 법</span> accuracy-valid INT8(explicit QDQ) 막대가 <b>FP32와 정확히 같은 길이</b>(0.762)라는 게 핵심 — 온디바이스 가속기 INT8이 1000장 입도에서 무손실이다. 맨 아래 빨강 막대(0.017)는 <b>implicit</b> 엔진으로, "캘리브 없는 자동 레인지가 무엇을 하는가"를 보여줄 뿐 DLA의 정확도가 아니다.</div>
+  </section>
+
+  <!-- ================= §4 ================= -->
+  <h2 class="sec">§4 — 경로 의존: TRT INT8 vs MLAS INT8 (헤드라인)</h2>
+  <section id="s4" class="step">
+    <p class="lead">이미지별 <code>pred_cls</code>를 1:1 대조한 일치 수. FP32는 데이터패스가 달라도 비트 동일(1000)이지만, INT8은 정수커널이 다르면 갈린다.</p>
+    <table class="dt">
+      <thead><tr><th>대조 쌍</th><th>일치/1000</th><th>플립</th><th>의미</th></tr></thead>
+      <tbody>
+        <tr class="hi"><td>iGPU FP32 vs CPU FP32</td><td>1000</td><td>0</td><td class="d g">FP32는 CPU↔GPU 경계에서 비트 동일</td></tr>
+        <tr class="lo"><td><b>iGPU INT8 (TRT) vs CPU INT8 (MLAS SDOT)</b></td><td><b>961</b></td><td><b class="a">39</b></td><td class="d">헤드라인 — 같은 QDQ scale인데 경로가 다름</td></tr>
+        <tr><td>iGPU INT8 vs iGPU FP32</td><td>943</td><td>57</td><td class="d">top-1 동일한데 57장 플립(net-neutral) · <b>≠1000 ⇒ 무음 FP32 폴백 아님</b></td></tr>
+        <tr><td>iGPU FP16 vs iGPU FP32</td><td>999</td><td>1</td><td class="d">FP16 ≈ 무손실</td></tr>
+        <tr><td>DLA FP16 vs iGPU FP16</td><td>998</td><td>2</td><td class="d">DLA fp16 데이터패스 미세 차이</td></tr>
+      </tbody>
+    </table>
+    <div class="chartwrap">
+      <p class="ct">예측 플립 수 (1000 − 일치) — 낮을수록 데이터패스 간 재현성 높음</p>
+      <p class="cs">막대폭 = 플립 × 9px (0 플립은 시각화용 최소 sliver). FP32(0)와 INT8(39·57)의 대비가 "경로 의존은 INT8만"을 보여준다.</p>
+      <svg viewBox="0 0 780 214" width="100%" role="img" aria-label="예측 플립 수 막대 그래프">
+        <line x1="0" y1="186" x2="560" y2="186" stroke="#242b38" stroke-width="1"/>
+        <line x1="90" y1="14" x2="90" y2="186" stroke="#242b38" stroke-width="1" stroke-dasharray="3 3"/>
+        <line x1="180" y1="14" x2="180" y2="186" stroke="#242b38" stroke-width="1" stroke-dasharray="3 3"/>
+        <line x1="270" y1="14" x2="270" y2="186" stroke="#242b38" stroke-width="1" stroke-dasharray="3 3"/>
+        <line x1="360" y1="14" x2="360" y2="186" stroke="#242b38" stroke-width="1" stroke-dasharray="3 3"/>
+        <line x1="450" y1="14" x2="450" y2="186" stroke="#242b38" stroke-width="1" stroke-dasharray="3 3"/>
+        <text x="90" y="202" fill="#5c6773" font-size="10" font-family="monospace" text-anchor="middle">10</text>
+        <text x="180" y="202" fill="#5c6773" font-size="10" font-family="monospace" text-anchor="middle">20</text>
+        <text x="270" y="202" fill="#5c6773" font-size="10" font-family="monospace" text-anchor="middle">30</text>
+        <text x="360" y="202" fill="#5c6773" font-size="10" font-family="monospace" text-anchor="middle">40</text>
+        <text x="450" y="202" fill="#5c6773" font-size="10" font-family="monospace" text-anchor="middle">50</text>
+        <g font-family="monospace" font-size="11.5">
+          <rect x="0" y="20" width="2" height="24" rx="3" fill="#3fb950"/>
+          <text x="10" y="37" fill="#7ee787">FP32: iGPU vs CPU · 0 플립 (비트 동일)</text>
+          <rect x="0" y="52" width="351" height="24" rx="3" fill="#d29922"/>
+          <text x="359" y="69" fill="#e3b341">INT8: TRT vs MLAS SDOT · 39 플립 (헤드라인)</text>
+          <rect x="0" y="84" width="513" height="24" rx="3" fill="#bc8cff" opacity="0.85"/>
+          <text x="521" y="101" fill="#d8b8ff">INT8 vs 자기 FP32 · 57 플립</text>
+          <rect x="0" y="116" width="9" height="24" rx="3" fill="#58a6ff" opacity="0.7"/>
+          <text x="17" y="133" fill="#c9d1d9">FP16 vs FP32 · 1 플립</text>
+          <rect x="0" y="148" width="18" height="24" rx="3" fill="#58a6ff" opacity="0.7"/>
+          <text x="26" y="165" fill="#c9d1d9">DLA FP16 vs iGPU FP16 · 2 플립</text>
+        </g>
+      </svg>
+    </div>
+    <div class="note"><span class="tag" style="background:rgba(88,166,255,.18);color:#9cd2ff">STAGE4 연결</span> 이 <b>96.1%</b>(39 플립)를 4단계 CPU 교차와 나란히 놓으면 규칙이 보인다:
+      <table class="kv" style="margin-top:8px">
+        <tr><th>Jetson iGPU-TRT ↔ Jetson CPU-MLAS (본 실측)</th><td><b>961/1000</b> — 다른 정수커널(TRT vs MLAS) · <b>CPU↔가속기</b> 경계</td></tr>
+        <tr><th>Jetson CPU ↔ x86 CPU (stage4)</th><td><b>958/1000</b> — 다른 정수커널(MLAS SDOT vs no-VNNI) · CPU↔CPU</td></tr>
+        <tr><th>Jetson CPU ↔ Pi5 CPU (stage4)</th><td><b>1000/1000</b> — <b>같은</b> 정수커널(둘 다 MLAS SDOT)</td></tr>
+        <tr><th>임의 FP32 교차쌍 (본 실측 + stage4)</th><td><b>1000/1000</b> — FP32는 경로 무관 결정론적</td></tr>
+      </table>
+      <b>결론:</b> INT8 예측 재현성은 실리콘 종류(CPU/GPU/DLA)가 아니라 <b>정수커널 경로</b>가 가른다 — 같으면 100%, 다르면 ~96%. accuracy-valid INT8을 옮길 때 top-1은 보존돼도(발견 2) <b>이미지별 예측은 비트 재현되지 않는다</b>.</div>
+    <div class="note warnb"><span class="tag">불일치 분해 (39장)</span> TRT INT8과 MLAS INT8이 갈리는 39장에서 <b>TRT 정답 15 · MLAS 정답 3 · 둘 다 오답 21</b>. net +12(=0.762−0.750). 두 커널은 <b>같은 QDQ scale</b>을 쓰지만 정수 누산·재양자화 반올림이 다르고, 이 모델·이 번들에선 <b>TensorRT 데이터패스가 더 충실</b>했다. (일반화 금지 — 모델·번들 의존.)</div>
+  </section>
+
+  <!-- ================= §5 ================= -->
+  <h2 class="sec">§5 — 판정·산출물</h2>
+  <section id="s5" class="step">
+    <div class="verdict yes"><h4><span class="b">YES</span> accuracy-valid INT8은 Orin 실리콘에서 유지된다</h4><p>iGPU INT8(explicit QDQ, 실 scale) top-1 = 0.7620 = FP32(1000장 무손실), CPU MLAS INT8(0.750)보다도 높다. 3·4단계에서 "가속기가 이겨야 할 CPU 바닥값"을 세웠다면, 이 실측은 그 위에서 <b>가속기 INT8이 정확도를 잃지 않고 이긴다</b>는 걸 온디바이스로 확인한다.</p></div>
+    <div class="verdict mixed"><h4><span class="b">경로 의존</span> INT8 예측은 데이터패스 간 비트 재현 안 됨</h4><p>TRT INT8 vs MLAS INT8 = 961/1000. stage4의 CPU↔CPU 경로 의존(958 vs 1000)이 <b>CPU↔가속기 경계에서도 같은 대역으로 재현</b>된다. 규칙: 정수커널 같으면 100%, 다르면 ~96% — 실리콘 종류 무관. FP32만 경로 무관(1000/1000).</p></div>
+    <div class="verdict no"><h4><span class="b">CAVEAT</span> implicit INT8 정확도는 주장하지 않는다</h4><p>DLA implicit INT8 = 0.017(자동 레인지 붕괴). 같은 하네스가 DLA FP16 = 0.761을 주므로 하네스는 정상 — 이 값은 "캘리브 없는 자동 레인지"의 정량화일 뿐, accuracy-valid INT8은 explicit-QDQ iGPU 엔진이다.</p></div>
+    <table class="kv">
+      <tr><th>실측 리포트</th><td>이 문서 · <code>logs/stage3_jetson_orin_accuracy_report.html</code></td></tr>
+      <tr><th>실험 디렉터리</th><td><code>experiments/stage3_tensorrt/jetson_ondevice/accuracy/</code> — <code>scripts/orin_accuracy.py</code>(온보드 TRT 러너) · <code>scripts/analyze_accuracy.py</code>(호스트 교차대조) · <code>results/</code>(6 JSON + <code>accuracy_summary.json</code> SSOT + 5 <code>pred_cls</code>) · <code>raw/orin_accuracy.out</code> · <code>README.md</code></td></tr>
+      <tr><th>기준선 (인용)</th><td>솔로 스윕 <a href="stage3_jetson_orin_ondevice_report.html">Orin 온디바이스 보고서</a>(지연·전력) · CPU 프록시 <a href="stage4_jetson_agx_orin_a78ae_report.html">A78AE 보고서</a>(FP32 0.762 / INT8 0.750)</td></tr>
+      <tr><th>가이드 반영</th><td><code>study_guide/05_tensorrt.md</code> §2.3(온디바이스 정확도 콜아웃) · <code>study_guide/06_multi_soc.md</code> §2-2(크로스플랫폼 경로 의존 → 가속기로 확장)</td></tr>
+    </table>
+    <div class="note"><span class="tag" style="background:rgba(88,166,255,.18);color:#9cd2ff">CAVEAT 재확인</span> 절대 top-1 = 1000장 서브셋(부풀림) · batch1 · MAXN · <code>execute_async_v3</code> 기본 스트림 → <b>같은 번들 상대 관계만</b>. QDQ scale은 3단계 <code>resnet50_int8_qdq.onnx</code>에서 동결(재캘리브 없음). implicit DLA INT8(0.017)은 정확도 미주장. Jetson은 NVIDIA edge(세 자동차 벤더 아님).</div>
+    <a class="next" href="stage3_jetson_orin_detr_report.html"><b>이전 →</b> DETR-on-Orin — 새 모델 축(트랜스포머 정밀도 사다리 + DLA 파편화)</a>
+  </section>
+
+  <footer>
+    Jetson AGX Orin 온디바이스 정확도 실측 · ResNet50 · 1000장 · 2026-08-21 · SSOT <code>experiments/stage3_tensorrt/jetson_ondevice/accuracy/results/accuracy_summary.json</code><br>
+    절대 top-1은 서브셋·batch1 기준 상대 관계만 유효 · implicit DLA INT8은 정확도 미주장 · Jetson은 세 자동차 벤더(TI/Qualcomm/Renesas)가 아님
+  </footer>
+</div>
+</body>
+</html>

@@ -1,6 +1,6 @@
 ---
 name: stage3-jetson-ondevice-hands-on
-description: "3·4단계 Jetson AGX Orin 온디바이스 실측(2026-08-20, 데이터 커밋 00fd97d·문서 1a8f073 푸시완료, ResNet50): 실 trtexec 실존(stage3/5 'trtexec 부재→polygraphy' 반전)·DLA 실측(stage3 'DLA 범위 밖' 해소). DLA INT8=성능/와트 챔피언 51.29 inf/s/W(iGPU INT8의 ×1.547·전력 절반)·DLA는 INT8 전용기(FP16 13.87× 느림)·오프로드 GR3D 95%→3~16%로 증명·DLA 후보 2/2·iGPU INT8≈FP16 0.984. DLA INT8 정확도 미주장(--int8 암묵). 후속(2026-08-21, 커밋 c03c174 푸시완료): iGPU∥DLA 동시부하 = GPU-폴백 직렬화로 공짜 병렬 아님(iGPU+DLA0 60.8%·DLA 27% 붕괴, DLA0+DLA1 87.0%가 최적 66.07 inf/s/W)·nvpmodel MAXN→50W 리더 교차(iGPU -29.4% vs DLA -2.9% → 50W서 DLA +8.8%). 후속2(2026-08-21, 커밋 9ef2a58 푸시완료): 새 모델 축 DETR — 무거운 트랜스포머는 iGPU INT8 이득 부활(INT8/FP16=0.710 vs ResNet50 0.984), explicit QDQ INT8 파싱불가(3단계 case C 재현), DLA 트랜스포머 부적합(폴백 404/16조각 → iGPU FP16의 30× 느림, DLA=CNN 가속기). tech-reviewer PASS 🔴0"
+description: "3·4단계 Jetson AGX Orin 온디바이스 실측(2026-08-20, 데이터 커밋 00fd97d·문서 1a8f073 푸시완료, ResNet50): 실 trtexec 실존(stage3/5 'trtexec 부재→polygraphy' 반전)·DLA 실측(stage3 'DLA 범위 밖' 해소). DLA INT8=성능/와트 챔피언 51.29 inf/s/W(iGPU INT8의 ×1.547·전력 절반)·DLA는 INT8 전용기(FP16 13.87× 느림)·오프로드 GR3D 95%→3~16%로 증명·DLA 후보 2/2·iGPU INT8≈FP16 0.984. DLA INT8 정확도 미주장(--int8 암묵). 후속(2026-08-21, 커밋 c03c174 푸시완료): iGPU∥DLA 동시부하 = GPU-폴백 직렬화로 공짜 병렬 아님(iGPU+DLA0 60.8%·DLA 27% 붕괴, DLA0+DLA1 87.0%가 최적 66.07 inf/s/W)·nvpmodel MAXN→50W 리더 교차(iGPU -29.4% vs DLA -2.9% → 50W서 DLA +8.8%). 후속2(2026-08-21, 커밋 9ef2a58 푸시완료): 새 모델 축 DETR — 무거운 트랜스포머는 iGPU INT8 이득 부활(INT8/FP16=0.710 vs ResNet50 0.984), explicit QDQ INT8 파싱불가(3단계 case C 재현), DLA 트랜스포머 부적합(폴백 404/16조각 → iGPU FP16의 30× 느림, DLA=CNN 가속기). tech-reviewer PASS 🔴0. 후속3 정확도 축(2026-08-21): 저장 .plan을 4단계 CPU-프록시 같은 ResNet50 1000장 번들에 돌려 예측 1:1 — accuracy-valid iGPU INT8 explicit-QDQ top-1 0.762=FP32>CPU MLAS 0.750, INT8 경로의존이 CPU↔가속기 넘음(TRT vs MLAS 961/1000=4단계 x86 대역·≠Pi5 100%), implicit DLA INT8 0.017 붕괴(캐비앗 정량화). tech-reviewer PASS 🔴0·🟡1(line-ref 876→892)"
 metadata: 
   node_type: memory
   type: project
@@ -109,3 +109,35 @@ RTX 인용** FP32 mAP 0.4207→INT8 0.2402(−42.9%)·mAP_s −77%([[stage2-detr
 (detr_bench.py·detr_summary.json·raw 로그 9·README). tech-reviewer 팬인 PASS: 하드SSOT+verbose 5.9MB op히스토그램
 재카운트(404=250+66+34+30+12+12)+case-C 로그 원문+onnx 인트로스펙션(1085/1485·149/149) 전건 1:1, 🟡1(지연비 "무겁다"
 오독소지) 리뷰 후 수정. **다음 후보:** DETR 대칭 재양자화로 explicit INT8 정확도유효 엔진 · on-board COCO mAP · SmoothQuant(2단계 §4.4)로 activation 입도 개선 후 재측정.
+
+**후속 실측 — 정확도 축(ResNet50, 2026-08-21, `embedded-guide-orchestrator` 부분수정 — author-5·6 직접 +
+tech-reviewer 팬인 PASS 🔴0·🟡1 리뷰어 직접수정):** 위 실측(솔로·동시부하·DETR)이 전부 지연·전력이라 매번
+"정확도 미주장"을 달았음 → 이번엔 저장된 `.plan`을 4단계 CPU-프록시([[stage4-arm-cpu-fallback-proxy]] 커밋
+49e30ff)가 쓴 **같은 ResNet50 1000장 번들**에 돌려 이미지별 예측 1:1 대조. 결정적 장치: `rn50_gpu_int8.plan`이
+CPU 프록시와 **같은 `resnet50_int8_qdq.onnx`**에서 빌드 → QDQ scale 동일 → 유일 변수 = 정수커널 데이터패스.
+SSOT=`experiments/stage3_tensorrt/jetson_ondevice/accuracy/results/accuracy_summary.json`.
+- **① accuracy-valid INT8 온디바이스 유지 + CPU 커널 이김:** iGPU INT8(explicit QDQ 실 scale) top-1 **0.7620 =
+  iGPU FP32**(1000장 무손실), CPU MLAS INT8 **0.7500**보다 높음 → 위 캐비앗의 "정확도는 explicit QDQ iGPU
+  INT8에서 확립"을 **온디바이스 입증**. 무음 FP32 폴백 아님(자기 FP32와 예측 57장 상이·지연 1.01≠1.94ms).
+- **② INT8 예측 경로의존이 CPU↔가속기 경계 넘음(4단계 확장):** TRT INT8(GPU 정수커널) vs MLAS INT8(CPU SDOT) =
+  **961/1000**(39장, 같은 QDQ scale·같은 실리콘). 96.1%는 4단계 Jetson↔x86(958=95.8%)과 **같은 대역**·Jetson↔Pi5
+  100%(같은 MLAS SDOT) 아님 → **정수커널 다르면 ~96%, 경계가 CPU↔CPU든 CPU↔가속기든 무관**. 39장 중 TRT 정답
+  15·MLAS 정답 3·둘다오답 21(net +12 = 0.762−0.750). FP32는 경로 무관 = iGPU FP32 vs CPU FP32 **1000/1000**
+  (4단계 FP32 100% 가속기까지 확장). [[stage4-arm-cpu-fallback-proxy]] 크로스플랫폼 표의 CPU↔가속기 짝.
+- **③ implicit DLA INT8 = 0.017 붕괴(캐비앗 정량화):** `rn50_dla_int8.plan`(=`--int8` 캘리브 없음·자동레인지)
+  top-1 **0.0170**, **같은 하네스**가 DLA FP16 0.7610을 주므로 하네스버그 아님 → implicit/DLA INT8 "정확도 미주장"
+  라벨을 수치 확증. accuracy-valid INT8은 explicit-QDQ iGPU 엔진뿐.
+- 부수: iGPU FP16 999/1000·DLA FP16 0.7610(998/1000 vs iGPU FP16)·**"top-1 불변 ≠ 예측 불변"**(INT8 vs 자기 FP32
+  57장 플립이나 label 대비 net-neutral, pred_cls가 정직한 산출물).
+
+문서 반영: `05_tensorrt.md` §2.3 콜아웃 **author 순수삽입(8/0)**·`06_multi_soc.md` §2-3 bullet+📄 링크행(2/1).
+**tech-reviewer 팬인 PASS(🔴0·🟡1·🟢A~E):** raw pred_cls를 numpy로 독립 재산출 전건 일치(top-1 7종·일치율
+7종·헤드라인 39=15+3+21·net+12·first_indices)·SVG 비례(top1×600·flips×9·0-flip sliver 정직)·긴 한글 §2-2 슬러그
+bit-identical·캐비앗 4종·헤딩 무renumber; 🟡1 = 기존 DETR 콜아웃 `실습5 line 876`→**892** 정정(876이 `PY`
+heredoc 종료자에 착지, 내 +8삽입이 드리프트 8→16행 키움·형제참조 180/187/193 정밀 → 리뷰어 직접수정+05.html
+재렌더, **net 05 = 9/1**[+1 delete = 이 수정 한 줄]). 산출물 `logs/stage3_jetson_orin_accuracy_report.html`
+(§1~5·SVG 2종) · `experiments/stage3_tensorrt/jetson_ondevice/accuracy/`(`orin_accuracy.py` 온보드 러너
+[tensorrt Python API + `cuda.bindings.runtime`·batch1 `execute_async_v3`]·`analyze_accuracy.py` 호스트
+교차대조·results[5 per-engine pred_cls + accuracy_summary.json SSOT + meta + rpi_labels.npy]·raw·README).
+캐비앗: 절대 top-1은 1000장 서브셋(1단계 함정0 부풀림)이라 상대만·`dla_int8` implicit 정량화용·QDQ scale 3단계
+동결. **다음 후보(불변):** DETR 대칭 재양자화 → case-C 우회 → explicit INT8 정확도유효 엔진 · on-board COCO mAP.

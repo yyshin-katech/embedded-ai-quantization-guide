@@ -1,0 +1,76 @@
+{
+  "n_eval": 1000,
+  "board": "Jetson AGX Orin",
+  "on_device_top1": {
+    "gpu_fp32": 0.762,
+    "gpu_fp16": 0.762,
+    "gpu_int8": 0.762,
+    "dla_fp16": 0.761,
+    "dla_int8": 0.017
+  },
+  "cpu_proxy_top1": {
+    "fp32": 0.762,
+    "int8": 0.75
+  },
+  "agreements": {
+    "igpu_fp32__vs__cpu_fp32": {
+      "agree": 1000,
+      "n": 1000,
+      "frac": 1.0
+    },
+    "igpu_int8__vs__cpu_int8": {
+      "agree": 961,
+      "n": 1000,
+      "frac": 0.961
+    },
+    "igpu_int8__vs__igpu_fp32": {
+      "agree": 943,
+      "n": 1000,
+      "frac": 0.943
+    },
+    "igpu_fp16__vs__igpu_fp32": {
+      "agree": 999,
+      "n": 1000,
+      "frac": 0.999
+    },
+    "dla_fp16__vs__igpu_fp16": {
+      "agree": 998,
+      "n": 1000,
+      "frac": 0.998
+    },
+    "dla_fp16__vs__igpu_fp32": {
+      "agree": 999,
+      "n": 1000,
+      "frac": 0.999
+    },
+    "igpu_int8__vs__cpu_fp32": {
+      "agree": 943,
+      "n": 1000,
+      "frac": 0.943
+    }
+  },
+  "headline_disagreement": {
+    "pair": "igpu_int8 (TRT) vs cpu_int8 (MLAS SDOT)",
+    "n_disagree": 39,
+    "trt_correct_there": 15,
+    "mlas_correct_there": 3,
+    "both_wrong_there": 21,
+    "first_indices": [
+      4,
+      21,
+      27,
+      60,
+      61,
+      83,
+      123,
+      135,
+      190,
+      213,
+      268,
+      269,
+      278,
+      337,
+      344
+    ]
+  }
+}

@@ -1,6 +1,6 @@
 ---
 name: stage4-arm-cpu-fallback-proxy
-description: "4단계 CPU 폴백 프록시 실측(2026-08-18~20): 같은 ResNet50 INT8 QDQ·같은 ORT CPUEP인데 dot-product 명령(SDOT/VNNI) 유무가 양자화 이득 부호 결정. Pi5 A76(dotprod) ×1.83·Jetson AGX Orin A78AE(dotprod) ×2.11 빨라짐 vs x86 no-VNNI 1.76×·imx8mn A53(no-dotprod ARM) 1.65× 느려짐(부호는 ISA 계열 아닌 dotprod 유무, ARM 내부 A76/A78AE vs A53에서 확정). FP32 크로스 전쌍 100%; INT8은 같은 정수커널 경로면 100%(Jetson↔Pi5) 경로 다르면 ~96%. 커밋 2ae48be(Pi5/x86)·581e951(A53)·49e30ff(Jetson 데이터/리포트) 푸시완료; 문서 06 §2-2 Jetson 행+신설 §2-3 반영 완료(1a8f073)"
+description: "4단계 CPU 폴백 프록시 실측(2026-08-18~20): 같은 ResNet50 INT8 QDQ·같은 ORT CPUEP인데 dot-product 명령(SDOT/VNNI) 유무가 양자화 이득 부호 결정. Pi5 A76(dotprod) ×1.83·Jetson AGX Orin A78AE(dotprod) ×2.11 빨라짐 vs x86 no-VNNI 1.76×·imx8mn A53(no-dotprod ARM) 1.65× 느려짐(부호는 ISA 계열 아닌 dotprod 유무, ARM 내부 A76/A78AE vs A53에서 확정). FP32 크로스 전쌍 100%; INT8은 같은 정수커널 경로면 100%(Jetson↔Pi5) 경로 다르면 ~96%. 커밋 2ae48be(Pi5/x86)·581e951(A53)·49e30ff(Jetson 데이터/리포트) 푸시완료; 문서 06 §2-2 Jetson 행+신설 §2-3 반영 완료(1a8f073). 경로의존 CPU↔가속기 확장(2026-08-21): 같은 Orin scale서 TRT INT8 vs A78AE MLAS 961/1000=4단계 x86 대역 → 정수커널 규칙이 가속기까지, 온디바이스 정확도 상세 [[stage3-jetson-ondevice-hands-on]] 후속3"
 metadata:
   node_type: memory
   type: project
@@ -105,6 +105,13 @@ ORT **1.17.1**)로 결정적 한 점 측정. SSOT=`cpu_proxy/{results,raw}/*imx8
   discovery 경고 무해). 자산 scp 전 서브셋 npy를 `tv.npy[:1000]`로 재생성(원본 유실) → **x86 재현 pred_cls 1000/1000 일치로
   비트정확 검증** 후 전송(file md5 3c0e151…/08b054c… 양단 일치).
 - **산출물(커밋 49e30ff 푸시완료):** `cpu_proxy/{raw,results}/jetson_orin_a78ae_{fp32,int8}.json` 4개 + `logs/stage4_jetson_agx_orin_a78ae_report.html`(§1~5·4-플랫폼 sign-flip SVG·INT8 6쌍 매트릭스·결정적 대조). golden 회귀 무영향(cpu_proxy 격리 유지, 6행·3 passed 불변). 리포트 스캔서 접속세부 2곳(호스트명·ssh 키경로/무암호) 걷어냄(비밀값 아님, public 레포 불필요 인프라 정보). **문서 06 §2-2 Jetson 행 + 신설 §2-3 반영 완료**(2026-08-20, `embedded-guide-orchestrator` 부분 재실행 — author-5·6 직접 + `tech-reviewer` 팬인 PASS, 문서 커밋 **1a8f073** 푸시완료 00fd97d..1a8f073). 이때 같은 Jetson 실기로 **온디바이스 가속기(iGPU 정밀도 사다리 + DLA 오프로드/성능·와트)** 도 실측 → [[stage3-jetson-ondevice-hands-on]](데이터 커밋 00fd97d): CPU 폴백 바닥값(이 메모리)의 짝 = 가속기 천장.
+
+**확장 (2026-08-21) — 정수커널 경로의존이 CPU↔가속기 경계를 넘음(온디바이스 정확도 축):** 위 "같은 정수커널
+경로면 100%, 다르면 ~96%"를 CPU↔CPU 너머로 확장. 같은 Orin 실리콘·같은 `resnet50_int8_qdq.onnx` scale에서
+**TRT INT8 커널(GPU) vs A78AE MLAS SDOT INT8(CPU) = 961/1000**(39장) — 4단계 Jetson↔x86 CPU 교차(958)와 **같은
+대역**, TRT는 별개 정수커널이므로 규칙이 **CPU↔가속기**에도 성립. FP32는 iGPU vs CPU **1000/1000**(가속기까지
+100% 유지). 겸사 온디바이스 accuracy-valid iGPU INT8(explicit QDQ) top-1 0.762 = FP32 > 이 메모리의 CPU MLAS
+INT8 0.750. 상세·정확도 사다리 [[stage3-jetson-ondevice-hands-on]] 후속3(SSOT `jetson_ondevice/accuracy/`).
 
 **남은 과제:** 4단계 벤더 NPU 본실측(TIDL/DRP-AI 컴파일·offload% 실측)은 TI TDA4VM·Renesas RZ/V2H 보드 확보 시
 (Qualcomm HTP는 [[stage4-qualcomm-aihub-hands-on]]로 완료). i.MX8M Nano CPU 바닥값(offload 0%)과 HTP 상한선이

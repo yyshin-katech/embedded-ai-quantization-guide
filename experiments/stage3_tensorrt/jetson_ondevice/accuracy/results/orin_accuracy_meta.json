@@ -1,0 +1,1 @@
+{"board": "NVIDIA Jetson AGX Orin Developer Kit (64GB)", "trt": "10.3.0", "n_eval": 1000, "cuda_python": "12.9.7", "nvpmodel": "MAXN", "engines": ["gpu_fp32", "gpu_fp16", "gpu_int8", "dla_fp16", "dla_int8"], "note": "batch1; preprocess=crop_tv NCHW ImageNet-norm identical to cpu_proxy/rpi_bench.py; gpu_int8 built from resnet50_int8_qdq.onnx (same QDQ ONNX the CPU proxy used)"}
