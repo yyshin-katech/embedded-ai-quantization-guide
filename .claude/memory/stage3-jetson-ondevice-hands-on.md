@@ -1,6 +1,6 @@
 ---
 name: stage3-jetson-ondevice-hands-on
-description: "3·4단계 Jetson AGX Orin 온디바이스 실측(2026-08-20, 데이터 커밋 00fd97d·문서 1a8f073 푸시완료, ResNet50): 실 trtexec 실존(stage3/5 'trtexec 부재→polygraphy' 반전)·DLA 실측(stage3 'DLA 범위 밖' 해소). DLA INT8=성능/와트 챔피언 51.29 inf/s/W(iGPU INT8의 ×1.547·전력 절반)·DLA는 INT8 전용기(FP16 13.87× 느림)·오프로드 GR3D 95%→3~16%로 증명·DLA 후보 2/2·iGPU INT8≈FP16 0.984. DLA INT8 정확도 미주장(--int8 암묵). 후속(2026-08-21, 커밋 c03c174 푸시완료): iGPU∥DLA 동시부하 = GPU-폴백 직렬화로 공짜 병렬 아님(iGPU+DLA0 60.8%·DLA 27% 붕괴, DLA0+DLA1 87.0%가 최적 66.07 inf/s/W)·nvpmodel MAXN→50W 리더 교차(iGPU -29.4% vs DLA -2.9% → 50W서 DLA +8.8%). 후속2(2026-08-21, 커밋 9ef2a58 푸시완료): 새 모델 축 DETR — 무거운 트랜스포머는 iGPU INT8 이득 부활(INT8/FP16=0.710 vs ResNet50 0.984), explicit QDQ INT8 파싱불가(3단계 case C 재현), DLA 트랜스포머 부적합(폴백 404/16조각 → iGPU FP16의 30× 느림, DLA=CNN 가속기). tech-reviewer PASS 🔴0. 후속3 정확도 축(2026-08-21, 커밋 d563439 푸시완료): 저장 .plan을 4단계 CPU-프록시 같은 ResNet50 1000장 번들에 돌려 예측 1:1 — accuracy-valid iGPU INT8 explicit-QDQ top-1 0.762=FP32>CPU MLAS 0.750, INT8 경로의존이 CPU↔가속기 넘음(TRT vs MLAS 961/1000=4단계 x86 대역·≠Pi5 100%), implicit DLA INT8 0.017 붕괴(캐비앗 정량화). tech-reviewer PASS 🔴0·🟡1(line-ref 876→892)"
+description: "3·4단계 Jetson AGX Orin 온디바이스 실측(2026-08-20, 데이터 커밋 00fd97d·문서 1a8f073 푸시완료, ResNet50): 실 trtexec 실존(stage3/5 'trtexec 부재→polygraphy' 반전)·DLA 실측(stage3 'DLA 범위 밖' 해소). DLA INT8=성능/와트 챔피언 51.29 inf/s/W(iGPU INT8의 ×1.547·전력 절반)·DLA는 INT8 전용기(FP16 13.87× 느림)·오프로드 GR3D 95%→3~16%로 증명·DLA 후보 2/2·iGPU INT8≈FP16 0.984. DLA INT8 정확도 미주장(--int8 암묵). 후속(2026-08-21, 커밋 c03c174 푸시완료): iGPU∥DLA 동시부하 = GPU-폴백 직렬화로 공짜 병렬 아님(iGPU+DLA0 60.8%·DLA 27% 붕괴, DLA0+DLA1 87.0%가 최적 66.07 inf/s/W)·nvpmodel MAXN→50W 리더 교차(iGPU -29.4% vs DLA -2.9% → 50W서 DLA +8.8%). 후속2(2026-08-21, 커밋 9ef2a58 푸시완료): 새 모델 축 DETR — 무거운 트랜스포머는 iGPU INT8 이득 부활(INT8/FP16=0.710 vs ResNet50 0.984), explicit QDQ INT8 파싱불가(3단계 case C 재현), DLA 트랜스포머 부적합(폴백 404/16조각 → iGPU FP16의 30× 느림, DLA=CNN 가속기). tech-reviewer PASS 🔴0. 후속3 정확도 축(2026-08-21, 커밋 d563439 푸시완료): 저장 .plan을 4단계 CPU-프록시 같은 ResNet50 1000장 번들에 돌려 예측 1:1 — accuracy-valid iGPU INT8 explicit-QDQ top-1 0.762=FP32>CPU MLAS 0.750, INT8 경로의존이 CPU↔가속기 넘음(TRT vs MLAS 961/1000=4단계 x86 대역·≠Pi5 100%), implicit DLA INT8 0.017 붕괴(캐비앗 정량화). tech-reviewer PASS 🔴0·🟡1(line-ref 876→892). 후속4 정확도 축 DETR(2026-08-21, 커밋 대기): 대칭 재양자화로 case C/B + 트랜스포머 self-attn quantized-const 2벽 우회→explicit-sym INT8 빌드가능(44.69MiB·11.0ms), but accuracy-valid INT8이 stage2 폭락 재현(mAP 0.4237→0.2383 −43.8%·mAP_s −84.6%, ORT/dynamic/5000 −42.9%와 교차확증)=case-C 픽스는 툴체인 언락이지 정확도 구제 아님(레버=activation 입도 SmoothQuant §4.4)·implicit 0.4073은 무통제라 미주장(순수 FP16 폴백 아님). tech-reviewer PASS 🔴1·🟡3 전부 fixed"
 metadata: 
   node_type: memory
   type: project
@@ -141,3 +141,45 @@ heredoc 종료자에 착지, 내 +8삽입이 드리프트 8→16행 키움·형�
 교차대조·results[5 per-engine pred_cls + accuracy_summary.json SSOT + meta + rpi_labels.npy]·raw·README).
 캐비앗: 절대 top-1은 1000장 서브셋(1단계 함정0 부풀림)이라 상대만·`dla_int8` implicit 정량화용·QDQ scale 3단계
 동결. **다음 후보(불변):** DETR 대칭 재양자화 → case-C 우회 → explicit INT8 정확도유효 엔진 · on-board COCO mAP.
+
+**후속 실측 — 정확도 축 DETR(2026-08-21, `embedded-guide-orchestrator` 부분수정 — author 직접 + tech-reviewer 팬인
+PASS 🔴1·🟡3 전부 리뷰어 직접수정; 커밋 대기 — 규약상 요청 시만):** 위 후속3은 깨끗한 CNN(ResNet50)이었고 DETR은
+후속2에서 explicit QDQ INT8이 case C로 파싱 불가라 "정확도 미측정" 캐비앗을 달았음 → 그 **후속3 "다음 후보"를 실행**:
+대칭 재양자화로 case C를 우회해 accuracy-valid INT8 엔진을 빌드하고 온보드 COCO mAP 측정.
+SSOT=`experiments/stage3_tensorrt/jetson_ondevice/detr_accuracy/results/detr_accuracy_summary.json`. eval=COCO val2017
+head 1000 · fixed 800×1066 · pycocotools bbox mAP(보드는 raw logits/boxes만 dump, 호스트가 mAP).
+- **① 두 벽 → 툴체인 언락(빌드 가능):** (1) case C(zp≠0 `shiftIsAllZeros`)+case B(INT32 bias DQ)를 **대칭 재export**로
+  제거 — `ActivationSymmetric+WeightSymmetric`(zp=0 전역→C 해소)·`QuantizeBias=False`(INT32 bias DQ 0→B 해소)·conv1
+  제외(case D). (2) **트랜스포머 고유 2차 벽(빌더)**: ORT 기본은 모든 op 양자화 → 대칭이어도 빌더가 self-attention의
+  `Constant_3_output_0_quantized`를 거부(`qdqGraphOptimizer::matchQuantizedConstantPluginOrDQ`: "Quantized constant is
+  only allowed before DQ or PLUGIN_V2/V3") → `op_types_to_quantize=[Conv,Gemm]`(weight-bearing op만; attention matmul·
+  LayerNorm·Softmax는 FP16 — 2단계 §4.5 정합). 결과 `detr_int8_sym.onnx`(43.4MB·zp_nonzero=0·int32_bias_DQ=0) →
+  **9ef2a58서 build-failed였던 explicit INT8이 빌드됨**(44.69 MiB·11.002 ms).
+- **② 헤드라인(가설 반전) — case-C 픽스는 툴체인 언락이지 정확도 구제 아님:** accuracy-valid explicit-sym INT8이
+  **stage2 DETR 폭락을 다른 경로로 재현** — FP32 mAP 0.4237→INT8 **0.2383(−43.8%)**·mAP_s 0.2179→**0.0336(−84.6%)**.
+  stage2(ORT-QDQ·dynamic·CUDA EP·5000장) 0.4207→0.2402(−42.9%)·mAP_s −77%와 **교차확증**(TRT/fixed/1000 vs
+  ORT/dynamic/5000 두 경로가 같은 폭락). **레버는 sym/case-C 픽스가 아니라 activation 양자화 입도**(SmoothQuant,
+  2단계 §4.4가 per-tensor gap의 59.9% 회복). FP16 무손실(+0.0006, 0.4243).
+- **③ implicit `--int8` 메커니즘 정정(작업 중 자기교정한 정합성 버그):** implicit(캘리브 없음) mAP 0.4073(−3.9%)이
+  sym(0.2383)보다 높다고 "implicit이 더 나은 INT8"이 아님 — 캘리브 캐시 없음→**데이터 유래 activation 레인지
+  없음(무통제)**이라 정확도 미주장. **단 "순수 FP16 폴백"은 아님**: implicit 지연 9.43 ms < FP16 13.28 ms이고 엔진
+  58.76 < 81.43 MiB → INT8 커널이 실제로 돎(순수 FP16 폴백이면 더 느리고 커야 함). 여기선 우연히 FP16 근처(0.4073)에
+  착지했을 뿐, 같은 무통제 경로 companion(후속3 ResNet50 DLA implicit)은 **0.017 붕괴**. accuracy 있는 건 explicit·
+  calibrated QDQ 엔진뿐. (divergence corr은 약한 프록시: sym 0.982 ≈ implicit 0.980인데 mAP 0.17 격차 — no-object
+  logit 차원이 지배 → pycocotools mAP가 authoritative.)
+
+지연 사다리(batch1 GPU-compute median·MAXN·동일 플래그): FP32 25.85 / FP16 13.28(×1.947) / **sym 11.002(×2.35 vs
+FP32·×1.207 vs FP16, accuracy-valid)** / implicit 9.43(×2.742, 미주장) ms · 엔진 160.12/81.43/**44.69**/58.76 MiB.
+**tech-reviewer 팬인 PASS(🔴1·🟡3·🟢3 전부 fixed·재검증):** raw npz에서 mAP 독립 재계산(`analyze_detr_map.py`)·SSOT
+byte-identical 재생성·산술(×1.947·×2.35·×2.742·−43.8%·−84.6%)·SVG 비례(mAP factor 1060·latency factor 18.57)·numstat
+8/0+1/0·heading diff 0. 🔴1 = sym 엔진크기 **단위모순**(6곳 "46.9 MiB"[=bytes/1e6 십진MB]가 표·SSOT의 "44.69
+MiB"[bytes/1048576]와 자기모순 → 전부 44.69 MiB 통일). 🟡 = README 잔존 "FP16 폴백" 프레이밍·05 콜아웃 raw `<u>`
+리터럴 렌더·리포트 §4.4 슬러그 오류, 전부 수정.
+
+문서 반영: `05_tensorrt.md` §2.3 DETR 정확도 콜아웃 **순수삽입(8/0)** + HTML 재렌더(1/0)·**승번 오염 0**(heading 무변).
+산출물 `logs/stage3_jetson_orin_detr_accuracy_report.html`(§1~6·SVG 2종) ·
+`experiments/stage3_tensorrt/jetson_ondevice/detr_accuracy/`(scripts 6[`detr_sym_export`·`detr_prep`·`prep_coco_sub`·
+`orin_detr_map`·`analyze_detr_map`·`build_summary`]·results·raw·README). 캐비앗: 절대 mAP는 fixed 800×1066(vs stage2
+dynamic)·TRT vs ORT·1000 vs 5000장이라 stage2와 1:1 비교 불가 — **상대 폭락만** 결과(그 상대 폭락이 stage2
+교차확증)·1000장 서브셋(1단계 함정0)·implicit 미주장·Jetson≠자동차 벤더. **이로써 DETR "정확도 미측정" 캐비앗
+닫힘.** 다음 후보: DETR에 SmoothQuant/per-token(2단계 §4.4)로 activation 입도 개선 후 온디바이스 재측정(폭락 회복 여부).

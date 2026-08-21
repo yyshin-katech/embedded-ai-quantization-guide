@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DETR 정확도유효 INT8 — case-C 우회 후 온디바이스 COCO mAP</title>
+<style>
+:root{--bg:#0b0e14;--panel:#131720;--panel2:#0f131b;--bd:#242b38;--tx:#c9d1d9;--dim:#8b949e;--brt:#e6edf3;--accent:#58a6ff;--green:#3fb950;--amber:#d29922;--red:#ff7b72;--purple:#bc8cff;--mono:'JetBrains Mono','SF Mono',ui-monospace,'Cascadia Code',Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans KR','Malgun Gothic',sans-serif}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:var(--sans);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:980px;margin:0 auto;padding:0 20px 120px}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+.hero{padding:48px 0 26px;border-bottom:1px solid var(--bd);margin-bottom:8px}
+.kicker{font-family:var(--mono);font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+.hero h1{margin:0 0 10px;font-size:30px;line-height:1.25;color:var(--brt);letter-spacing:-.01em}
+.hero p.sub{margin:0 0 20px;color:var(--dim);font-size:15px;max-width:80ch}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font-family:var(--mono);font-size:12px;padding:5px 10px;border:1px solid var(--bd);border-radius:999px;background:var(--panel);color:var(--tx)}
+.chip b{color:var(--brt);font-weight:600}
+.chip.done{border-color:rgba(63,185,80,.5);background:rgba(63,185,80,.12);color:#7ee787}
+.chip.blocked{border-color:rgba(255,123,114,.5);background:rgba(255,123,114,.12);color:#ff9d96}
+.chip.partial{border-color:rgba(210,153,34,.5);background:rgba(210,153,34,.12);color:#e3b341}
+nav.toc{display:flex;flex-wrap:wrap;gap:8px;margin:26px 0 6px}
+nav.toc a{font-family:var(--mono);font-size:12.5px;padding:6px 11px;border:1px solid var(--bd);border-radius:8px;background:var(--panel);color:var(--tx)}
+nav.toc a:hover{border-color:var(--accent);color:var(--brt);text-decoration:none}
+h2.sec{font-size:13px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin:40px 0 12px;font-weight:600;border-top:1px solid var(--bd);padding-top:26px}
+.step{margin:26px 0 0;scroll-margin-top:16px}
+.step>h3{display:flex;align-items:center;gap:12px;font-size:19px;color:var(--brt);margin:0 0 6px;letter-spacing:-.01em}
+.num{flex:none;display:inline-grid;place-items:center;width:28px;height:28px;border-radius:8px;background:var(--accent);color:#06101f;font-family:var(--mono);font-weight:700;font-size:13px}
+.step p.lead{margin:0 0 4px;color:var(--dim);font-size:14.5px}
+table.dt{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.3px;border:1px solid var(--bd);border-radius:10px;overflow:hidden;font-family:var(--mono)}
+table.dt th,table.dt td{padding:8px 12px;text-align:right;border-bottom:1px solid var(--bd)}
+table.dt th{background:var(--panel);color:var(--dim);font-weight:600;font-size:12px;letter-spacing:.04em}
+table.dt th:first-child,table.dt td:first-child{text-align:left;color:var(--brt)}
+table.dt tr:last-child td{border-bottom:none}
+table.dt tr.hi td{background:rgba(63,185,80,.08)}
+table.dt tr.lo td{background:rgba(255,123,114,.08)}
+table.dt tr.grey td{background:rgba(139,148,158,.08);color:var(--dim)}
+table.dt tr.base td{background:rgba(88,166,255,.07)}
+.g{color:var(--green)}.r{color:var(--red)}.a{color:var(--amber)}.p{color:var(--purple)}.d{color:var(--dim)}
+table.kv{width:100%;border-collapse:collapse;margin:12px 0;font-size:13.5px;border:1px solid var(--bd);border-radius:10px;overflow:hidden}
+table.kv th,table.kv td{padding:9px 13px;text-align:left;border-bottom:1px solid var(--bd);vertical-align:top}
+table.kv th{background:var(--panel);color:var(--dim);font-weight:600;width:34%;font-size:12.5px}
+table.kv td{font-family:var(--mono);font-size:12.7px;color:var(--tx)}
+table.kv tr:last-child td,table.kv tr:last-child th{border-bottom:none}
+.term{background:var(--panel2);border:1px solid var(--bd);border-radius:11px;overflow:hidden;margin:14px 0}
+.term-bar{display:flex;align-items:center;gap:7px;padding:9px 13px;background:#0c1017;border-bottom:1px solid var(--bd)}
+.dot{width:11px;height:11px;border-radius:50%}.dot.r{background:#ff5f56}.dot.y{background:#ffbd2e}.dot.g{background:#27c93f}
+.term-title{margin-left:9px;color:var(--dim);font-size:12.5px;font-family:var(--mono)}
+.term pre{margin:0;padding:15px 17px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.62;color:var(--tx);white-space:pre;tab-size:2}
+.cmt{color:#5c6773}.ok{color:var(--green)}.err{color:var(--red)}.warn{color:var(--amber)}.dim{color:var(--dim)}.hl{color:var(--purple)}.in{color:var(--brt);font-weight:600}
+.note{border-left:3px solid var(--accent);background:rgba(88,166,255,.07);padding:13px 17px;border-radius:0 9px 9px 0;margin:15px 0;font-size:14px}
+.note.trap{border-color:var(--red);background:rgba(255,123,114,.08)}
+.note.warnb{border-color:var(--amber);background:rgba(210,153,34,.08)}
+.note.tip{border-color:var(--green);background:rgba(63,185,80,.07)}
+.note.block{border-color:var(--purple);background:rgba(188,140,255,.08)}
+.note .tag{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 8px;border-radius:6px;margin-bottom:7px}
+.note.trap .tag{background:rgba(255,123,114,.18);color:#ff9d96}
+.note.warnb .tag{background:rgba(210,153,34,.18);color:#e3b341}
+.note.tip .tag{background:rgba(63,185,80,.18);color:#7ee787}
+.note.block .tag{background:rgba(188,140,255,.18);color:#d8b8ff}
+.note b{color:var(--brt)}.note code{font-family:var(--mono);font-size:12.5px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:4px}
+.chartwrap{border:1px solid var(--bd);background:var(--panel2);border-radius:12px;padding:18px 18px 14px;margin:16px 0}
+.chartwrap .ct{font-family:var(--mono);font-size:12.5px;color:var(--brt);margin:0 0 4px}
+.chartwrap .cs{font-size:12.5px;color:var(--dim);margin:0 0 12px}
+.statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:14px 0}
+.stat{border:1px solid var(--bd);background:var(--panel);border-radius:11px;padding:15px 16px}
+.stat .k{font-family:var(--mono);font-size:11.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em}
+.stat .v{font-size:23px;color:var(--brt);font-weight:700;margin-top:5px;letter-spacing:-.01em}
+.stat .n{font-size:12px;color:var(--dim);margin-top:3px}
+.stat.ok .v{color:#7ee787}.stat.warn .v{color:#e3b341}.stat.bad .v{color:#ff9d96}
+.verdict{border:1px solid var(--bd);border-radius:12px;padding:16px 18px;margin:14px 0;background:var(--panel)}
+.verdict h4{margin:0 0 6px;font-size:15px;color:var(--brt);display:flex;align-items:center;gap:9px}
+.verdict h4 .b{font-family:var(--mono);font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px}
+.verdict.yes h4 .b{background:rgba(63,185,80,.18);color:#7ee787}
+.verdict.no h4 .b{background:rgba(255,123,114,.18);color:#ff9d96}
+.verdict.mixed h4 .b{background:rgba(210,153,34,.18);color:#e3b341}
+.verdict p{margin:0;font-size:13.8px;color:var(--tx)}
+footer{margin-top:46px;padding-top:20px;border-top:1px solid var(--bd);color:var(--dim);font-size:13px}
+.next{display:block;margin-top:12px;padding:12px 16px;border:1px solid var(--bd);border-radius:9px;color:var(--tx);background:var(--panel);font-size:13.6px}
+.next b{color:var(--accent)}
+@media (max-width:560px){.hero h1{font-size:23px}.term pre{font-size:11.4px}.stat .v{font-size:20px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <p class="kicker">실행 보고서 · 3·4단계 온디바이스 · Jetson AGX Orin · DETR 정확도 축</p>
+    <h1>DETR 정확도유효 INT8 — case-C 우회 후 온디바이스 COCO mAP</h1>
+    <p class="sub">앞선 <a href="stage3_jetson_orin_detr_report.html">Orin DETR 보고서</a>(커밋 <code>9ef2a58</code>)는 트랜스포머의 <b>지연</b>을 실측했지만, explicit-QDQ INT8이 <b>stage3 case C</b>(<code>shiftIsAllZeros</code>)로 <b>파싱조차 안 돼</b> DETR INT8 <b>정확도는 측정하지 못했다</b>. 이 후속은 그 빈칸을 닫는다 — 먼저 <b>대칭 재양자화</b>로 case C(+B)를 우회하고, 그 과정에서 드러난 <b>트랜스포머 고유의 두 번째 벽</b>(self-attention의 quantized-constant를 빌더가 거부)을 <code>op_types_to_quantize=[Conv,Gemm]</code>로 넘어, <b>정확도유효 INT8 엔진</b>을 처음으로 빌드한다. 그리고 COCO val 1000장에서 <b>pycocotools mAP</b>를 FP32/FP16/explicit-sym/implicit 4엔진으로 실측한다.</p>
+    <div class="chips">
+      <span class="chip"><b>2026-08-21</b></span>
+      <span class="chip"><b>Jetson AGX Orin Dev Kit (64GB)</b></span>
+      <span class="chip"><b>JetPack 6.2.1 · TRT 10.3.0</b></span>
+      <span class="chip"><b>facebook/detr-resnet-50 · COCO 1000장 · batch1</b></span>
+      <span class="chip done">case-C 우회 → explicit INT8 빌드 성공</span>
+      <span class="chip blocked">accuracy-valid INT8 mAP 0.4237→0.2383 (−43.8%)</span>
+      <span class="chip partial">stage2 폭락 재현(−42.9%) 교차확증</span>
+      <span class="chip partial">implicit 0.4073 = 무통제 레인지(정확도 미주장)</span>
+    </div>
+    <nav class="toc">
+      <a href="#s1">1 · 실행 요약</a>
+      <a href="#s2">2 · 환경·데이터·방법</a>
+      <a href="#s3">3 · 두 벽 통과 (case-C + attention 빌더)</a>
+      <a href="#s4">4 · 정확도 사다리 · mAP (헤드라인)</a>
+      <a href="#s5">5 · 지연·엔진 (sym이 이제 존재)</a>
+      <a href="#s6">6 · 판정·산출물</a>
+    </nav>
+  </header>
+
+  <!-- ================= §1 ================= -->
+  <h2 class="sec">§1 — 실행 요약</h2>
+  <section id="s1" class="step">
+    <div class="statgrid">
+      <div class="stat ok"><div class="k">case-C 우회 → explicit INT8</div><div class="v">빌드 성공</div><div class="n">9ef2a58에서 build-failed였던 엔진 · 44.69 MiB · 11.002 ms</div></div>
+      <div class="stat bad"><div class="k">accuracy-valid INT8 mAP</div><div class="v">0.2383</div><div class="n">FP32 0.4237 대비 −0.1854 (−43.8%) · mAP_s −84.6%</div></div>
+      <div class="stat warn"><div class="k">stage2 폭락 교차확증</div><div class="v">−43.8% ≈ −42.9%</div><div class="n">다른 경로(TRT/fixed/1000 vs ORT/dynamic/5000)가 같은 폭락</div></div>
+      <div class="stat ok"><div class="k">implicit --int8 mAP</div><div class="v">0.4073</div><div class="n">캘리브 없음 → 무통제 레인지(FP16보다 빠름=INT8 활성) · 정확도 미주장</div></div>
+    </div>
+    <p class="lead">과제(메모리 verbatim): <b>"DETR 대칭 재양자화 → case-C 우회 → explicit INT8 정확도유효 엔진 · on-board COCO mAP."</b> 네 발견 모두 <b>같은 1000장·같은 800×1066 전처리</b> 위 상대 관계로 읽는다.</p>
+    <table class="kv">
+      <tr><th>발견 1 · <span class="g">대칭 재양자화가 case C를 우회 → explicit INT8이 빌드된다</span></th><td>stage2 <code>detr_int8.onnx</code>(zp≠0 1085/1485 + INT32 bias DQ 149)는 <code>trtexec</code> 직접 파서에서 node 0에 죽었다(<code>shiftIsAllZeros</code>). ResNet50이 빌드됐던 바로 그 레시피 — <b>ActivationSymmetric+WeightSymmetric</b>(zp=0 → C 해소)·<b>QuantizeBias=False</b>(INT32 bias DQ 제거 → B 해소)·backbone <code>conv1</code> 제외(case D) — 로 <code>detr_int8_sym.onnx</code>(43.4 MB, <b>zp_nonzero=0·int32_bias_DQ=0</b>) 생성 → 9ef2a58에서 <b>build-failed였던 explicit INT8이 빌드된다</b>(44.69 MiB·11.002 ms).</td></tr>
+      <tr><th>발견 2 · <span class="p">트랜스포머 고유의 두 번째 벽 — quantized-constant-in-attention</span></th><td>대칭 우회 후에도 ORT 기본 op 커버리지(<b>모든 op</b> 양자화: Reshape/Transpose/Softmax/Mul/MatMul/Where/Constant…)로는 파싱은 통과하나 <b>빌더</b>가 거부: <code>qdqGraphOptimizer::matchQuantizedConstantPluginOrDQ … Quantized constant is only allowed before DQ or PLUGIN</code>. <b><code>op_types_to_quantize=[Conv,Gemm]</code></b>(가중치 보유 op만; attention matmul·LayerNorm·Softmax는 FP16 유지)로 넘는다 — 이는 <b>stage2 §4.5</b>("op 선택 mixed는 mAP를 거의 못 움직인다, 레버는 activation 입도")와 정확히 일치.</td></tr>
+      <tr><th>발견 3 · <span class="r">case-C 픽스는 <u>툴체인</u> 언락이지 <u>정확도</u> 구제가 아니다 (헤드라인)</span></th><td>정확도유효 엔진은 <b>stage2 폭락을 재현</b>: FP32 <b>0.4237</b> → INT8 <b class="r">0.2383</b>(<b class="r">−43.8%</b>), 작은 객체 mAP_s 0.2179 → <b class="r">0.0336</b>(<b class="r">−84.6%</b>). stage2(ORT-QDQ·dynamic·CUDA·5000장)는 0.4207 → 0.2402(<b>−42.9%</b>)·mAP_s <b>−77%</b> — <b>다른 두 경로가 같은 폭락</b>에 착지 → 교차확증. 레버는 sym/case-C 픽스가 아니라 <b>activation 양자화 입도</b>(SmoothQuant, stage2 §4.4가 per-tensor 격차의 59.9% 회복).</td></tr>
+      <tr><th>발견 4 · <span class="a">implicit <code>--int8</code>(0.4073)은 더 나은 INT8이 아니다 — 정확도가 nominal</span></th><td><code>trtexec --int8</code>은 <b>캘리브 캐시 없이</b> 빌드돼 <code>[W] Calibrator is not being used. Users must provide dynamic range …</code>를 찍는다 → <b>데이터 기반 activation 레인지가 없다</b>. 그래도 INT8 커널은 돈다(implicit이 FP16보다 <b>빠르고</b> 9.43&lt;13.28 ms·엔진도 <b>작다</b> 58.76&lt;81.43 MiB → INT8 활성, <b>순수 FP16 폴백이 아님</b>) — 단 <b>무통제(비-데이터) 레인지</b> 위에서다. 그래서 정확도는 <b>미주장</b>: 여기선 우연히 FP16 근처(0.4073, −3.9%)에 착지했지만 짝인 ResNet50-DLA implicit는 같은 무통제 경로에서 <b>0.017로 붕괴</b>. 정확도를 걸 수 있는 건 <b>explicit·캘리브된</b> QDQ뿐.</td></tr>
+    </table>
+    <div class="note"><span class="tag" style="background:rgba(88,166,255,.18);color:#9cd2ff">CAVEAT</span> 절대 mAP는 stage2와 <b>비교 불가</b> — fixed 800×1066 강제 리사이즈(종횡비 왜곡) vs stage2 dynamic shape, TRT vs ORT, 1000 vs 5000장. <b>상대 FP32→INT8 폭락만</b> 결과이고, 그 상대 폭락이 stage2를 교차확증한다. 1000장 서브셋(1단계 함정 0: 서브셋 mAP도 부풀려짐)·같은 번들 상대 델타만. <code>int8_implicit</code>(0.4073)은 무통제 자동 레인지라 정확도 미주장. Jetson은 NVIDIA edge이지 세 자동차 벤더(TI/Qualcomm/Renesas) 아님.</div>
+  </section>
+
+  <!-- ================= §2 ================= -->
+  <h2 class="sec">§2 — 환경·데이터·방법</h2>
+  <section id="s2" class="step">
+    <table class="kv">
+      <tr><th>보드·스택</th><td>NVIDIA <b>Jetson AGX Orin Dev Kit (64GB)</b> · JetPack <b>6.2.1</b>(L4T R36.4.3) · CUDA <b>12.6</b> · TensorRT <b>10.3.0</b> · Ampere iGPU · <code>nvpmodel MAXN</code></td></tr>
+      <tr><th>추론 러너</th><td><code>tensorrt</code> Python API + <b><code>cuda-python</code> 12.9.7</b>(<code>from cuda.bindings import runtime</code>) · <code>execute_async_v3</code> · <b>batch1</b> · 보드는 <b>raw logits/boxes를 <code>.npz</code>로 dump</b>(보드에 pycocotools 없음), 호스트가 mAP 계산</td></tr>
+      <tr><th>모델·엔진</th><td><b>facebook/detr-resnet-50</b> · 고정형 <code>detr_sim.onnx</code>(pixel_values [1,3,800,1066], opset17)에서 빌드한 4 <code>.plan</code>: <code>detr_gpu_{fp32,fp16,int8_sym,int8_implicit}.plan</code>. <b><code>int8_sym</code>은 <code>detr_int8_sym.onnx</code></b>(대칭 QInt8 QDQ, Conv+Gemm, QuantizeBias=False, conv1 제외).</td></tr>
+      <tr><th>전처리</th><td><b>강제 리사이즈 800×1066</b>(고정 ONNX 입력에 맞춤, 종횡비 미보존) + ImageNet norm — <b>호스트 캘리브와 보드 eval이 바이트 동일</b>(<code>detr_prep.py</code>).</td></tr>
+      <tr><th>평가·캘리브셋</th><td>eval = COCO val2017 <b>head 1000</b>(정렬 img_id) · 캘리브 = <b>tail 100</b>(disjoint). 후처리 = stage2 <code>s2_07</code> 수식(softmax → no-object 제거 → cxcywh×(W,H) → xywh), 각 이미지 <b>원본</b> W,H로 스케일(DETR 박스는 해상도 정규화라 입력 리사이즈가 박스 수식에 안 들어감).</td></tr>
+      <tr><th>지표</th><td><b>pycocotools bbox mAP</b>(호스트 <code>emb-ai</code> venv) — <code>instances_val2017.json</code> 대비, 평가 subset img_id로 제한.</td></tr>
+      <tr><th>SSOT</th><td><code>experiments/stage3_tensorrt/jetson_ondevice/detr_accuracy/results/detr_accuracy_summary.json</code></td></tr>
+    </table>
+  </section>
+
+  <!-- ================= §3 ================= -->
+  <h2 class="sec">§3 — 두 벽 통과: case-C 우회 + attention 빌더 벽</h2>
+  <section id="s3" class="step">
+    <p class="lead">explicit-QDQ INT8을 트랜스포머에서 빌드하려면 두 벽을 넘어야 한다. 벽 1은 3단계 ResNet50에서 이미 본 파서 벽(case C/B), 벽 2는 트랜스포머에서 처음 드러난 빌더 벽.</p>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">벽 1 — stage2 detr_int8.onnx: case C 파서 죽음 (9ef2a58에서 기록)</span></div>
+<pre><span class="err">[E] [TRT] ModelImporter.cpp:948: While parsing node number 0 [DequantizeLinear -> "/model/Tile_output_0_DequantizeLinear_Output"]:</span>
+<span class="err">[6] Assertion failed: shiftIsAllZeros(zeroPoint): TensorRT only supports symmetric quantization.</span>
+<span class="err">The zero point for the QuantizeLinear/DequantizeLinear operator must be all zeros.</span>
+<span class="dim"># zp≠0 1085/1485 Q·DQ + INT32 bias DQ 149 → 0.051s 만에 node 0에서 사망</span></pre>
+    </div>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">벽 2 — 대칭 우회 후, ORT 기본 op 커버리지: 빌더가 attention의 quantized-constant 거부</span></div>
+<pre><span class="warn"># 대칭 재양자화로 파싱은 통과(case C 해소). 그러나 빌더에서:</span>
+<span class="err">Error Code 2: Internal Error (qdqGraphOptimizer.cpp::matchQuantizedConstantPluginOrDQ::4055</span>
+<span class="err">  .../encoder/layers.0/self_attn/Constant_3_output_0_quantized:</span>
+<span class="err">  Quantized constant is only allowed before DQ or PLUGIN_V2 or kPLUGIN_V3 node)</span>
+<span class="cmt"># 원인: ORT 기본 quantize_static이 모든 op를 양자화(Reshape/Transpose/Softmax/Mul/MatMul/Where/Constant…)</span>
+<span class="ok"># 픽스: op_types_to_quantize=["Conv","Gemm"] — 가중치 보유 op만. attention/LayerNorm/Softmax는 FP16 유지</span>
+<span class="ok"># == stage2 §4.5: "op 선택 mixed는 mAP를 거의 못 움직인다, 레버는 activation 입도"</span></pre>
+    </div>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">두 벽 통과 → detr_int8_sym.onnx 검증 + 엔진 빌드 PASSED</span></div>
+<pre><span class="ok">VERIFY  zp_total=688  zp_nonzero=0  int32_bias_DQ=0</span>
+<span class="ok">SYM_EXPORT_OK  (symmetric, no bias DQ — mirrors resnet50_int8_qdq.onnx)</span>  <span class="dim"># 43.4 MB</span>
+<span class="in">&&&& PASSED TensorRT.trtexec [TensorRT v100300] # trtexec --onnx=onnx/detr_int8_sym.onnx --int8 --fp16 …</span>
+<span class="dim">-rw-rw-r-- 1 katech katech 46859132  detr_gpu_int8_sym.plan</span>   <span class="ok"># 44.69 MiB · GPU Compute median 11.002 ms</span></pre>
+    </div>
+    <div class="note tip"><span class="tag">핵심</span> 두 벽을 넘어 <b>정확도유효 explicit-QDQ INT8 엔진이 처음으로 존재</b>한다(9ef2a58에선 <code>gpu_int8_explicit</code>가 build-failed였음). 이것은 <b>툴체인 언락</b> — 다음 질문은 "이 엔진이 <b>정확도</b>도 살리는가"이고, §4가 답한다.</div>
+  </section>
+
+  <!-- ================= §4 ================= -->
+  <h2 class="sec">§4 — 정확도 사다리 · COCO mAP (헤드라인)</h2>
+  <section id="s4" class="step">
+    <p class="lead">같은 1000장·같은 800×1066 전처리로 4엔진 pycocotools bbox mAP. accuracy-valid = FP32·FP16·explicit-sym INT8; <b>implicit은 캘리브 없는 자동 레인지</b>(정확도 미주장)라 회색.</p>
+    <table class="dt">
+      <thead><tr><th>엔진</th><th>정밀도</th><th>mAP</th><th>mAP50</th><th>mAP_s</th><th>mAP_l</th><th>vs FP32</th><th>정확도</th></tr></thead>
+      <tbody>
+        <tr class="base"><td>detr_gpu_fp32</td><td>iGPU FP32</td><td>0.4237</td><td>0.6226</td><td>0.2179</td><td>0.5955</td><td>—</td><td class="d">valid</td></tr>
+        <tr><td>detr_gpu_fp16</td><td>iGPU FP16</td><td>0.4243</td><td>0.6228</td><td>0.2207</td><td>0.5945</td><td class="g">+0.0006</td><td class="d">valid (무손실)</td></tr>
+        <tr class="lo"><td>detr_gpu_int8_sym</td><td><b>iGPU INT8 (explicit-sym)</b></td><td><b>0.2383</b></td><td>0.4681</td><td><b class="r">0.0336</b></td><td>0.4438</td><td class="r">−0.1854 (−43.8%)</td><td class="a"><b>valid</b></td></tr>
+        <tr class="grey"><td>detr_gpu_int8_implicit</td><td>iGPU INT8 (implicit)</td><td>0.4073</td><td>0.6089</td><td>0.1892</td><td>0.5856</td><td class="a">−0.0164 (−3.9%)</td><td>미주장(무통제 레인지)</td></tr>
+        <tr class="lo"><td class="d">(stage2 참조)</td><td>ORT-QDQ INT8 dynamic·5000장</td><td>0.2402</td><td class="d">—</td><td class="d">−77%</td><td class="d">—</td><td class="r">−42.9%</td><td class="d">§4.5 · 교차확증</td></tr>
+      </tbody>
+    </table>
+    <div class="chartwrap">
+      <p class="ct">COCO bbox mAP — accuracy-valid 4엔진 + stage2 참조 (길수록 정확)</p>
+      <p class="cs">막대폭 = mAP × 1060px. 파랑 = FP32 기준선, 초록 = FP16(무손실), <span style="color:#ff9d96">빨강 = accuracy-valid INT8(explicit-sym) — 폭락</span>, 회색 = implicit(정확도 미주장 · 무통제 레인지), 점선 = stage2 INT8 폭락값(다른 경로, 같은 착지).</p>
+      <svg viewBox="0 0 820 260" width="100%" role="img" aria-label="COCO mAP 막대 그래프">
+        <line x1="0" y1="230" x2="530" y2="230" stroke="#242b38" stroke-width="1"/>
+        <line x1="106" y1="14" x2="106" y2="230" stroke="#242b38" stroke-width="1" stroke-dasharray="3 3"/>
+        <line x1="212" y1="14" x2="212" y2="230" stroke="#242b38" stroke-width="1" stroke-dasharray="3 3"/>
+        <line x1="318" y1="14" x2="318" y2="230" stroke="#242b38" stroke-width="1" stroke-dasharray="3 3"/>
+        <line x1="424" y1="14" x2="424" y2="230" stroke="#242b38" stroke-width="1" stroke-dasharray="3 3"/>
+        <text x="106" y="246" fill="#5c6773" font-size="10" font-family="monospace" text-anchor="middle">0.10</text>
+        <text x="212" y="246" fill="#5c6773" font-size="10" font-family="monospace" text-anchor="middle">0.20</text>
+        <text x="318" y="246" fill="#5c6773" font-size="10" font-family="monospace" text-anchor="middle">0.30</text>
+        <text x="424" y="246" fill="#5c6773" font-size="10" font-family="monospace" text-anchor="middle">0.40</text>
+        <g font-family="monospace" font-size="12">
+          <rect x="0" y="20" width="449.12" height="26" rx="4" fill="#58a6ff" opacity="0.85"/>
+          <text x="455" y="38" fill="#c9d1d9">iGPU FP32 · 0.4237</text>
+          <rect x="0" y="52" width="449.76" height="26" rx="4" fill="#3fb950" opacity="0.6"/>
+          <text x="456" y="70" fill="#c9d1d9">iGPU FP16 · 0.4243 (무손실)</text>
+          <rect x="0" y="84" width="252.60" height="26" rx="4" fill="#ff7b72"/>
+          <text x="259" y="102" fill="#ff9d96">iGPU INT8 explicit-sym · 0.2383 — accuracy-valid, 폭락 −43.8%</text>
+          <rect x="0" y="116" width="431.74" height="26" rx="4" fill="#8b949e" opacity="0.5"/>
+          <text x="438" y="134" fill="#8b949e">iGPU INT8 implicit · 0.4073 — 정확도 미주장(무통제 레인지)</text>
+          <rect x="0" y="150" width="254.61" height="20" rx="3" fill="none" stroke="#ff7b72" stroke-width="1.5" stroke-dasharray="4 3"/>
+          <text x="261" y="165" fill="#8b949e">stage2 ORT-QDQ INT8 · 0.2402 — 다른 경로, 같은 착지(교차확증)</text>
+        </g>
+        <text x="0" y="200" fill="#5c6773" font-size="11" font-family="monospace">mAP_s(작은 객체): FP32 0.2179 → explicit-sym 0.0336  (−84.6%)  ← 폭락이 작은 객체에 집중</text>
+      </svg>
+    </div>
+    <div class="note trap"><span class="tag">헤드라인</span> 대칭 재양자화는 explicit INT8을 <b>빌드 가능</b>하게 만들었지만(9ef2a58 build-failed → 빌드됨), accuracy-valid 엔진은 <b>stage2 폭락을 재현</b>한다 — <b>0.4237 → 0.2383(−43.8%)</b>, mAP_s <b>−84.6%</b>. 다른 경로(TRT·fixed·1000)와 stage2(ORT·dynamic·5000, −42.9%·mAP_s −77%)가 <b>같은 폭락에 착지</b>하니 결과는 견고하다. <b>case-C 픽스는 툴체인 언락이지 정확도 구제가 아니다</b> — 레버는 activation 입도(SmoothQuant, <a href="../study_guide/04_transformer_quantization.md#44-우회-2--smoothquant-적용-activation-outlier-완화">stage2 §4.4</a>).</div>
+    <div class="note"><span class="tag" style="background:rgba(88,166,255,.18);color:#9cd2ff">부수 · 발산 지표는 약한 프록시</span> FP32 대비 raw 발산: FP16 logits_corr <b>0.99991</b>/boxes_corr 0.99944(거의 동일), sym <b>0.98236</b>/0.94532, implicit <b>0.98038</b>/0.94062. sym과 implicit의 전역 corr이 <b>거의 같은데</b>(0.982 vs 0.980) mAP는 0.17 벌어진다 — 100×92 logits 전역 Pearson corr은 no-object logit 차원이 지배해 <b>약한 프록시</b>다. <b>pycocotools mAP가 권위 지표</b>.</div>
+  </section>
+
+  <!-- ================= §5 ================= -->
+  <h2 class="sec">§5 — 지연·엔진 (이제 sym 엔진이 존재한다)</h2>
+  <section id="s5" class="step">
+    <p class="lead">FP32/FP16/implicit 지연·엔진 바이트는 <b>커밋된 9ef2a58 SSOT</b>(<code>detr/results/detr_summary.json</code>, 동일 플래그 <code>--warmUp=2000 --duration=10 --iterations=200 --avgRuns=100</code>). <b>sym은 이번 세션 빌드</b>라 1:1 비교 가능.</p>
+    <table class="dt">
+      <thead><tr><th>엔진</th><th>지연 (GPU-compute median)</th><th>vs FP32</th><th>vs FP16</th><th>엔진</th><th>mAP</th></tr></thead>
+      <tbody>
+        <tr class="base"><td>iGPU FP32</td><td>25.8496 ms</td><td>×1.00</td><td class="d">—</td><td>160.12 MiB</td><td>0.4237</td></tr>
+        <tr><td>iGPU FP16</td><td>13.2754 ms</td><td class="g">×1.947</td><td class="d">×1.00</td><td>81.43 MiB</td><td>0.4243</td></tr>
+        <tr class="hi"><td><b>iGPU INT8 explicit-sym</b></td><td><b>11.002 ms</b></td><td class="g">×2.350</td><td class="g">×1.207</td><td>44.69 MiB</td><td class="r">0.2383</td></tr>
+        <tr class="grey"><td>iGPU INT8 implicit</td><td>9.42871 ms</td><td>×2.742</td><td>×1.408</td><td>58.76 MiB</td><td>0.4073</td></tr>
+      </tbody>
+    </table>
+    <div class="chartwrap">
+      <p class="ct">지연 — batch1 GPU Compute median (짧을수록 빠름)</p>
+      <p class="cs">막대폭 = 지연(ms) × 18.57px. explicit-sym(초록)은 FP16보다 ×1.207 빠르지만 implicit(회색)보다 느리다 — sym은 Conv+Gemm만 INT8, implicit은 무통제 레인지로 더 많은 층을 INT8(캘리브 없어 정확도 미주장).</p>
+      <svg viewBox="0 0 720 168" width="100%" role="img" aria-label="지연 막대 그래프">
+        <line x1="0" y1="150" x2="500" y2="150" stroke="#242b38" stroke-width="1"/>
+        <line x1="185.7" y1="8" x2="185.7" y2="150" stroke="#242b38" stroke-width="1" stroke-dasharray="3 3"/>
+        <line x1="371.4" y1="8" x2="371.4" y2="150" stroke="#242b38" stroke-width="1" stroke-dasharray="3 3"/>
+        <text x="185.7" y="164" fill="#5c6773" font-size="10" font-family="monospace" text-anchor="middle">10ms</text>
+        <text x="371.4" y="164" fill="#5c6773" font-size="10" font-family="monospace" text-anchor="middle">20ms</text>
+        <g font-family="monospace" font-size="12">
+          <rect x="0" y="14" width="480.03" height="24" rx="4" fill="#58a6ff" opacity="0.85"/>
+          <text x="486" y="31" fill="#c9d1d9">FP32 · 25.85 ms</text>
+          <rect x="0" y="46" width="246.52" height="24" rx="4" fill="#3fb950" opacity="0.6"/>
+          <text x="253" y="63" fill="#c9d1d9">FP16 · 13.28 ms ×1.95</text>
+          <rect x="0" y="78" width="204.31" height="24" rx="4" fill="#3fb950"/>
+          <text x="211" y="95" fill="#7ee787">INT8 explicit-sym · 11.00 ms ×2.35 (accuracy-valid)</text>
+          <rect x="0" y="110" width="175.09" height="24" rx="4" fill="#8b949e" opacity="0.55"/>
+          <text x="182" y="127" fill="#8b949e">INT8 implicit · 9.43 ms ×2.74 (정확도 미주장)</text>
+        </g>
+      </svg>
+    </div>
+    <div class="note"><span class="tag" style="background:rgba(88,166,255,.18);color:#9cd2ff">읽는 법</span> 지연 순서 implicit(9.43) &lt; sym(11.00) &lt; FP16(13.28) &lt; FP32(25.85). sym이 implicit보다 느린 건 <b>sym은 Conv+Gemm만 INT8</b>(결정적 QDQ 배치)이고 implicit은 무통제 레인지로 더 많은 층을 INT8로 깔기 때문 — 단 implicit의 그 속도는 <b>정확도 미주장</b>과 맞바꾼 것이다(§4). <b>바로 이 "FP16보다 빠름"이 implicit이 순수 FP16 폴백이 아님을 증명</b>한다(INT8 커널이 실제로 돎). 엔진 크기도 sym(44.69) &lt; implicit(58.76) &lt; FP16(81.43).</div>
+  </section>
+
+  <!-- ================= §6 ================= -->
+  <h2 class="sec">§6 — 판정·산출물</h2>
+  <section id="s6" class="step">
+    <div class="verdict yes"><h4><span class="b">YES</span> 대칭 재양자화로 case C(+B)와 attention 빌더 벽을 넘어 정확도유효 explicit INT8 엔진을 빌드했다</h4><p>9ef2a58에서 build-failed였던 <code>gpu_int8_explicit</code>가 <code>detr_int8_sym.onnx</code>(zp_nonzero=0·int32_bias_DQ=0) + <code>op_types_to_quantize=[Conv,Gemm]</code>로 <b>빌드된다</b>(44.69 MiB·11.002 ms). 툴체인 언락 달성.</p></div>
+    <div class="verdict no"><h4><span class="b">NO</span> 그러나 case-C 픽스는 정확도를 구제하지 않는다 — DETR INT8은 여전히 폭락한다</h4><p>accuracy-valid mAP 0.4237 → <b>0.2383(−43.8%)</b>, mAP_s <b>−84.6%</b>. stage2(−42.9%·mAP_s −77%)를 <b>다른 경로에서 재현</b>. 레버는 op 선택/대칭 여부가 아니라 <b>activation 양자화 입도</b>(SmoothQuant, stage2 §4.4).</p></div>
+    <div class="verdict mixed"><h4><span class="b">CAVEAT</span> implicit <code>--int8</code>(0.4073)은 정확도 미주장 — 캘리브 없음 → 무통제 레인지</h4><p>TRT 로그 <code>Calibrator is not being used</code>가 직접 증거. INT8 커널은 돌지만(FP16보다 빠름=순수 FP16 폴백 아님) 레인지가 데이터 기반이 아니라 정확도를 걸 수 없다 — 여기선 FP16 근처(0.4073)지만 짝인 ResNet50-DLA implicit는 0.017 붕괴. 무통제 경로는 어느 방향으로든 정확도를 보장하지 못한다.</p></div>
+    <table class="kv">
+      <tr><th>실측 리포트</th><td><code>logs/stage3_jetson_orin_detr_accuracy_report.html</code> (이 문서)</td></tr>
+      <tr><th>SSOT JSON</th><td><code>experiments/stage3_tensorrt/jetson_ondevice/detr_accuracy/results/detr_accuracy_summary.json</code> · <code>detr_map_summary.json</code> · <code>orin_detr_meta.json</code></td></tr>
+      <tr><th>raw 산출물</th><td><code>results/detr_{fp32,fp16,int8_sym,int8_implicit}_raw.npz</code>(엔진별 raw logits/boxes) · <code>raw/int8_sym_build_PASSED.txt</code> · <code>raw/implicit_no_calibrator_warning.txt</code></td></tr>
+      <tr><th>스크립트</th><td><code>scripts/</code>: <code>detr_prep.py</code>(공유 전처리) · <code>detr_sym_export.py</code>(대칭 재양자화) · <code>prep_coco_sub.py</code> · <code>orin_detr_map.py</code>(보드 dumper) · <code>analyze_detr_map.py</code>(호스트 mAP) · <code>build_summary.py</code>(SSOT)</td></tr>
+      <tr><th>가이드 반영</th><td><a href="../study_guide/05_tensorrt.md">study_guide/05_tensorrt.md</a> §2.3 🔬 콜아웃(순수 삽입)</td></tr>
+      <tr><th>교차링크</th><td>지연 축 <a href="stage3_jetson_orin_detr_report.html">DETR 보고서(9ef2a58)</a> · ResNet50 정확도 축 <a href="stage3_jetson_orin_accuracy_report.html">정확도 보고서</a> · activation 입도 레버 stage2 §4.4</td></tr>
+    </table>
+    <div class="note tip"><span class="tag">과제 완료</span> 메모리 verbatim <b>"DETR 대칭 재양자화 → case-C 우회 → explicit INT8 정확도유효 엔진 · on-board COCO mAP"</b> 4단계 모두 관통 — DETR이 지연 축에서 달고 있던 <b>"정확도 미측정" 캐비앗을 닫았다</b>.</div>
+    <footer>
+      3·4단계 온디바이스 실측 · Jetson AGX Orin Dev Kit (64GB) · JetPack 6.2.1 · TensorRT 10.3.0 · <code>nvpmodel MAXN</code><br>
+      절대 mAP·지연은 fixed 800×1066·batch1·1000장 서브셋 기준 상대 관계만 유효 · implicit INT8은 캘리브 없어 정확도 미주장 · Jetson은 NVIDIA edge이지 TI/Qualcomm/Renesas 아님
+    </footer>
+  </section>
+</div>
+</body>
+</html>

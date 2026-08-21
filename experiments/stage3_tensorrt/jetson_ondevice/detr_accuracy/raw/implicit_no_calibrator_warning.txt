@@ -1,0 +1,2 @@
+[08/21/2026-16:50:55] [I] Finished parsing network model. Parse time: 0.150487
+[08/21/2026-16:50:55] [W] [TRT] Calibrator is not being used. Users must provide dynamic range for all tensors that are not Int32 or Bool.

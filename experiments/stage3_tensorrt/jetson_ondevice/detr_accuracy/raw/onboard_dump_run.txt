@@ -1,0 +1,35 @@
+=== TERMINAL STATE REACHED ===
+  600/1000
+  800/1000
+  1000/1000
+[gpu_fp16] detr_gpu_fp16.plan  (accuracy_valid=True)
+[08/21/2026-16:44:03] [TRT] [W] Using default stream in enqueueV3() may lead to performance issues due to additional calls to cudaStreamSynchronize() by TensorRT to ensure correct synchronization. Please use non-default stream instead.
+  200/1000
+  400/1000
+  600/1000
+  800/1000
+  1000/1000
+[gpu_int8_sym] detr_gpu_int8_sym.plan  (accuracy_valid=True)
+[08/21/2026-16:45:18] [TRT] [W] Using default stream in enqueueV3() may lead to performance issues due to additional calls to cudaStreamSynchronize() by TensorRT to ensure correct synchronization. Please use non-default stream instead.
+  200/1000
+  400/1000
+  600/1000
+  800/1000
+  1000/1000
+[gpu_int8_implicit] detr_gpu_int8_implicit.plan  (accuracy_valid=False)
+[08/21/2026-16:46:31] [TRT] [W] Using default stream in enqueueV3() may lead to performance issues due to additional calls to cudaStreamSynchronize() by TensorRT to ensure correct synchronization. Please use non-default stream instead.
+  200/1000
+  400/1000
+  600/1000
+  800/1000
+  1000/1000
+done -> /home/katech/orin_bench/detr_accuracy
+--- npz ---
+total 85068
+-rw-rw-r-- 1 katech katech 20197684  8월 21 16:45 detr_gpu_fp16_raw.npz
+-rw-rw-r-- 1 katech katech 34466564  8월 21 16:44 detr_gpu_fp32_raw.npz
+-rw-rw-r-- 1 katech katech 20197835  8월 21 16:47 detr_gpu_int8_implicit_raw.npz
+-rw-rw-r-- 1 katech katech 12233974  8월 21 16:46 detr_gpu_int8_sym_raw.npz
+-rw-rw-r-- 1 katech katech     1347  8월 21 16:47 orin_detr_meta.json
+
+[exited with code 0]

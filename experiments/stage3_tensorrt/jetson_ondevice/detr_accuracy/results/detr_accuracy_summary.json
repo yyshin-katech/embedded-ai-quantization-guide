@@ -1,0 +1,127 @@
+{
+  "board": "NVIDIA Jetson AGX Orin Developer Kit (64GB), JetPack 6.2.1, TensorRT 10.3.0, MAXN",
+  "task": "DETR (facebook/detr-resnet-50) accuracy-valid explicit-QDQ INT8 on-device — close the '정확도 미측정' caveat the stage3 DETR latency run (9ef2a58) carried",
+  "eval": {
+    "dataset": "COCO val2017 head 1000 (sorted img_ids)",
+    "n": 1000,
+    "preprocess": "force-resize 800x1066 (fixed ONNX shape) + ImageNet norm",
+    "metric": "pycocotools bbox mAP (host); board dumps raw logits/boxes"
+  },
+  "case_c_bypass": {
+    "stage3_9ef2a58_explicit_result": "BUILD FAILED — trtexec direct parser, node 0: 'Assertion failed: shiftIsAllZeros(zeroPoint)' (case C, zp!=0 1085/1485 + 149 INT32 bias DQ)",
+    "fix_1_symmetric": "ActivationSymmetric+WeightSymmetric (zp=0 everywhere) clears case C; QuantizeBias=False clears case B (INT32 bias DQ)",
+    "fix_2_op_restrict": "op_types_to_quantize=[Conv,Gemm] — default (quantize every op) parsed but the BUILDER rejected quantized-constant-in-self-attn (qdqGraphOptimizer::matchQuantizedConstantPluginOrDQ): 'Quantized constant is only allowed before DQ or PLUGIN_V2 or kPLUGIN_V3'",
+    "exclude": "backbone conv1 (case D stem 3ch7x7, parse-ok/build-fail Error10)",
+    "onnx": "detr_int8_sym.onnx",
+    "onnx_bytes": 43408891,
+    "verify": {
+      "zp_total": 688,
+      "zp_nonzero": 0,
+      "int32_bias_DQ": 0
+    },
+    "result": "explicit-QDQ INT8 now BUILDS (44.69 MiB engine, 11.002 ms) — the case-C fix is a TOOLCHAIN unlock (buildable), tested next for whether it is also an ACCURACY unlock"
+  },
+  "implicit_mechanism": {
+    "trt_log": "Calibrator is not being used. Users must provide dynamic range for all tensors that are not Int32 or Bool.",
+    "meaning": "--int8 without a calibration cache -> TRT has no data-derived activation ranges. It still runs INT8 kernels (the implicit engine is FASTER than FP16, 9.43<13.28 ms, and SMALLER, 58.76<81.43 MiB — so INT8 kernels ARE active; it is NOT a pure FP16 fallback), but on UNCONTROLLED (non-data-derived) ranges. Therefore its accuracy is NOT claimed: here it happens to land near FP16 (0.4073, −3.9%), but the companion ResNet50-DLA implicit collapsed to 0.017 on the same uncontrolled path. Only an explicit, calibrated QDQ engine gives an accuracy you can stand behind."
+  },
+  "engines": {
+    "gpu_fp32": {
+      "label": "FP32",
+      "latency_ms": 25.8496,
+      "engine_bytes": 167898412,
+      "engine_mib": 160.12,
+      "mAP": 0.4237,
+      "mAP50": 0.6226,
+      "mAP75": 0.4437,
+      "mAP_s": 0.2179,
+      "mAP_m": 0.4621,
+      "mAP_l": 0.5955,
+      "accuracy_valid": true
+    },
+    "gpu_fp16": {
+      "label": "FP16",
+      "latency_ms": 13.2754,
+      "engine_bytes": 85388932,
+      "engine_mib": 81.43,
+      "mAP": 0.4243,
+      "mAP50": 0.6228,
+      "mAP75": 0.4459,
+      "mAP_s": 0.2207,
+      "mAP_m": 0.4625,
+      "mAP_l": 0.5945,
+      "accuracy_valid": true
+    },
+    "gpu_int8_sym": {
+      "label": "INT8 explicit-sym (accuracy-valid)",
+      "latency_ms": 11.002,
+      "engine_bytes": 46859132,
+      "engine_mib": 44.69,
+      "mAP": 0.2383,
+      "mAP50": 0.4681,
+      "mAP75": 0.2196,
+      "mAP_s": 0.0336,
+      "mAP_m": 0.2316,
+      "mAP_l": 0.4438,
+      "accuracy_valid": true
+    },
+    "gpu_int8_implicit": {
+      "label": "INT8 implicit --int8 (auto-range, accuracy NOT claimed)",
+      "latency_ms": 9.42871,
+      "engine_bytes": 61614444,
+      "engine_mib": 58.76,
+      "mAP": 0.4073,
+      "mAP50": 0.6089,
+      "mAP75": 0.4255,
+      "mAP_s": 0.1892,
+      "mAP_m": 0.4466,
+      "mAP_l": 0.5856,
+      "accuracy_valid": false
+    }
+  },
+  "derived": {
+    "fp16_speedup_vs_fp32": 1.947,
+    "sym_speedup_vs_fp32": 2.35,
+    "implicit_speedup_vs_fp32": 2.742,
+    "sym_vs_fp16_speedup": 1.207,
+    "implicit_vs_sym_speedup": 1.167,
+    "sym_map_drop_abs": -0.1854,
+    "sym_map_drop_pct": -43.8,
+    "sym_maps_drop_pct": -84.6,
+    "implicit_map_drop_abs": -0.0164,
+    "implicit_map_drop_pct": -3.9,
+    "fp16_map_delta_abs": 0.0006
+  },
+  "divergence_vs_fp32": {
+    "gpu_fp16": {
+      "logits_corr": 0.999915,
+      "logits_absmax": 9.9135,
+      "boxes_corr": 0.999438,
+      "boxes_absmax": 0.9102
+    },
+    "gpu_int8_sym": {
+      "logits_corr": 0.982359,
+      "logits_absmax": 17.4859,
+      "boxes_corr": 0.945321,
+      "boxes_absmax": 0.9986
+    },
+    "gpu_int8_implicit": {
+      "logits_corr": 0.980379,
+      "logits_absmax": 18.3296,
+      "boxes_corr": 0.940616,
+      "boxes_absmax": 0.9982
+    }
+  },
+  "divergence_note": "global Pearson corr over all 100x92 logits is dominated by the no-object logit dimension, so it is nearly identical for sym (0.982) and implicit (0.980) despite a 0.17 mAP gap — a weak proxy. pycocotools mAP is the authoritative metric.",
+  "stage2_crossval": {
+    "stage2_fp32": 0.4207,
+    "stage2_int8": 0.2402,
+    "stage2_drop_pct": -42.9,
+    "stage2_maps_drop_pct": -77,
+    "stage2_path": "ORT-QDQ INT8, DYNAMIC shape, CUDA EP, COCO val 5000 (commit 41dc49e / stage2 §4.5)",
+    "onboard_drop_pct": -43.8,
+    "onboard_maps_drop_pct": -84.6,
+    "verdict": "on-device explicit-sym INT8 (TRT, fixed shape, 1000 img) reproduces the stage2 collapse (−43.8% vs −42.9%; mAP_s −84.6% vs −77%) — cross-validates. Absolute mAP is NOT comparable (fixed-vs-dynamic shape, TRT-vs-ORT, 1000-vs-5000 img); only the RELATIVE collapse is."
+  },
+  "headline": "The case-C symmetric re-export makes explicit-QDQ INT8 BUILDABLE on trtexec (was build-failed in 9ef2a58), but the accuracy-valid engine REPRODUCES the stage2 DETR collapse (0.4237→0.2383, −43.8%; mAP_s −84.6%). The fix is a toolchain unlock, NOT an accuracy rescue — the lever remains activation granularity (SmoothQuant, §4.4), exactly as stage2 §4.5 concluded."
+}

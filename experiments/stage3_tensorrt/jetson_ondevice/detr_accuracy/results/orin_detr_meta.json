@@ -1,0 +1,63 @@
+{
+  "board": "NVIDIA Jetson AGX Orin Developer Kit (64GB)",
+  "trt": "10.3.0",
+  "cuda_python": "12.9.7",
+  "nvpmodel": "MAXN",
+  "n_eval": 1000,
+  "preprocess": "force-resize 800x1066, ImageNet norm (detr_prep.py)",
+  "engines": [
+    {
+      "tag": "gpu_fp32",
+      "engine": "detr_gpu_fp32.plan",
+      "accuracy_valid": true,
+      "in_shape": [
+        1,
+        3,
+        800,
+        1066
+      ],
+      "in_dtype": "float32",
+      "n": 1000
+    },
+    {
+      "tag": "gpu_fp16",
+      "engine": "detr_gpu_fp16.plan",
+      "accuracy_valid": true,
+      "in_shape": [
+        1,
+        3,
+        800,
+        1066
+      ],
+      "in_dtype": "float32",
+      "n": 1000
+    },
+    {
+      "tag": "gpu_int8_sym",
+      "engine": "detr_gpu_int8_sym.plan",
+      "accuracy_valid": true,
+      "in_shape": [
+        1,
+        3,
+        800,
+        1066
+      ],
+      "in_dtype": "float32",
+      "n": 1000
+    },
+    {
+      "tag": "gpu_int8_implicit",
+      "engine": "detr_gpu_int8_implicit.plan",
+      "accuracy_valid": false,
+      "in_shape": [
+        1,
+        3,
+        800,
+        1066
+      ],
+      "in_dtype": "float32",
+      "n": 1000
+    }
+  ],
+  "note": "int8_sym built from detr_int8_sym.onnx (symmetric QInt8 QDQ, Conv+Gemm, QuantizeBias=False, exclude backbone conv1); int8_implicit = trtexec --int8 auto-range"
+}

@@ -1,0 +1,58 @@
+{
+  "gpu_fp32": {
+    "mAP": 0.4237,
+    "mAP50": 0.6226,
+    "mAP75": 0.4437,
+    "mAP_s": 0.2179,
+    "mAP_m": 0.4621,
+    "mAP_l": 0.5955,
+    "accuracy_valid": true
+  },
+  "gpu_fp16": {
+    "mAP": 0.4243,
+    "mAP50": 0.6228,
+    "mAP75": 0.4459,
+    "mAP_s": 0.2207,
+    "mAP_m": 0.4625,
+    "mAP_l": 0.5945,
+    "accuracy_valid": true
+  },
+  "gpu_int8_sym": {
+    "mAP": 0.2383,
+    "mAP50": 0.4681,
+    "mAP75": 0.2196,
+    "mAP_s": 0.0336,
+    "mAP_m": 0.2316,
+    "mAP_l": 0.4438,
+    "accuracy_valid": true
+  },
+  "gpu_int8_implicit": {
+    "mAP": 0.4073,
+    "mAP50": 0.6089,
+    "mAP75": 0.4255,
+    "mAP_s": 0.1892,
+    "mAP_m": 0.4466,
+    "mAP_l": 0.5856,
+    "accuracy_valid": false
+  },
+  "_divergence_vs_fp32": {
+    "gpu_fp16": {
+      "logits_corr": 0.999915,
+      "logits_absmax": 9.9135,
+      "boxes_corr": 0.999438,
+      "boxes_absmax": 0.9102
+    },
+    "gpu_int8_sym": {
+      "logits_corr": 0.982359,
+      "logits_absmax": 17.4859,
+      "boxes_corr": 0.945321,
+      "boxes_absmax": 0.9986
+    },
+    "gpu_int8_implicit": {
+      "logits_corr": 0.980379,
+      "logits_absmax": 18.3296,
+      "boxes_corr": 0.940616,
+      "boxes_absmax": 0.9982
+    }
+  }
+}

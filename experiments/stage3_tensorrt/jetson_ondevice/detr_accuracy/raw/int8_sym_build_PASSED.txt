@@ -1,0 +1,8 @@
+[08/21/2026-16:39:30] [I] Throughput: 90.7635 qps
+[08/21/2026-16:39:30] [I] GPU Compute Time: min = 10.9648 ms, max = 11.0503 ms, mean = 11.0019 ms, median = 11.002 ms, percentile(90%) = 11.0186 ms, percentile(95%) = 11.0225 ms, percentile(99%) = 11.0303 ms
+[08/21/2026-16:39:30] [I] Total GPU Compute Time: 10.0227 s
+&&&& PASSED TensorRT.trtexec [TensorRT v100300] # /usr/src/tensorrt/bin/trtexec --onnx=onnx/detr_int8_sym.onnx --int8 --fp16 --saveEngine=engines/detr_gpu_int8_sym.plan --warmUp=2000 --duration=10 --iterations=200 --avgRuns=100
+--- engine file ---
+-rw-rw-r-- 1 katech katech 46859132  8월 21 16:39 /home/katech/orin_bench/engines/detr_gpu_int8_sym.plan
+
+[exited with code 0]
