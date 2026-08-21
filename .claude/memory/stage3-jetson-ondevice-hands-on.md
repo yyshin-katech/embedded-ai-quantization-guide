@@ -1,6 +1,6 @@
 ---
 name: stage3-jetson-ondevice-hands-on
-description: "3·4단계 Jetson AGX Orin 온디바이스 실측(2026-08-20, 데이터 커밋 00fd97d·문서 1a8f073 푸시완료, ResNet50): 실 trtexec 실존(stage3/5 'trtexec 부재→polygraphy' 반전)·DLA 실측(stage3 'DLA 범위 밖' 해소). DLA INT8=성능/와트 챔피언 51.29 inf/s/W(iGPU INT8의 ×1.547·전력 절반)·DLA는 INT8 전용기(FP16 13.87× 느림)·오프로드 GR3D 95%→3~16%로 증명·DLA 후보 2/2·iGPU INT8≈FP16 0.984. DLA INT8 정확도 미주장(--int8 암묵). 후속(2026-08-21, 커밋 c03c174 푸시완료): iGPU∥DLA 동시부하 = GPU-폴백 직렬화로 공짜 병렬 아님(iGPU+DLA0 60.8%·DLA 27% 붕괴, DLA0+DLA1 87.0%가 최적 66.07 inf/s/W)·nvpmodel MAXN→50W 리더 교차(iGPU -29.4% vs DLA -2.9% → 50W서 DLA +8.8%)"
+description: "3·4단계 Jetson AGX Orin 온디바이스 실측(2026-08-20, 데이터 커밋 00fd97d·문서 1a8f073 푸시완료, ResNet50): 실 trtexec 실존(stage3/5 'trtexec 부재→polygraphy' 반전)·DLA 실측(stage3 'DLA 범위 밖' 해소). DLA INT8=성능/와트 챔피언 51.29 inf/s/W(iGPU INT8의 ×1.547·전력 절반)·DLA는 INT8 전용기(FP16 13.87× 느림)·오프로드 GR3D 95%→3~16%로 증명·DLA 후보 2/2·iGPU INT8≈FP16 0.984. DLA INT8 정확도 미주장(--int8 암묵). 후속(2026-08-21, 커밋 c03c174 푸시완료): iGPU∥DLA 동시부하 = GPU-폴백 직렬화로 공짜 병렬 아님(iGPU+DLA0 60.8%·DLA 27% 붕괴, DLA0+DLA1 87.0%가 최적 66.07 inf/s/W)·nvpmodel MAXN→50W 리더 교차(iGPU -29.4% vs DLA -2.9% → 50W서 DLA +8.8%). 후속2(2026-08-21, 커밋 9ef2a58 푸시완료): 새 모델 축 DETR — 무거운 트랜스포머는 iGPU INT8 이득 부활(INT8/FP16=0.710 vs ResNet50 0.984), explicit QDQ INT8 파싱불가(3단계 case C 재현), DLA 트랜스포머 부적합(폴백 404/16조각 → iGPU FP16의 30× 느림, DLA=CNN 가속기). tech-reviewer PASS 🔴0"
 metadata: 
   node_type: memory
   type: project
@@ -79,3 +79,33 @@ SSOT=`concurrent_power_summary.json`(6 conc JSON + power_sweep.json에서 파생
 7.59 W·peak 42.37 W 포함). ④ iGPU+DLA 동시부하는 **위 후속 실측에서 측정 완료**(GPU-폴백 직렬화 결론은 ResNet50
 GlobalAveragePool 모델 의존). ⑤ Jetson은 **NVIDIA edge**이지 세 자동차 벤더(TI/Qualcomm/Renesas) NPU 아님 —
 [[stage4-qualcomm-aihub-hands-on]]가 Qualcomm HTP 담당, TI/Renesas는 보드 대기.
+
+**후속 실측 — 새 모델 축(DETR, 2026-08-21, `embedded-guide-orchestrator` 부분수정 — author 직접 + tech-reviewer
+팬인 PASS 🔴0; 커밋 9ef2a58 푸시완료):** 위는 전부 깨끗한 CNN(ResNet50). 모델을 `facebook/detr-resnet-50`
+(CNN 백본 + 트랜스포머 enc/dec, 2단계 §4.5 자산 재사용)으로 **바꿔** 같은 보드·같은 trtexec·같은 플래그로 재측정.
+SSOT=`experiments/stage3_tensorrt/jetson_ondevice/detr/results/detr_summary.json`. 세 발견이 위 CNN 결론을 모델 축에서
+정밀화:
+- **① "작은 iGPU는 INT8 무이득(0.984)"은 모델 의존이었다:** DETR iGPU FP32 25.85→FP16 13.28(×1.947)→INT8-impl
+  9.43 ms(×2.742). **iGPU INT8/FP16 = 0.710**(FP16보다 ×1.41 빠름) — ResNet50 0.984(무이득)와 부호 반전. 무거운
+  트랜스포머는 어텐션 대형 matmul로 **compute-bound**라 INT8 이득 부활. **이득 유무는 iGPU가 아니라 모델 연산강도가 정함.**
+  (DETR은 같은 보드 ResNet50보다 지연 ×13.3/×12.9/×9.3 — 엔진 파일크기 비 아님.)
+- **② accuracy-valid INT8이 파싱 불가(3단계 case C를 실 트랜스포머가 재현):** ORT `quantize_static(QInt8)` 산
+  `detr_int8.onnx`(zp≠0 **1085/1485** Q·DQ + Conv/Gemm **149개 전부** INT32 bias DQ)를 trtexec 직접 파서에 넣으면
+  **노드 0에서 0.051s** `Assertion failed: shiftIsAllZeros(zeroPoint)`. 3단계 §2.2.1 **case C(zp≠0)** 가 합성 아닌 실
+  트랜스포머 export에서 재현. 같은 보드 ResNet50 INT8이 빌드된 건 대칭(zp=0) export였기 때문 → 같은 도구·다른 export
+  정책이 가름. iGPU INT8 9.43 ms는 **implicit(자동 레인지)라 지연 전용**.
+- **③ DLA에 트랜스포머 부적합(헤드라인·이론 line180/실습5 line876 "파편화" 실사례):** 같은 recipe가 ResNet50 **2/2**
+  → DETR **DLA 326 / GPU폴백 404 / 16조각**. 폴백 404 = 트랜스포머 비-DLA 연산(250 SHUFFLE·34 MATRIX_MULTIPLY[Q·Kᵀ]·
+  30 NORMALIZATION[LayerNorm NVDLA v2 미지원]·12 SELECT[마스크 Where]·66 CONSTANT·12 UNARY, 합 404). **16조각은 단순
+  파편이 아니라 NVDLA v2 하드 한계**(`DLA supports only 16 subgraphs per DLA core` 경고로 슬롯 포화→나머지 GPU로 밀림,
+  리뷰어 발견). 결과 **DLA FP16 398.6 ms = iGPU FP16의 30×**; DLA INT8(78.5 ms)로 켜도(남은 섬서 "DLA=INT8 전용기"
+  규칙 유지·×5.08) 여전히 iGPU INT8의 8.3× 느림. **설계규칙: DLA는 DLA 서브그래프 GPU-폴백 ~0일 때만 이득 — DLA는 CNN
+  가속기, 트랜스포머 detection 헤드는 iGPU에.** (폴백 55.3%=404/730 → 이론 "20~30% 폴백이면 이점 소멸" 극단 사례.)
+
+DETR 캐비앗: iGPU/DLA INT8 implicit라 지연·크기만 유효·정확도 미주장 → DETR 정확도는 온보드 미측정(COCO 부재), **2단계
+RTX 인용** FP32 mAP 0.4207→INT8 0.2402(−42.9%)·mAP_s −77%([[stage2-detr-hands-on]]). 문서 반영: `05_tensorrt.md`
+§2.3에 DETR 콜아웃 순수삽입(**git diff 8/0 = 승번 오염 0**, §2.4 헤더 보존)·HTML 재렌더. 산출물
+`logs/stage3_jetson_orin_detr_report.html`(§1~6·SVG 3종) · `experiments/stage3_tensorrt/jetson_ondevice/detr/`
+(detr_bench.py·detr_summary.json·raw 로그 9·README). tech-reviewer 팬인 PASS: 하드SSOT+verbose 5.9MB op히스토그램
+재카운트(404=250+66+34+30+12+12)+case-C 로그 원문+onnx 인트로스펙션(1085/1485·149/149) 전건 1:1, 🟡1(지연비 "무겁다"
+오독소지) 리뷰 후 수정. **다음 후보:** DETR 대칭 재양자화로 explicit INT8 정확도유효 엔진 · on-board COCO mAP · SmoothQuant(2단계 §4.4)로 activation 입도 개선 후 재측정.
