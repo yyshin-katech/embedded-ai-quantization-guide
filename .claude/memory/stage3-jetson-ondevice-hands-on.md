@@ -1,6 +1,6 @@
 ---
 name: stage3-jetson-ondevice-hands-on
-description: "3·4단계 Jetson AGX Orin 온디바이스 실측(2026-08-20, 데이터 커밋 00fd97d·문서 1a8f073 푸시완료, ResNet50): 실 trtexec 실존(stage3/5 'trtexec 부재→polygraphy' 반전)·DLA 실측(stage3 'DLA 범위 밖' 해소). DLA INT8=성능/와트 챔피언 51.29 inf/s/W(iGPU INT8의 ×1.547·전력 절반)·DLA는 INT8 전용기(FP16 13.87× 느림)·오프로드 GR3D 95%→3~16%로 증명·DLA 후보 2/2·iGPU INT8≈FP16 0.984. DLA INT8 정확도 미주장(--int8 암묵). 후속(2026-08-21, 커밋 c03c174 푸시완료): iGPU∥DLA 동시부하 = GPU-폴백 직렬화로 공짜 병렬 아님(iGPU+DLA0 60.8%·DLA 27% 붕괴, DLA0+DLA1 87.0%가 최적 66.07 inf/s/W)·nvpmodel MAXN→50W 리더 교차(iGPU -29.4% vs DLA -2.9% → 50W서 DLA +8.8%). 후속2(2026-08-21, 커밋 9ef2a58 푸시완료): 새 모델 축 DETR — 무거운 트랜스포머는 iGPU INT8 이득 부활(INT8/FP16=0.710 vs ResNet50 0.984), explicit QDQ INT8 파싱불가(3단계 case C 재현), DLA 트랜스포머 부적합(폴백 404/16조각 → iGPU FP16의 30× 느림, DLA=CNN 가속기). tech-reviewer PASS 🔴0. 후속3 정확도 축(2026-08-21): 저장 .plan을 4단계 CPU-프록시 같은 ResNet50 1000장 번들에 돌려 예측 1:1 — accuracy-valid iGPU INT8 explicit-QDQ top-1 0.762=FP32>CPU MLAS 0.750, INT8 경로의존이 CPU↔가속기 넘음(TRT vs MLAS 961/1000=4단계 x86 대역·≠Pi5 100%), implicit DLA INT8 0.017 붕괴(캐비앗 정량화). tech-reviewer PASS 🔴0·🟡1(line-ref 876→892)"
+description: "3·4단계 Jetson AGX Orin 온디바이스 실측(2026-08-20, 데이터 커밋 00fd97d·문서 1a8f073 푸시완료, ResNet50): 실 trtexec 실존(stage3/5 'trtexec 부재→polygraphy' 반전)·DLA 실측(stage3 'DLA 범위 밖' 해소). DLA INT8=성능/와트 챔피언 51.29 inf/s/W(iGPU INT8의 ×1.547·전력 절반)·DLA는 INT8 전용기(FP16 13.87× 느림)·오프로드 GR3D 95%→3~16%로 증명·DLA 후보 2/2·iGPU INT8≈FP16 0.984. DLA INT8 정확도 미주장(--int8 암묵). 후속(2026-08-21, 커밋 c03c174 푸시완료): iGPU∥DLA 동시부하 = GPU-폴백 직렬화로 공짜 병렬 아님(iGPU+DLA0 60.8%·DLA 27% 붕괴, DLA0+DLA1 87.0%가 최적 66.07 inf/s/W)·nvpmodel MAXN→50W 리더 교차(iGPU -29.4% vs DLA -2.9% → 50W서 DLA +8.8%). 후속2(2026-08-21, 커밋 9ef2a58 푸시완료): 새 모델 축 DETR — 무거운 트랜스포머는 iGPU INT8 이득 부활(INT8/FP16=0.710 vs ResNet50 0.984), explicit QDQ INT8 파싱불가(3단계 case C 재현), DLA 트랜스포머 부적합(폴백 404/16조각 → iGPU FP16의 30× 느림, DLA=CNN 가속기). tech-reviewer PASS 🔴0. 후속3 정확도 축(2026-08-21, 커밋 d563439 푸시완료): 저장 .plan을 4단계 CPU-프록시 같은 ResNet50 1000장 번들에 돌려 예측 1:1 — accuracy-valid iGPU INT8 explicit-QDQ top-1 0.762=FP32>CPU MLAS 0.750, INT8 경로의존이 CPU↔가속기 넘음(TRT vs MLAS 961/1000=4단계 x86 대역·≠Pi5 100%), implicit DLA INT8 0.017 붕괴(캐비앗 정량화). tech-reviewer PASS 🔴0·🟡1(line-ref 876→892)"
 metadata: 
   node_type: memory
   type: project
@@ -110,7 +110,7 @@ RTX 인용** FP32 mAP 0.4207→INT8 0.2402(−42.9%)·mAP_s −77%([[stage2-detr
 재카운트(404=250+66+34+30+12+12)+case-C 로그 원문+onnx 인트로스펙션(1085/1485·149/149) 전건 1:1, 🟡1(지연비 "무겁다"
 오독소지) 리뷰 후 수정. **다음 후보:** DETR 대칭 재양자화로 explicit INT8 정확도유효 엔진 · on-board COCO mAP · SmoothQuant(2단계 §4.4)로 activation 입도 개선 후 재측정.
 
-**후속 실측 — 정확도 축(ResNet50, 2026-08-21, `embedded-guide-orchestrator` 부분수정 — author-5·6 직접 +
+**후속 실측 — 정확도 축(ResNet50, 2026-08-21, 커밋 d563439 푸시완료, `embedded-guide-orchestrator` 부분수정 — author-5·6 직접 +
 tech-reviewer 팬인 PASS 🔴0·🟡1 리뷰어 직접수정):** 위 실측(솔로·동시부하·DETR)이 전부 지연·전력이라 매번
 "정확도 미주장"을 달았음 → 이번엔 저장된 `.plan`을 4단계 CPU-프록시([[stage4-arm-cpu-fallback-proxy]] 커밋
 49e30ff)가 쓴 **같은 ResNet50 1000장 번들**에 돌려 이미지별 예측 1:1 대조. 결정적 장치: `rn50_gpu_int8.plan`이
