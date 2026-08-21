@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DETR 온디바이스 SmoothQuant — activation 입도 레버가 INT8 폭락을 되찾는가</title>
+<style>
+:root{--bg:#0b0e14;--panel:#131720;--panel2:#0f131b;--bd:#242b38;--tx:#c9d1d9;--dim:#8b949e;--brt:#e6edf3;--accent:#58a6ff;--green:#3fb950;--amber:#d29922;--red:#ff7b72;--purple:#bc8cff;--mono:'JetBrains Mono','SF Mono',ui-monospace,'Cascadia Code',Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans KR','Malgun Gothic',sans-serif}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:var(--sans);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:980px;margin:0 auto;padding:0 20px 120px}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+.hero{padding:48px 0 26px;border-bottom:1px solid var(--bd);margin-bottom:8px}
+.kicker{font-family:var(--mono);font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+.hero h1{margin:0 0 10px;font-size:30px;line-height:1.25;color:var(--brt);letter-spacing:-.01em}
+.hero p.sub{margin:0 0 20px;color:var(--dim);font-size:15px;max-width:80ch}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font-family:var(--mono);font-size:12px;padding:5px 10px;border:1px solid var(--bd);border-radius:999px;background:var(--panel);color:var(--tx)}
+.chip b{color:var(--brt);font-weight:600}
+.chip.done{border-color:rgba(63,185,80,.5);background:rgba(63,185,80,.12);color:#7ee787}
+.chip.blocked{border-color:rgba(255,123,114,.5);background:rgba(255,123,114,.12);color:#ff9d96}
+.chip.partial{border-color:rgba(210,153,34,.5);background:rgba(210,153,34,.12);color:#e3b341}
+nav.toc{display:flex;flex-wrap:wrap;gap:8px;margin:26px 0 6px}
+nav.toc a{font-family:var(--mono);font-size:12.5px;padding:6px 11px;border:1px solid var(--bd);border-radius:8px;background:var(--panel);color:var(--tx)}
+nav.toc a:hover{border-color:var(--accent);color:var(--brt);text-decoration:none}
+h2.sec{font-size:13px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin:40px 0 12px;font-weight:600;border-top:1px solid var(--bd);padding-top:26px}
+.step{margin:26px 0 0;scroll-margin-top:16px}
+.step>h3{display:flex;align-items:center;gap:12px;font-size:19px;color:var(--brt);margin:0 0 6px;letter-spacing:-.01em}
+.num{flex:none;display:inline-grid;place-items:center;width:28px;height:28px;border-radius:8px;background:var(--accent);color:#06101f;font-family:var(--mono);font-weight:700;font-size:13px}
+.step p.lead{margin:0 0 4px;color:var(--dim);font-size:14.5px}
+table.dt{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.3px;border:1px solid var(--bd);border-radius:10px;overflow:hidden;font-family:var(--mono)}
+table.dt th,table.dt td{padding:8px 12px;text-align:right;border-bottom:1px solid var(--bd)}
+table.dt th{background:var(--panel);color:var(--dim);font-weight:600;font-size:12px;letter-spacing:.04em}
+table.dt th:first-child,table.dt td:first-child{text-align:left;color:var(--brt)}
+table.dt tr:last-child td{border-bottom:none}
+table.dt tr.hi td{background:rgba(63,185,80,.08)}
+table.dt tr.lo td{background:rgba(255,123,114,.08)}
+table.dt tr.grey td{background:rgba(139,148,158,.08);color:var(--dim)}
+table.dt tr.base td{background:rgba(88,166,255,.07)}
+.g{color:var(--green)}.r{color:var(--red)}.a{color:var(--amber)}.p{color:var(--purple)}.d{color:var(--dim)}
+table.kv{width:100%;border-collapse:collapse;margin:12px 0;font-size:13.5px;border:1px solid var(--bd);border-radius:10px;overflow:hidden}
+table.kv th,table.kv td{padding:9px 13px;text-align:left;border-bottom:1px solid var(--bd);vertical-align:top}
+table.kv th{background:var(--panel);color:var(--dim);font-weight:600;width:34%;font-size:12.5px}
+table.kv td{font-family:var(--mono);font-size:12.7px;color:var(--tx)}
+table.kv tr:last-child td,table.kv tr:last-child th{border-bottom:none}
+.term{background:var(--panel2);border:1px solid var(--bd);border-radius:11px;overflow:hidden;margin:14px 0}
+.term-bar{display:flex;align-items:center;gap:7px;padding:9px 13px;background:#0c1017;border-bottom:1px solid var(--bd)}
+.dot{width:11px;height:11px;border-radius:50%}.dot.r{background:#ff5f56}.dot.y{background:#ffbd2e}.dot.g{background:#27c93f}
+.term-title{margin-left:9px;color:var(--dim);font-size:12.5px;font-family:var(--mono)}
+.term pre{margin:0;padding:15px 17px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.62;color:var(--tx);white-space:pre;tab-size:2}
+.cmt{color:#5c6773}.ok{color:var(--green)}.err{color:var(--red)}.warn{color:var(--amber)}.dim{color:var(--dim)}.hl{color:var(--purple)}.in{color:var(--brt);font-weight:600}
+.note{border-left:3px solid var(--accent);background:rgba(88,166,255,.07);padding:13px 17px;border-radius:0 9px 9px 0;margin:15px 0;font-size:14px}
+.note.trap{border-color:var(--red);background:rgba(255,123,114,.08)}
+.note.warnb{border-color:var(--amber);background:rgba(210,153,34,.08)}
+.note.tip{border-color:var(--green);background:rgba(63,185,80,.07)}
+.note.block{border-color:var(--purple);background:rgba(188,140,255,.08)}
+.note .tag{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 8px;border-radius:6px;margin-bottom:7px}
+.note.trap .tag{background:rgba(255,123,114,.18);color:#ff9d96}
+.note.warnb .tag{background:rgba(210,153,34,.18);color:#e3b341}
+.note.tip .tag{background:rgba(63,185,80,.18);color:#7ee787}
+.note.block .tag{background:rgba(188,140,255,.18);color:#d8b8ff}
+.note b{color:var(--brt)}.note code{font-family:var(--mono);font-size:12.5px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:4px}
+.chartwrap{border:1px solid var(--bd);background:var(--panel2);border-radius:12px;padding:18px 18px 14px;margin:16px 0}
+.chartwrap .ct{font-family:var(--mono);font-size:12.5px;color:var(--brt);margin:0 0 4px}
+.chartwrap .cs{font-size:12.5px;color:var(--dim);margin:0 0 12px}
+.statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:14px 0}
+.stat{border:1px solid var(--bd);background:var(--panel);border-radius:11px;padding:15px 16px}
+.stat .k{font-family:var(--mono);font-size:11.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em}
+.stat .v{font-size:23px;color:var(--brt);font-weight:700;margin-top:5px;letter-spacing:-.01em}
+.stat .n{font-size:12px;color:var(--dim);margin-top:3px}
+.stat.ok .v{color:#7ee787}.stat.warn .v{color:#e3b341}.stat.bad .v{color:#ff9d96}
+.verdict{border:1px solid var(--bd);border-radius:12px;padding:16px 18px;margin:14px 0;background:var(--panel)}
+.verdict h4{margin:0 0 6px;font-size:15px;color:var(--brt);display:flex;align-items:center;gap:9px}
+.verdict h4 .b{font-family:var(--mono);font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px}
+.verdict.yes h4 .b{background:rgba(63,185,80,.18);color:#7ee787}
+.verdict.no h4 .b{background:rgba(255,123,114,.18);color:#ff9d96}
+.verdict.mixed h4 .b{background:rgba(210,153,34,.18);color:#e3b341}
+.verdict p{margin:0;font-size:13.8px;color:var(--tx)}
+footer{margin-top:46px;padding-top:20px;border-top:1px solid var(--bd);color:var(--dim);font-size:13px}
+.next{display:block;margin-top:12px;padding:12px 16px;border:1px solid var(--bd);border-radius:9px;color:var(--tx);background:var(--panel);font-size:13.6px}
+.next b{color:var(--accent)}
+@media (max-width:560px){.hero h1{font-size:23px}.term pre{font-size:11.4px}.stat .v{font-size:20px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <p class="kicker">실행 보고서 · 3·4단계 온디바이스 · Jetson AGX Orin · DETR SmoothQuant 축</p>
+    <h1>DETR 온디바이스 SmoothQuant — activation 입도 레버가 INT8 폭락을 되찾는가</h1>
+    <p class="sub">앞선 <a href="stage3_jetson_orin_detr_accuracy_report.html">DETR 정확도 보고서</a>(커밋 <code>58ba518</code>)는 accuracy-valid explicit-sym INT8이 stage2 폭락을 <b>재현</b>한다고 판정했다(FP32 <b>0.4237</b> → INT8 <b>0.2383</b>, −43.8%) — 그리고 레버는 case-C 픽스나 대칭 여부가 아니라 <b>activation 양자화 입도</b>(SmoothQuant, <a href="../study_guide/04_transformer_quantization.md#44-우회-2--smoothquant-적용-activation-outlier-완화">stage2 §4.4</a>)라고 지목했다. stage2 §4.4는 그 레버로 폭락의 <b>59.9%</b>를 되찾았지만 — <b>torch fake-quant 경로(Design X)에서만</b>이고 ONNX→TRT 온디바이스에선 <b>한 번도 측정된 적이 없다</b>. 이 후속은 그 빈칸을 닫는다: ONNX-레벨 SmoothQuant를 95개 Gemm에 직접 적용해 accuracy-valid 대칭 INT8 엔진을 다시 빌드하고, 같은 보드·같은 1000장에서 <b>폭락이 되돌아오는지</b> 실측한다.</p>
+    <div class="chips">
+      <span class="chip"><b>2026-08-21</b></span>
+      <span class="chip"><b>Jetson AGX Orin Dev Kit (64GB)</b></span>
+      <span class="chip"><b>JetPack 6.2.1 · TRT 10.3.0</b></span>
+      <span class="chip"><b>facebook/detr-resnet-50 · COCO 1000장 · batch1</b></span>
+      <span class="chip blocked">온디바이스 회복 9.2%(α=1.0) — stage2 59.9%의 1/6</span>
+      <span class="chip partial">α=1.0 &gt; α=0.5 (stage2 α 순서 보존)</span>
+      <span class="chip done">거의 지연 중립 (+0.34 ms vs sym)</span>
+    </div>
+    <nav class="toc">
+      <a href="#s1">1 · 실행 요약</a>
+      <a href="#s2">2 · 환경·데이터·방법</a>
+      <a href="#s3">3 · ONNX-레벨 SmoothQuant (수동)</a>
+      <a href="#s4">4 · 회복 사다리 · mAP (헤드라인)</a>
+      <a href="#s5">5 · 지연·엔진 (거의 중립)</a>
+      <a href="#s6">6 · 판정·산출물</a>
+    </nav>
+  </header>
+
+  <!-- ================= §1 ================= -->
+  <h2 class="sec">§1 — 실행 요약</h2>
+  <section id="s1" class="step">
+    <div class="statgrid">
+      <div class="stat bad"><div class="k">온디바이스 회복 (α=1.0)</div><div class="v">9.2%</div><div class="n">0.1854 gap 중 +0.0170 (0.2383→0.2553) · stage2 §4.4의 약 1/6</div></div>
+      <div class="stat warn"><div class="k">stage2 §4.4 같은 레버</div><div class="v">59.9%</div><div class="n">torch fake-quant · 모든 linear INT8 (attention 포함)</div></div>
+      <div class="stat ok"><div class="k">α 순서 보존</div><div class="v">1.0 &gt; 0.5</div><div class="n">a10 9.2% &gt; a05 8.7% — stage2 DETR-best α=1.0과 방향 일치</div></div>
+      <div class="stat ok"><div class="k">지연 대가 (vs sym)</div><div class="v">+0.34 ms</div><div class="n">11.002 → 11.3433 ms · Mul 95개 삽입뿐 · 거의 중립</div></div>
+    </div>
+    <p class="lead">과제(메모리 verbatim): <b>"SmoothQuant(activation 입도)로 DETR INT8 폭락이 온디바이스에서 회복되는가 — stage2 §4.4의 59.9%가 ONNX→TRT 경로로 전이되는가."</b> 세 발견 모두 <b>같은 보드·같은 1000장·같은 800×1066 전처리·같은 대칭 QDQ 레시피</b> 위 상대 관계로 읽는다 — <b>유일한 변수는 SmoothQuant activation migration</b>(Mul 95개).</p>
+    <table class="kv">
+      <tr><th>발견 1 · <span class="r">온디바이스 SmoothQuant는 폭락의 ~9%만 회복한다 — stage2의 1/6 (헤드라인)</span></th><td>ONNX-레벨 SmoothQuant(α=1.0, 95 Gemm, activation absmax <b>최대 46.699×</b>/중앙 <b>7.485×</b> 압축)를 대칭 INT8 엔진에 얹으니 mAP <b>0.2383 → 0.2553</b> — 0.1854 폭락 gap 중 <b class="r">9.2%(+0.0170)</b>뿐. stage2 §4.4는 <b>같은 레버</b>로 <b>59.9%</b>를 되찾았다(torch fake-quant). <b>같은 레버가 경로에 따라 한 자릿수 배 다르게 작동</b>한다.</td></tr>
+      <tr><th>발견 2 · <span class="a">근본 원인 = op 커버리지 (SmoothQuant가 틀린 게 아니다)</span></th><td>온디바이스에서 <b>빌드 가능한 유일한 INT8 엔진</b>은 attention MatMul·LayerNorm·Softmax를 <b>FP16으로 남긴다</b>(58ba518의 case-C 파서 + quantized-constant 빌더 벽이 <code>op_types_to_quantize=[Conv,Gemm]</code>를 강제). 그래서 INT8은 <b>Gemm 전용</b>이고, Gemm 입력을 매끈하게 만드는 것은 이 경로의 <b>지배적 잔차 오차원이 아니다</b>. stage2 torch 경로는 attention Q/K/V/out을 <b>포함한 모든 linear</b>가 per-tensor INT8이라 SmoothQuant가 크게 먹혔다.</td></tr>
+      <tr><th>발견 3 · <span class="g">단 SmoothQuant는 방향이 옳다 — α 순서 보존 + mAP_s 부분 회복 + 거의 지연 중립</span></th><td>α=1.0(9.2%) &gt; α=0.5(8.7%)로 <b>stage2의 DETR-best α=1.0 순서를 보존</b>. 폭락이 집중된 작은 객체 mAP_s도 0.0336 → <b>0.0449</b>(gap의 6.1% 부분 회복). 대가는 Mul 95개뿐이라 <b>거의 지연 중립</b>(+0.3413 ms·엔진 +0.18 MiB). 엔진이 <b>진짜 INT8</b>임도 확인(FP32 대비 logits_corr 0.9826·sym과 logits_absmax 16.43로 실제 다름 — 무음 FP32/sym 복제 아님).</td></tr>
+    </table>
+    <div class="note"><span class="tag" style="background:rgba(88,166,255,.18);color:#9cd2ff">CAVEAT</span> 절대 mAP는 stage2와 <b>비교 불가</b> — fixed 800×1066 vs stage2 dynamic shape, TRT vs ORT torch fake-quant, 1000 vs 5000장. <b>같은 번들 안의 상대 회복(recovery-of-gap)만</b> 결과다. 1000장 서브셋(1단계 함정 0: 서브셋 mAP도 부풀려짐). SmoothQuant는 구성상 FP32-정확(s가 상쇄, gate max_abs 1.7e-4 · CPU EP) — 이득은 오직 outlier 이주 후 더 조밀해진 per-tensor activation 양자화에서 온다. Jetson은 NVIDIA edge이지 세 자동차 벤더(TI/Qualcomm/Renesas) 아님.</div>
+  </section>
+
+  <!-- ================= §2 ================= -->
+  <h2 class="sec">§2 — 환경·데이터·방법</h2>
+  <section id="s2" class="step">
+    <table class="kv">
+      <tr><th>보드·스택</th><td>NVIDIA <b>Jetson AGX Orin Dev Kit (64GB)</b> · JetPack <b>6.2.1</b>(L4T R36.4.3) · CUDA <b>12.6</b> · TensorRT <b>10.3.0</b> · Ampere iGPU · <code>nvpmodel MAXN</code></td></tr>
+      <tr><th>A/B의 유일한 변수</th><td>두 SmoothQuant 엔진은 커밋된 <code>detr_gpu_int8_sym.plan</code>(58ba518)과 <b>대칭 QDQ 레시피·보드·trtexec 플래그·1000장·전처리가 전부 동일</b>하고 <b>ONNX-레벨 SmoothQuant activation migration(Mul 95개)만 다르다</b> — 순수 SmoothQuant 효과 격리.</td></tr>
+      <tr><th>모델·엔진</th><td><b>facebook/detr-resnet-50</b> · 고정형 <code>detr_sim.onnx</code>(pixel_values [1,3,800,1066], opset17)에서 SmoothQuant+대칭 재양자화한 2 <code>.plan</code>: <code>detr_gpu_int8_sq_a10.plan</code>(α=1.0)·<code>detr_gpu_int8_sq_a05.plan</code>(α=0.5). 기준선 <code>gpu_fp32</code>·<code>gpu_int8_sym</code>은 <b>58ba518 커밋 npz/엔진 재사용</b>.</td></tr>
+      <tr><th>전처리</th><td><b>강제 리사이즈 800×1066</b>(고정 ONNX 입력, 종횡비 미보존) + ImageNet norm — 호스트 캘리브와 보드 eval 바이트 동일(<code>detr_prep.py</code>).</td></tr>
+      <tr><th>평가·캘리브셋</th><td>eval = COCO val2017 <b>head 1000</b> · SmoothQuant activation 통계 = <b>tail 100</b>(disjoint). 후처리 = stage2 <code>s2_07</code> 수식(softmax → no-object 제거 → cxcywh×(W,H) → xywh), 각 이미지 <b>원본</b> W,H로 스케일. <b>FP32/sym을 커밋 npz에서 같은 후처리로 재평가 → 0.4237/0.2383 재현(드리프트 0 = 교차확증)</b>.</td></tr>
+      <tr><th>지표</th><td><b>pycocotools bbox mAP</b>(호스트 <code>emb-ai</code> venv) — <code>instances_val2017.json</code> 대비, 평가 subset img_id로 제한. 회복률 = (mAP−sym)/(FP32−sym)×100.</td></tr>
+      <tr><th>SSOT</th><td><code>experiments/stage3_tensorrt/jetson_ondevice/detr_smoothquant/results/detr_sq_summary.json</code></td></tr>
+    </table>
+  </section>
+
+  <!-- ================= §3 ================= -->
+  <h2 class="sec">§3 — ONNX-레벨 SmoothQuant (수동)</h2>
+  <section id="s3" class="step">
+    <p class="lead">stage2 §4.4 SmoothQuant는 <b>torch fake-quant 경로(Design X)에서만</b> 살았고 ONNX를 낳지 않아 온디바이스로 올릴 수 없었다. modelopt.onnx도 임포트 불가(<code>onnxslim</code> 없음). 그래서 SmoothQuant를 <b>ONNX 그래프에 직접</b> 손으로 심었다.</p>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">SmoothQuant 수학 — DETR의 95개 Gemm 전부 transB=0 (Y=A·B, weight [K,N])</span></div>
+<pre><span class="cmt"># 수축 축 K = A.shape[-1] = B.shape[0] (weight 행). 채널별 이주 스케일:</span>
+<span class="in">s_k = a_k^α / w_k^(1-α)</span>   <span class="cmt"># a_k = 캘리브 100장의 per-channel(K) activation absmax, w_k = per-row(axis0) weight absmax</span>
+<span class="ok">A'[:,k] = A[:,k] / s_k</span>    <span class="cmt"># activation에 Mul(A, 1/s) 삽입 (마지막 축 broadcast)</span>
+<span class="ok">B'[k,:] = B[k,:] · s_k</span>    <span class="cmt"># weight 행 k를 s_k배 (W * s[:,None])</span>
+<span class="in">A'·B' = A·B   (임의의 s&gt;0에 대해 수학적으로 정확 — outlier를 activation→weight로 이주만)</span>
+<span class="dim"># 이득은 오직: activation의 채널별 outlier가 weight로 옮겨가 per-tensor activation 레인지가 조밀해짐</span></pre>
+    </div>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">FP32 정확도 게이트 — CUDA EP가 아니라 CPU EP에서 (교훈)</span></div>
+<pre><span class="err"># CUDA EP로 게이트 → max_abs=0.65 오검출. 원인: Ampere TF32 matmul(10-bit 가수)이</span>
+<span class="err">#   SmoothQuant의 피연산자 재스케일에 민감 → ~1e-2 허위 diff (배선 버그 아님, 정밀도 artifact)</span>
+<span class="ok">providers=["CPUExecutionProvider"]  → max_abs = 1.748e-4 (α=1.0) / 1.450e-4 (α=0.5)  PASS (&lt;1e-2)</span>
+<span class="dim"># 순수 numpy SmoothQuant 수학 자체는 1.4e-14로 정확 · 95개 Gemm 전부 distinct weight (공유 없음)</span></pre>
+    </div>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">대칭 재양자화 — 58ba518과 동일 레시피 (case-C/B/attention 3벽 우회)</span></div>
+<pre><span class="ok">quantize_static(SMOOTH, DST, quant_format=QDQ, activation_type=QInt8, weight_type=QInt8,</span>
+<span class="ok">  per_channel=True, op_types_to_quantize=["Conv","Gemm"],           </span><span class="cmt"># attention MatMul/LayerNorm/Softmax는 FP16 (빌더 벽)</span>
+<span class="ok">  nodes_to_exclude=["/model/backbone/model/conv1/Conv"],           </span><span class="cmt"># case D (stem conv)</span>
+<span class="ok">  extra_options={ActivationSymmetric:True, WeightSymmetric:True,    </span><span class="cmt"># zp=0 → case C (shiftIsAllZeros) 해소</span>
+<span class="ok">                 QuantizeBias:False})                              </span><span class="cmt"># INT32 bias DQ 제거 → case B 해소</span>
+<span class="in">VERIFY  zp_total=732  zp_nonzero=0  int32_bias_DQ=0  SQMul_kept=95</span>   <span class="dim"># Mul은 op_types 밖이라 FP로 남음</span>
+<span class="dim"># SmoothQuant Mul을 제외한 QDQ 그래프는 sym과 byte-동일(43,612,561 B) — 유일 델타 = Mul 95개</span></pre>
+    </div>
+    <table class="dt">
+      <thead><tr><th>SmoothQuant activation 압축 (absmax 배율)</th><th>최대</th><th>최대 위치</th><th>중앙값</th><th>≥2× Gemm</th><th>정확도 게이트</th></tr></thead>
+      <tbody>
+        <tr><td>α=1.0 (a10)</td><td class="g">46.699×</td><td>Gemm_4</td><td>7.485×</td><td>94/95</td><td>1.748e-4</td></tr>
+        <tr><td>α=0.5 (a05)</td><td>19.265×</td><td>Gemm_4</td><td>5.51×</td><td>95/95</td><td>1.450e-4</td></tr>
+      </tbody>
+    </table>
+    <div class="note tip"><span class="tag">핵심</span> SmoothQuant를 <b>ONNX 그래프에 직접</b> 심어 stage2가 torch에만 갖고 있던 레버를 <b>처음으로 온디바이스에 올렸다</b>. α=1.0은 activation absmax를 <b>최대 46.7×·중앙 7.49×</b> 감쇠 — outlier가 실제로 크게 이주했다. 남은 질문은 "이 조밀해진 activation 양자화가 <b>폭락을 얼마나 되찾는가</b>"이고, §4가 답한다.</div>
+  </section>
+
+  <!-- ================= §4 ================= -->
+  <h2 class="sec">§4 — 회복 사다리 · COCO mAP (헤드라인)</h2>
+  <section id="s4" class="step">
+    <p class="lead">같은 1000장·같은 전처리로 FP32(천장)·sym(폭락 바닥)·SmoothQuant α=1.0/0.5의 pycocotools bbox mAP. 핵심 지표는 <b>gap 회복률</b> = SmoothQuant가 sym→FP32 폭락(0.1854)을 얼마나 메우는가.</p>
+    <table class="dt">
+      <thead><tr><th>엔진</th><th>mAP</th><th>mAP50</th><th>mAP_s</th><th>mAP_m</th><th>mAP_l</th><th>vs sym</th><th>gap 회복</th></tr></thead>
+      <tbody>
+        <tr class="base"><td>iGPU FP32 (천장)</td><td>0.4237</td><td>0.6226</td><td>0.2179</td><td>0.4621</td><td>0.5955</td><td class="d">+0.1854</td><td class="d">100%</td></tr>
+        <tr class="lo"><td>iGPU INT8 explicit-sym (폭락 바닥)</td><td><b>0.2383</b></td><td>0.4681</td><td><b class="r">0.0336</b></td><td>0.2316</td><td>0.4438</td><td class="d">— (기준)</td><td class="d">0%</td></tr>
+        <tr class="hi"><td><b>+ SmoothQuant α=1.0</b></td><td><b>0.2553</b></td><td>0.4766</td><td>0.0449</td><td>0.2543</td><td>0.4743</td><td class="g">+0.0170</td><td class="a"><b>9.2%</b></td></tr>
+        <tr><td>+ SmoothQuant α=0.5</td><td>0.2544</td><td>0.4730</td><td>0.0438</td><td>0.2565</td><td>0.4694</td><td class="g">+0.0161</td><td class="a">8.7%</td></tr>
+        <tr class="grey"><td class="d">(stage2 §4.4 참조 · 같은 레버)</td><td class="d">torch fake-quant</td><td class="d">—</td><td class="d">—</td><td class="d">—</td><td class="d">+0.0544</td><td class="d">—</td><td class="a"><b>59.9%</b></td></tr>
+      </tbody>
+    </table>
+    <div class="chartwrap">
+      <p class="ct">gap 회복률 — SmoothQuant가 sym→FP32 폭락(0.1854)을 얼마나 메우는가 (길수록 회복)</p>
+      <p class="cs">막대폭 = 회복률(%) × 5.5px. <span style="color:#e3b341">황=온디바이스(ONNX→TRT, Gemm 전용 INT8)</span>, 회색=온디바이스 mAP_s(작은 객체) 회복, <span style="color:#ff9d96">빨강=stage2 §4.4(torch fake-quant, 모든 linear INT8)</span>. <b>같은 SmoothQuant 레버인데 경로/op-커버리지에 따라 약 6.5배 차이.</b></p>
+      <svg viewBox="0 0 760 250" width="100%" role="img" aria-label="gap 회복률 막대 그래프">
+        <line x1="0" y1="222" x2="360" y2="222" stroke="#242b38" stroke-width="1"/>
+        <line x1="110" y1="10" x2="110" y2="222" stroke="#242b38" stroke-width="1" stroke-dasharray="3 3"/>
+        <line x1="220" y1="10" x2="220" y2="222" stroke="#242b38" stroke-width="1" stroke-dasharray="3 3"/>
+        <line x1="330" y1="10" x2="330" y2="222" stroke="#242b38" stroke-width="1" stroke-dasharray="3 3"/>
+        <text x="110" y="238" fill="#5c6773" font-size="10" font-family="monospace" text-anchor="middle">20%</text>
+        <text x="220" y="238" fill="#5c6773" font-size="10" font-family="monospace" text-anchor="middle">40%</text>
+        <text x="330" y="238" fill="#5c6773" font-size="10" font-family="monospace" text-anchor="middle">60%</text>
+        <g font-family="monospace" font-size="12">
+          <rect x="0" y="16" width="50.60" height="24" rx="4" fill="#d29922"/>
+          <text x="57" y="33" fill="#e3b341">온디바이스 α=1.0 · 9.2% (mAP +0.0170)</text>
+          <rect x="0" y="48" width="47.85" height="24" rx="4" fill="#d29922" opacity="0.75"/>
+          <text x="54" y="65" fill="#e3b341">온디바이스 α=0.5 · 8.7% (mAP +0.0161)</text>
+          <rect x="0" y="84" width="33.55" height="20" rx="3" fill="#8b949e" opacity="0.6"/>
+          <text x="40" y="99" fill="#8b949e">온디바이스 α=1.0 · mAP_s(작은 객체) 6.1%</text>
+          <rect x="0" y="112" width="30.25" height="20" rx="3" fill="#8b949e" opacity="0.5"/>
+          <text x="37" y="127" fill="#8b949e">온디바이스 α=0.5 · mAP_s 5.5%</text>
+          <rect x="0" y="150" width="329.45" height="26" rx="4" fill="#ff7b72"/>
+          <text x="336" y="168" fill="#ff9d96">stage2 §4.4 (torch, 모든 linear) · 59.9% ← 약 6.5배</text>
+        </g>
+        <text x="0" y="205" fill="#5c6773" font-size="11" font-family="monospace">근본 원인 = op 커버리지: 온디바이스 INT8은 Gemm 전용(attention/LayerNorm/Softmax는 FP16). stage2는 모든 linear가 INT8.</text>
+      </svg>
+    </div>
+    <div class="note trap"><span class="tag">헤드라인</span> ONNX-레벨 SmoothQuant를 온디바이스에 처음 올렸지만, 폭락의 <b>9.2%(α=1.0)</b>만 되찾는다 — stage2 §4.4의 <b>59.9%</b>보다 <b>약 6.5배 작다</b>. <b>같은 레버, 다른 결과</b>: 근본 원인은 SmoothQuant가 틀려서가 아니라 <b>op 커버리지</b>다. 온디바이스에서 빌드 가능한 유일한 INT8 엔진은 attention MatMul·LayerNorm·Softmax를 FP16으로 남기므로(58ba518의 파서·빌더 벽) INT8은 <b>Gemm 전용</b>이고, Gemm 입력 smoothing은 이 경로의 지배적 잔차 오차원이 아니다. stage2 torch 경로는 attention Q/K/V/out을 포함한 <b>모든 linear</b>가 INT8이라 SmoothQuant가 크게 먹혔다. 이는 stage2 §4.4의 59.9%를 <b>부정</b>하는 게 아니라 <b>경로·op-커버리지 의존</b>임을 정밀화한다(교차확증 반전).</div>
+    <div class="note tip"><span class="tag">방향은 옳다</span> SmoothQuant가 무효인 건 아니다: (1) <b>α=1.0(9.2%) &gt; α=0.5(8.7%)</b>로 stage2의 DETR-best α=1.0 순서를 <b>보존</b>, (2) 폭락이 집중된 <b>작은 객체 mAP_s</b>가 0.0336 → 0.0449(gap의 6.1%)로 부분 회복 — SmoothQuant가 올바른 방향으로 민다는 정성적 증거. 단 그 크기가 이 경로에선 modest할 뿐.</div>
+    <div class="note"><span class="tag" style="background:rgba(88,166,255,.18);color:#9cd2ff">부수 · 진짜 INT8인가</span> FP32 대비 raw 발산: sq_a10 logits_corr <b>0.98258</b>·boxes_corr 0.94758(sym 0.98236/0.94532과 유사=진짜 INT8). sym 대비 발산: sq_a10 logits_absmax <b>16.4336</b> — SmoothQuant 엔진은 sym과 <b>실제로 다르다</b>(무음 sym 복제 아님). 즉 회복이 작은 건 엔진이 안 바뀌어서가 아니라 <b>바뀐 방향의 레버가 이 경로에서 modest</b>하기 때문.</div>
+  </section>
+
+  <!-- ================= §5 ================= -->
+  <h2 class="sec">§5 — 지연·엔진 (거의 중립)</h2>
+  <section id="s5" class="step">
+    <p class="lead">SmoothQuant는 activation에 <b>Mul 95개</b>를 더할 뿐이라 지연·엔진이 거의 안 변한다. FP32/sym은 커밋 58ba518 SSOT, sq_a10/a05는 이번 세션 <code>trtexec</code> 빌드(동일 플래그 <code>--int8 --fp16 --warmUp=2000 --duration=10 --iterations=200 --avgRuns=100</code>).</p>
+    <table class="dt">
+      <thead><tr><th>엔진</th><th>지연 (GPU-compute median)</th><th>vs FP32</th><th>vs sym</th><th>엔진</th><th>mAP</th></tr></thead>
+      <tbody>
+        <tr class="base"><td>iGPU FP32</td><td>25.8496 ms</td><td>×1.00</td><td class="d">—</td><td>160.12 MiB</td><td>0.4237</td></tr>
+        <tr class="hi"><td>iGPU INT8 explicit-sym (기준)</td><td>11.0020 ms</td><td class="g">×2.350</td><td class="d">—</td><td>44.69 MiB</td><td class="r">0.2383</td></tr>
+        <tr><td><b>+ SmoothQuant α=1.0</b></td><td><b>11.3433 ms</b></td><td class="g">×2.279</td><td class="a">+0.3413 ms</td><td>44.87 MiB</td><td>0.2553</td></tr>
+        <tr><td>+ SmoothQuant α=0.5</td><td>11.4084 ms</td><td class="g">×2.266</td><td class="a">+0.4064 ms</td><td>44.91 MiB</td><td>0.2544</td></tr>
+      </tbody>
+    </table>
+    <div class="chartwrap">
+      <p class="ct">지연 — batch1 GPU Compute median (짧을수록 빠름)</p>
+      <p class="cs">막대폭 = 지연(ms) × 18.57px. SmoothQuant(초록)는 sym(파랑)에 Mul 95개만 더해 <b>거의 겹친다</b>(+0.34/+0.41 ms) — activation 입도 레버는 <b>사실상 공짜</b>지만, 그 대가로 얻는 회복도 이 경로에선 작다(§4).</p>
+      <svg viewBox="0 0 720 200" width="100%" role="img" aria-label="지연 막대 그래프">
+        <line x1="0" y1="182" x2="510" y2="182" stroke="#242b38" stroke-width="1"/>
+        <line x1="185.7" y1="8" x2="185.7" y2="182" stroke="#242b38" stroke-width="1" stroke-dasharray="3 3"/>
+        <line x1="371.4" y1="8" x2="371.4" y2="182" stroke="#242b38" stroke-width="1" stroke-dasharray="3 3"/>
+        <text x="185.7" y="196" fill="#5c6773" font-size="10" font-family="monospace" text-anchor="middle">10ms</text>
+        <text x="371.4" y="196" fill="#5c6773" font-size="10" font-family="monospace" text-anchor="middle">20ms</text>
+        <g font-family="monospace" font-size="12">
+          <rect x="0" y="14" width="480.03" height="24" rx="4" fill="#58a6ff" opacity="0.85"/>
+          <text x="486" y="31" fill="#c9d1d9">FP32 · 25.85 ms</text>
+          <rect x="0" y="46" width="204.31" height="24" rx="4" fill="#58a6ff" opacity="0.55"/>
+          <text x="211" y="63" fill="#c9d1d9">INT8 sym · 11.00 ms ×2.35 (기준)</text>
+          <rect x="0" y="78" width="210.65" height="24" rx="4" fill="#3fb950"/>
+          <text x="217" y="95" fill="#7ee787">+ SmoothQuant α=1.0 · 11.34 ms (+0.34)</text>
+          <rect x="0" y="110" width="211.86" height="24" rx="4" fill="#3fb950" opacity="0.7"/>
+          <text x="218" y="127" fill="#7ee787">+ SmoothQuant α=0.5 · 11.41 ms (+0.41)</text>
+        </g>
+        <text x="0" y="160" fill="#5c6773" font-size="11" font-family="monospace">엔진 크기: sym 44.69 → α=1.0 44.87 → α=0.5 44.91 MiB (Mul 95개 = +0.18/+0.22 MiB)</text>
+      </svg>
+    </div>
+    <div class="note"><span class="tag" style="background:rgba(88,166,255,.18);color:#9cd2ff">읽는 법</span> SmoothQuant 막대는 sym 위에 <b>거의 포개진다</b> — activation migration은 지연·크기 면에서 사실상 무료다. 이것이 SmoothQuant의 매력(공짜 레버)이지만, DETR 온디바이스에선 그 공짜 레버가 되찾는 정확도도 작다(9.2%). <b>레버가 싸다 ≠ 레버가 강력하다</b> — 강력함은 op 커버리지(무엇이 INT8인가)에 달렸다.</div>
+  </section>
+
+  <!-- ================= §6 ================= -->
+  <h2 class="sec">§6 — 판정·산출물</h2>
+  <section id="s6" class="step">
+    <div class="verdict no"><h4><span class="b">NO</span> stage2 §4.4의 59.9% 회복은 온디바이스로 전이되지 않는다 — 폭락의 ~9%만 회복</h4><p>ONNX-레벨 SmoothQuant(α=1.0)는 mAP 0.2383 → <b>0.2553</b>, 0.1854 gap의 <b>9.2%</b>뿐. stage2 §4.4의 <b>59.9%</b>보다 약 6.5배 작다. 근본 원인은 SmoothQuant가 아니라 <b>op 커버리지</b> — 온디바이스 INT8은 Gemm 전용(attention/LayerNorm/Softmax는 FP16, 58ba518 파서·빌더 벽), stage2 torch는 모든 linear가 INT8. <b>stage2 §4.4의 판정을 부정하는 게 아니라 "경로·op-커버리지 의존"으로 정밀화</b>한다.</p></div>
+    <div class="verdict mixed"><h4><span class="b">MIXED</span> 단 SmoothQuant는 방향이 옳다 — α 순서 보존 + mAP_s 부분 회복 + 거의 지연 중립</h4><p>α=1.0(9.2%) &gt; α=0.5(8.7%)로 stage2의 DETR-best α=1.0 순서를 보존. 폭락이 집중된 작은 객체 mAP_s가 0.0336 → 0.0449(6.1%)로 부분 회복. 대가는 Mul 95개뿐 = <b>+0.3413 ms·+0.18 MiB</b>(거의 중립). 레버는 싸지만 이 경로에선 modest.</p></div>
+    <div class="verdict yes"><h4><span class="b">YES</span> stage2가 torch에만 갖고 있던 SmoothQuant를 처음으로 온디바이스(ONNX→TRT)에 올렸다</h4><p>modelopt.onnx 임포트 불가 → ONNX 그래프에 SmoothQuant를 <b>수동</b>으로 심어(95 Gemm, per-channel s=a<sup>α</sup>/w<sup>1-α</sup>, FP32-정확 게이트 1.7e-4 CPU EP) 대칭 INT8 엔진 2종을 빌드. activation absmax 최대 46.7×/중앙 7.49× 감쇠 확인. 진짜 INT8임도 확인(sym과 logits_absmax 16.43로 실제 다름).</p></div>
+    <table class="kv">
+      <tr><th>실측 리포트</th><td><code>logs/stage3_jetson_orin_detr_smoothquant_report.html</code> (이 문서)</td></tr>
+      <tr><th>SSOT JSON</th><td><code>experiments/stage3_tensorrt/jetson_ondevice/detr_smoothquant/results/detr_sq_summary.json</code> · <code>detr_sq_map_summary.json</code> · <code>sq_export_meta_{a10,a05}.json</code> · <code>orin_detr_sq_meta.json</code></td></tr>
+      <tr><th>raw 산출물</th><td><code>results/detr_sq_{a10,a05}_raw.npz</code>(엔진별 raw logits/boxes) · <code>raw/detr_sq_build_{a10,a05}.log</code>(trtexec 빌드)</td></tr>
+      <tr><th>스크립트</th><td><code>scripts/</code>: <code>detr_sq_export.py</code>(ONNX SmoothQuant + 대칭 재양자화 + FP32 게이트) · <code>orin_detr_sq_map.py</code>(보드 dumper, <code>orin_detr_map.run_engine</code> 재사용) · <code>analyze_detr_sq_map.py</code>(호스트 mAP·회복률) · <code>build_sq_summary.py</code>(SSOT)</td></tr>
+      <tr><th>가이드 반영</th><td><a href="../study_guide/04_transformer_quantization.md#44-우회-2--smoothquant-적용-activation-outlier-완화">study_guide/04_transformer_quantization.md</a> §4.4 🔬 온디바이스 콜아웃(순수 삽입)</td></tr>
+      <tr><th>교차링크</th><td>DETR 정확도 축(폭락 재현) <a href="stage3_jetson_orin_detr_accuracy_report.html">정확도 보고서(58ba518)</a> · DETR 지연 축 <a href="stage3_jetson_orin_detr_report.html">DETR 보고서(9ef2a58)</a> · torch 경로 SmoothQuant <a href="stage2_smoothquant_report.html">stage2 §4.4 리포트</a></td></tr>
+    </table>
+    <div class="note tip"><span class="tag">과제 완료</span> 메모리 verbatim <b>"SmoothQuant(activation 입도)로 DETR INT8 폭락이 온디바이스에서 회복되는가"</b>에 답했다 — <b>부분적으로(9.2%)</b>, 그리고 그 이유(op 커버리지)까지 규명. stage2 §4.4의 59.9%는 <b>경로 의존</b>이었다.</div>
+    <footer>
+      3·4단계 온디바이스 실측 · Jetson AGX Orin Dev Kit (64GB) · JetPack 6.2.1 · TensorRT 10.3.0 · <code>nvpmodel MAXN</code><br>
+      절대 mAP·지연은 fixed 800×1066·batch1·1000장 서브셋 기준 상대 관계만 유효 · SmoothQuant는 구성상 FP32-정확(이득은 activation 양자화 조밀화에서) · Jetson은 NVIDIA edge이지 TI/Qualcomm/Renesas 아님
+    </footer>
+  </section>
+</div>
+</body>
+</html>

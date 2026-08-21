@@ -1,0 +1,4 @@
+-rw-rw-r-- 1 katech katech 47092836  8월 21 20:21 /home/katech/orin_bench/engines/detr_gpu_int8_sq_a05.plan
+-rw-rw-r-- 1 katech katech 47052636  8월 21 20:13 /home/katech/orin_bench/engines/detr_gpu_int8_sq_a10.plan
+# TRT
+&&&& RUNNING TensorRT.trtexec [TensorRT v100300] # /usr/src/tensorrt/bin/trtexec --help

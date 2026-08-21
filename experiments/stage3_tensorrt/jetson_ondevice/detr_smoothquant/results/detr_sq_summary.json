@@ -1,0 +1,156 @@
+{
+  "board": "NVIDIA Jetson AGX Orin Developer Kit (64GB), JetPack 6.2.1, TensorRT 10.3.0, MAXN",
+  "task": "On-device SmoothQuant on DETR (facebook/detr-resnet-50): does activation-granularity smoothing recover the accuracy-valid explicit-sym INT8 collapse (58ba518: 0.4237->0.2383)?",
+  "method": {
+    "smoothquant": "ONNX-level, manual. All 95 DETR Gemms are transB=0 (Y=A·B, weight [K,N]); per-input-channel(K) scale s_k = a_k^α / w_k^(1-α); inject Mul(A,1/s) + scale weight rows (axis0) by s -> A'·B'=A·B exact (FP32 gate max_abs<1e-2, CPU EP).",
+    "why_manual": "modelopt.onnx not importable (onnxslim missing); stage2 §4.4 SmoothQuant lived only on the torch fake-quant path (Design X) and never produced an ONNX -> never on-device.",
+    "quant": "identical sym recipe as detr_int8_sym.onnx: QDQ QInt8 act+weight, per_channel, op_types_to_quantize=[Conv,Gemm], QuantizeBias=False, ActivationSymmetric+WeightSymmetric, exclude backbone conv1. The ONLY delta vs the committed sym engine is the SmoothQuant Muls.",
+    "eval": "COCO val2017 head 1000, fixed 800x1066, pycocotools bbox mAP (board dumps raw logits/boxes). FP32/sym reproduced from committed npz with the SAME postprocess (0.4237/0.2383 -> no drift).",
+    "alphas": "a10=1.0 (stage2 §4.4 DETR-best), a05=0.5."
+  },
+  "engines": {
+    "gpu_fp32": {
+      "label": "FP32",
+      "latency_ms": 25.8496,
+      "engine_bytes": 167898412,
+      "engine_mib": 160.12,
+      "mAP": 0.4237,
+      "mAP_s": 0.2179,
+      "accuracy_valid": true
+    },
+    "gpu_int8_sym": {
+      "label": "INT8 explicit-sym (accuracy-valid)",
+      "latency_ms": 11.002,
+      "engine_bytes": 46859132,
+      "engine_mib": 44.69,
+      "mAP": 0.2383,
+      "mAP_s": 0.0336,
+      "accuracy_valid": true
+    },
+    "sq_a10": {
+      "label": "INT8 SmoothQuant α=1.0 + sym QDQ (accuracy-valid)",
+      "latency_ms": 11.3433,
+      "engine_bytes": 47052636,
+      "engine_mib": 44.87,
+      "mAP": 0.2553,
+      "mAP50": 0.4766,
+      "mAP75": 0.2437,
+      "mAP_s": 0.0449,
+      "mAP_m": 0.2543,
+      "mAP_l": 0.4743,
+      "accuracy_valid": true,
+      "smoothquant": {
+        "alpha": 1.0,
+        "n_gemms": 95,
+        "compression_max": 46.699,
+        "compression_max_gemm": "Gemm_4",
+        "compression_median": 7.485,
+        "n_ge_2x": 94,
+        "exactness_max_abs": 0.0001747608184814453,
+        "verify": {
+          "zp_total": 732,
+          "zp_nonzero": 0,
+          "int32_bias_DQ": 0,
+          "SQMul_kept": 95
+        },
+        "onnx_qdq_bytes": 43612561
+      }
+    },
+    "sq_a05": {
+      "label": "INT8 SmoothQuant α=0.5 + sym QDQ (accuracy-valid)",
+      "latency_ms": 11.4084,
+      "engine_bytes": 47092836,
+      "engine_mib": 44.91,
+      "mAP": 0.2544,
+      "mAP50": 0.473,
+      "mAP75": 0.2438,
+      "mAP_s": 0.0438,
+      "mAP_m": 0.2565,
+      "mAP_l": 0.4694,
+      "accuracy_valid": true,
+      "smoothquant": {
+        "alpha": 0.5,
+        "n_gemms": 95,
+        "compression_max": 19.265,
+        "compression_max_gemm": "Gemm_4",
+        "compression_median": 5.51,
+        "n_ge_2x": 95,
+        "exactness_max_abs": 0.00014495849609375,
+        "verify": {
+          "zp_total": 732,
+          "zp_nonzero": 0,
+          "int32_bias_DQ": 0,
+          "SQMul_kept": 95
+        },
+        "onnx_qdq_bytes": 43612561
+      }
+    }
+  },
+  "recovery": {
+    "fp32_mAP": 0.4237,
+    "sym_mAP": 0.2383,
+    "gap": 0.1854,
+    "fp32_mAP_s": 0.2179,
+    "sym_mAP_s": 0.0336,
+    "collapse_gap": 0.1854,
+    "sq_a10": {
+      "recovery_pct_of_gap": 9.2,
+      "maps_recovery_pct_of_gap": 6.1,
+      "delta_vs_sym_abs": 0.017,
+      "delta_vs_fp32_pct": -39.7,
+      "speedup_vs_fp32": 2.279,
+      "latency_vs_sym_ms": 0.3413
+    },
+    "sq_a05": {
+      "recovery_pct_of_gap": 8.7,
+      "maps_recovery_pct_of_gap": 5.5,
+      "delta_vs_sym_abs": 0.0161,
+      "delta_vs_fp32_pct": -40.0,
+      "speedup_vs_fp32": 2.266,
+      "latency_vs_sym_ms": 0.4064
+    }
+  },
+  "divergence_vs_fp32": {
+    "gpu_int8_sym": {
+      "logits_corr": 0.982359,
+      "logits_absmax": 17.4859,
+      "boxes_corr": 0.945321,
+      "boxes_absmax": 0.9986
+    },
+    "sq_a10": {
+      "logits_corr": 0.982575,
+      "logits_absmax": 16.9234,
+      "boxes_corr": 0.947579,
+      "boxes_absmax": 0.9976
+    },
+    "sq_a05": {
+      "logits_corr": 0.982523,
+      "logits_absmax": 17.1109,
+      "boxes_corr": 0.947263,
+      "boxes_absmax": 0.9967
+    }
+  },
+  "sq_vs_sym_absmax": {
+    "sq_a10": {
+      "logits_absmax": 16.4336,
+      "boxes_absmax": 0.9975
+    },
+    "sq_a05": {
+      "logits_absmax": 17.002,
+      "boxes_absmax": 0.9975
+    }
+  },
+  "stage2_crossval": {
+    "stage2_recovery_pct": 59.9,
+    "stage2_path": "torch fake-quant (Design X), per-tensor INT8 on ALL linears incl. attention Q/K/V/out; gap 0.0908 (0.4209->0.3301) recovered +0.0544 to 0.3845 (§4.4)",
+    "ondevice_recovery_pct_a10": 9.2,
+    "verdict": "The stage2 §4.4 59.9% recovery does NOT transfer to the on-device ONNX->TRT path: SmoothQuant-on-Gemms recovers only ~9% of the (larger) on-device collapse. SmoothQuant is still directionally correct (α=1.0 > α=0.5, matching stage2's α ordering; mAP_s partially recovers) but modest. Root cause = op coverage: the ONLY buildable on-device INT8 engine leaves attention MatMul + LayerNorm + Softmax in FP16 (forced by the case-C parser + quantized-constant builder walls, stage2 §4.5), so INT8 is Gemm-only and smoothing the Gemm inputs is not the dominant residual-error lever there. The collapse is small-object dominated (mAP_s 0.2179->0.0336) and SmoothQuant barely moves it (->0.0449)."
+  },
+  "headline": "On-device SmoothQuant (α=1.0, 95 Gemms, activation compression up to 46.699× / median 7.485×) recovers only 9.2% of the DETR INT8 collapse (0.2383→0.2553 of the 0.1854 gap) — an order of magnitude below stage2 §4.4's 59.9% (torch fake-quant, all ops). Nearly latency-neutral (+0.3413 ms vs sym). The lever's effectiveness is path/op-coverage dependent; on the only buildable on-device path (attention left FP16), Gemm-input smoothing is not enough.",
+  "caveats": [
+    "Absolute mAP not comparable to stage2 (fixed-800x1066 vs dynamic shape; TRT vs ORT torch; 1000 vs 5000 img). Only the RELATIVE recovery-of-gap is the result.",
+    "1000-image head subset (stage1 함정 0 inflation applies); same-bundle relative deltas only.",
+    "SmoothQuant is FP32-exact by construction (s cancels); the on-device benefit comes purely from tighter per-tensor activation quant after outlier migration — verified the engines are real INT8 (logits_corr ~0.982 vs FP32) and genuinely differ from the sym engine (logits_absmax ~16 vs sym).",
+    "Jetson is NVIDIA edge silicon, not one of the three automotive vendors (TI/Qualcomm/Renesas)."
+  ]
+}

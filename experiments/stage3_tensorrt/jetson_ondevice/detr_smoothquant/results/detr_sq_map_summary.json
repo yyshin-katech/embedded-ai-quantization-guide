@@ -1,0 +1,93 @@
+{
+  "gpu_fp32": {
+    "mAP": 0.4237,
+    "mAP50": 0.6226,
+    "mAP75": 0.4437,
+    "mAP_s": 0.2179,
+    "mAP_m": 0.4621,
+    "mAP_l": 0.5955,
+    "accuracy_valid": true
+  },
+  "gpu_int8_sym": {
+    "mAP": 0.2383,
+    "mAP50": 0.4681,
+    "mAP75": 0.2196,
+    "mAP_s": 0.0336,
+    "mAP_m": 0.2316,
+    "mAP_l": 0.4438,
+    "accuracy_valid": true
+  },
+  "sq_a10": {
+    "mAP": 0.2553,
+    "mAP50": 0.4766,
+    "mAP75": 0.2437,
+    "mAP_s": 0.0449,
+    "mAP_m": 0.2543,
+    "mAP_l": 0.4743,
+    "accuracy_valid": true
+  },
+  "sq_a05": {
+    "mAP": 0.2544,
+    "mAP50": 0.473,
+    "mAP75": 0.2438,
+    "mAP_s": 0.0438,
+    "mAP_m": 0.2565,
+    "mAP_l": 0.4694,
+    "accuracy_valid": true
+  },
+  "_recovery": {
+    "fp32_mAP": 0.4237,
+    "sym_mAP": 0.2383,
+    "gap": 0.1854,
+    "fp32_mAP_s": 0.2179,
+    "sym_mAP_s": 0.0336,
+    "sq_a10": {
+      "mAP": 0.2553,
+      "mAP_s": 0.0449,
+      "delta_vs_sym_abs": 0.017,
+      "delta_vs_fp32_abs": -0.1684,
+      "delta_vs_fp32_pct": -39.7,
+      "recovery_pct_of_gap": 9.2,
+      "maps_recovery_pct_of_gap": 6.1
+    },
+    "sq_a05": {
+      "mAP": 0.2544,
+      "mAP_s": 0.0438,
+      "delta_vs_sym_abs": 0.0161,
+      "delta_vs_fp32_abs": -0.1693,
+      "delta_vs_fp32_pct": -40.0,
+      "recovery_pct_of_gap": 8.7,
+      "maps_recovery_pct_of_gap": 5.5
+    }
+  },
+  "_divergence_vs_fp32": {
+    "gpu_int8_sym": {
+      "logits_corr": 0.982359,
+      "logits_absmax": 17.4859,
+      "boxes_corr": 0.945321,
+      "boxes_absmax": 0.9986
+    },
+    "sq_a10": {
+      "logits_corr": 0.982575,
+      "logits_absmax": 16.9234,
+      "boxes_corr": 0.947579,
+      "boxes_absmax": 0.9976
+    },
+    "sq_a05": {
+      "logits_corr": 0.982523,
+      "logits_absmax": 17.1109,
+      "boxes_corr": 0.947263,
+      "boxes_absmax": 0.9967
+    }
+  },
+  "_sq_vs_sym_absmax": {
+    "sq_a10": {
+      "logits_absmax": 16.4336,
+      "boxes_absmax": 0.9975
+    },
+    "sq_a05": {
+      "logits_absmax": 17.002,
+      "boxes_absmax": 0.9975
+    }
+  }
+}

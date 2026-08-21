@@ -1,7 +1,7 @@
 ---
 name: stage2-smoothquant-hands-on
-description: 2단계 §4.4 SmoothQuant 완료(DETR): per-tensor INT8 폭락의 59.9%를 SmoothQuant가 회복, 프리셋 기본 α=1.0(논문 0.5 아님)
-metadata:
+description: "2단계 §4.4 SmoothQuant 완료(DETR): per-tensor INT8 폭락의 59.9%를 SmoothQuant가 회복, 프리셋 기본 α=1.0(논문 0.5 아님)"
+metadata: 
   node_type: memory
   type: project
 ---
@@ -25,4 +25,6 @@ metadata:
 
 **검증**: 자체 팬인(수치 SSOT 1:1·SVG 비례·섹션 무결성) + `tech-reviewer` 독립 팬인 **통과**(🔴1·🟡1 직접 수정·🟢3). 🔴=smooth_check 주석 "30배→3배면 성공" 통념이 실측(3.69→1.96)과 충돌해 오독 유발→모델 의존 명시로 교체, 🟡=§2.2.3 삽화값 LLM/DETR 스코프 병기; 🟢① modelopt 소스 라인 3건(`model_calib.py:954`·`model_quant.py:511`·`mode.py:377-380`)은 설치본 0.45.0 대조로 **라인 단위 실검증 완료**, 🟢③ 리포트 SVG 라벨 클리핑 viewBox 720→800 해소.
 
-이로써 2단계 실기 3종(DETR §4.5·BEVFormer §4.6·SmoothQuant §4.4) 완료. 머신은 [[machine-ai-lap-rtx3080]], BEVFormer는 [[stage2-bevformer-hands-on]].
+이로써 2단계 실기 3종(DETR §4.5·BEVFormer §4.6·SmoothQuant §4.4) 완료. **커밋 20c1a91(main, pushed 2026-08-17)** — 22파일(문서·리포트·experiments·메모리 git사본). 머신은 [[machine-ai-lap-rtx3080]], BEVFormer는 [[stage2-bevformer-hands-on]]. 커밋 규약은 [[repo-is-public-scan-before-commit]].
+
+**온디바이스 정밀화(2026-08-21, [[stage3-jetson-ondevice-hands-on]] 후속5)**: 이 59.9%는 **torch fake-quant 경로 한정**임이 온디바이스 측정으로 드러남. 같은 레버를 Jetson Orin ONNX→TRT에서 시험(ONNX-레벨 SmoothQuant, 95 Gemm)하면 DETR 폭락의 **~9%만 회복**(α=1.0 9.2%·α=0.5 8.7%). 근본원인=**op 커버리지**: 온디바이스에서 case-C 파서+quantized-const 빌더 벽 때문에 유일하게 빌드되는 INT8 엔진이 **Gemm 전용**(attention MatMul·LayerNorm·Softmax는 FP16)이라, 모든 linear가 INT8이던 torch 경로만큼 SmoothQuant가 먹히지 않음. **∴ 59.9%는 부정이 아니라 "경로·op-커버리지 의존"으로 정밀화**. 방향성은 보존(α=1.0>α=0.5 순서 일치, mAP_s 부분회복).

@@ -1,6 +1,6 @@
 ---
 name: stage3-jetson-ondevice-hands-on
-description: "3·4단계 Jetson AGX Orin 온디바이스 실측(2026-08-20, 데이터 커밋 00fd97d·문서 1a8f073 푸시완료, ResNet50): 실 trtexec 실존(stage3/5 'trtexec 부재→polygraphy' 반전)·DLA 실측(stage3 'DLA 범위 밖' 해소). DLA INT8=성능/와트 챔피언 51.29 inf/s/W(iGPU INT8의 ×1.547·전력 절반)·DLA는 INT8 전용기(FP16 13.87× 느림)·오프로드 GR3D 95%→3~16%로 증명·DLA 후보 2/2·iGPU INT8≈FP16 0.984. DLA INT8 정확도 미주장(--int8 암묵). 후속(2026-08-21, 커밋 c03c174 푸시완료): iGPU∥DLA 동시부하 = GPU-폴백 직렬화로 공짜 병렬 아님(iGPU+DLA0 60.8%·DLA 27% 붕괴, DLA0+DLA1 87.0%가 최적 66.07 inf/s/W)·nvpmodel MAXN→50W 리더 교차(iGPU -29.4% vs DLA -2.9% → 50W서 DLA +8.8%). 후속2(2026-08-21, 커밋 9ef2a58 푸시완료): 새 모델 축 DETR — 무거운 트랜스포머는 iGPU INT8 이득 부활(INT8/FP16=0.710 vs ResNet50 0.984), explicit QDQ INT8 파싱불가(3단계 case C 재현), DLA 트랜스포머 부적합(폴백 404/16조각 → iGPU FP16의 30× 느림, DLA=CNN 가속기). tech-reviewer PASS 🔴0. 후속3 정확도 축(2026-08-21, 커밋 d563439 푸시완료): 저장 .plan을 4단계 CPU-프록시 같은 ResNet50 1000장 번들에 돌려 예측 1:1 — accuracy-valid iGPU INT8 explicit-QDQ top-1 0.762=FP32>CPU MLAS 0.750, INT8 경로의존이 CPU↔가속기 넘음(TRT vs MLAS 961/1000=4단계 x86 대역·≠Pi5 100%), implicit DLA INT8 0.017 붕괴(캐비앗 정량화). tech-reviewer PASS 🔴0·🟡1(line-ref 876→892). 후속4 정확도 축 DETR(2026-08-21, 커밋 58ba518 푸시완료): 대칭 재양자화로 case C/B + 트랜스포머 self-attn quantized-const 2벽 우회→explicit-sym INT8 빌드가능(44.69MiB·11.0ms), but accuracy-valid INT8이 stage2 폭락 재현(mAP 0.4237→0.2383 −43.8%·mAP_s −84.6%, ORT/dynamic/5000 −42.9%와 교차확증)=case-C 픽스는 툴체인 언락이지 정확도 구제 아님(레버=activation 입도 SmoothQuant §4.4)·implicit 0.4073은 무통제라 미주장(순수 FP16 폴백 아님). tech-reviewer PASS 🔴1·🟡3 전부 fixed"
+description: "3·4단계 Jetson AGX Orin 온디바이스 실측(2026-08-20, 데이터 커밋 00fd97d·문서 1a8f073 푸시완료, ResNet50): 실 trtexec 실존(stage3/5 'trtexec 부재→polygraphy' 반전)·DLA 실측(stage3 'DLA 범위 밖' 해소). DLA INT8=성능/와트 챔피언 51.29 inf/s/W(iGPU INT8의 ×1.547·전력 절반)·DLA는 INT8 전용기(FP16 13.87× 느림)·오프로드 GR3D 95%→3~16%로 증명·DLA 후보 2/2·iGPU INT8≈FP16 0.984. DLA INT8 정확도 미주장(--int8 암묵). 후속(2026-08-21, 커밋 c03c174 푸시완료): iGPU∥DLA 동시부하 = GPU-폴백 직렬화로 공짜 병렬 아님(iGPU+DLA0 60.8%·DLA 27% 붕괴, DLA0+DLA1 87.0%가 최적 66.07 inf/s/W)·nvpmodel MAXN→50W 리더 교차(iGPU -29.4% vs DLA -2.9% → 50W서 DLA +8.8%). 후속2(2026-08-21, 커밋 9ef2a58 푸시완료): 새 모델 축 DETR — 무거운 트랜스포머는 iGPU INT8 이득 부활(INT8/FP16=0.710 vs ResNet50 0.984), explicit QDQ INT8 파싱불가(3단계 case C 재현), DLA 트랜스포머 부적합(폴백 404/16조각 → iGPU FP16의 30× 느림, DLA=CNN 가속기). tech-reviewer PASS 🔴0. 후속3 정확도 축(2026-08-21, 커밋 d563439 푸시완료): 저장 .plan을 4단계 CPU-프록시 같은 ResNet50 1000장 번들에 돌려 예측 1:1 — accuracy-valid iGPU INT8 explicit-QDQ top-1 0.762=FP32>CPU MLAS 0.750, INT8 경로의존이 CPU↔가속기 넘음(TRT vs MLAS 961/1000=4단계 x86 대역·≠Pi5 100%), implicit DLA INT8 0.017 붕괴(캐비앗 정량화). tech-reviewer PASS 🔴0·🟡1(line-ref 876→892). 후속4 정확도 축 DETR(2026-08-21, 커밋 58ba518 푸시완료): 대칭 재양자화로 case C/B + 트랜스포머 self-attn quantized-const 2벽 우회→explicit-sym INT8 빌드가능(44.69MiB·11.0ms), but accuracy-valid INT8이 stage2 폭락 재현(mAP 0.4237→0.2383 −43.8%·mAP_s −84.6%, ORT/dynamic/5000 −42.9%와 교차확증)=case-C 픽스는 툴체인 언락이지 정확도 구제 아님(레버=activation 입도 SmoothQuant §4.4)·implicit 0.4073은 무통제라 미주장(순수 FP16 폴백 아님). tech-reviewer PASS 🔴1·🟡3 전부 fixed. 후속5 SmoothQuant DETR(2026-08-21): 후속4가 지목한 레버(activation 입도)를 ONNX-레벨 SmoothQuant(95 Gemm·per-input-ch s=a^α/w^(1−α))로 온디바이스 시험 — 폭락 gap 0.1854 중 α=1.0 9.2%(0.2553)·α=0.5 8.7%만 회복=stage2 §4.4 59.9%(torch)의 ~1/6. 근본원인=op 커버리지(빌더 벽으로 유일 빌드가능 INT8이 Gemm 전용, attention/LayerNorm/Softmax FP16) → §4.4 59.9%는 부정 아니라 경로·op-커버리지 의존으로 정밀화. 방향은 옳음(α=1.0>α=0.5 stage2 순서 보존·mAP_s 6.1% 부분회복·거의 지연중립 +0.34ms). FP32 게이트는 CPU EP(CUDA TF32 허위발화). §4.4 콜아웃 순수삽입(2/0)"
 metadata: 
   node_type: memory
   type: project
@@ -183,3 +183,33 @@ MiB"[bytes/1048576]와 자기모순 → 전부 44.69 MiB 통일). 🟡 = README 
 dynamic)·TRT vs ORT·1000 vs 5000장이라 stage2와 1:1 비교 불가 — **상대 폭락만** 결과(그 상대 폭락이 stage2
 교차확증)·1000장 서브셋(1단계 함정0)·implicit 미주장·Jetson≠자동차 벤더. **이로써 DETR "정확도 미측정" 캐비앗
 닫힘.** 다음 후보: DETR에 SmoothQuant/per-token(2단계 §4.4)로 activation 입도 개선 후 온디바이스 재측정(폭락 회복 여부).
+
+**후속 실측 — SmoothQuant DETR(2026-08-21, `embedded-guide-orchestrator` 부분수정 — author-4 직접 + tech-reviewer
+팬인; §4.4 온디바이스 반영):** 위 후속4의 "다음 후보"를 실행 — 후속4가 지목한 레버(activation 입도)를 SmoothQuant로
+직접 시험. stage2 §4.4는 SmoothQuant로 per-tensor 폭락의 **59.9%**를 회복했으나 **torch fake-quant 경로(Design X)
+에서만**이고 ONNX→TRT 온디바이스엔 없었음. SSOT=`experiments/stage3_tensorrt/jetson_ondevice/detr_smoothquant/
+results/detr_sq_summary.json`. eval=후속4와 동일(COCO head 1000·fixed 800×1066·pycocotools).
+- **① 헤드라인(교차확증 반전) — 온디바이스 SmoothQuant는 폭락의 ~9%만 회복, stage2의 1/6:** ONNX-레벨 수동
+  SmoothQuant(95 Gemm 전부 transB=0, per-input-channel `s=a^α/w^(1-α)`, Mul(A,1/s)+weight 행 스케일=FP32 정확)를
+  후속4의 대칭 INT8 위에 얹음. gap=FP32 0.4237−sym 0.2383=**0.1854** 중 α=1.0 **0.2553=9.2%(+0.0170)**·α=0.5
+  0.2544=8.7%. **stage2 §4.4 59.9%(torch)보다 약 6.5배 작다.** **근본원인=op 커버리지**(SmoothQuant가 틀린 게
+  아님): 온디바이스에서 빌드 가능한 유일 INT8 엔진은 case-C 파서+quantized-const 빌더 벽 때문에
+  `op_types_to_quantize=[Conv,Gemm]`로 강제돼 attention MatMul·LayerNorm·Softmax가 FP16으로 남음 → INT8이 **Gemm
+  전용**이라 Gemm 입력 smoothing이 지배 잔차원 아님. stage2 torch는 attention Q/K/V/out 포함 **모든 linear**가 INT8이라
+  크게 먹혔음. **∴ stage2 §4.4 59.9%는 부정 아니라 "경로·op-커버리지 의존"으로 정밀화**(교차확증 반전).
+- **② SmoothQuant 방향은 옳다(무효 아님):** α=1.0(9.2%)>α=0.5(8.7%)로 **stage2 DETR-best α 순서 보존**·폭락이
+  집중된 작은객체 mAP_s 0.0336→0.0449(gap의 6.1%) 부분 회복·대가는 Mul 95개뿐이라 **거의 지연 중립**(sym 11.002→
+  α=1.0 11.3433 ms=+0.3413·엔진 44.69→44.87 MiB=+0.18). activation absmax 최대 **46.699×**(Gemm_4)/중앙 7.485×
+  감쇠. 진짜 INT8 확인(FP32 대비 logits_corr 0.98258·sym과 logits_absmax 16.43로 실제 다름=무음 sym 복제 아님).
+- **③ 툴체인 교훈:** modelopt.onnx 임포트 불가(`onnxslim` 없음)→ONNX 수동 SmoothQuant. **FP32 정확도 게이트는
+  CPU EP에서** — CUDA EP는 Ampere TF32(10-bit 가수)가 SmoothQuant 재스케일에 민감해 max_abs 0.65 허위 발화(정밀도
+  artifact, 배선버그 아님; 순수 numpy 수학은 1.4e-14). CPU EP=1.748e-4(α=1.0)/1.450e-4(α=0.5) PASS.
+
+문서 반영: `04_transformer_quantization.md` §4.4에 🔬 온디바이스 콜아웃 **순수삽입(2/0=승번 오염 0, 헤딩 6개 불변)**·
+HTML 재렌더. 산출물 `logs/stage3_jetson_orin_detr_smoothquant_report.html`(§1~6·SVG 2종: gap 회복률 factor 5.5px/%
++ 지연 factor 18.57px/ms) · `experiments/stage3_tensorrt/jetson_ondevice/detr_smoothquant/`(scripts 4[`detr_sq_export`·
+`orin_detr_sq_map`·`analyze_detr_sq_map`·`build_sq_summary`]·results·raw[build 로그 2·dump·engine_sizes]·README).
+캐비앗: 절대 mAP는 fixed 800×1066·1000장·TRT라 stage2 5000장·torch와 1:1 비교 불가 — **같은 번들 상대 회복률만**·
+SmoothQuant는 구성상 FP32-정확(이득은 activation 양자화 조밀화)·Jetson≠자동차 벤더. **이로써 stage2 §4.4의
+"온디바이스 미측정" + 후속4의 "SmoothQuant 재측정 다음 후보" 둘 다 닫힘.** 다음 후보: per-token/SQ+attention INT8
+(attention까지 INT8 가능한 툴체인 확보 시 — 현재는 빌더 벽으로 Gemm 전용).
