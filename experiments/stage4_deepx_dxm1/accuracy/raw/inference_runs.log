@@ -1,0 +1,20 @@
+# DX-M1 accuracy axis — on-device inference runs (Raspberry Pi 5 + DX-M1)
+# bundle: rpi_sub_u8.npy md5 3c0e151ceee8ae473a35af2a2e2bc196 (== tv.npy[:1000], committed Orin/CPU-proxy bundle)
+# labels: rpi_labels.npy md5 08b054c22c06c667fc1ab13a4e60d7ed
+
+## n=200 native validation (top-1 sanity vs channel-order):
+[npu_native ] top1=0.7450 (n=200) 2.847 ms/img repr=raw_uint8_nhwc
+
+## n=1000 full runs:
+[npu_native ] top1=0.7660 (n=1000) 2.830 ms/img repr=raw_uint8_nhwc -> results/npu_native.json
+[cpu_fp32 ] top1=0.7620 (n=1000) 104.028 ms/img  in=input  ort=1.29.0 -> results/cpu_fp32.json
+[cpu_int8 ] top1=0.7500 (n=1000) 45.699 ms/img  in=input  ort=1.29.0 -> results/cpu_int8.json
+
+## input contract (queried from engine, n=1000 run):
+  info: [{'name':'input','shape':[1,224,224,3],'dtype':uint8,'elem_size':1}]  get_input_size:150528
+  output: [{'name':'logits','shape':[1,1000],'dtype':float32,'elem_size':4}]
+  feeding repr: raw_uint8_nhwc
+
+## dx_engine / ORT versions:
+  NPU: dx_engine 3.4.2 (venv-dx-runtime, numpy 2.5.2)
+  CPU: onnxruntime 1.29.0 CPUExecutionProvider (cpu-venv, intra_op=4)

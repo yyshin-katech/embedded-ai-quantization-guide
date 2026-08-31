@@ -104,6 +104,6 @@ python3 scripts/build_summary.py results   # → cpu_npu_comparison.json + y5s_s
 1. **NPU는 INT8 전용** — FP 정밀도 사다리는 NPU 위에 없음. 대조는 CPU FP32 ↔ NPU INT8.
 2. 절대 지연·처리량·전력은 **배치1·wall-clock·prebuilt .dxnn·Pi 5 단일 호스트** 기준 → 상대 관계만 유효.
 3. **host-bound는 Pi 5의 Gen2×1 탓**이지 DX-M1 천장이 아님.
-4. **정확도 미측정**(prebuilt .dxnn·라벨셋 부재) → 다음 축.
+4. ~~**정확도 미측정**(prebuilt .dxnn·라벨셋 부재) → 다음 축.~~ **해소** → [`accuracy/`](accuracy/): ResNet50+ImageNet 1000장으로 native-QDQ(top-1 **0.7660** 무손실급·붕괴 없음)와 외부-QDQ **컴파일 하드 거부**(Qualcomm 조용한 붕괴와 정반대), CPU↔NPU 예측 일치 **939/1000**(경로의존 단조 감소) 실측.
 5. Pi 5는 DEEPX 벤더-NPU 호스트일 뿐 **자동차 3벤더(TI/Qualcomm/Renesas)가 아님** — 수치 전이 불가.
 6. DEEPX 다중 호스트 참조표(리포트 §4)는 **외부(비실측)** — 결론은 온보드 프로파일러로 자립, 참조는 보강.

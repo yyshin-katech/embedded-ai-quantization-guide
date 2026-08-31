@@ -1,0 +1,49 @@
+# dx_com native compile (config path: raw uint8 -> folded div/255 + ImageNet normalize)
+# compiler: dx-com 2.4.0-rc.5 | model resnet50_fp32.onnx | config native_cfg.json | opt_level 1
+[INFO] -
+[INFO] - ================================================================================
+[INFO] -   COMPILATION CONFIGURATION
+[INFO] - ================================================================================
+[INFO] -   Compiler Version : 2.4.0
+[INFO] -   ONNX Model       : resnet50_fp32.onnx
+[INFO] -   Config File      : native_cfg.json
+[INFO] -   Output Directory : native_relog
+[INFO] -   Optimization Level : 1
+[INFO] - ================================================================================
+[INFO] - For faster compilation, consider using opt_level=0 (may increase NPU latency).
+[INFO] -
+[INFO] - Final result: 1 NPU groups, 0 CPU groups
+[1/4] NPU encode+optimize:   0%|          | 0/1 [00:00<?]
+[1/4] NPU encode+optimize:   0%|          | 0/1 [00:00<?], Graph=npu_0
+[INFO] - [Quantization] wbit=8, abit=8, mode=ptq
+[1/4] NPU encode+optimize:   0%|          | 0/1 [00:00<?], Graph=npu_0
+[1/4] NPU encode+optimize: 100%|██████████| 1/1 [00:01<00:00], Graph=npu_0
+[4/4] Quant + export:   0%|          | 0/1 [00:00<?]
+[4/4] Quant + export:   0%|          | 0/1 [00:00<?], Graph=npu_0
+[4/4] Quant + export: 100%|██████████| 1/1 [00:01<00:00], Graph=npu_0
+Quantizing NPU Graphs: 100%|██████████| 4/4 [00:05<00:00], Current Graph=npu_0
+[INFO] - Inserting preprocessing operations to NPU graph: 3 nodes added
+[INFO] - Added nodes: Div(x=255) -> Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+[INFO] - Skipped nodes (cannot be inserted in NPU graph): convertColor, expandDim
+[INFO] -
+[INFO] - ================================================================================
+[INFO] -   INPUT PREPROCESSING GUIDANCE
+[INFO] - ================================================================================
+[INFO] -   [input] Format: IM2COL | Fused ops: Transpose(HWC→CHW) → Div(x=255) → Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+[INFO] -            ONNX input : float32 NCHW [1, 3, 224, 224]
+[INFO] -            NPU  input : uint8 NHWC [1, 224, 224, 3]
+[INFO] -
+[INFO] -   For NPU inference, provide uint8 HWC input directly.
+[INFO] -   You should SKIP these preprocessing in NPU inference. (already handled by NPU):
+[INFO] -     • div/mul   : pixel value scaling            (fused as Mul node)
+[INFO] -     • normalize : channel-wise normalization     (fused as Add+Mul nodes)
+[INFO] -     • transpose : HWC → CHW layout conversion   (handled by NPU input format)
+[INFO] - ================================================================================
+[INFO] -
+Optimizing NPU models: 100%|██████████| 1/1 [00:00<00:00,  4.43model/s]
+  L1 (2 combos): 100%|██████████| 2/2 [00:00<00:00, 16.04it/s]
+  L2 (1 combos): 100%|██████████| 1/1 [00:00<00:00,  7.03it/s]
+Compiling Model : 100%|█████████▉| 1.0/1.0 [00:16<00:00, 13.91s/model ]
+Compiling Model : 100%|█████████▉| 1.0/1.0 [00:16<00:00, 16.28s/model ]
+=== compile exit: 0 ===
+-rw-rw-r-- 1 yuyeong yuyeong 51746482  8월 31 18:45 native_relog/resnet50_fp32.dxnn

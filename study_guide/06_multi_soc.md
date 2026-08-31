@@ -660,6 +660,27 @@ DRP-AI TVM은 **TVM 기반**이라, DRP-AI가 못 맡는 op는 **TVM이 CPU(Arm 
 > 📄 전체 실측·SVG·판정: [`../logs/stage4_deepx_dxm1_report.html`](../logs/stage4_deepx_dxm1_report.html) · 데이터·스크립트·재현: [`../experiments/stage4_deepx_dxm1/`](../experiments/stage4_deepx_dxm1/) · CPU 바닥값 짝: [§2-2](#2-2--실측-부분프록시-arm-cortex-a-폴백-바닥값--pi-5a76--imx8m-nanoa53--jetson-orina78ae)
 > **캐비앗:** ① NPU는 **INT8 전용** → 대조는 CPU FP32 ↔ NPU INT8(정직한 배포 선택, 불공정 비교 아님). ② 절대 지연·처리량·전력은 배치1·wall-clock·prebuilt `.dxnn`·Pi 5 단일 호스트 → **상대 관계만 유효**. ③ **host-bound는 Pi 5의 Gen2×1 탓이지 DX-M1 천장이 아님**(더 넓은 링크의 호스트면 천장이 올라간다). ④ **정확도 미측정**(prebuilt `.dxnn`·라벨셋 부재) → 다음 축(x86서 `.dxnn` 컴파일 + 라벨셋으로 on-device top-1/mAP, native-QDQ vs 외부-QDQ는 [§4-B Qualcomm](#4-b-qualcomm-qnn--onnxruntime-qnn-ep)의 "외부 QDQ 붕괴" 교훈과 대조). ⑤ Pi 5는 DEEPX 벤더-NPU 호스트일 뿐 **자동차 3벤더(TI/Qualcomm/Renesas)가 아님** — 가속 수치 전이 불가.
 
+#### 4-D(정확도). 🔬 실측 (온디바이스): DX-M1 정확도 축 — 외부 QDQ 거부 · CPU↔NPU 경로 의존
+
+> **위 §4-D 캐비앗 ④가 예고한 "다음 축"을 실측으로 닫는다.** 벤치는 라벨셋 없는 `yolo26n`이었으므로, 정확도가 필요한 이번엔 **3·5단계·[§2-2](#2-2--실측-부분프록시-arm-cortex-a-폴백-바닥값--pi-5a76--imx8m-nanoa53--jetson-orina78ae)와 공유하는 ResNet50 + ImageNet 1000장 번들**로 스코프를 옮겨 실제 top-1을 라벨과 대조했다. 두 질문 — **(a)** DX-M1은 외부 QDQ scale을 존중하나, 아니면 [§4-B Qualcomm HTP](#4-b-qualcomm-qnn--onnxruntime-qnn-ep)처럼 무시해 붕괴시키나? **(b)** §2-2의 "정수커널 경로의존"이 실 벤더-NPU까지 가나?
+
+**헤드라인 (a): 외부 QDQ는 컴파일 단계에서 하드 거부 — Qualcomm의 조용한 붕괴와 실패양식이 정반대.** 외부 ORT-QDQ(`resnet50_int8_qdq.onnx`)를 dx_com에 넣으면 weight/bias의 DequantizeLinear 분기가 `106 isolated node(s)`로 걸려 컴파일이 죽는다(`GraphStructureError` → 일반 `InternalError: contact DEEPX`, **`.dxnn` 미산출**). §4-B Qualcomm HTP는 같은 외부 QDQ를 **조용히 통과**시킨 뒤 런타임 top-1을 0.75→0.005로 붕괴시켰다 — 근본은 같으나(벤더 NPU가 양자화 소유·BYO-QDQ 미지원) **DEEPX는 "조용히 깨진 모델을 배포할 수 없다"**는 안전한 실패다. 이 거부가 곧 (b)에서 **동일-scale 순수 커널 다리를 만들 수 없는 이유**다.
+
+**헤드라인 (b): CPU↔NPU 예측 일치 939/1000 — 경로의존이 실 vendor-NPU까지, 단조 1000→961→939.**
+
+| 일치 다리 | 무엇이 다른가 | agree/1000 |
+|---|---|--:|
+| (§2-2) Jetson↔Pi5 | 없음 (같은 MLAS SDOT) | 1000 |
+| (§2-3) CPU↔iGPU (TRT vs MLAS) | 커널만 (**같은** QDQ scale) | 961 |
+| **(여기) CPU↔NPU (MLAS vs DX-M1)** | **커널 + scale + 전처리 위치** | **939** |
+
+- **native INT8은 무손실급 — 붕괴 없음.** dx_com 자체 PTQ INT8 top-1 = **0.7660**(CPU FP32 0.7620 · CPU MLAS INT8 0.7500). (a)의 거부 때문에 유일한 INT8 경로가 이 native다. +0.4%p는 1000장 노이즈 내(1단계 함정 0) → "무손실급"이지 "FP32 초과"가 아니다.
+- **왜 939 < 961인가.** [§2-3](#2-3--실측-온디바이스-jetson-agx-orin-가속기--igpu-정밀도-사다리--dla-오프로드--성능와트)의 961은 iGPU·CPU가 **같은 QDQ scale**(같은 `resnet50_int8_qdq.onnx`)을 써 유일 변수가 커널이었다. 여기선 **(a) 때문에 scale을 고정할 수 없다** — NPU가 자체 native scale을 강제 → 커널+scale+전처리 위치가 동시에 다른 **3중 confound**(커널-only 상한이 아님). 그래도 "경로 다르면 ~94–96% 대역"과 정합. 헤드라인 61장(=1000−939) 불일치 = NPU 정답 26 · MLAS 정답 10 · 둘다 오답 25 → **net +16 = top-1 0.7660−0.7500**(산술 정합).
+- **cross-run 재현성.** 이 세션 CPU arm(ORT 1.29.0) vs 커밋된 §2-2 Pi5 프록시(ORT 1.28.0), 같은 A76·번들: fp32/int8 **1000/1000 비트 동일** → 번들 동일성 이중확인 + MLAS SDOT 정수커널이 ORT 1.28→1.29 불변(같은 커널=100%, 경로의존 스레드 정합).
+
+> 📄 전체 실측·SVG·판정: [`../logs/stage4_deepx_dxm1_accuracy_report.html`](../logs/stage4_deepx_dxm1_accuracy_report.html) · 데이터·스크립트·재현: [`../experiments/stage4_deepx_dxm1/accuracy/`](../experiments/stage4_deepx_dxm1/accuracy/) · 벤치(지연·전력) 짝: [§4-D](#4-d--실측-deepx-축-온디바이스-dx-m1-m2-벤더-npu--raspberry-pi-5-cortex-a76-호스트)
+> **캐비앗:** ① 모델 스코프 이동(yolo26n→ResNet50) — 지연 벤치와 1:1 아님(다른 모델). ② (b) 939는 3중 confound(커널+scale+전처리 위치) — (a) 때문에 동일-scale 순수 커널 다리는 원리상 불가, 939는 커널-only 상한 아님. ③ npu_native 0.7660 > cpu_fp32 0.7620은 1000장 노이즈 내(이김 아님). ④ 절대 top-1은 1000장 서브셋 → 3·5단계 5000장 RTX와 비교 불가, 같은 번들 상대 관계만 유효. ⑤ Pi 5는 DEEPX 호스트일 뿐 **자동차 3벤더(TI/Qualcomm/Renesas) 아님**.
+
 ---
 
 ## 5) 예시 / 결과 해석 — "fallback 비율부터 확인" (정량 지표)

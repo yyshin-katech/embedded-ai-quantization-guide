@@ -1,0 +1,11 @@
+# dx_com external-QDQ rejection probe
+# compiler: <module 'dx_com.version' from '/home/yuyeong/dxcom-venv/lib/python3.10/site-packages/dx_com/version.py'> | dx-com 2.4.0-rc.5
+# model: resnet50_int8_qdq.onnx (ORT-produced external QDQ)
+
+FP32 twin op-inventory (COMPILES OK): {'Add': 16, 'Conv': 53, 'Flatten': 1, 'Gemm': 1, 'GlobalAveragePool': 1, 'MaxPool': 1, 'Relu': 49}
+QDQ arm  op-inventory (PREPARE-FAILS): {'Add': 16, 'Conv': 53, 'DequantizeLinear': 173, 'Flatten': 1, 'Gemm': 1, 'GlobalAveragePool': 1, 'MaxPool': 1, 'QuantizeLinear': 120, 'Relu': 49}
+delta = only QuantizeLinear/DequantizeLinear inserted; Conv/Gemm/Add/Relu identical
+
+=== FAILURE (chained) ===
+[level 0] InternalError: Unknown error occurred during compilation. Please contact DEEPX.
+[level 1] GraphStructureError: Graph contains 106 isolated node(s) not connected to input-output paths: ['/layer1/layer1.1/conv1/Conv_bias_dq', '/layer1/layer1.2/conv3/Conv_bias_dq', '/layer3/layer3.0/conv3/Conv_bias_dq', '/layer3/layer3.3/conv2/Conv_bias_dq', '/layer4/layer4.0/conv3/Conv_bias_dq', 'onnx::Conv_530_DequantizeLinear', 'onnx::Conv_536_DequantizeLinear', 'onnx::Conv_572_DequantizeLinear', 'onnx::Conv_590_DequantizeLinear', 'onnx::Conv_608_DequantizeLinear']...

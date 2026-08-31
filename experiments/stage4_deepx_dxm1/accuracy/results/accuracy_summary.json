@@ -1,0 +1,76 @@
+{
+  "n_eval": 1000,
+  "board": "Raspberry Pi 5 (Cortex-A76) + DEEPX DX-M1",
+  "top1": {
+    "npu_native": 0.766,
+    "cpu_fp32": 0.762,
+    "cpu_int8": 0.75
+  },
+  "accuracy_valid": {
+    "npu_native": true,
+    "cpu_fp32": true,
+    "cpu_int8": true
+  },
+  "input_repr": {
+    "npu_native": "raw_uint8_nhwc",
+    "cpu_fp32": null,
+    "cpu_int8": null
+  },
+  "external_qdq_on_npu": "REJECTED at compile: GraphStructureError (106 isolated nodes) -> no .dxnn produced (finding a)",
+  "agreements": {
+    "cpu_int8__vs__cpu_fp32": {
+      "agree": 950,
+      "n": 1000,
+      "frac": 0.95,
+      "note": "clean: same silicon+kernel family, only quantization differs"
+    },
+    "npu_int8__vs__cpu_fp32": {
+      "agree": 969,
+      "n": 1000,
+      "frac": 0.969,
+      "note": "NPU INT8 vs CPU FP32: quantization + kernel + preprocessing-location"
+    },
+    "npu_int8__vs__cpu_int8": {
+      "agree": 939,
+      "n": 1000,
+      "frac": 0.939,
+      "note": "CPU<->accelerator INT8; scales DIFFER (NPU native PTQ vs ORT QDQ) -- NOT the stage3 same-scale 961/1000 leg"
+    }
+  },
+  "cross_run_checks": {
+    "note": "this session ORT 1.29.0 vs committed stage4 Pi5 ORT 1.28.0, same A76+bundle",
+    "cpu_fp32__vs__committed_rpi5_fp32": {
+      "agree": 1000,
+      "n": 1000
+    },
+    "cpu_int8__vs__committed_rpi5_int8": {
+      "agree": 1000,
+      "n": 1000
+    }
+  },
+  "headline_disagreement": {
+    "pair": "npu_native (DX-M1 INT8) vs cpu_int8 (A76 MLAS SDOT)",
+    "n_disagree": 61,
+    "npu_correct_there": 26,
+    "mlas_correct_there": 10,
+    "both_wrong_there": 25,
+    "net_top1_delta_x1000": 16,
+    "first_indices": [
+      17,
+      27,
+      33,
+      54,
+      56,
+      60,
+      62,
+      84,
+      135,
+      183,
+      190,
+      204,
+      268,
+      278,
+      285
+    ]
+  }
+}
