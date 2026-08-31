@@ -44,3 +44,7 @@
   공개 가치가 없고 인프라 노출만 되어 사본에서 뺐습니다(비밀값은 아님). 접속은 각자 환경에서 새로 설정하면 됩니다.
 - **`jetson-agx-orin-board-access` 미포함** — Jetson 보드 접속 메모리(SSID·내부 IP 포함)는 애초에 사본으로
   복사하지 않습니다. 온디바이스 실측 결과 자체는 [`stage3-jetson-ondevice-hands-on.md`](stage3-jetson-ondevice-hands-on.md)에 있습니다.
+- **`lab-rpi-board-access`·`dx-m1-npu-setup` 미포함** — 랩 Raspberry Pi 5 접속 메모리(SSID·내부 IP·SSH 키 경로)와
+  그 Pi에 설치한 DEEPX DX-M1 NPU 셋업 메모리(접속 메모리 참조)는 로컬 전용이라 사본으로 복사하지 않습니다.
+  DX-M1은 4단계 벤더-NPU 축의 **실 온디바이스 DEEPX 실리콘**(설치·검증만 완료, 벤치는 별도 과제) — 같은 A76이
+  [`stage4-arm-cpu-fallback-proxy.md`](stage4-arm-cpu-fallback-proxy.md) CPU 폴백 프록시이자 DX-M1 호스트입니다.
