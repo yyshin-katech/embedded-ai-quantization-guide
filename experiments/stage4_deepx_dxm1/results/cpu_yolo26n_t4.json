@@ -1,0 +1,1 @@
+{"model": "yolo26n.onnx", "threads": 4, "warmup": 20, "iters": 100, "lat_p50_ms": 124.8352, "lat_mean_ms": 125.3733, "lat_p90_ms": 126.6974, "lat_min_ms": 123.8833, "lat_max_ms": 132.8509, "fps_single_stream": 8.01}

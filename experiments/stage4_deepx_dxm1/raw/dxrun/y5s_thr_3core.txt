@@ -1,0 +1,61 @@
+Runtime Framework Version: v3.4.2
+Device Driver Version: v2.6.0
+PCIe Driver Version: v2.5.0
+
+--- CPU Information ---
+  Architecture:                            aarch64
+  CPU(s):                                  4
+  Vendor ID:                               ARM
+  Model name:                              Cortex-A76
+
+--- Architecture Information ---
+  System Name: Linux
+  Node Name:   yuyeong
+  Release:     6.18.34+rpt-rpi-2712
+  Version:     #1 SMP PREEMPT Debian 1:6.18.34-1+rpt1 (2026-06-09)
+  Machine:     aarch64
+
+--- Memory Information ---
+  Total Physical Memory: 7.87 GB
+  Available Physical Memory: 6.72 GB
+  Total Swap Space: 2.00 GB
+  Free Swap Space: 2.00 GB
+
+modelFile: /home/yuyeong/dx-all-suite/dx-runtime/dx_rt/csharp_package/examples/models/YOLOV5S_1.dxnn
+inputFile: 
+outputFile: output.bin
+benchmark: 1
+loops: 30
+Device specification: 'all' (default)
+Run model target mode : Benchmark Mode
+Inference by time: duration=12(s)
+
+=== Model File: /home/yuyeong/dx-all-suite/dx-runtime/dx_rt/csharp_package/examples/models/YOLOV5S_1.dxnn ===
+
+Model Input Tensors:
+  - images
+Model Output Tensors:
+  - /model.24/m.0/Conv_output_0
+  - /model.24/m.1/Conv_output_0
+  - /model.24/m.2/Conv_output_0
+
+Tasks:
+  [ ] -> npu_0 -> []
+  Task[0] npu_0, NPU, NPU memory usage 48,422,528 bytes (input 786,432 bytes, output 5,483,520 bytes), mem_usage:89,316,992 bytes
+  Inputs
+     -  images, UINT8, [1, 512, 512, 3 ]
+  Outputs
+    -  /model.24/m.0/Conv_output_0, FLOAT, [1, 255, 64, 64 ]
+    -  /model.24/m.1/Conv_output_0, FLOAT, [1, 255, 32, 32 ]
+    -  /model.24/m.2/Conv_output_0, FLOAT, [1, 255, 16, 16 ]
+
+
+Performing 5 warmup run(s)...
+Warmup completed.
+Inference by time: total-inference-time=12.13(s) total-loops=494
+=====================================================================================================================================
+* Benchmark Result (494 inputs)
+  - NPU Processing Time Average : 2.609 ms   (Actual NPU core computation time for a single request)
+  - Latency Average             : 145.088 ms (End-to-end time per request including data transfer and overheads)
+  - FPS                         : 40.74      (Overall user-observed inference throughput (inputs/second), reflecting perceived speed)
+=====================================================================================================================================

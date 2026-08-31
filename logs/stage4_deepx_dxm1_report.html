@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>4단계 DEEPX DX-M1 벤더 NPU — 실측 검증 보고서 (Raspberry Pi 5 온디바이스)</title>
+<style>
+:root{--bg:#0b0e14;--panel:#131720;--panel2:#0f131b;--bd:#242b38;--tx:#c9d1d9;--dim:#8b949e;--brt:#e6edf3;--accent:#58a6ff;--green:#3fb950;--amber:#d29922;--red:#ff7b72;--purple:#bc8cff;--mono:'JetBrains Mono','SF Mono',ui-monospace,'Cascadia Code',Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans KR','Malgun Gothic',sans-serif}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:var(--sans);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:980px;margin:0 auto;padding:0 20px 120px}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+.hero{padding:48px 0 26px;border-bottom:1px solid var(--bd);margin-bottom:8px}
+.kicker{font-family:var(--mono);font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+.hero h1{margin:0 0 10px;font-size:30px;line-height:1.25;color:var(--brt);letter-spacing:-.01em}
+.hero p.sub{margin:0 0 20px;color:var(--dim);font-size:15px;max-width:78ch}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font-family:var(--mono);font-size:12px;padding:5px 10px;border:1px solid var(--bd);border-radius:999px;background:var(--panel);color:var(--tx)}
+.chip b{color:var(--brt);font-weight:600}
+.chip.done{border-color:rgba(63,185,80,.5);background:rgba(63,185,80,.12);color:#7ee787}
+.chip.blocked{border-color:rgba(255,123,114,.5);background:rgba(255,123,114,.12);color:#ff9d96}
+.chip.partial{border-color:rgba(210,153,34,.5);background:rgba(210,153,34,.12);color:#e3b341}
+nav.toc{display:flex;flex-wrap:wrap;gap:8px;margin:26px 0 6px}
+nav.toc a{font-family:var(--mono);font-size:12.5px;padding:6px 11px;border:1px solid var(--bd);border-radius:8px;background:var(--panel);color:var(--tx)}
+nav.toc a:hover{border-color:var(--accent);color:var(--brt);text-decoration:none}
+h2.sec{font-size:13px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin:40px 0 12px;font-weight:600;border-top:1px solid var(--bd);padding-top:26px}
+.step{margin:26px 0 0;scroll-margin-top:16px}
+.step>h3{display:flex;align-items:center;gap:12px;font-size:19px;color:var(--brt);margin:0 0 6px;letter-spacing:-.01em}
+.num{flex:none;display:inline-grid;place-items:center;width:28px;height:28px;border-radius:8px;background:var(--accent);color:#06101f;font-family:var(--mono);font-weight:700;font-size:13px}
+.step p.lead{margin:0 0 4px;color:var(--dim);font-size:14.5px}
+table.dt{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.3px;border:1px solid var(--bd);border-radius:10px;overflow:hidden;font-family:var(--mono)}
+table.dt th,table.dt td{padding:8px 12px;text-align:right;border-bottom:1px solid var(--bd)}
+table.dt th{background:var(--panel);color:var(--dim);font-weight:600;font-size:12px;letter-spacing:.04em}
+table.dt th:first-child,table.dt td:first-child{text-align:left;color:var(--brt)}
+table.dt tr:last-child td{border-bottom:none}
+table.dt tr.hi td{background:rgba(63,185,80,.08)}
+table.dt tr.lo td{background:rgba(255,123,114,.08)}
+table.dt tr.grey td{background:rgba(139,148,158,.08);color:var(--dim)}
+table.dt tr.base td{background:rgba(88,166,255,.07)}
+.g{color:var(--green)}.r{color:var(--red)}.a{color:var(--amber)}.p{color:var(--purple)}.d{color:var(--dim)}
+table.kv{width:100%;border-collapse:collapse;margin:12px 0;font-size:13.5px;border:1px solid var(--bd);border-radius:10px;overflow:hidden}
+table.kv th,table.kv td{padding:9px 13px;text-align:left;border-bottom:1px solid var(--bd);vertical-align:top}
+table.kv th{background:var(--panel);color:var(--dim);font-weight:600;width:34%;font-size:12.5px}
+table.kv td{font-family:var(--mono);font-size:12.7px;color:var(--tx)}
+table.kv tr:last-child td,table.kv tr:last-child th{border-bottom:none}
+.term{background:var(--panel2);border:1px solid var(--bd);border-radius:11px;overflow:hidden;margin:14px 0}
+.term-bar{display:flex;align-items:center;gap:7px;padding:9px 13px;background:#0c1017;border-bottom:1px solid var(--bd)}
+.dot{width:11px;height:11px;border-radius:50%}.dot.r{background:#ff5f56}.dot.y{background:#ffbd2e}.dot.g{background:#27c93f}
+.term-title{margin-left:9px;color:var(--dim);font-size:12.5px;font-family:var(--mono)}
+.term pre{margin:0;padding:15px 17px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.62;color:var(--tx);white-space:pre;tab-size:2}
+.cmt{color:#5c6773}.ok{color:var(--green)}.err{color:var(--red)}.warn{color:var(--amber)}.dim{color:var(--dim)}.hl{color:var(--purple)}.in{color:var(--brt);font-weight:600}
+.note{border-left:3px solid var(--accent);background:rgba(88,166,255,.07);padding:13px 17px;border-radius:0 9px 9px 0;margin:15px 0;font-size:14px}
+.note.trap{border-color:var(--red);background:rgba(255,123,114,.08)}
+.note.warnb{border-color:var(--amber);background:rgba(210,153,34,.08)}
+.note.tip{border-color:var(--green);background:rgba(63,185,80,.07)}
+.note.block{border-color:var(--purple);background:rgba(188,140,255,.08)}
+.note .tag{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 8px;border-radius:6px;margin-bottom:7px}
+.note.trap .tag{background:rgba(255,123,114,.18);color:#ff9d96}
+.note.warnb .tag{background:rgba(210,153,34,.18);color:#e3b341}
+.note.tip .tag{background:rgba(63,185,80,.18);color:#7ee787}
+.note.block .tag{background:rgba(188,140,255,.18);color:#d8b8ff}
+.note b{color:var(--brt)}.note code{font-family:var(--mono);font-size:12.5px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:4px}
+.chartwrap{border:1px solid var(--bd);background:var(--panel2);border-radius:12px;padding:18px 18px 14px;margin:16px 0}
+.chartwrap .ct{font-family:var(--mono);font-size:12.5px;color:var(--brt);margin:0 0 4px}
+.chartwrap .cs{font-size:12.5px;color:var(--dim);margin:0 0 12px}
+.statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:14px 0}
+.stat{border:1px solid var(--bd);background:var(--panel);border-radius:11px;padding:15px 16px}
+.stat .k{font-family:var(--mono);font-size:11.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em}
+.stat .v{font-size:23px;color:var(--brt);font-weight:700;margin-top:5px;letter-spacing:-.01em}
+.stat .n{font-size:12px;color:var(--dim);margin-top:3px}
+.stat.ok .v{color:#7ee787}.stat.warn .v{color:#e3b341}.stat.bad .v{color:#ff9d96}
+.verdict{border:1px solid var(--bd);border-radius:12px;padding:16px 18px;margin:14px 0;background:var(--panel)}
+.verdict h4{margin:0 0 6px;font-size:15px;color:var(--brt);display:flex;align-items:center;gap:9px}
+.verdict h4 .b{font-family:var(--mono);font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px}
+.verdict.yes h4 .b{background:rgba(63,185,80,.18);color:#7ee787}
+.verdict.no h4 .b{background:rgba(255,123,114,.18);color:#ff9d96}
+.verdict p{margin:0;font-size:13.8px;color:var(--tx)}
+footer{margin-top:46px;padding-top:20px;border-top:1px solid var(--bd);color:var(--dim);font-size:13px}
+.next{display:block;margin-top:12px;padding:12px 16px;border:1px solid var(--bd);border-radius:9px;color:var(--tx);background:var(--panel);font-size:13.6px}
+.next b{color:var(--accent)}
+@media (max-width:560px){.hero h1{font-size:23px}.term pre{font-size:11.4px}.stat .v{font-size:20px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <p class="kicker">실행 보고서 · 4단계 · DEEPX DX-M1 벤더 NPU 온디바이스 실측 (Raspberry Pi 5)</p>
+    <h1>DEEPX DX-M1 — 첫 물리 벤더 NPU 실측 보고서</h1>
+    <p class="sub">4단계(멀티 SoC)의 벤더 NPU는 그동안 <b>CPU 폴백 바닥값</b>(Pi 5 A76, offload 0%)과 <b>클라우드 Hexagon HTP</b>(보드 없이 AI Hub)로만 채웠다. 이번엔 랩 Pi 5에 실제로 꽂힌 <b>DEEPX DX-M1</b>(M.2, 3-core, 25 TOPS INT8)로 <b>첫 물리 온디바이스 벤더 실리콘</b>을 관통했다. 결정적 장치: <b>같은 A76이 CPU 폴백 프록시이자 DX-M1 호스트</b> — 그래서 <code>yolo26n</code> 하나로 <b>같은 보드에서 CPU FP32 ↔ NPU INT8</b>을 깨끗이 대조한다. 벤더 NPU는 CPU 대비 처리량 <b>×11.42</b>·전력효율 <b>~29× (host-side)</b>로 이기지만, Pi 5의 <b>PCIe Gen2×1</b> 병목 때문에 코어를 늘려도 처리량이 <b>평평</b>하다 — 천장은 NPU가 아니라 호스트다.</p>
+    <div class="chips">
+      <span class="chip"><b>2026-08-31</b></span>
+      <span class="chip"><b>Raspberry Pi 5 · Cortex-A76</b></span>
+      <span class="chip"><b>DEEPX DX-M1 · 3-core</b></span>
+      <span class="chip"><b>DXRT 3.4.2 · FW v2.7.4</b></span>
+      <span class="chip done">처리량 ×11.42 vs CPU</span>
+      <span class="chip done">perf/watt ×29.29 (host-side)</span>
+      <span class="chip partial">host-bound (PCIe Gen2×1)</span>
+      <span class="chip blocked">카드 전력 계측 갭</span>
+    </div>
+    <nav class="toc">
+      <a href="#s1">1 · 실행 요약</a>
+      <a href="#s2">2 · 환경·스택</a>
+      <a href="#s3">3 · CPU↔NPU 오프로드(핵심)</a>
+      <a href="#s4">4 · host-bound(PCIe Gen2×1)</a>
+      <a href="#s5">5 · 전력·perf/watt·계측 갭</a>
+      <a href="#s6">6 · 판정·산출물</a>
+    </nav>
+  </header>
+
+  <h2 class="sec">§1 — 실행 요약</h2>
+  <section id="s1" class="step">
+    <div class="statgrid">
+      <div class="stat ok"><div class="k">처리량 NPU/CPU</div><div class="v">×11.42</div><div class="n">91.51 fps(NPU INT8) vs 8.01 fps(A76 FP32 4T)</div></div>
+      <div class="stat ok"><div class="k">perf/watt (host-side)</div><div class="v">×29.29</div><div class="n">37.70 vs 1.29 inf/s/W · 카드포함도 ~10–13×</div></div>
+      <div class="stat"><div class="k">E2E 지연 오프로드</div><div class="v">×4.24</div><div class="n">124.84ms(CPU)→29.43ms(NPU E2E) · compute만 14.08×</div></div>
+      <div class="stat warn"><div class="k">코어 스케일링 3/1</div><div class="v">1.00</div><div class="n">91.5 fps 평평 → host/PCIe-bound</div></div>
+    </div>
+    <p class="lead">원 질문("Orin에 했던 것처럼 이 벤더 NPU로도 지연·처리량·전력·오프로드를 실측할 수 있는가?")은 <b>확정: 된다</b> — 보드 위의 실 DEEPX 실리콘으로 4축을 관통·재현했다. 이 보드의 특별함은 <b>같은 Cortex-A76이 4단계 CPU 폴백 프록시(offload 0% 바닥값)이자 DX-M1 NPU 호스트</b>라는 점 — 벤더 NPU가 "가속기가 이겨야 할 최소선"(그 CPU 바닥값)을 <b>같은 실리콘 위에서 얼마나 이기는지</b> 처음 정량화했다.</p>
+    <table class="kv">
+      <tr><th>발견 1 · <span class="g">오프로드</span></th><td>같은 보드·같은 모델(<code>yolo26n</code> 640)에서 <b>벤더 NPU INT8</b>이 <b>A76 CPU FP32(4-thread)</b>를 처리량 <b class="g">×11.42</b>(91.51 vs 8.01 fps)·E2E 지연 <b class="g">×4.24</b>(29.43 vs 124.84ms)로 이긴다. 순수 NPU 코어 연산만 보면 <b>8.86ms</b>라 CPU 대비 <b class="g">×14.08</b> — "가속기는 INT8 MAC 어레이라 항상 이긴다"를 <b>실 벤더 보드에서 정량 확증</b>. (CPU=FP32 네이티브 최적, NPU=INT8 전용 — 정직한 배포 선택 대조.)</td></tr>
+      <tr><th>발견 2 · <span class="a">host-bound</span></th><td>NPU 3코어를 다 켜도 async 처리량이 <b>~91.5 fps로 평평</b>(1/2/3코어 91.54/91.52/91.51). 범인은 NPU 연산이 아니라 <b>호스트 피드</b> — 프로파일러가 코어 <b>기아(starvation)</b>를 직접 보여준다: 3코어 실행에서 코어2는 <b>1024잡 중 단 2잡</b>만 처리(695/427/<b class="r">2</b>). 근본 원인은 DX-M1이 네이티브 <b>PCIe Gen3×4</b>인데 Pi 5에선 <b class="r">Gen2×1</b>로 물려(대역폭 ~8× 손실) 큰 출력 텐서 <code>D2H</code>(프로파일 21.8ms)가 파이프라인을 좁힌다. 더 가벼운 YOLOV5S(compute 2.6ms)조차 처리량이 되레 <b>낮다</b>(~41 fps) → host/IO-bound 확증.</td></tr>
+      <tr><th>발견 3 · <span class="a">계측 갭</span></th><td>Pi 5 호스트-보드 전력은 완측(idle 1.46W → NPU부하 2.43W → CPU부하 6.22W). 그러나 <b>M.2 DX-M1 카드 자체 전력은 PMIC 레일 <u>상류</u>의 EXT5V에서 끌어와 <code>pmic_read_adc</code>로 안 잡힌다</b>(계측 갭). host-side만으로도 NPU가 perf/watt <b>×29.29</b>로 이기고, 카드 스펙 TDP(3~5W)를 더한 <b>전체-시스템 경계</b>로도 여전히 <b>×10–13</b>. 이 갭은 Orin의 "GR3D%가 DLA를 못 잡음"과 같은 종류의 정직한 계측 한계다.</td></tr>
+    </table>
+    <div class="note warnb"><span class="tag">캐비앗(먼저)</span> ① <b>NPU는 INT8 전용 가속기</b>라 Orin iGPU처럼 FP32/FP16/INT8 정밀도 사다리가 <b>NPU 위엔 없다</b> — 그래서 이 보고서의 대조는 "<b>CPU FP32(네이티브 최적) ↔ NPU INT8(가속기 유일 경로)</b>"라는 정직한 배포 선택 축이다. ② 절대 지연·처리량·전력은 <b>배치1·wall-clock·prebuilt <code>.dxnn</code>(COCO yolo26n)·Pi 5 단일 호스트</b> 기준 → <b>상대 관계(배율·perf/watt·평평도)만 유효</b>. ③ <b>host-bound는 DX-M1의 천장이 아니라 Pi 5의 좁은 PCIe(Gen2×1)</b> 탓 — 더 넓은 호스트면 처리량이 오른다(§4 DEEPX 다중 호스트 참조). ④ <b>정확도는 이번 패스에서 미측정</b>(prebuilt .dxnn·라벨셋 부재) → 다음 축. ⑤ Pi 5는 DEEPX 벤더-NPU 호스트일 뿐 <b>자동차 3벤더(TI/Qualcomm/Renesas)가 아니다</b> — DX-M1 수치는 그 SoC들로 전이되지 않는다.</div>
+  </section>
+
+  <h2 class="sec">§2 — 환경·스택 (실측)</h2>
+  <section id="s2" class="step">
+    <table class="kv">
+      <tr><th>호스트 보드</th><td><b>Raspberry Pi 5 Model B</b> · <b>Cortex-A76</b> ×4 @ 2.4GHz · 8GB · Debian 13 (trixie) · 커널 6.18.34 · Python 3.13.5</td></tr>
+      <tr><th>벤더 NPU</th><td><b>DEEPX DX-M1</b>(M.2 2280 Key-M) · <b>NPU 코어 3개</b> @ 1000MHz/750mV · LPDDR5 3.92GiB · <b>25 TOPS INT8</b> · FW <b>v2.7.4</b> · RT Driver v2.6.0 · <code>/dev/dxrt0</code>(0666, sudo 불필요)</td></tr>
+      <tr><th>PCIe 링크</th><td>DX-M1 네이티브 <b>Gen3×4</b>(≈4GB/s)이나 Pi 5에선 <b class="r">Gen2×1</b>로 동작 <code>0001:01:00.0</code> — 유효 대역폭 <b>~8× 낮음</b>(§4 host-bound의 근본 원인)</td></tr>
+      <tr><th>런타임 / 툴</th><td>DXRT <b>v3.4.2</b>+d803450 · <code>dxrun</code>(지연 <code>-s</code> / 처리량 <code>-b</code> async) · <code>dxbenchmark</code>(profiler.json) · <code>dxrt-cli -s/-i</code></td></tr>
+      <tr><th>CPU 대조 경로</th><td>ONNX Runtime <b>1.29.0</b>(cp313 aarch64 휠) · numpy 2.5.2 · <code>CPUExecutionProvider</code> · intra-op 스레드 스윕(1/2/4) · <b>같은 A76 실리콘</b>(4단계 CPU 폴백 프록시와 동일 SoC 계열)</td></tr>
+      <tr><th>모델(SSOT)</th><td><b>NPU</b>: <code>yolo26n.dxnn</code>(INT8 DEEPX-compiled, 6,890,550 B) · <b>CPU</b>: <code>yolo26n.onnx</code>(FP32, 9,941,928 B) — <b>둘 다 base COCO yolo26n @ 640×640</b>(config.json·모델 필드로 아키텍처 일치 확인). 입력 [1,3,640,640] · 출력 [1,300,6]</td></tr>
+      <tr><th>2차 모델</th><td><code>YOLOV5S_1.dxnn</code>(INT8, prebuilt) — host-bound 재확인용 더 무거운(출력 텐서 큰) 대조 모델</td></tr>
+      <tr><th>측정계</th><td>지연 = <code>dxrun -s</code> 순차 단일스트림(NPU-compute + E2E) · 처리량 = <code>dxrun -b</code> async(코어 1/2/3) · 전력 = <code>vcgencmd pmic_read_adc</code> Σ(I×V) 12레일(idle/CPU부하/NPU부하) · CPU = <code>time.perf_counter</code> wall-clock(warmup·iters)</td></tr>
+      <tr><th>NPU 열 상태</th><td>런 전후 <b>37 → 42°C</b>(스로틀 한참 미만) — 3W급 NPU라 발열 논점 아님</td></tr>
+    </table>
+    <div class="note tip"><span class="tag">왜 이 보드가 특별한가</span> 4단계는 지금까지 <b>CPU 폴백 바닥값</b>(<a href="stage4_arm_cpu_fallback_report.html">Pi 5 A76, offload 0%</a>)과 <b>클라우드 Hexagon HTP</b>(<a href="stage4_qualcomm_aihub_report.html">보드 없이 AI Hub</a>)로 벤더 NPU를 <b>간접</b>으로만 다뤘다. DX-M1은 <b>물리 보드에 꽂힌 첫 실 벤더 실리콘</b>이고, 하필 그 호스트가 <b>CPU 바닥값을 측정한 바로 그 A76</b>이다 → "가속기가 이겨야 할 최소선"과 "실제 가속기"를 <b>같은 실리콘·같은 모델</b>로 직접 뺄셈할 수 있다.</div>
+  </section>
+
+  <h2 class="sec">§3 — CPU↔NPU 오프로드: 같은 보드에서 벤더 NPU가 얼마나 버는가 (핵심)</h2>
+  <section id="s3" class="step">
+    <p class="lead">같은 <code>yolo26n</code>·같은 Pi 5에서 <b>A76 CPU(FP32, ORT 4-thread)</b>와 <b>DX-M1 NPU(INT8, .dxnn)</b>의 단일스트림 E2E 지연을 나란히 놓았다. NPU 막대는 두 층 — 파이프라인 전체(E2E)와 그 안의 <b>순수 NPU 코어 연산</b> — 으로 쪼갰다. 오프로드 이득이 E2E로는 <b>×4.24</b>, 코어 연산만 보면 <b>×14.08</b>인 이유가 여기서 보인다(그 사이 간격 = 호스트 파이프라인 몫, §4의 주제).</p>
+    <div class="chartwrap">
+      <p class="ct">단일스트림 E2E 지연 — 낮을수록 좋음. CPU FP32(4T) vs NPU INT8</p>
+      <p class="cs">막대 길이 ∝ 지연(ms), 스케일 3.6px/ms. 오른쪽 = 절대 지연 · 오프로드 배율.</p>
+      <svg viewBox="0 0 800 150" width="100%" aria-label="cpu vs npu latency offload chart">
+        <g font-family="'JetBrains Mono',monospace" font-size="11.5">
+          <text x="132" y="39" text-anchor="end" fill="#e6edf3">CPU A76 FP32·4T</text>
+          <rect x="140" y="22" width="449.41" height="26" rx="3" fill="#ff7b72"/>
+          <text x="597" y="39" fill="#ff9d96">124.84ms · 기준</text>
+          <text x="132" y="79" text-anchor="end" fill="#e6edf3">NPU INT8 (E2E)</text>
+          <rect x="140" y="62" width="105.93" height="26" rx="3" fill="#3fb950"/>
+          <text x="254" y="79" fill="#7ee787">29.43ms · ×4.24 빠름 ✓</text>
+          <text x="132" y="119" text-anchor="end" fill="#e6edf3">NPU INT8 (코어 연산)</text>
+          <rect x="140" y="102" width="31.91" height="26" rx="3" fill="#58a6ff"/>
+          <text x="180" y="119" fill="#7ee787">8.86ms · ×14.08 (호스트 제외) ✓</text>
+        </g>
+      </svg>
+    </div>
+    <table class="dt">
+      <thead><tr><th>경로 / precision</th><th>NPU-compute(ms)</th><th>E2E 지연(ms)</th><th>처리량(fps)</th><th>vs CPU</th></tr></thead>
+      <tbody>
+        <tr class="lo"><td>CPU A76 FP32 · ORT 4-thread</td><td>—</td><td>124.8352</td><td>8.01</td><td>기준</td></tr>
+        <tr class="hi"><td>NPU DX-M1 INT8 · seq 1-core</td><td>8.863</td><td>29.426</td><td>31.96</td><td class="g">지연 ×4.24 / compute ×14.08</td></tr>
+        <tr class="hi"><td>NPU DX-M1 INT8 · async 3-core</td><td>9.069</td><td>—</td><td>91.51</td><td class="g">처리량 ×11.42</td></tr>
+      </tbody>
+    </table>
+    <table class="dt">
+      <thead><tr><th>CPU 스레드 스윕(A76 FP32)</th><th>지연 p50(ms)</th><th>처리량(fps)</th><th>vs 1-thread</th></tr></thead>
+      <tbody>
+        <tr class="base"><td>1-thread</td><td>288.1541</td><td>3.47</td><td>×1.00</td></tr>
+        <tr><td>2-thread</td><td>159.9027</td><td>6.25</td><td>×1.80</td></tr>
+        <tr class="base"><td>4-thread (전 코어)</td><td>124.8352</td><td>8.01</td><td>×2.31</td></tr>
+      </tbody>
+    </table>
+    <div class="note tip"><span class="tag">해석</span> 벤더 NPU의 존재 이유가 여기 있다 — <b>INT8 전용 MAC 어레이</b>가 같은 워크로드를 CPU의 한 자릿수~두 자릿수 배로 빠르게, 그리고 (§5에서 보듯) 훨씬 적은 에너지로 처리한다. CPU 쪽은 FP32 네이티브 최적 경로(4-thread에서도 8 fps)라 <b>불리하게 잡은 게 아니라 정직한 배포 선택</b>이다: 이 보드에서 실시간이 필요하면 답은 NPU다. 단 E2E 지연(29.43ms)이 코어 연산(8.86ms)의 3.3배인 것 — 즉 <b>호스트 파이프라인이 이미 지연의 70%</b> — 이 다음 절의 host-bound 신호다.</div>
+  </section>
+
+  <h2 class="sec">§4 — host-bound: 코어를 늘려도 처리량이 평평하다 (PCIe Gen2×1)</h2>
+  <section id="s4" class="step">
+    <p class="lead">DX-M1엔 NPU 코어가 3개다. async로 코어를 1→2→3으로 늘리면 처리량도 따라 올라야 정상 — 그러나 <b>91.5 fps에서 꿈쩍도 안 한다</b>. 아래 막대에서 실측 3개(초록)는 사실상 같은 길이고, 점선 윤곽(<b>이상적 3× 선형 스케일</b>)과의 간극이 곧 낭비된 병렬성이다.</p>
+    <div class="chartwrap">
+      <p class="ct">async 처리량 — 코어 수별. 실측(초록) vs 이상적 선형 스케일(점선)</p>
+      <p class="cs">막대 길이 ∝ 처리량(fps), 스케일 2.0px/fps. 점선 = 1코어×3(완전 선형이라면).</p>
+      <svg viewBox="0 0 800 190" width="100%" aria-label="npu core-scaling flat host-bound chart">
+        <g font-family="'JetBrains Mono',monospace" font-size="10" fill="#5c6773">
+          <rect x="140" y="18" width="549.24" height="26" rx="3" fill="none" stroke="#8b949e" stroke-dasharray="4 3"/>
+          <text x="695" y="35" fill="#8b949e">이상적 3코어 274.6 fps</text>
+        </g>
+        <g font-family="'JetBrains Mono',monospace" font-size="11.5">
+          <text x="132" y="69" text-anchor="end" fill="#e6edf3">1-core</text>
+          <rect x="140" y="52" width="183.08" height="26" rx="3" fill="#3fb950"/>
+          <text x="331" y="69" fill="#7ee787">91.54 fps · ×1.00</text>
+          <text x="132" y="103" text-anchor="end" fill="#e6edf3">2-core</text>
+          <rect x="140" y="86" width="183.04" height="26" rx="3" fill="#3fb950"/>
+          <text x="331" y="103" fill="#c9d1d9">91.52 fps · ×1.00</text>
+          <text x="132" y="137" text-anchor="end" fill="#e6edf3">3-core</text>
+          <rect x="140" y="120" width="183.02" height="26" rx="3" fill="#3fb950"/>
+          <text x="331" y="137" fill="#c9d1d9">91.51 fps · ×1.00 (평평)</text>
+        </g>
+        <g font-family="'JetBrains Mono',monospace" font-size="10.5" fill="#ff9d96">
+          <text x="140" y="170">↑ 실측이 점선의 33%뿐 — 코어 2·3은 대부분 놀고 있다 (host가 못 먹임)</text>
+        </g>
+      </svg>
+    </div>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">profiler.json — 코어별 처리 잡 분포(3코어 실행, 총 1024잡)</span></div>
+<pre><span class="cmt"># 코어가 3개인데 일감이 한 코어분밖에 안 흐른다 → 코어 1·2는 굶는다</span>
+Inference Core 0:  <span class="ok">695</span> jobs   p50=9.656ms
+Inference Core 1:  <span class="warn">427</span> jobs   p50=9.858ms
+Inference Core 2:  <span class="err">  2</span> jobs   <span class="dim"># 1024잡 중 단 2잡 — 사실상 미사용</span>
+
+<span class="cmt"># 파이프라인 스테이지(async): 코어 연산은 ~9ms인데 D2H(출력 전송)가 21.8ms</span>
+NPU Inference (core):   8.86 ~ 9.07 ms
+H2D (입력 전송):        3.55 ms
+<span class="warn">D2H (출력 전송):       21.80 ms</span>   <span class="dim"># PCIe Gen2 x1로 큰 출력 텐서를 빼는 비용이 지배</span></pre>
+    </div>
+    <p class="lead" style="margin-top:14px">더 무거운 모델이면 NPU-bound로 뒤집힐까? <b>YOLOV5S</b>로 확인 — 오히려 반대다:</p>
+    <table class="dt">
+      <thead><tr><th>모델 (INT8 .dxnn)</th><th>NPU-compute(ms)</th><th>async 1-core(fps)</th><th>async 3-core(fps)</th><th>3/1 스케일</th></tr></thead>
+      <tbody>
+        <tr class="base"><td>yolo26n (640)</td><td>8.863</td><td>91.54</td><td>91.51</td><td>1.00 (평평)</td></tr>
+        <tr class="grey"><td>YOLOV5S</td><td>2.587</td><td>41.35</td><td>40.74</td><td class="r">0.985 (되레 감소)</td></tr>
+      </tbody>
+    </table>
+    <div class="note warnb"><span class="tag">왜 평평한가 — 근본 원인</span> DX-M1은 네이티브 <b>PCIe Gen3×4</b>(≈4GB/s)지만 Pi 5의 M.2 슬롯은 <b>Gen2×1</b>(≈500MB/s급)로만 물린다 — <b>유효 대역폭 ~8× 손실</b>. YOLO의 출력은 큰 raw 텐서라 매 추론마다 이걸 <code>D2H</code>로 빼는 비용(프로파일 21.8ms)이 코어 연산(8.9ms)을 압도한다. 그래서 <b>호스트가 한 코어분의 일감밖에 못 흘려보내</b> 코어 2·3은 굶고(3코어 실행에서 코어2는 1024잡 중 2잡), 처리량이 91.5 fps에 갇힌다. YOLOV5S는 연산이 <b>더 가벼운데도(2.6ms)</b> 처리량이 <b>더 낮다</b>(~41 fps) — 코어가 아니라 <b>호스트/IO 경로</b>가 천장이라는 결정적 증거다. <b>이건 DX-M1의 한계가 아니라 Pi 5의 좁은 PCIe다.</b></div>
+    <div class="note"><span class="tag">외부 참조(비실측)</span> DEEPX 공식 다중 호스트 벤치도 같은 결론을 보인다 — <b>동일한 DX-M1 실리콘</b>인데 호스트에 따라 처리량이 크게 갈린다(넓은 PCIe·다칩 구성 ~수백 fps vs 단일 M1·RPi5 ~수십 fps대). 절대 모델·조건이 우리 <code>yolo26n</code>과 달라 수치를 직접 옮기진 않지만, <b>"병목이 NPU가 아니라 호스트/링크"</b>라는 방향은 벤더 스스로도 문서화한 성질이다. 우리의 결론은 온보드 프로파일러(코어 기아·D2H 지배)만으로 자립하며, 이 참조는 보강일 뿐이다.</div>
+  </section>
+
+  <h2 class="sec">§5 — 전력·perf/watt + M.2 카드 계측 갭</h2>
+  <section id="s5" class="step">
+    <p class="lead">벤더 NPU의 진짜 판매 포인트는 속도가 아니라 <b>전력효율</b>이다. Pi 5 호스트-보드 전력을 <code>vcgencmd pmic_read_adc</code>로 12레일 합산해 idle·CPU부하·NPU부하 세 상태로 실측했다. 그런 다음 perf/watt = 처리량 ÷ 전력으로 CPU와 NPU를 비교한다.</p>
+    <div class="statgrid">
+      <div class="stat"><div class="k">idle 호스트</div><div class="v">1.46 W</div><div class="n">VDD_CORE 0.345</div></div>
+      <div class="stat ok"><div class="k">NPU 부하</div><div class="v">2.43 W</div><div class="n">VDD_CORE 1.138 · +0.97W over idle</div></div>
+      <div class="stat bad"><div class="k">CPU 부하(4T)</div><div class="v">6.22 W</div><div class="n">VDD_CORE 4.771 · +4.76W over idle</div></div>
+      <div class="stat ok"><div class="k">전력 CPU/NPU</div><div class="v">×2.56</div><div class="n">NPU가 훨씬 덜 먹으면서 11.42× 빠름</div></div>
+    </div>
+    <div class="chartwrap">
+      <p class="ct">perf/watt — 높을수록 좋음. 처리량 ÷ 호스트-보드 전력</p>
+      <p class="cs">막대 길이 ∝ inf/s/W, 스케일 13.8px/(inf·s⁻¹·W⁻¹). NPU는 host-side / 카드 TDP 포함 두 경계.</p>
+      <svg viewBox="0 0 800 190" width="100%" aria-label="perf-per-watt cpu vs npu chart">
+        <g font-family="'JetBrains Mono',monospace" font-size="11.5">
+          <text x="132" y="39" text-anchor="end" fill="#e6edf3">CPU A76 FP32</text>
+          <rect x="140" y="22" width="17.80" height="26" rx="3" fill="#ff7b72"/>
+          <text x="166" y="39" fill="#ff9d96">1.29 inf/s/W · 기준</text>
+          <text x="132" y="73" text-anchor="end" fill="#e6edf3">NPU (host-side)</text>
+          <rect x="140" y="56" width="520.26" height="26" rx="3" fill="#3fb950"/>
+          <text x="668" y="73" fill="#7ee787">37.70 · ×29.29 ✓</text>
+          <text x="132" y="107" text-anchor="end" fill="#e6edf3">NPU (+카드 3W)</text>
+          <rect x="140" y="90" width="232.67" height="26" rx="3" fill="#58a6ff"/>
+          <text x="380" y="107" fill="#c9d1d9">16.86 · ×13.1</text>
+          <text x="132" y="141" text-anchor="end" fill="#e6edf3">NPU (+카드 5W)</text>
+          <rect x="140" y="124" width="170.02" height="26" rx="3" fill="#58a6ff"/>
+          <text x="318" y="141" fill="#c9d1d9">12.32 · ×9.57</text>
+        </g>
+        <g font-family="'JetBrains Mono',monospace" font-size="10.5" fill="#8b949e">
+          <text x="140" y="172">host-side = 완측(PMIC) · +카드 = 스펙 TDP로 보정한 전체-시스템 경계(카드 전력은 계측 갭)</text>
+        </g>
+      </svg>
+    </div>
+    <table class="dt">
+      <thead><tr><th>경로</th><th>처리량(fps)</th><th>전력(W)</th><th>에너지/추론(J)</th><th>perf/watt(inf/s/W)</th><th>vs CPU</th></tr></thead>
+      <tbody>
+        <tr class="lo"><td>CPU A76 FP32 · 4T</td><td>8.01</td><td>6.223</td><td>0.7769</td><td>1.29</td><td>기준</td></tr>
+        <tr class="hi"><td>NPU INT8 · host-side</td><td>91.51</td><td>2.427</td><td>0.0265</td><td>37.70</td><td class="g">×29.29</td></tr>
+        <tr><td>NPU INT8 · +카드 3W(typ)</td><td>91.51</td><td>5.427</td><td>0.0593</td><td>16.86</td><td class="g">×13.1</td></tr>
+        <tr><td>NPU INT8 · +카드 5W(max)</td><td>91.51</td><td>7.427</td><td>0.0812</td><td>12.32</td><td class="g">×9.57</td></tr>
+      </tbody>
+    </table>
+    <div class="note trap"><span class="tag">계측 갭 — M.2 카드 전력은 안 잡힌다</span> <code>pmic_read_adc</code>가 읽는 12레일은 전부 <b>Pi 5 내부 레일</b>(VDD_CORE·DDR·SYS 등)이다. 그런데 M.2 DX-M1 카드는 <b>PMIC 레일보다 <u>상류</u>인 EXT5V</b>에서 전력을 끌어온다 → 카드 자체 소비는 이 측정에 <b>포함되지 않는다</b>. 그래서 표의 "host-side"(2.43W)는 <b>NPU 부하가 호스트에 유발한 증분만</b> 담고, 카드 실소비는 빠져 있다. DEEPX 프레임워크조차 EXT5V는 <b>저전압 건강 체크용</b>으로만 읽지 perf/watt엔 안 쓴다. → 정직하게 <b>두 경계</b>로 보고한다: (a) 완측 <b>host-side</b>(perf/watt ×29.29), (b) 카드 스펙 TDP(3W typ/5W max)를 더한 <b>전체-시스템 상계</b>(×13.1/×9.57). 어느 경계로 봐도 <b>NPU가 CPU를 perf/watt로 10배 이상 이긴다</b>는 결론은 흔들리지 않는다.</div>
+    <div class="note block"><span class="tag">Orin 대칭</span> 이 계측 갭은 <a href="stage3_jetson_orin_ondevice_report.html">Jetson Orin</a>에서 "<b>GR3D 사용률(%)이 DLA를 못 잡는다</b>"(DLA는 GR3D 카운터 밖)와 같은 종류의 한계다 — 가속기가 별도 데이터패스/전력 도메인에 있으면 호스트 계측기가 못 본다. 두 경우 모두 <b>갭을 숨기지 않고 산출물의 발견으로 드러내</b> 결론의 신뢰 구간을 명시한다.</div>
+  </section>
+
+  <h2 class="sec">§6 — 판정 · 산출물</h2>
+  <section id="s6" class="step">
+    <div class="verdict yes"><h4><span class="b">확정 ✓</span> 첫 물리 벤더 NPU 온디바이스 실측 — 4축 관통·재현</h4><p>랩 Pi 5의 실 DX-M1으로 지연·처리량·오프로드·전력을 관통했다. 벤더 NPU INT8이 같은 보드 A76 CPU FP32를 <b>처리량 ×11.42·E2E 지연 ×4.24·perf/watt ×29.29(host-side)</b>로 이긴다. 4단계 벤더-NPU 축의 <b>실 온디바이스 DEEPX 실리콘</b>을 CPU 폴백 바닥값(같은 A76)·클라우드 Hexagon HTP에 이어 채웠다.</p></div>
+    <div class="verdict yes"><h4><span class="b">발견 ✓</span> host-bound은 NPU가 아니라 Pi 5의 PCIe Gen2×1</h4><p>3코어를 다 켜도 처리량이 91.5 fps로 평평(코어2는 1024잡 중 2잡만) — 온보드 프로파일러가 <b>코어 기아 + D2H(21.8ms) 지배</b>로 직접 증명. 근본 원인은 DX-M1 네이티브 Gen3×4가 Pi 5에선 Gen2×1로 물려 대역폭 ~8× 손실. 더 가벼운 YOLOV5S가 되레 처리량이 낮은 것이 host/IO-bound 확증. <b>천장은 실리콘이 아니라 링크</b> — 넓은 호스트면 오른다.</p></div>
+    <div class="verdict yes"><h4><span class="b">정직화 ✓</span> M.2 카드 전력 계측 갭을 발견으로 드러냄</h4><p>PMIC 레일은 전부 Pi 5 내부라 <b>상류 EXT5V의 카드 전력은 미포착</b>. 숨기지 않고 두 경계(완측 host-side ×29.29 / 카드 TDP 포함 ×10–13)로 보고 — Orin의 "GR3D%가 DLA를 못 봄"과 같은 종류의 정직한 계측 한계. 어느 경계든 NPU가 perf/watt 10배+ 승.</p></div>
+    <table class="kv">
+      <tr><th>재현 스크립트·데이터</th><td><a href="../experiments/stage4_deepx_dxm1/">experiments/stage4_deepx_dxm1/</a> — <code>scripts/</code>(<code>cpu_bench.py</code>·<code>psample.py</code>·<code>analyze_profiler.py</code>·<code>build_summary.py</code>) · <code>results/</code>(dxrun·CPU 스레드 3·전력 3·비교 SSOT·YOLOV5S·profiler 파생 3) · <code>raw/</code>(dxrun stdout·dxbenchmark profiler.json 3) · <code>README.md</code></td></tr>
+      <tr><th>SSOT</th><td><code>results/cpu_npu_comparison.json</code>(오프로드·전력·perf/watt) · <code>results/dxrun_summary.json</code>(지연·코어 스케일) · <code>results/y5s_summary.json</code>(host-bound 2차 확인) — 본 보고서 수치는 전부 이 JSON에서 그대로 옮김</td></tr>
+      <tr><th>상위 가이드</th><td><a href="../study_guide/06_multi_soc.md">4단계 06_multi_soc.md</a> §4(벤더 NPU) — DX-M1 실측 🔬 콜아웃(반영은 사용자 확인 후)</td></tr>
+      <tr><th>상보 실측</th><td><a href="stage4_arm_cpu_fallback_report.html">CPU 폴백 바닥값(같은 A76, offload 0%)</a> · <a href="stage4_qualcomm_aihub_report.html">Qualcomm Hexagon HTP(클라우드)</a> — 이 셋으로 4단계 벤더-NPU 축을 CPU 바닥 / 클라우드 / 물리 보드 세 각도로 채움</td></tr>
+    </table>
+    <div class="note warnb"><span class="tag">캐비앗</span> ① <b>NPU는 INT8 전용</b> — FP 정밀도 사다리는 NPU 위에 없다(대조는 CPU FP32 ↔ NPU INT8 정직한 배포 선택). ② 절대 지연·처리량·전력은 <b>배치1·wall-clock·prebuilt .dxnn·Pi 5 단일 호스트</b> 기준 → 상대 관계만 유효. ③ <b>host-bound는 Pi 5의 Gen2×1 탓</b>이지 DX-M1 천장이 아님. ④ <b>정확도 미측정</b>(prebuilt .dxnn·라벨셋 부재) → 다음 축. ⑤ Pi 5는 DEEPX 벤더-NPU 호스트일 뿐 <b>자동차 3벤더(TI/Qualcomm/Renesas)가 아님</b> — 수치 전이 불가. ⑥ 카드 전력 계측 갭 → perf/watt는 host-side(완측)와 카드 TDP 상계 두 경계로만.</div>
+    <a class="next" href="../study_guide/06_multi_soc.md"><b>다음 →</b> 06_multi_soc.md §4에 DX-M1 실측 콜아웃 반영(사용자 확인 후). 남은 축: <b>정확도</b>(x86에서 <code>.dxnn</code> 컴파일 → 라벨셋으로 on-device top-1/mAP, Qualcomm처럼 native-QDQ vs 외부-QDQ 대조) · <b>더 무거운 모델</b>(m/l/x)로 host-bound↔NPU-bound 교차점 · <b>넓은 PCIe 호스트</b>로 DX-M1 천장 확인.</a>
+  </section>
+
+  <footer>
+    4단계 DEEPX DX-M1 벤더 NPU 온디바이스 실측 · Raspberry Pi 5(Cortex-A76) + DX-M1(M.2, PCIe Gen2×1, 3-core, 25 TOPS INT8) · 2026-08-31 · DXRT 3.4.2 / FW v2.7.4 · yolo26n(COCO 640) CPU FP32 ↔ NPU INT8<br>
+    본 보고서 수치는 <code>experiments/stage4_deepx_dxm1/results/*.json</code> 및 <code>raw/</code>(dxrun·profiler.json)에서 그대로 옮겼다. DEEPX 다중 호스트 참조는 외부(비실측)로 명시.
+  </footer>
+</div>
+</body>
+</html>

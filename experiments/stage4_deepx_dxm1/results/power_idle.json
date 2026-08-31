@@ -1,0 +1,1 @@
+{"label": "idle", "n": 334, "dur_s": 8.0, "watt_mean": 1.459, "watt_p50": 1.558, "watt_min": 1.112, "watt_max": 2.302, "per_rail_w_mean": {"0V8_AON": 0.0027, "0V8_SW": 0.2035, "1V1_SYS": 0.2125, "1V8_SYS": 0.2059, "3V3_ADC": 0.0012, "3V3_DAC": 0.0004, "3V3_SYS": 0.2107, "3V7_WL_SW": 0.1751, "DDR_VDD2": 0.0075, "DDR_VDDQ": 0.0, "HDMI": 0.0947, "VDD_CORE": 0.3451}}

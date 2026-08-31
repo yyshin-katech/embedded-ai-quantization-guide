@@ -1,0 +1,20 @@
+{
+  "model": "YOLOV5S_1.dxnn (INT8, prebuilt) \u2014 heavier second model, confirms host-bound",
+  "seq_1core_latency": {
+    "npu_processing_ms": 2.587,
+    "latency_ms": 42.623,
+    "fps": 21.85
+  },
+  "async_1core": {
+    "npu_processing_ms": 2.597,
+    "latency_ms": 142.906,
+    "fps": 41.35
+  },
+  "async_3core": {
+    "npu_processing_ms": 2.609,
+    "latency_ms": 145.088,
+    "fps": 40.74
+  },
+  "core_scaling_3v1": 0.985,
+  "note": "Even lighter NPU compute (~2.6ms) than yolo26n (8.86ms) yet LOWER throughput (~41 vs 91 fps) and flat/declining cores => host/IO-bound (big raw output tensor)."
+}

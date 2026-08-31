@@ -1,0 +1,1 @@
+{"label": "cpu_load", "n": 426, "dur_s": 12.0, "watt_mean": 6.223, "watt_p50": 6.164, "watt_min": 1.98, "watt_max": 8.547, "per_rail_w_mean": {"0V8_AON": 0.0026, "0V8_SW": 0.2782, "1V1_SYS": 0.2155, "1V8_SYS": 0.244, "3V3_ADC": 0.0016, "3V3_DAC": 0.0003, "3V3_SYS": 0.2185, "3V7_WL_SW": 0.1807, "DDR_VDD2": 0.2122, "DDR_VDDQ": 0.0096, "HDMI": 0.0889, "VDD_CORE": 4.7714}}

@@ -1,0 +1,51 @@
+Runtime Framework Version: v3.4.2
+Device Driver Version: v2.6.0
+PCIe Driver Version: v2.5.0
+
+Device specification: 'all' (default)
+
+=== Model File: /home/yuyeong/dx-all-suite/dx-agent-dev-showcase/ultralytics-retrain-eval-deepx-export-wildlife/yolo26n_deepx_model/yolo26n.dxnn ===
+
+Model Input Tensors:
+  - images
+Model Output Tensors:
+  - /model.23/one2one_cv2.0/one2one_cv2.0.2/Conv_output_0
+  - /model.23/one2one_cv3.0/one2one_cv3.0.2/Conv_output_0
+  - /model.23/one2one_cv2.1/one2one_cv2.1.2/Conv_output_0
+  - /model.23/one2one_cv3.1/one2one_cv3.1.2/Conv_output_0
+  - /model.23/one2one_cv2.2/one2one_cv2.2.2/Conv_output_0
+  - /model.23/one2one_cv3.2/one2one_cv3.2.2/Conv_output_0
+
+Tasks:
+  [ ] -> npu_0 -> []
+  Task[0] npu_0, NPU, NPU memory usage 187,253,824 bytes (input 1,228,800 bytes, output 2,822,400 bytes), mem_usage:371,260,480 bytes
+  Inputs
+     -  images, UINT8, [1, 640, 640, 3 ]
+  Outputs
+    -  /model.23/one2one_cv2.0/one2one_cv2.0.2/Conv_output_0, FLOAT, [1, 4, 80, 80 ]
+    -  /model.23/one2one_cv3.0/one2one_cv3.0.2/Conv_output_0, FLOAT, [1, 80, 80, 80 ]
+    -  /model.23/one2one_cv2.1/one2one_cv2.1.2/Conv_output_0, FLOAT, [1, 4, 40, 40 ]
+    -  /model.23/one2one_cv3.1/one2one_cv3.1.2/Conv_output_0, FLOAT, [1, 80, 40, 40 ]
+    -  /model.23/one2one_cv2.2/one2one_cv2.2.2/Conv_output_0, FLOAT, [1, 4, 20, 20 ]
+    -  /model.23/one2one_cv3.2/one2one_cv3.2.2/Conv_output_0, FLOAT, [1, 80, 20, 20 ]
+
+
+Profiler data has been written to profiler.json
+  ==============================================================================================
+  | Task: npu_0                                                                                |
+  ==============================================================================================
+  ----------------------------------------------------------------------------------------------
+  | Device 0                                                                                   |
+  | Name                           |     min (us) |     max (us) | average (us) |      CoV (%) |
+  ----------------------------------------------------------------------------------------------
+  | Buffer Pool Wait               |         2.33 |     51924.64 |     10833.36 |        33.99 |
+  | NPU Task (total)               |     28879.81 |    102935.90 |     65357.51 |         4.18 |
+  |   - NPU Input Format Handler   |         0.39 |        65.00 |         3.13 |        74.97 |
+  |   - H2D (Host-to-Device)       |      3315.15 |     12919.18 |      3673.38 |        18.87 |
+  |   - Inference                  |      8859.00 |     17084.00 |      9649.44 |         6.93 |
+  |     - Inference Core 0         |      8859.00 |     17080.00 |      9540.61 |         6.73 |
+  |     - Inference Core 1         |      8987.00 |     17084.00 |      9814.50 |         6.09 |
+  |     - Inference Core 2         |     13578.00 |     15819.00 |     14698.50 |        10.78 |
+  |   - D2H (Device-to-Host)       |     11089.70 |     26255.93 |     21776.72 |         3.26 |
+  |   - NPU Output Format Handler  |      5219.49 |      8309.17 |      5837.50 |         8.22 |
+  ----------------------------------------------------------------------------------------------

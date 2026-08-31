@@ -640,6 +640,28 @@ DRP-AI TVM은 **TVM 기반**이라, DRP-AI가 못 맡는 op는 **TVM이 CPU(Arm 
 
 ---
 
+### 4-D. 🔬 실측 (DEEPX 축, 온디바이스): DX-M1 M.2 벤더 NPU — Raspberry Pi 5 (Cortex-A76 호스트)
+
+> **이건 첫 물리 벤더-NPU 실측이다.** §4-B Qualcomm은 클라우드 실기기(AI Hub)였고, 여기는 **손에 쥔 보드** — 랩 Raspberry Pi 5에 M.2로 꽂은 **DEEPX DX-M1**(NPU 3-core, 25 TOPS INT8)로 지연·처리량·오프로드·전력 네 축을 관통했다. 결정적 장치: **같은 Cortex-A76이 [§2-2](#2-2--실측-부분프록시-arm-cortex-a-폴백-바닥값--pi-5a76--imx8m-nanoa53--jetson-orina78ae)의 CPU 폴백 프록시(offload 0% 바닥값)이자 이 DX-M1의 호스트** → 같은 모델(`yolo26n` 640)로 같은 보드에서 **CPU FP32 ↔ NPU INT8**을 깨끗이 뺄셈한다. §2-2가 "가속기가 이겨야 할 최소선"이었다면, 여기서 그 최소선을 넘는 벤더 실리콘을 처음으로 손에 쥐고 잰다.
+
+**헤드라인: 벤더 NPU가 같은-A76 CPU를 처리량 ×11.42 · E2E 지연 ×4.24 · perf/watt ×29.29로 이긴다 — 단 천장은 DX-M1이 아니라 Pi 5의 PCIe Gen2×1(host-bound).**
+
+| 축 | NPU INT8 (`.dxnn`) | 같은-A76 CPU FP32 (ONNX) | 배속 |
+|---|--:|--:|:--|
+| **처리량** (async 3-core) | **91.51 fps** | 8.01 fps (4-thread) | **×11.42** |
+| **지연 E2E** | 29.43 ms | 124.84 ms | **×4.24** |
+| **지연** (NPU-compute만) | **8.86 ms** | 124.84 ms | ×14.08 |
+| **perf/watt** (host-side) | **37.70** inf/s/W | 1.29 inf/s/W | **×29.29** |
+
+- **오프로드는 확실히 이긴다 — 그리고 이건 정직한 배포 선택이다.** DX-M1은 **INT8 전용 가속기**(NPU 위에 FP 정밀도 사다리가 없다) → 대조는 "CPU FP32(A76 네이티브 최적) ↔ NPU INT8(가속기의 유일 경로)"라는 실제 배포 선택 축이지 불공정 비교가 아니다. 처리량 ×11.42·E2E 지연 ×4.24, NPU 코어 순수 연산만 보면 8.86 ms로 CPU 대비 ×14.08. §2-2 CPU 바닥값(offload 0%) 위에 "벤더 NPU가 실제로 얼마나 버는가"가 얹힌다.
+- **host-bound: NPU 코어를 늘려도 처리량이 평평하다.** async 1/2/3-core = **91.54 / 91.52 / 91.51 fps**(3/1 스케일 **1.00**) — 코어를 3개 다 켜도 처리량이 안 는다. 온보드 프로파일러가 원인을 짚는다: 3코어 실행(1024잡)에서 코어별 잡 분포 **695 / 427 / 2**(코어2 사실상 굶음)·**D2H(출력 전송) 21.8 ms ≫ NPU 연산 8.86 ms**. 큰 raw 출력 텐서를 **PCIe Gen2×1**(DX-M1 네이티브 Gen3×4 대비 유효 대역 ~8× 손실)로 빼는 비용이 파이프라인을 지배 → 호스트가 한 코어분 일감밖에 못 흘려보낸다. **2차 모델 YOLOV5S는 연산이 더 가벼운데(2.6 ms)도 처리량이 더 낮다(~41 fps, 코어 스케일 0.985로 되레 하락)** = host/IO-bound 확증. **천장은 DX-M1이 아니라 Pi 5의 링크 폭이다.**
+- **perf/watt는 두 경계로 정직화한다(전력 계측 갭).** Pi5 `vcgencmd pmic_read_adc`의 12레일은 전부 **보드 내부**(VDD_CORE·DDR·SYS)라, M.2 DX-M1 카드가 **PMIC 상류 EXT5V**에서 끄는 전력을 **못 잡는다**(Orin의 "GR3D%가 DLA를 못 봄"([§2-3](#2-3--실측-온디바이스-jetson-agx-orin-가속기--igpu-정밀도-사다리--dla-오프로드--성능와트))과 같은 종류의 계측 한계). → 두 경계로 보고한다: **(a)** 완측 host-side NPU **37.70** vs CPU **1.29** = **×29.29**; **(b)** 카드 스펙 TDP(3W typ / 5W max)까지 얹은 전체-시스템 상계로도 **×13.1 / ×9.57**. 어느 경계든 NPU가 perf/watt 10배+ 승(호스트 전력: idle 1.46 W · CPU 부하 6.22 W · NPU 부하 2.43 W, CPU/NPU **2.56×**).
+
+> 📄 전체 실측·SVG·판정: [`../logs/stage4_deepx_dxm1_report.html`](../logs/stage4_deepx_dxm1_report.html) · 데이터·스크립트·재현: [`../experiments/stage4_deepx_dxm1/`](../experiments/stage4_deepx_dxm1/) · CPU 바닥값 짝: [§2-2](#2-2--실측-부분프록시-arm-cortex-a-폴백-바닥값--pi-5a76--imx8m-nanoa53--jetson-orina78ae)
+> **캐비앗:** ① NPU는 **INT8 전용** → 대조는 CPU FP32 ↔ NPU INT8(정직한 배포 선택, 불공정 비교 아님). ② 절대 지연·처리량·전력은 배치1·wall-clock·prebuilt `.dxnn`·Pi 5 단일 호스트 → **상대 관계만 유효**. ③ **host-bound는 Pi 5의 Gen2×1 탓이지 DX-M1 천장이 아님**(더 넓은 링크의 호스트면 천장이 올라간다). ④ **정확도 미측정**(prebuilt `.dxnn`·라벨셋 부재) → 다음 축(x86서 `.dxnn` 컴파일 + 라벨셋으로 on-device top-1/mAP, native-QDQ vs 외부-QDQ는 [§4-B Qualcomm](#4-b-qualcomm-qnn--onnxruntime-qnn-ep)의 "외부 QDQ 붕괴" 교훈과 대조). ⑤ Pi 5는 DEEPX 벤더-NPU 호스트일 뿐 **자동차 3벤더(TI/Qualcomm/Renesas)가 아님** — 가속 수치 전이 불가.
+
+---
+
 ## 5) 예시 / 결과 해석 — "fallback 비율부터 확인" (정량 지표)
 
 세 백엔드를 다 돌렸으면, 제일 먼저 볼 것은 정확도도 latency도 아니고 **offload/fallback 비율**이다. 벤더마다 이름이 다를 뿐 다음 두 숫자를 **반드시 계산**한다:

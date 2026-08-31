@@ -1,0 +1,66 @@
+{
+  "model": "yolo26n (COCO, 640x640) \u2014 CPU FP32 ONNX vs NPU INT8 .dxnn",
+  "board": "Raspberry Pi 5 (Cortex-A76 x4) + DEEPX DX-M1 (M.2, PCIe Gen2 x1)",
+  "note": "Same physical board: A76 is both the stage4 CPU-fallback proxy and the DX-M1 host. CPU=FP32 (native best), NPU=INT8 (accelerator is INT8-only) \u2014 honest deployment choice.",
+  "npu": {
+    "engine": "INT8 .dxnn",
+    "seq_latency_e2e_ms": 29.426,
+    "npu_compute_ms": 8.863,
+    "async_throughput_fps": 91.51
+  },
+  "cpu": {
+    "engine": "FP32 ONNX ORT CPUEP 4-thread",
+    "latency_p50_ms": 124.8352,
+    "throughput_fps": 8.01,
+    "thread_scaling": {
+      "1": {
+        "lat_ms": 288.1541,
+        "fps": 3.47
+      },
+      "2": {
+        "lat_ms": 159.9027,
+        "fps": 6.25
+      },
+      "4": {
+        "lat_ms": 124.8352,
+        "fps": 8.01
+      }
+    }
+  },
+  "offload_gain": {
+    "latency_e2e_x": 4.24,
+    "latency_vs_npu_compute_x": 14.08,
+    "throughput_x": 11.42
+  },
+  "power_host_board_w": {
+    "idle": 1.459,
+    "cpu_load": 6.223,
+    "npu_load": 2.427,
+    "cpu_over_npu_x": 2.56,
+    "note": "Pi5 internal PMIC rails only; DX-M1 card draws from EXT5V UPSTREAM of these rails => NOT captured (metering gap)."
+  },
+  "energy_and_ppw": {
+    "cpu_energy_per_inf_j": 0.7769,
+    "cpu_perf_per_watt": 1.29,
+    "npu_energy_per_inf_j_hostside": 0.0265,
+    "npu_perf_per_watt_hostside": 37.7,
+    "npu_over_cpu_ppw_hostside_x": 29.29,
+    "total_system_with_card_tdp": {
+      "card_3W": {
+        "npu_total_power_w": 5.427,
+        "npu_energy_per_inf_j": 0.0593,
+        "npu_perf_per_watt": 16.86,
+        "cpu_over_npu_energy_ratio": 13.1,
+        "npu_over_cpu_ppw_ratio": 13.1
+      },
+      "card_5W": {
+        "npu_total_power_w": 7.427,
+        "npu_energy_per_inf_j": 0.0812,
+        "npu_perf_per_watt": 12.32,
+        "cpu_over_npu_energy_ratio": 9.57,
+        "npu_over_cpu_ppw_ratio": 9.57
+      }
+    },
+    "card_tdp_source": "DEEPX DX-M1 spec: 2W min / ~3W typ / 5W max, 25 TOPS INT8 (deepx.ai; Radxa AICore DX-M1M '25 TOPS for 3W')."
+  }
+}
