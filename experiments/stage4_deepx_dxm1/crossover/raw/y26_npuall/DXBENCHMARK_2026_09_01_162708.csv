@@ -1,0 +1,2 @@
+Runtime Version, Firmware Version, Device Driver Version,PCIe Driver Version,Model Name,FPS,NPU Inference Time Mean,NPU Inference Time SD,NPU Inference Time CV,Latency Mean,Latency SD,Latency CV
+3.4.2,2.7.4,2.6.0,2.5.0,yolo26n.dxnn,91.24,9.11,0.69,0.08,65.07,2.25,0.03

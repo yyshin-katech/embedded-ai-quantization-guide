@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>4단계 DEEPX DX-M1 — 검출(YOLO26n) INT8 정확도 + NMS-fold 레짐 (실측 보고서)</title>
+<style>
+:root{--bg:#0b0e14;--panel:#131720;--panel2:#0f131b;--bd:#242b38;--tx:#c9d1d9;--dim:#8b949e;--brt:#e6edf3;--accent:#58a6ff;--green:#3fb950;--amber:#d29922;--red:#ff7b72;--purple:#bc8cff;--mono:'JetBrains Mono','SF Mono',ui-monospace,'Cascadia Code',Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans KR','Malgun Gothic',sans-serif}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:var(--sans);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:980px;margin:0 auto;padding:0 20px 120px}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+.hero{padding:48px 0 26px;border-bottom:1px solid var(--bd);margin-bottom:8px}
+.kicker{font-family:var(--mono);font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+.hero h1{margin:0 0 10px;font-size:30px;line-height:1.25;color:var(--brt);letter-spacing:-.01em}
+.hero p.sub{margin:0 0 20px;color:var(--dim);font-size:15px;max-width:80ch}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font-family:var(--mono);font-size:12px;padding:5px 10px;border:1px solid var(--bd);border-radius:999px;background:var(--panel);color:var(--tx)}
+.chip b{color:var(--brt);font-weight:600}
+.chip.done{border-color:rgba(63,185,80,.5);background:rgba(63,185,80,.12);color:#7ee787}
+.chip.blocked{border-color:rgba(255,123,114,.5);background:rgba(255,123,114,.12);color:#ff9d96}
+.chip.partial{border-color:rgba(210,153,34,.5);background:rgba(210,153,34,.12);color:#e3b341}
+nav.toc{display:flex;flex-wrap:wrap;gap:8px;margin:26px 0 6px}
+nav.toc a{font-family:var(--mono);font-size:12.5px;padding:6px 11px;border:1px solid var(--bd);border-radius:8px;background:var(--panel);color:var(--tx)}
+nav.toc a:hover{border-color:var(--accent);color:var(--brt);text-decoration:none}
+h2.sec{font-size:13px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin:40px 0 12px;font-weight:600;border-top:1px solid var(--bd);padding-top:26px}
+.step{margin:26px 0 0;scroll-margin-top:16px}
+.step>h3{display:flex;align-items:center;gap:12px;font-size:19px;color:var(--brt);margin:0 0 6px;letter-spacing:-.01em}
+.num{flex:none;display:inline-grid;place-items:center;width:28px;height:28px;border-radius:8px;background:var(--accent);color:#06101f;font-family:var(--mono);font-weight:700;font-size:13px}
+.step p.lead{margin:0 0 4px;color:var(--dim);font-size:14.5px}
+table.dt{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.3px;border:1px solid var(--bd);border-radius:10px;overflow:hidden;font-family:var(--mono)}
+table.dt th,table.dt td{padding:8px 12px;text-align:right;border-bottom:1px solid var(--bd)}
+table.dt th{background:var(--panel);color:var(--dim);font-weight:600;font-size:12px;letter-spacing:.04em}
+table.dt th:first-child,table.dt td:first-child{text-align:left;color:var(--brt)}
+table.dt tr:last-child td{border-bottom:none}
+table.dt tr.hi td{background:rgba(63,185,80,.08)}
+table.dt tr.lo td{background:rgba(255,123,114,.08)}
+table.dt tr.grey td{background:rgba(139,148,158,.08);color:var(--dim)}
+table.dt tr.base td{background:rgba(88,166,255,.07)}
+.g{color:var(--green)}.r{color:var(--red)}.a{color:var(--amber)}.p{color:var(--purple)}.d{color:var(--dim)}
+table.kv{width:100%;border-collapse:collapse;margin:12px 0;font-size:13.5px;border:1px solid var(--bd);border-radius:10px;overflow:hidden}
+table.kv th,table.kv td{padding:9px 13px;text-align:left;border-bottom:1px solid var(--bd);vertical-align:top}
+table.kv th{background:var(--panel);color:var(--dim);font-weight:600;width:34%;font-size:12.5px}
+table.kv td{font-family:var(--mono);font-size:12.7px;color:var(--tx)}
+table.kv tr:last-child td,table.kv tr:last-child th{border-bottom:none}
+.term{background:var(--panel2);border:1px solid var(--bd);border-radius:11px;overflow:hidden;margin:14px 0}
+.term-bar{display:flex;align-items:center;gap:7px;padding:9px 13px;background:#0c1017;border-bottom:1px solid var(--bd)}
+.dot{width:11px;height:11px;border-radius:50%}.dot.r{background:#ff5f56}.dot.y{background:#ffbd2e}.dot.g{background:#27c93f}
+.term-title{margin-left:9px;color:var(--dim);font-size:12.5px;font-family:var(--mono)}
+.term pre{margin:0;padding:15px 17px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.62;color:var(--tx);white-space:pre;tab-size:2}
+.cmt{color:#5c6773}.ok{color:var(--green)}.err{color:var(--red)}.warn{color:var(--amber)}.dim{color:var(--dim)}.hl{color:var(--purple)}.in{color:var(--brt);font-weight:600}
+.note{border-left:3px solid var(--accent);background:rgba(88,166,255,.07);padding:13px 17px;border-radius:0 9px 9px 0;margin:15px 0;font-size:14px}
+.note.trap{border-color:var(--red);background:rgba(255,123,114,.08)}
+.note.warnb{border-color:var(--amber);background:rgba(210,153,34,.08)}
+.note.tip{border-color:var(--green);background:rgba(63,185,80,.07)}
+.note.block{border-color:var(--purple);background:rgba(188,140,255,.08)}
+.note .tag{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 8px;border-radius:6px;margin-bottom:7px}
+.note.trap .tag{background:rgba(255,123,114,.18);color:#ff9d96}
+.note.warnb .tag{background:rgba(210,153,34,.18);color:#e3b341}
+.note.tip .tag{background:rgba(63,185,80,.18);color:#7ee787}
+.note.tip .tag{background:rgba(63,185,80,.18);color:#7ee787}
+.note.block .tag{background:rgba(188,140,255,.18);color:#d8b8ff}
+.note b{color:var(--brt)}.note code{font-family:var(--mono);font-size:12.5px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:4px}
+.chartwrap{border:1px solid var(--bd);background:var(--panel2);border-radius:12px;padding:18px 18px 14px;margin:16px 0}
+.chartwrap .ct{font-family:var(--mono);font-size:12.5px;color:var(--brt);margin:0 0 4px}
+.chartwrap .cs{font-size:12.5px;color:var(--dim);margin:0 0 12px}
+.statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:14px 0}
+.stat{border:1px solid var(--bd);background:var(--panel);border-radius:11px;padding:15px 16px}
+.stat .k{font-family:var(--mono);font-size:11.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em}
+.stat .v{font-size:23px;color:var(--brt);font-weight:700;margin-top:5px;letter-spacing:-.01em}
+.stat .n{font-size:12px;color:var(--dim);margin-top:3px}
+.next{display:block;margin:26px 0 0;padding:15px 18px;border:1px solid var(--bd);border-radius:11px;background:var(--panel);color:var(--tx);font-size:14px}
+.next:hover{border-color:var(--accent);text-decoration:none}
+.next b{color:var(--accent)}
+footer{margin-top:30px;padding-top:18px;border-top:1px solid var(--bd);color:var(--dim);font-size:12.5px}
+@media (max-width:560px){.hero h1{font-size:23px}.term pre{font-size:11.4px}.stat .v{font-size:20px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <p class="kicker">실행 보고서 · 4단계 · DX-M1 검출 축 (Raspberry Pi 5 온디바이스)</p>
+    <h1>DEEPX DX-M1 — 검출(YOLO26n) INT8 정확도 + NMS-fold 레짐</h1>
+    <p class="sub">정확도 축(<a href="stage4_deepx_dxm1_accuracy_report.html">분류 ResNet50</a>)과 크로스오버 축(<a href="stage4_deepx_dxm1_crossover_report.html">host-bound↔NPU-bound</a>)을 <b>하나의 검출 모델</b>로 잇는다. 같은 <code>yolo26n</code> 640×640으로 <b>COCO val2017 mAP</b>(정확도)와 <b>온보드 스테이지 프로파일</b>(레짐)을 동시에 측정 → ① <b>검출 INT8은 무손실급</b>: FP32 0.448 → COCO-캘리브 INT8 0.439, <b>순수 양자화 −0.009(−2.0%)</b>, 캘리브 도메인 차 +0.0033(노이즈 내) — 분류 축(native 0.766≈FP32 0.762)의 <b>검출판 확증</b>. ② <b>NMS-fold는 레짐을 못 바꾼다</b>: <code>[1,300,6]</code> "end2end" export도 dx_com은 <b>raw 헤드(6 conv 출력, 2.82MB)에서 그래프를 자르고</b> decode·NMS를 <b>호스트에서</b> 돈다 → D2H가 여전히 2.82MB/프레임 → <b>D2H-bound</b>(D2H 21.8ms ≫ 연산 7.3ms, 코어 잡 473/27/2) → 크로스오버 raw-head yolo26n(472/28/2)과 동일 → 크로스오버 결론을 <b>확증·심화</b>.</p>
+    <div class="chips">
+      <span class="chip"><b>2026-09-01</b></span>
+      <span class="chip"><b>Raspberry Pi 5 (A76) + DEEPX DX-M1</b></span>
+      <span class="chip"><b>DXRT v3.4.2 · dx_com 2.4.0 · PCIe Gen2×1</b></span>
+      <span class="chip"><b>yolo26n 640 · COCO val2017 500장 · batch1</b></span>
+      <span class="chip done">검출 INT8 무손실급 (−0.009 mAP, −2.0%)</span>
+      <span class="chip blocked">NMS-fold ≠ 레짐 전환 (여전히 D2H-bound)</span>
+      <span class="chip partial">캘리브 도메인 +0.0033 (노이즈 내)</span>
+    </div>
+    <nav class="toc">
+      <a href="#h">헤드라인</a>
+      <a href="#acc">1 · 정확도 분해</a>
+      <a href="#regime">2 · NMS-fold 레짐</a>
+      <a href="#method">3 · 양자화 격리 방법</a>
+      <a href="#lat">4 · 지연</a>
+      <a href="#verdict">5 · 판정 · 캐비앗</a>
+    </nav>
+  </header>
+
+  <section id="h" class="step">
+    <h2 class="sec">헤드라인 (SSOT: detection/results/detection_summary.json)</h2>
+    <div class="statgrid">
+      <div class="stat"><div class="k">FP32 ref (mAP 50-95)</div><div class="v">0.448</div><div class="n">stock yolo26n.onnx · ORT · 500장</div></div>
+      <div class="stat"><div class="k">INT8 순수 양자화 Δ</div><div class="v g">−0.009</div><div class="n">−2.0% rel · 무손실급</div></div>
+      <div class="stat"><div class="k">NPU 연산 p50</div><div class="v">7.30 ms</div><div class="n">D2H 21.8ms에 지배됨</div></div>
+      <div class="stat"><div class="k">레짐</div><div class="v r">D2H-bound</div><div class="n">코어 스케일 1.00× · 잡 473/27/2</div></div>
+    </div>
+    <p class="lead">두 벤더-NPU 정확도 축이 이제 <b>분류(ResNet50 top-1)와 검출(YOLO26n mAP)</b> 모두를 덮는다. DX-M1의 <b>native PTQ</b>는 두 태스크 모두에서 무손실급이며, 검출에서도 <b>외부 QDQ 없이</b>(정확도 축 (a)와 동일) 벤더 툴체인이 양자화를 소유한다.</p>
+  </section>
+
+  <section id="acc" class="step">
+    <h2 class="sec">1 · 정확도 분해 — 순수 양자화 vs 캘리브 도메인</h2>
+    <p class="lead">세 갈래를 <b>같은 pycocotools 스코어러·같은 500장 서브셋·같은 <code>[1,300,6]</code> 디코드</b>로 채점 → mAP 차이는 오직 <b>양자화</b>에서 온다.</p>
+    <table class="dt">
+      <thead><tr><th>변형</th><th>무엇</th><th>mAP 50-95</th><th>mAP50</th><th>mAP75</th><th>mAP_s</th><th>mAP_l</th></tr></thead>
+      <tbody>
+        <tr class="base"><td>FP32 ref</td><td class="d">stock onnx · ORT float</td><td>0.4480</td><td>0.6129</td><td>0.4820</td><td>0.2283</td><td>0.6075</td></tr>
+        <tr class="hi"><td>INT8 · COCO-캘리브 (B)</td><td class="d">내 dx_com 컴파일(동일 weight)</td><td>0.4390</td><td>0.6041</td><td>0.4716</td><td>0.2144</td><td>0.5949</td></tr>
+        <tr><td>INT8 · 벤더 prebuilt (A)</td><td class="d">쇼케이스 <code>.dxnn</code></td><td>0.4357</td><td>0.5987</td><td>0.4691</td><td>0.2149</td><td>0.5936</td></tr>
+      </tbody>
+    </table>
+    <div class="chartwrap">
+      <p class="ct">mAP 50-95 — 세 갈래 (막대 거의 동일 = 무손실급)</p>
+      <p class="cs">스케일: mAP 0.50 = 800px</p>
+      <svg viewBox="0 0 900 132" width="100%" role="img" aria-label="mAP 세 갈래 막대 그래프">
+        <line x1="0" y1="112" x2="880" y2="112" stroke="#242b38"/>
+        <text x="320" y="128" fill="#5c6773" font-size="10" font-family="monospace" text-anchor="middle">0.20</text>
+        <text x="640" y="128" fill="#5c6773" font-size="10" font-family="monospace" text-anchor="middle">0.40</text>
+        <g font-family="monospace" font-size="12">
+          <rect x="0" y="12" width="716.8" height="26" rx="4" fill="#58a6ff"/>
+          <text x="466" y="30" fill="#06101f" font-weight="700">FP32 ref · 0.448</text>
+          <rect x="0" y="44" width="702.4" height="26" rx="4" fill="#3fb950"/>
+          <text x="452" y="62" fill="#06101f" font-weight="700">INT8 COCO-캘리브 (B) · 0.439 · Δ−0.009</text>
+          <rect x="0" y="76" width="697.1" height="26" rx="4" fill="#2ea043"/>
+          <text x="447" y="94" fill="#06101f" font-weight="700">INT8 벤더 prebuilt (A) · 0.4357</text>
+        </g>
+      </svg>
+    </div>
+    <table class="dt">
+      <thead><tr><th>분해</th><th>계산</th><th>값</th><th>해석</th></tr></thead>
+      <tbody>
+        <tr class="hi"><td>순수 양자화</td><td>FP32 − B</td><td>−0.0090 (−2.0%)</td><td class="g">동일 weight·in-domain 캘리브 → 무손실급</td></tr>
+        <tr><td>캘리브 도메인</td><td>B − A</td><td>+0.0033</td><td class="a">in-domain COCO가 벤더 prebuilt 근소 우위 — 서브셋 노이즈 내</td></tr>
+        <tr><td>소객체 양자화 손실</td><td>mAP_s: FP32 − B</td><td>−0.0139 (−6.1%)</td><td class="a">양자화 손실이 집중되나 여전히 경미</td></tr>
+      </tbody>
+    </table>
+    <div class="note tip"><span class="tag">판정</span>
+      <b>검출 INT8은 DX-M1에서 무손실급</b> — 순수 양자화 대가는 mAP 50-95 <b>−0.009(−2.0%)</b>뿐. 이는 <a href="stage4_deepx_dxm1_accuracy_report.html">분류 정확도 축</a>의 결론(native 0.766 ≈ FP32 0.762, 무손실급)을 <b>검출 태스크로 확장</b>한다. <b>캘리브 도메인</b>(B−A +0.0033)은 서브셋 노이즈 내 — 벤더 prebuilt와 내 in-domain 컴파일이 실질 동등. 소객체(mAP_s −6.1%)에 손실이 몰리지만, stage2 DETR의 mAP_s −77~85% 폭락과는 <b>차원이 다른 경미함</b>(검출기·NPU-native PTQ 조합이 관건).
+    </div>
+  </section>
+
+  <section id="regime" class="step">
+    <h2 class="sec">2 · NMS-fold 레짐 — "end2end" export도 레짐을 못 바꾼다</h2>
+    <p class="lead">가설: <code>[1,300,6]</code>로 NMS가 접힌 "end2end" export는 출력을 2.82MB→7.2KB로 392× 줄여 <b>D2H-bound→compute-bound로 뒤집을 것</b>이다. <b>실측은 반증</b>.</p>
+    <p class="lead"><b>결정적 관찰</b> — dxbenchmark로 본 "end2end" <code>.dxnn</code>(prebuilt A와 내 컴파일 B 둘 다)의 <b>NPU 출력 텐서는 여전히 6개 raw conv 헤드</b>(<code>one2one_cv2/cv3</code> @80/40/20, 합 <b>2,822,400 B</b>):</p>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">dxbenchmark --dir . — Option B (yolo26n_coco.dxnn) 출력 텐서</span></div>
+      <pre><span class="dim">Model Output Tensors:</span>
+  - /model.23/one2one_cv2.0/...Conv_output_0   <span class="dim">FLOAT [1, 4, 80, 80]</span>
+  - /model.23/one2one_cv3.0/...Conv_output_0   <span class="dim">FLOAT [1,80, 80, 80]</span>
+  - /model.23/one2one_cv2.1/...Conv_output_0   <span class="dim">FLOAT [1, 4, 40, 40]</span>
+  - /model.23/one2one_cv3.1/...Conv_output_0   <span class="dim">FLOAT [1,80, 40, 40]</span>
+  - /model.23/one2one_cv2.2/...Conv_output_0   <span class="dim">FLOAT [1, 4, 20, 20]</span>
+  - /model.23/one2one_cv3.2/...Conv_output_0   <span class="dim">FLOAT [1,80, 20, 20]</span>
+  Task[0] npu_0: input <span class="in">1,228,800 B</span>, output <span class="err">2,822,400 B</span>   <span class="cmt"># 접힌 [1,300,6] 아님!</span></pre>
+    </div>
+    <p class="lead"><code>dx_engine.run()</code>가 돌려주는 <code>[1,300,6]</code>은 <b>호스트(CPU)에서</b> decode+NMS를 돌려 만든 것 — <code>.dxnn</code> 패키지에 번들된 호스트 후처리다. <b>dx_com은 NMS를 NPU에 못 접는다</b> → 매 프레임 2.82MB raw 헤드가 PCIe를 건넌다.</p>
+    <table class="dt">
+      <thead><tr><th>스테이지 p50</th><th>Option B (COCO)</th><th>Option A (prebuilt)</th><th>크로스오버 raw-head</th></tr></thead>
+      <tbody>
+        <tr><td>H2D (입력)</td><td>3.470 ms</td><td>3.454 ms</td><td class="d">—</td></tr>
+        <tr><td>Inference (연산)</td><td>7.303 ms</td><td>8.995 ms</td><td class="d">9.00 ms</td></tr>
+        <tr class="lo"><td>D2H (출력 2.82MB)</td><td>21.805 ms</td><td>21.801 ms</td><td>21.81 ms</td></tr>
+        <tr><td>D2H / 연산 비</td><td class="r">2.99×</td><td class="r">2.42×</td><td class="r">2.42×</td></tr>
+        <tr><td>async 3코어 fps</td><td>90.81</td><td>90.85</td><td>91.2</td></tr>
+        <tr class="lo"><td>코어 잡 분포</td><td>473 / 27 / 2</td><td>494 / 6 / 2</td><td>472 / 28 / 2</td></tr>
+        <tr><td>코어 스케일 3c/1c</td><td class="r">1.00×</td><td class="r">1.00×</td><td class="r">1.00×</td></tr>
+      </tbody>
+    </table>
+    <div class="chartwrap">
+      <p class="ct">Option B 스테이지 분해 (p50) — D2H가 연산을 3× 지배</p>
+      <p class="cs">스케일: 25ms = 800px</p>
+      <svg viewBox="0 0 900 118" width="100%" role="img" aria-label="스테이지 분해 막대 그래프">
+        <g font-family="monospace" font-size="12">
+          <rect x="0" y="10" width="111.0" height="24" rx="4" fill="#8b949e"/>
+          <text x="119" y="27" fill="#8b949e">H2D 입력 · 3.470ms</text>
+          <rect x="0" y="42" width="233.7" height="24" rx="4" fill="#d29922"/>
+          <text x="242" y="59" fill="#e3b341">Inference 연산 · 7.303ms</text>
+          <rect x="0" y="74" width="697.8" height="24" rx="4" fill="#ff7b72"/>
+          <text x="706" y="91" fill="#ff9d96">D2H 출력(2.82MB) · 21.805ms</text>
+        </g>
+      </svg>
+    </div>
+    <div class="chartwrap">
+      <p class="ct">코어 잡 분포 473/27/2 — 공유 PCIe D2H가 코어 1·2를 굶긴다</p>
+      <p class="cs">스케일: 500 jobs = 800px · 크로스오버 raw-head(472/28/2)와 동일 시그니처</p>
+      <svg viewBox="0 0 900 118" width="100%" role="img" aria-label="코어 잡 분포 막대 그래프">
+        <g font-family="monospace" font-size="12">
+          <rect x="0" y="10" width="756.8" height="24" rx="4" fill="#3fb950"/>
+          <text x="764" y="27" fill="#7ee787">NPU_0 · 473 jobs</text>
+          <rect x="0" y="42" width="43.2" height="24" rx="4" fill="#d29922"/>
+          <text x="51" y="59" fill="#e3b341">NPU_1 · 27 jobs (굶음)</text>
+          <rect x="0" y="74" width="3.2" height="24" rx="4" fill="#ff7b72"/>
+          <text x="11" y="91" fill="#ff9d96">NPU_2 · 2 jobs (굶음)</text>
+        </g>
+      </svg>
+    </div>
+    <div class="note trap"><span class="tag">반증된 가설</span>
+      <b>NMS-folding은 DX-M1에서 레짐을 못 바꾼다.</b> "end2end" <code>[1,300,6]</code> export는 <b>NPU 상의 축소가 아니라 호스트 편의</b>일 뿐 — dx_com이 raw 멀티스케일 헤드에서 그래프를 자르고 decode·NMS를 CPU로 내리기 때문. 그래서 raw-head export든 end2end export든 <b>NPU→호스트 D2H는 동일한 2.82MB</b> → <b>둘 다 D2H-bound</b>(코어 잡 분포 473/27/2 vs 472/28/2로 동일 시그니처). 이는 <a href="stage4_deepx_dxm1_crossover_report.html">크로스오버 축</a>의 결론("yolo26n은 출력 크기 탓에 D2H-bound")을 <b>반증이 아니라 심화</b>한다 — D2H 병목은 export 선택의 우연이 아니라 <b>구조적</b>(이 툴체인에선 NMS를 접어 출력을 줄이는 길 자체가 없음).
+    </div>
+  </section>
+
+  <section id="method" class="step">
+    <h2 class="sec">3 · 양자화 격리 방법 (분류 축 top-1 방법의 검출판)</h2>
+    <table class="kv">
+      <tr><th>모델</th><td><code>yolo26n</code>(ultralytics) 640×640 letterbox(pad114 중앙), 출력 <code>output0 [1,300,6]</code> = [x1,y1,x2,y2,score,class] xyxy@640, class 0-79, NMS 그래프 내</td></tr>
+      <tr><th>평가셋</th><td>COCO val2017 <b>정렬 첫 500장</b>(결정론적) → 640 letterbox → <b>하나의 uint8 npy</b>로 스택, FP32(x86 ORT)·NPU(Pi dx_engine)가 <b>같은 배열</b>을 읽음 → letterbox 기하 <b>비트 동일</b>(전처리 confound 0)</td></tr>
+      <tr><th>디코드</th><td>공유 모듈 <code>yolo_det_common.decode()</code> — 두 백엔드가 같은 <code>[1,300,6]</code>을 같은 코드로 언-letterbox → mAP 차 = 양자화 only</td></tr>
+      <tr><th>FP32 ref</th><td><code>yolo26n.onnx</code>(=Option B 컴파일 입력과 동일 weight) · <code>(u8/255).transpose</code> RGB NCHW · ORT</td></tr>
+      <tr><th>Option A</th><td>벤더 쇼케이스 prebuilt <code>.dxnn</code> — 블랙박스 캘리브(DEEPX 파이프라인)</td></tr>
+      <tr><th>Option B</th><td>내 <code>dxcom -c yolo_coco_cfg.json</code> 컴파일 — <b>동일 stock onnx</b> + 100장 <b>in-domain COCO 캘리브</b>(val2017[500:600], eval[0:500]과 <b>disjoint</b>)</td></tr>
+    </table>
+    <div class="note warnb"><span class="tag">함정 — yolo 캘리브는 ÷255만 (ImageNet norm 금지)</span>
+      정확도 축 ResNet50 config는 <code>div 255</code> <b>다음에 ImageNet <code>normalize(mean/std)</code></b>를 접었다. yolo는 <b>÷255만</b> 쓰므로 Option B config에서 <code>normalize</code> 블록을 <b>반드시 제거</b>(넣으면 캘리브 통계가 어긋남). 접힘=<code>Div·Transpose</code>, 스킵=<code>convertColor·expandDim</code> → 런타임 입력 <b>uint8 NHWC RGB</b>(caller가 RGB 공급, 분류 축과 동일 계약). img0 <code>cat_ids</code>가 거실 클래스(person/chair/tv…)로 나와 RGB 경험 확증.
+    </div>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">Option B 컴파일 (AI-LAP dxcom-venv, x86) + Pi 추론 + 채점</span></div>
+      <pre><span class="cmt"># 1) 100장 in-domain COCO 캘리브 (eval과 disjoint) + config(÷255-only)</span>
+dxcom -m yolo26n.onnx -c yolo_coco_cfg.json -o out_coco --opt_level 1
+  <span class="warn">[WARN] cosine similarity output index 0 = 0.9270</span>  <span class="cmt"># surgeon 근사, mAP엔 −0.009만</span>
+<span class="cmt"># 2) Pi에서 같은 eval npy로 추론 (dx_engine → 호스트 decode/NMS)</span>
+npu_infer_det.py --model yolo26n_coco.dxnn --npy eval_u8.npy --color rgb
+  <span class="ok">[img0] cat_ids=[1,28,44,46,47,51,62,64,67,72,73,78]</span>  <span class="cmt"># 거실=RGB 정상</span>
+  p50 <span class="in">36.746ms</span>  <span class="cmt"># cf. Option A 38.4ms</span>
+<span class="cmt"># 3) 같은 pycocotools 스코어러·같은 500장 imgIds</span>
+eval_map.py --pred predictions_npu_coco.json --tag npu_coco
+  mAP 50-95 = <span class="ok">0.439</span></pre>
+    </div>
+  </section>
+
+  <section id="lat" class="step">
+    <h2 class="sec">4 · 지연 (Pi batch1, host-timed)</h2>
+    <table class="dt">
+      <thead><tr><th>변형</th><th>p50</th><th>mean</th><th>min</th><th>비고</th></tr></thead>
+      <tbody>
+        <tr class="hi"><td>INT8 COCO (B)</td><td>36.746 ms</td><td>36.061 ms</td><td>33.772 ms</td><td class="d">호스트 decode/NMS 포함</td></tr>
+        <tr><td>INT8 prebuilt (A)</td><td>38.4 ms</td><td>37.921 ms</td><td>35.341 ms</td><td class="d">연산 8.995ms(B 7.303ms)</td></tr>
+      </tbody>
+    </table>
+    <p class="lead"><b>지연≠처리량</b>: host-timed e2e 지연(≈37ms/img, 순차)은 decode/NMS·PCIe 왕복을 포함하고, async 파이프라인 처리량(≈91 fps)은 D2H로 게이트된다. FP32 ref는 x86 CPU에서 돌아 <b>mAP 기준일 뿐 Pi 지연 비교 대상 아님</b>.</p>
+  </section>
+
+  <section id="verdict" class="step">
+    <h2 class="sec">5 · 판정 · 산출물 · 캐비앗</h2>
+    <table class="dt">
+      <thead><tr><th>질문</th><th>답</th></tr></thead>
+      <tbody>
+        <tr><td>검출 INT8 대가는?</td><td class="g">무손실급 — 순수 양자화 mAP −0.009(−2.0%), 소객체 −6.1%</td></tr>
+        <tr><td>캘리브 도메인이 중요한가?</td><td class="a">아니오 — in-domain vs 벤더 prebuilt +0.0033(노이즈 내)</td></tr>
+        <tr><td>분류 축 결론과 정합?</td><td class="g">예 — native PTQ 무손실급이 분류·검출 둘 다에서 성립</td></tr>
+        <tr><td>NMS-fold가 레짐을 바꾸나?</td><td class="r">아니오 — dx_com이 raw 헤드에서 자름, decode·NMS 호스트 → 여전히 D2H-bound</td></tr>
+        <tr><td>크로스오버 결론과의 관계?</td><td class="g">반증 아니라 확증·심화 — D2H 병목이 구조적임을 증명(잡 분포 473/27/2 = raw-head 472/28/2)</td></tr>
+        <tr><td>측정 신뢰성</td><td class="g">비트 동일 npy · 공유 디코드 · 동일 스코어러 → 양자화 격리; dxrun↔dxbenchmark 일치</td></tr>
+      </tbody>
+    </table>
+    <p class="lead">산출물:</p>
+    <table class="kv">
+      <tr><th>리포트</th><td>이 문서 <code>logs/stage4_deepx_dxm1_detection_report.html</code></td></tr>
+      <tr><th>실험</th><td><code>experiments/stage4_deepx_dxm1/detection/</code> — scripts(preprocess_eval_set·fp32_infer·npu_infer_det·make_calib_png_det·eval_map·build_detection_summary·yolo_det_common·yolo_coco_cfg) · results(map_{fp32,npu_ppe,npu_coco}·predictions_*·<b>detection_summary.json SSOT</b>) · raw(coco_prof·e2e_ppe_prof: profiler.json+stdout+dxbenchmark csv)</td></tr>
+      <tr><th>가이드</th><td><code>study_guide/06_multi_soc.md</code> §4-D 검출 콜아웃(순수 삽입)</td></tr>
+    </table>
+    <div class="note warnb"><span class="tag">캐비앗</span>
+      ① <b>500장 val2017 서브셋</b> → 상대 Δ만 유효, 절대 mAP는 문헌 비교 대상 아님(paired FP32−INT8 Δ는 서브셋 노이즈에 강건).<br>
+      ② <b>prebuilt/PTQ·batch1·Pi 5 Gen2×1</b> → D2H-bound은 <b>Pi 5 링크 성질</b>(네이티브 Gen3×4면 D2H 벽 위치가 달라짐, 미측정).<br>
+      ③ 지연은 <code>dx_engine</code> host-timed(호스트 decode/NMS 포함) — 순수 NPU 연산(profiler 7.3ms)과 구분.<br>
+      ④ Option B 컴파일 경고(cosine 0.927 @output0)는 surgeon 근사 — mAP엔 −0.009만 반영(과대 아님).<br>
+      ⑤ Pi 5는 DEEPX 호스트일 뿐 자동차 3벤더 아님. 정확도 축(외부 QDQ 하드 거부)과 동일하게 <b>벤더가 양자화 소유</b>.
+    </div>
+    <a class="next" href="stage4_deepx_dxm1_accuracy_report.html"><b>← 분류 정확도 축</b> (ResNet50 native 0.766≈FP32) · 이 검출 축이 그 무손실급 결론을 검출로 확장</a>
+    <a class="next" href="stage4_deepx_dxm1_crossover_report.html"><b>← 크로스오버 축</b> (host-bound↔NPU-bound) · 이 검출 축이 그 raw-head D2H-bound가 구조적임을 확증</a>
+    <footer>
+      DEEPX DX-M1 검출 축 · Raspberry Pi 5 온디바이스 · 2026-09-01 · 모든 수치 SSOT <code>detection/results/detection_summary.json</code> 추적 가능 · 커밋·푸시는 규약대로 요청 시.
+    </footer>
+  </section>
+</div>
+</body>
+</html>

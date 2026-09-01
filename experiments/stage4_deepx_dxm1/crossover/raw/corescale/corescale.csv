@@ -1,0 +1,13 @@
+model,mode,cores,fps
+resnet50,seq,1,352.36
+yolo26n,seq,1,32.27
+resnet50,async,1,493.04
+resnet50,async,2,863.82
+resnet50,async,3,1078.93
+yolo26n,async,1,91.29
+yolo26n,async,2,91.23
+yolo26n,async,3,91.19
+yolov5s,seq,1,21.85
+yolov5s,async,1,40.19
+yolov5s,async,2,41.32
+yolov5s,async,3,41.01

@@ -1,0 +1,41 @@
+Runtime Framework Version: v3.4.2
+Device Driver Version: v2.6.0
+PCIe Driver Version: v2.5.0
+
+Device specification: 'all' (default)
+
+=== Model File: /home/yuyeong/dxm1_acc/resnet50_native.dxnn ===
+
+Model Input Tensors:
+  - input
+Model Output Tensors:
+  - logits
+
+Tasks:
+  [ ] -> npu_0 -> []
+  Task[0] npu_0, NPU, NPU memory usage 36,484,480 bytes (input 150,528 bytes, output 4,000 bytes), mem_usage:47,046,016 bytes
+  Inputs
+     -  input, UINT8, [1, 224, 224, 3 ]
+  Outputs
+    -  logits, FLOAT, [1, 1000 ]
+
+
+Profiler data has been written to profiler.json
+  ==============================================================================================
+  | Task: npu_0                                                                                |
+  ==============================================================================================
+  ----------------------------------------------------------------------------------------------
+  | Device 0                                                                                   |
+  | Name                           |     min (us) |     max (us) | average (us) |      CoV (%) |
+  ----------------------------------------------------------------------------------------------
+  | Buffer Pool Wait               |         0.65 |      8656.48 |       926.60 |       103.36 |
+  | NPU Task (total)               |      3152.50 |     12429.66 |      5609.08 |         6.79 |
+  |   - NPU Input Format Handler   |        22.04 |       133.43 |        37.76 |        20.87 |
+  |   - H2D (Host-to-Device)       |       455.94 |      1429.43 |       709.66 |        26.94 |
+  |   - Inference                  |      2000.00 |      3002.00 |      2768.27 |         3.69 |
+  |     - Inference Core 0         |      2000.00 |      2977.00 |      2767.64 |         3.74 |
+  |     - Inference Core 1         |      2014.00 |      2977.00 |      2769.74 |         3.65 |
+  |     - Inference Core 2         |      2109.00 |      3002.00 |      2767.45 |         3.69 |
+  |   - D2H (Device-to-Host)       |        75.89 |       239.63 |       112.21 |        19.20 |
+  |   - NPU Output Format Handler  |         1.06 |        55.67 |         3.30 |        69.10 |
+  ----------------------------------------------------------------------------------------------

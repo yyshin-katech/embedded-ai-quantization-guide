@@ -681,6 +681,53 @@ DRP-AI TVM은 **TVM 기반**이라, DRP-AI가 못 맡는 op는 **TVM이 CPU(Arm 
 > 📄 전체 실측·SVG·판정: [`../logs/stage4_deepx_dxm1_accuracy_report.html`](../logs/stage4_deepx_dxm1_accuracy_report.html) · 데이터·스크립트·재현: [`../experiments/stage4_deepx_dxm1/accuracy/`](../experiments/stage4_deepx_dxm1/accuracy/) · 벤치(지연·전력) 짝: [§4-D](#4-d--실측-deepx-축-온디바이스-dx-m1-m2-벤더-npu--raspberry-pi-5-cortex-a76-호스트)
 > **캐비앗:** ① 모델 스코프 이동(yolo26n→ResNet50) — 지연 벤치와 1:1 아님(다른 모델). ② (b) 939는 3중 confound(커널+scale+전처리 위치) — (a) 때문에 동일-scale 순수 커널 다리는 원리상 불가, 939는 커널-only 상한 아님. ③ npu_native 0.7660 > cpu_fp32 0.7620은 1000장 노이즈 내(이김 아님). ④ 절대 top-1은 1000장 서브셋 → 3·5단계 5000장 RTX와 비교 불가, 같은 번들 상대 관계만 유효. ⑤ Pi 5는 DEEPX 호스트일 뿐 **자동차 3벤더(TI/Qualcomm/Renesas) 아님**.
 
+#### 4-D(크로스오버). 🔬 실측 (온디바이스): DX-M1 host-bound ↔ NPU-bound — 코어 스케일링 · D2H 병목
+
+> **위 §4-D 벤치 캐비앗 ③("host-bound은 Pi 5의 Gen2×1 탓이지 DX-M1 천장이 아님")을 반대 사례로 닫는다.** 같은 DX-M1·같은 Pi 5·같은 `dxrun`/`dxbenchmark`에서 **모델만 바꿔** 병목 스테이지가 갈리는지 본다 — 벤치의 `yolo26n`(출력 2.82 MB) 옆에 [정확도 축](#4-d정확도--실측-온디바이스-dx-m1-정확도-축--외부-qdq-거부--cpunpu-경로-의존)의 `resnet50_native.dxnn`(출력 [1,1000] = 4 KB, 706× 작음)을 올리고, 변수 격리용으로 `YOLOV5S`(연산은 더 가벼운데 출력은 더 큼)를 더한다.
+
+**헤드라인: 천장은 하드웨어가 아니라 모델(출력 크기)이 정한다.** 출력이 작은 resnet50은 D2H가 무시가능해져 **NPU 연산이 실제 병목**이 되고 **3코어 2.19× near-linear 스케일**이 부활한다 — 벤치의 "host-bound(코어 스케일 1.00)"은 DX-M1의 보편 성질이 아니라 **`yolo26n`(큰 출력)의 성질**이었다.
+
+| 모델 | 출력 bytes | 연산 p50 | D2H p50 | regime | 코어스케일 3c/1c |
+|---|--:|--:|--:|---|--:|
+| **ResNet50** | 4,000 | 2.77 ms | **0.11 ms** | **compute-bound** | **2.19×** |
+| yolo26n | 2,822,400 | 9.00 ms | **21.81 ms** | D2H-bound | 1.00× |
+| YOLOV5S | 5,483,520 | **2.59 ms**(최경량) | 21.14 ms | D2H-bound | 1.02× |
+
+- **코어 잡 분포가 범인을 확정한다.** resnet50 **961/910/1010**(3코어 균등, tiny 출력을 순식간에 뱉음) vs yolo26n **472/28/2**(공유 PCIe Gen2×1 D2H 링크가 한 코어치 출력만으로 포화 → 코어 1·2 굶김). 스테이지 자체는 모델 무관(같은 링크·같은 NPU), **바뀐 건 출력 텐서 크기 하나뿐** — 그게 D2H 시간(0.11 → 21.81 ms)을 정하고, D2H가 병목 여부를, 병목이 코어 스케일 가능 여부를 정한다. dxrun 3코어 처리량 격차는 **×11.8**(1079 vs 91 fps).
+- **변수 격리 (YOLOV5S).** "연산이 무거워서 resnet50이 스케일한 것"이 아니다 — YOLOV5S는 **연산이 resnet50보다 가벼운데도**(2.59 < 2.77 ms) 출력이 커서 D2H-bound로 남고 3코어 처리량이 resnet50의 **1/26**(41 vs 1079 fps). regime을 정하는 건 연산이 아니라 **출력(D2H) 크기**. `--buffer-count` 대조도 확증: resnet50은 bc2→4서 641→1108 급등(NPU 여유가 버퍼에 굶겼던 것), yolo26n은 91에서 포화(물리적 D2H 벽은 버퍼로 못 넘음).
+- **방법 정밀화.** `dxrun -n`은 코어 **개수**가 아니라 코어 **ID**(`0=ALL·1=NPU_0·4=NPU_0/1`) → 코어-카운트 스윕은 1코어 `-n 1`·2코어 `-n 4`·3코어 `-n 0`. 벤치의 "1/2/3-core 91.5 평평"은 실은 세 개별 단일코어가 각 91.5였던 것(결론 동일, 축만 정밀화). dxrun async 3코어 ≈ dxbenchmark 프로파일러 내부 fps(독립 도구 일치: 1079≈1071·91.2≈90.9·41.0≈40.9).
+- **설계 규칙.** DX-M1 3코어를 살리려면 **출력을 작게**(분류 헤드·경량 후처리 온-NPU·낮은 해상도) 하거나 **PCIe 대역을 넓혀야**(네이티브 Gen3×4) 한다. Orin 동시부하 축(§2-4, "iGPU∥DLA는 GPU-폴백 0층일 때만 진짜 병렬")과 같은 결: **가속기 코어 수보다 데이터 경로가 천장**이다.
+
+> 📄 전체 실측·SVG·판정: [`../logs/stage4_deepx_dxm1_crossover_report.html`](../logs/stage4_deepx_dxm1_crossover_report.html) · 데이터·스크립트·재현: [`../experiments/stage4_deepx_dxm1/crossover/`](../experiments/stage4_deepx_dxm1/crossover/) · 벤치(캐비앗 ③) 짝: [§4-D](#4-d--실측-deepx-축-온디바이스-dx-m1-m2-벤더-npu--raspberry-pi-5-cortex-a76-호스트)
+> **캐비앗:** ① 절대 처리량·지연은 batch1·prebuilt `.dxnn`·Pi 5 Gen2×1 → 상대 관계(코어 스케일·D2H/연산 비)만 유효. ② host-bound은 **Pi 5의 Gen2×1** 탓 — 네이티브 Gen3×4(~8× 대역)면 두 YOLO의 D2H 벽 위치가 달라질 수 있음(미측정). ③ crossover는 **2 regime의 존재를 증명**(전이 곡선 아님 — 중간 출력 크기 미측정). ④ YOLOV5S(입력 512×512)는 yolo26n(640×640)과 1:1 아님 — 공유 결론(둘 다 D2H-bound)만 사용. ⑤ Pi 5는 DEEPX 호스트일 뿐 **자동차 3벤더(TI/Qualcomm/Renesas) 아님**.
+
+#### 4-D(검출). 🔬 실측 (온디바이스): DX-M1 YOLO26n INT8 정확도 + NMS-fold 레짐
+
+> **정확도 축과 크로스오버 축을 하나의 검출 모델로 잇는다.** [정확도 축](#4-d정확도--실측-온디바이스-dx-m1-정확도-축--외부-qdq-거부--cpunpu-경로-의존)은 분류(ResNet50 top-1)였고 [크로스오버 축](#4-d크로스오버--실측-온디바이스-dx-m1-host-bound--npu-bound--코어-스케일링--d2h-병목)은 host-bound↔NPU-bound 레짐이었으나 정확도 미측정(`yolo26n` 라벨셋)이었다. 여기서 **같은 `yolo26n` 640으로 COCO val2017 mAP(정확도)와 온보드 스테이지 프로파일(레짐)을 동시에** 잰다. 결정적 장치(정확도 축과 동일): **비트 동일 letterbox npy + 공유 `[1,300,6]` 디코드**로 FP32(x86 ORT)·INT8(Pi DX-M1)이 같은 입력을 같은 코드로 디코드 → mAP 차 = 양자화 only.
+
+**헤드라인 (1): 검출 INT8은 무손실급 — 순수 양자화 −0.009 mAP(−2.0%).** 동일 weight의 stock `yolo26n.onnx`를 in-domain COCO로 캘리브해 컴파일(Option B)하면 FP32 0.448 → INT8 0.439. 벤더 prebuilt(Option A) 0.4357과의 차(캘리브 도메인)는 +0.0033로 서브셋 노이즈 내. 이는 정확도 축의 분류 결론(native 0.766 ≈ FP32 0.762)을 **검출로 확장** — DX-M1 native PTQ는 분류·검출 **둘 다** 무손실급.
+
+| 분해 | 계산 | 값 |
+|---|---|---|
+| **순수 양자화** | FP32 0.448 − B 0.439 | **−0.009 (−2.0%)** |
+| 캘리브 도메인 | B 0.439 − A 0.4357 | +0.0033 (노이즈 내) |
+| 소객체 손실 | mAP_s 0.2283 − 0.2144 | −0.0139 (−6.1%) — 손실 집중되나 경미 |
+
+**헤드라인 (2): NMS-folding은 레짐을 못 바꾼다 — dx_com이 raw 헤드에서 그래프를 자른다.** 가설은 "`[1,300,6]`로 NMS가 접힌 end2end export가 출력을 2.82MB→7.2KB로 줄여 D2H-bound→compute-bound로 뒤집는다"였으나 **반증**. dxbenchmark로 보면 end2end `.dxnn`(prebuilt A·내 컴파일 B **둘 다**)의 NPU 출력은 여전히 **6개 raw conv 헤드(2,822,400 B)**이고, `dx_engine.run()`의 `[1,300,6]`은 **호스트(CPU)에서** decode+NMS를 돌린 결과다(`.dxnn`에 번들된 호스트 후처리). **dx_com은 NMS를 NPU에 못 접는다** → 매 프레임 2.82MB가 PCIe를 건넌다.
+
+| 스테이지 p50 | Option B(COCO) | Option A(prebuilt) | 크로스오버 raw-head yolo26n |
+|---|--:|--:|--:|
+| Inference(연산) | 7.303 ms | 8.995 ms | 9.00 ms |
+| **D2H(2.82MB)** | **21.805 ms** | 21.801 ms | 21.81 ms |
+| D2H / 연산 | 2.99× | 2.42× | 2.42× |
+| **코어 잡 분포** | **473 / 27 / 2** | 494 / 6 / 2 | 472 / 28 / 2 |
+
+- **레짐은 구조적이다.** raw-head export든 end2end export든 NPU→호스트 D2H는 **동일한 2.82MB** → 둘 다 D2H-bound(코어 잡 분포 473/27/2 vs 472/28/2 동일 시그니처). 이는 크로스오버 결론("yolo26n은 출력 크기 탓에 D2H-bound")을 **반증이 아니라 심화** — D2H 병목은 export 선택의 우연이 아니라 **이 툴체인에서 NMS를 접어 출력을 줄이는 길 자체가 없다**는 구조적 사실. "그냥 NMS 접어 출력 줄이면 되지"라는 순진한 가정을 닫는다.
+- **함정 — yolo 캘리브는 ÷255만.** 정확도 축 ResNet50 config는 `div 255` 다음에 ImageNet `normalize`를 접었으나 yolo는 **÷255만** 쓰므로 config에서 `normalize` 블록을 **반드시 제거**(넣으면 캘리브 통계가 어긋남). 접힘=`Div·Transpose`, 스킵=`convertColor·expandDim` → 런타임 입력 uint8 NHWC RGB.
+
+> 📄 전체 실측·SVG·판정: [`../logs/stage4_deepx_dxm1_detection_report.html`](../logs/stage4_deepx_dxm1_detection_report.html) · 데이터·스크립트·재현: [`../experiments/stage4_deepx_dxm1/detection/`](../experiments/stage4_deepx_dxm1/detection/) · 분류 정확도 짝: [§4-D(정확도)](#4-d정확도--실측-온디바이스-dx-m1-정확도-축--외부-qdq-거부--cpunpu-경로-의존) · 레짐 짝: [§4-D(크로스오버)](#4-d크로스오버--실측-온디바이스-dx-m1-host-bound--npu-bound--코어-스케일링--d2h-병목)
+> **캐비앗:** ① 500장 val2017 서브셋 → 상대 Δ만 유효, 절대 mAP는 문헌 비교 대상 아님(paired FP32−INT8 Δ는 노이즈에 강건). ② prebuilt/PTQ·batch1·Pi5 Gen2×1 → D2H-bound은 Pi 5 링크 성질(네이티브 Gen3×4면 벽 위치 달라짐, 미측정). ③ 지연(host-timed, decode/NMS 포함)과 순수 NPU 연산(profiler 7.3ms) 구분. ④ Option B 컴파일 경고(cosine 0.927 @output0)는 surgeon 근사 — mAP엔 −0.009만 반영. ⑤ Pi 5는 DEEPX 호스트일 뿐 **자동차 3벤더(TI/Qualcomm/Renesas) 아님**.
+
 ---
 
 ## 5) 예시 / 결과 해석 — "fallback 비율부터 확인" (정량 지표)

@@ -1,0 +1,9 @@
+{
+  "model": "yolo26n.dxnn",
+  "color": "rgb",
+  "images": 500,
+  "dets": 74868,
+  "lat_p50_ms": 38.4,
+  "lat_mean_ms": 37.921,
+  "lat_min_ms": 35.341
+}

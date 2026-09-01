@@ -1,0 +1,115 @@
+{
+  "model": "yolo26n (ultralytics), 640x640 letterbox, COCO val2017 first-500",
+  "eval": {
+    "n_images": 500,
+    "scorer": "pycocotools bbox, same subset imgIds",
+    "conf_thresh": 0.001,
+    "decode": "shared [1,300,6] xyxy@640 (identical FP32/INT8)"
+  },
+  "accuracy_mAP_50_95": {
+    "fp32_ref": 0.448,
+    "int8_ppe_vendor_calib": 0.4357,
+    "int8_coco_indomain_calib": 0.439
+  },
+  "decomposition": {
+    "pure_quantization_fp32_minus_coco": 0.009,
+    "pure_quantization_rel_pct": 2.0,
+    "calibration_domain_coco_minus_ppe": 0.0033,
+    "small_object_quant_hit_mAP_s": 0.0139,
+    "small_object_rel_pct": 6.1,
+    "verdict": "detection INT8 near-lossless on DX-M1; calibration domain within noise"
+  },
+  "full_metrics": {
+    "fp32": {
+      "tag": "fp32",
+      "n_images": 500,
+      "mAP_50_95": 0.448,
+      "mAP_50": 0.6129,
+      "mAP_75": 0.482,
+      "mAP_s": 0.2283,
+      "mAP_m": 0.5074,
+      "mAP_l": 0.6075,
+      "AR_1": 0.3587,
+      "AR_10": 0.594,
+      "AR_100": 0.6475,
+      "AR_s": 0.4076,
+      "AR_m": 0.7104,
+      "AR_l": 0.8026
+    },
+    "int8_ppe": {
+      "tag": "npu_ppe",
+      "n_images": 500,
+      "mAP_50_95": 0.4357,
+      "mAP_50": 0.5987,
+      "mAP_75": 0.4691,
+      "mAP_s": 0.2149,
+      "mAP_m": 0.4956,
+      "mAP_l": 0.5936,
+      "AR_1": 0.3562,
+      "AR_10": 0.5867,
+      "AR_100": 0.6407,
+      "AR_s": 0.4009,
+      "AR_m": 0.7046,
+      "AR_l": 0.8013
+    },
+    "int8_coco": {
+      "tag": "npu_coco",
+      "n_images": 500,
+      "mAP_50_95": 0.439,
+      "mAP_50": 0.6041,
+      "mAP_75": 0.4716,
+      "mAP_s": 0.2144,
+      "mAP_m": 0.4996,
+      "mAP_l": 0.5949,
+      "AR_1": 0.3576,
+      "AR_10": 0.5881,
+      "AR_100": 0.6414,
+      "AR_s": 0.3989,
+      "AR_m": 0.7058,
+      "AR_l": 0.7986
+    }
+  },
+  "latency_pi_batch1_hosttimed_ms": {
+    "int8_ppe_p50": 38.4,
+    "int8_coco_p50": 36.746,
+    "note": "FP32 ref ran x86 CPU (mAP reference only, not a Pi latency comparand)"
+  },
+  "regime": {
+    "int8_coco_optionB": {
+      "fps": 90.81,
+      "H2D_p50_ms": 3.47,
+      "D2H_p50_ms": 21.805,
+      "Inference_p50_ms": 7.303,
+      "d2h_over_infer": 2.99,
+      "core_job_dist": {
+        "0": 473,
+        "1": 27,
+        "2": 2
+      },
+      "output_bytes_raw_head": 2822400,
+      "input_bytes": 1228800,
+      "regime": "D2H-bound"
+    },
+    "int8_ppe_optionA": {
+      "fps": 90.85,
+      "H2D_p50_ms": 3.454,
+      "D2H_p50_ms": 21.801,
+      "Inference_p50_ms": 8.995,
+      "d2h_over_infer": 2.42,
+      "core_job_dist": {
+        "0": 494,
+        "1": 6,
+        "2": 2
+      },
+      "output_bytes_raw_head": 2822400,
+      "input_bytes": 1228800,
+      "regime": "D2H-bound"
+    },
+    "finding": "dx_com cuts the graph at the raw multi-scale head (6 conv outputs, 2,822,400 B); decode+NMS run host-side. The 'end2end' [1,300,6] is a host convenience, NOT an on-NPU reduction -> D2H still transfers the full 2.82 MB raw head every frame -> D2H-bound, core scaling 1.00x, core job dist ~473/27/2. NMS-folding does NOT flip the regime (confirms+deepens the crossover raw-head yolo26n: 472/28/2, D2H 21.81 ms)."
+  },
+  "caveats": [
+    "500-image val2017 subset -> relative deltas only; absolute mAP not a literature comparand.",
+    "prebuilt/PTQ, batch1, Pi5 PCIe Gen2x1 -> D2H-bound is a Pi5-link property (native Gen3x4 would move the wall).",
+    "latency host-timed via dx_engine (includes host decode/NMS), not pure NPU compute."
+  ]
+}

@@ -1,0 +1,141 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Benchmark Report</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f8f9fa; color: #212529; line-height: 1.6; margin: 0; padding: 20px; }
+        .container { max-width: 1200px; margin: 20px auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); padding: 30px 40px; }
+        h1 { text-align: center; color: #0165B3; font-weight: 600; margin-bottom: 15px; }
+        h2 { color: #0165B3; border-bottom: 2px solid #e9ecef; padding-bottom: 10px; margin-top: 40px; }
+        h3 { color: #343a40; margin-top: 30px; border-left: 4px solid #0165B3; padding-left: 10px;}
+        .host-info { background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 6px; padding: 20px; margin: 30px 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+        .info-item { display: flex; flex-direction: column; }
+        .info-item .label { font-size: 0.9em; color: #6c757d; font-weight: 500; }
+        .info-item .value { font-size: 1.1em; color: #343a40; font-weight: 600; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #dee2e6; padding: 12px 15px; text-align: center; vertical-align: middle; }
+        th { background-color: #0165B3; color: white; font-weight: 500; }
+        .plot-container { width: 100%; margin: 20px auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>DXBenchmark Report</h1>
+    
+        <div class="host-info">
+            <div class="info-item"><span class="label">Architecture</span><span class="value">aarch64</span></div>
+            <div class="info-item"><span class="label">CPU Model</span><span class="value"></span></div>
+            <div class="info-item"><span class="label">CPU Cores</span><span class="value"></span></div>
+            <div class="info-item"><span class="label">Memory Size</span><span class="value">7.87343 GB</span></div>
+            <div class="info-item"><span class="label">Operating System</span><span class="value">Debian GNU/Linux 13 (trixie)</span></div>
+        </div>
+    <h2>Performance Summary by Model (Total: 1 Models)</h2><h3>FPS Comparision</h3><div id="fps-plot-0" class="plot-container"></div><h3>NPU Inference Time Comparison</h3><div id="npu-plot-0" class="plot-container"></div><h3>E2E Latency Comparison</h3><div id="latency-plot-0" class="plot-container"></div><h2>Performance Metrics Over Loops</h2><h3>E2E Latency</h3>
+<div id="timeseries_E2E_Latency_plot" class="plot-container"></div>
+<h3>NPU Inference Time</h3>
+<div id="timeseries_NPU_Inference_Time_plot" class="plot-container"></div>
+
+        <h2>Benchmark Results</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th rowspan="2">Model Name</th>
+                    <th rowspan="2">FPS</th>
+                    <th colspan="6">NPU Inference Time (ms)</th>
+                    <th colspan="6">E2E Latency (ms)</th>
+                </tr>
+                <tr>
+                    <th>Min</th><th>Max</th><th>Avg</th><th>P50</th><th>P99</th><th>CV</th>
+                    <th>Min</th><th>Max</th><th>Avg</th><th>P50</th><th>P99</th><th>CV</th>
+                </tr>
+            </thead>
+            <tbody>
+    <tr><td title='YOLOV5S_1.dxnn'>YOLOV5S_1.dxnn</td><td>41.04</td><td>2.59</td><td>3.13</td><td>2.61</td><td>2.59</td><td>3.07</td><td>0.03</td><td>88.69</td><td>200.11</td><td>145.05</td><td>146.69</td><td>163.89</td><td>0.06</td></tr></tbody></table><script>const barPlotHeight = 280;
+const commonConfig = { responsive: true, displayModeBar: false };
+const maxFpsValue = 45.15;
+const maxNpuTimeValue = 2.95;
+const maxLatencyValue = 169.75;
+const models_fps_0 = ['YOLOV5S_1.dxnn'];
+const fpsData_0 = [41.04];
+document.getElementById('fps-plot-0').style.height = barPlotHeight + 'px';const fpsLayout_0 = { margin: { l: 250, r: 40, t: 40, b: 50 }, font: { size: 12, color: '#333' }, bargap: 0.15, xaxis: { title: 'FPS (Higher is Better)', gridcolor: '#e9ecef', range: [0, maxFpsValue] }, yaxis: { automargin: true, tickfont: {size: 10}, autorange: 'reversed'}, title: { text: 'Models 1 - 1' }, annotations: [] };fpsLayout_0.annotations.push({ y: models_fps_0[0], x: fpsData_0[0], text: '<b>' + fpsData_0[0].toFixed(2) + '</b>', xanchor: 'left', showarrow: false, font: { color: '#2ca02c', size: 12 } });
+Plotly.newPlot('fps-plot-0', [{ y: models_fps_0, x: fpsData_0, type: 'bar', orientation: 'h', marker: { color: '#2ca02c' } }], fpsLayout_0, commonConfig);
+const models_npu_0 = ['YOLOV5S_1.dxnn'];
+const npuMeans_0 = [2.61];
+const npuStdDevs_0 = [0.07];
+document.getElementById('npu-plot-0').style.height = barPlotHeight + 'px';const npuLayout_0 = { margin: { l: 250, r: 40, t: 40, b: 50 }, font: { size: 12, color: '#333' }, bargap: 0.15, xaxis: { title: 'Average Inference Time (ms, Lower is Better)', gridcolor: '#e9ecef', range: [0, maxNpuTimeValue] }, yaxis: { automargin: true, tickfont: {size: 10}, autorange: 'reversed'}, title: { text: 'Models 1 - 1' }, annotations: [] };npuLayout_0.annotations.push({ y: models_npu_0[0], x: npuMeans_0[0] + npuStdDevs_0[0], text: '<b>' + npuMeans_0[0].toFixed(2) + '</b>', xanchor: 'left', showarrow: false, font: { color: '#0165B3', size: 12 } });
+Plotly.newPlot('npu-plot-0', [{ y: models_npu_0, x: npuMeans_0, error_x: { array: npuStdDevs_0, visible: true }, type: 'bar', orientation: 'h', marker: { color: '#0165B3' } }], npuLayout_0, commonConfig);
+const models_latency_0 = ['YOLOV5S_1.dxnn'];
+const latencyMeans_0 = [144.29];
+const latencyStdDevs_0 = [10.03];
+document.getElementById('latency-plot-0').style.height = barPlotHeight + 'px';const latencyLayout_0 = { margin: { l: 250, r: 40, t: 40, b: 50 }, font: { size: 12, color: '#333' }, bargap: 0.15, xaxis: { title: 'Average E2E Latency (ms, Lower is Better)', gridcolor: '#e9ecef', range: [0, maxLatencyValue] }, yaxis: { automargin: true, tickfont: {size: 10}, autorange: 'reversed'}, title: { text: 'Models 1 - 1' }, annotations: [] };latencyLayout_0.annotations.push({ y: models_latency_0[0], x: latencyMeans_0[0] + latencyStdDevs_0[0], text: '<b>' + latencyMeans_0[0].toFixed(2) + '</b>', xanchor: 'left', showarrow: false, font: { color: '#0165B3', size: 12 } });
+Plotly.newPlot('latency-plot-0', [{ y: models_latency_0, x: latencyMeans_0, error_x: { array: latencyStdDevs_0, visible: true }, type: 'bar', orientation: 'h', marker: { color: '#0165B3' } }], latencyLayout_0, commonConfig);
+
+        const lineCommonLayout = {
+            margin: { l: 50, r: 40, t: 50, b: 50 }, font: { size: 12, color: '#333' },
+            xaxis: { gridcolor: '#e9ecef', title: 'Loop Count' }, yaxis: { automargin: true, title: 'Time (ms)' },
+            legend: { x: 1.02, xanchor: 'left', y: 1, bgcolor: 'rgba(255, 255, 255, 0.7)', bordercolor: '#e9ecef', borderwidth: 1 }
+        };
+        const loopIndices = Array.from({length: 301}, (_, i) => i + 1);
+const E2E_Latency_traces = [];
+{
+    let trace = {};
+    trace.x = loopIndices.slice(0, 301);
+    trace.y = [88.69,89.97,145.09,145.12,199.33,200.11,163.89,164.54,158.56,161.38,154.83,156.54,155.05,147.84,146.04,149.06,141.91,145.43,139.47,142.20,136.41,139.11,133.32,135.84,131.21,134.01,131.17,133.20,131.87,133.68,132.97,134.34,133.75,135.37,134.69,136.18,135.62,137.02,136.26,137.34,136.93,138.20,137.91,139.14,138.80,140.19,139.76,141.07,139.97,141.40,141.16,143.00,142.43,144.74,144.10,146.66,145.27,148.22,147.01,150.45,148.19,151.94,149.47,152.63,149.85,152.79,150.59,153.18,150.69,152.99,150.99,153.16,151.03,153.12,150.95,153.44,150.81,153.33,150.39,152.95,150.30,152.16,148.92,150.65,147.69,148.48,145.05,145.78,142.56,143.54,141.00,141.58,139.40,140.26,138.36,139.18,137.23,138.39,136.38,137.05,134.94,135.82,133.48,134.84,132.28,134.48,131.73,134.70,132.02,136.76,134.60,138.88,136.95,141.48,139.43,143.27,141.59,145.45,143.80,146.87,145.85,147.36,146.51,146.93,146.85,146.86,146.79,147.35,146.95,148.39,148.19,148.06,148.71,148.57,149.40,148.93,149.01,149.50,149.22,148.71,148.72,147.70,148.25,147.32,147.61,146.92,147.25,146.90,147.19,146.73,147.01,146.99,146.99,146.81,146.72,146.74,146.67,146.62,146.72,146.79,146.95,146.91,146.93,146.88,146.94,146.90,146.83,146.77,146.92,147.00,146.86,146.71,146.65,147.06,146.95,146.79,146.86,147.06,147.09,146.79,146.94,146.77,146.79,146.81,146.87,146.73,146.67,146.75,146.87,146.80,146.75,146.84,146.94,146.42,146.71,145.99,146.38,145.60,145.86,145.68,145.69,145.57,145.57,145.68,145.61,145.58,145.66,145.71,145.65,146.09,145.84,146.56,146.02,147.43,147.07,147.58,147.34,147.46,147.53,146.44,147.01,146.43,146.72,146.59,146.63,146.55,146.52,146.79,146.71,146.69,146.80,146.99,146.87,146.86,146.93,146.99,146.94,146.76,146.83,146.82,146.79,146.69,146.71,146.85,146.88,146.36,146.72,145.49,146.16,144.24,140.72,143.37,140.71,143.03,140.65,143.83,140.36,144.93,144.39,145.83,145.27,145.80,145.57,145.11,145.38,144.71,144.89,144.78,138.80,145.81,140.06,146.60,145.13,146.86,146.64,146.89,146.95,146.88,146.93,146.94,147.01,147.10,147.06,147.08,147.11,147.19,147.17,147.07,147.16,146.43,146.96,145.91,146.21,145.38,145.59,145.60,143.78,143.04,137.37,140.38,137.61];
+    trace.name = 'YOLOV5S_1.dxnn';
+    trace.type = 'scatter';
+    trace.mode = 'lines+markers';
+    E2E_Latency_traces.push(trace);
+}
+const E2E_Latency_layout = { ...lineCommonLayout };
+Plotly.newPlot('timeseries_E2E_Latency_plot', E2E_Latency_traces, E2E_Latency_layout, commonConfig);
+const NPU_Inference_Time_traces = [];
+{
+    let trace = {};
+    trace.x = loopIndices.slice(0, 301);
+    trace.y = [3.11,3.13,2.79,2.95,2.83,2.99,2.80,2.74,3.11,3.07,2.80,2.77,2.71,2.73,2.60,2.59,2.60,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.60,2.59,2.60,2.59,2.60,2.59,2.59,2.59,2.59,2.59,2.59,2.59,2.59,2.59,2.59,2.59,2.59,2.59,2.59,2.59,2.59,2.59,2.59,2.59,2.59,2.59,2.59,2.59,2.59,2.59,2.59,2.59,2.59,2.59,2.59,2.59,2.59,2.59,2.59,2.59,2.59,2.59,2.59,2.59,2.59,2.60,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61,2.59,2.61];
+    trace.name = 'YOLOV5S_1.dxnn';
+    trace.type = 'scatter';
+    trace.mode = 'lines+markers';
+    NPU_Inference_Time_traces.push(trace);
+}
+const NPU_Inference_Time_layout = { ...lineCommonLayout };
+Plotly.newPlot('timeseries_NPU_Inference_Time_plot', NPU_Inference_Time_traces, NPU_Inference_Time_layout, commonConfig);
+
+    </script>
+
+    <h2>Metrics Glossary</h2>
+    <div style="background-color: #f8f9fa; border-radius: 6px; padding: 25px; margin-top: 30px;">
+        <div style="display: grid; gap: 20px;">
+            <div style="border-left: 4px solid #0165B3; padding-left: 15px;">
+                <h4 style="margin: 0 0 8px 0; color: #0165B3; font-size: 1.1em;">FPS (Frames Per Second)</h4>
+                <p style="margin: 0; color: #495057; line-height: 1.6;">The number of frames the model processes per second. Higher values indicate better throughput performance.</p>
+            </div>
+
+            <div style="border-left: 4px solid #0165B3; padding-left: 15px;">
+                <h4 style="margin: 0 0 8px 0; color: #0165B3; font-size: 1.1em;">NPU Inference Time</h4>
+                <p style="margin: 0; color: #495057; line-height: 1.6;">The time taken for the NPU Core to complete an inference operation. Lower values indicate faster processing on the NPU hardware.</p>
+            </div>
+
+            <div style="border-left: 4px solid #0165B3; padding-left: 15px;">
+                <h4 style="margin: 0 0 8px 0; color: #0165B3; font-size: 1.1em;">E2E Latency (End-to-End Latency)</h4>
+                <p style="margin: 0; color: #495057; line-height: 1.6;">The total time for a single inference, including NPU task (data transfer + inference) and CPU task processing. Lower values indicate better end-to-end performance.</p>
+            </div>
+
+            <div style="border-left: 4px solid #6c757d; padding-left: 15px;">
+                <h4 style="margin: 0 0 8px 0; color: #6c757d; font-size: 1.1em;">P50 / P99 (Percentiles)</h4>
+                <p style="margin: 0; color: #495057; line-height: 1.6;">P50 is the median value (50th percentile), representing typical performance. P99 is the 99th percentile, representing worst-case performance excluding outliers.</p>
+            </div>
+
+            <div style="border-left: 4px solid #6c757d; padding-left: 15px;">
+                <h4 style="margin: 0 0 8px 0; color: #6c757d; font-size: 1.1em;">CV (Coefficient of Variation)</h4>
+                <p style="margin: 0; color: #495057; line-height: 1.6;">The ratio of the standard deviation to the mean (CV = &sigma; / &mu;). A lower CV indicates more stable and consistent performance. Values below 0.1 generally suggest low jitter.</p>
+            </div>
+        </div>
+    </div>
+
+    </div>
+</body>
+</html>
+    

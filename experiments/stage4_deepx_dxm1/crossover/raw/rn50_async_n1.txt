@@ -1,0 +1,36 @@
+Runtime Framework Version: v3.4.2
+Device Driver Version: v2.6.0
+PCIe Driver Version: v2.5.0
+
+modelFile: resnet50_native.dxnn
+inputFile: 
+outputFile: output.bin
+benchmark: 1
+loops: 30
+Device specification: 'all' (default)
+Run model target mode : Benchmark Mode
+Inference by time: duration=5(s)
+
+=== Model File: /home/yuyeong/dxm1_acc/resnet50_native.dxnn ===
+
+Model Input Tensors:
+  - input
+Model Output Tensors:
+  - logits
+
+Tasks:
+  [ ] -> npu_0 -> []
+  Task[0] npu_0, NPU, NPU memory usage 36,484,480 bytes (input 150,528 bytes, output 4,000 bytes), mem_usage:47,046,016 bytes
+  Inputs
+     -  input, UINT8, [1, 224, 224, 3 ]
+  Outputs
+    -  logits, FLOAT, [1, 1000 ]
+
+
+Performing 1 warmup run(s)...
+Warmup completed.
+Inference by time: total-inference-time=5.01355(s) total-loops=2471
+=============================================
+* Benchmark Result (2471 inputs)
+  - FPS : 492.86                             
+=============================================

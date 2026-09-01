@@ -11,6 +11,14 @@ study_guide_prev/
 paper/*.pdf
 paper/paper_meta.json
 
+# 4단계 DEEPX 검출 축 예측 덤프 (각 ~7MB, 합 21MB — conf=0.001 raw COCO 덤프)
+#   정본 SSOT는 detection_summary.json + map_*.json + profiler.json(레짐 근거)로 충분.
+#   predictions_*.json 은 재현 스크립트(fp32_infer.py·npu_infer_det.py + eval_map.py)로 재생성.
+#   ※ *_lat.json(지연 SSOT, 4KB)은 제외 대상 아님 — 아래는 예측 덤프 3종만 정확히 지목.
+experiments/stage4_deepx_dxm1/detection/results/predictions_fp32.json
+experiments/stage4_deepx_dxm1/detection/results/predictions_npu_coco.json
+experiments/stage4_deepx_dxm1/detection/results/predictions_npu_ppe.json
+
 # Python
 __pycache__/
 *.py[cod]

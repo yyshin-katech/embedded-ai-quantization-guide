@@ -1,0 +1,9 @@
+model,buffer_count,fps
+resnet50,2,641.35
+resnet50,4,1108.34
+resnet50,8,1086.39
+resnet50,16,1079.08
+yolo26n,2,52.30
+yolo26n,4,85.47
+yolo26n,8,91.19
+yolo26n,16,91.17

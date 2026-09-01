@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>4단계 DEEPX DX-M1 — host-bound↔NPU-bound 크로스오버: 코어 스케일링·D2H 병목 (실측 보고서)</title>
+<style>
+:root{--bg:#0b0e14;--panel:#131720;--panel2:#0f131b;--bd:#242b38;--tx:#c9d1d9;--dim:#8b949e;--brt:#e6edf3;--accent:#58a6ff;--green:#3fb950;--amber:#d29922;--red:#ff7b72;--purple:#bc8cff;--mono:'JetBrains Mono','SF Mono',ui-monospace,'Cascadia Code',Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans KR','Malgun Gothic',sans-serif}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:var(--sans);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:980px;margin:0 auto;padding:0 20px 120px}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+.hero{padding:48px 0 26px;border-bottom:1px solid var(--bd);margin-bottom:8px}
+.kicker{font-family:var(--mono);font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+.hero h1{margin:0 0 10px;font-size:30px;line-height:1.25;color:var(--brt);letter-spacing:-.01em}
+.hero p.sub{margin:0 0 20px;color:var(--dim);font-size:15px;max-width:80ch}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font-family:var(--mono);font-size:12px;padding:5px 10px;border:1px solid var(--bd);border-radius:999px;background:var(--panel);color:var(--tx)}
+.chip b{color:var(--brt);font-weight:600}
+.chip.done{border-color:rgba(63,185,80,.5);background:rgba(63,185,80,.12);color:#7ee787}
+.chip.blocked{border-color:rgba(255,123,114,.5);background:rgba(255,123,114,.12);color:#ff9d96}
+.chip.partial{border-color:rgba(210,153,34,.5);background:rgba(210,153,34,.12);color:#e3b341}
+nav.toc{display:flex;flex-wrap:wrap;gap:8px;margin:26px 0 6px}
+nav.toc a{font-family:var(--mono);font-size:12.5px;padding:6px 11px;border:1px solid var(--bd);border-radius:8px;background:var(--panel);color:var(--tx)}
+nav.toc a:hover{border-color:var(--accent);color:var(--brt);text-decoration:none}
+h2.sec{font-size:13px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin:40px 0 12px;font-weight:600;border-top:1px solid var(--bd);padding-top:26px}
+.step{margin:26px 0 0;scroll-margin-top:16px}
+.step>h3{display:flex;align-items:center;gap:12px;font-size:19px;color:var(--brt);margin:0 0 6px;letter-spacing:-.01em}
+.num{flex:none;display:inline-grid;place-items:center;width:28px;height:28px;border-radius:8px;background:var(--accent);color:#06101f;font-family:var(--mono);font-weight:700;font-size:13px}
+.step p.lead{margin:0 0 4px;color:var(--dim);font-size:14.5px}
+table.dt{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.3px;border:1px solid var(--bd);border-radius:10px;overflow:hidden;font-family:var(--mono)}
+table.dt th,table.dt td{padding:8px 12px;text-align:right;border-bottom:1px solid var(--bd)}
+table.dt th{background:var(--panel);color:var(--dim);font-weight:600;font-size:12px;letter-spacing:.04em}
+table.dt th:first-child,table.dt td:first-child{text-align:left;color:var(--brt)}
+table.dt tr:last-child td{border-bottom:none}
+table.dt tr.hi td{background:rgba(63,185,80,.08)}
+table.dt tr.lo td{background:rgba(255,123,114,.08)}
+table.dt tr.grey td{background:rgba(139,148,158,.08);color:var(--dim)}
+table.dt tr.base td{background:rgba(88,166,255,.07)}
+.g{color:var(--green)}.r{color:var(--red)}.a{color:var(--amber)}.p{color:var(--purple)}.d{color:var(--dim)}
+table.kv{width:100%;border-collapse:collapse;margin:12px 0;font-size:13.5px;border:1px solid var(--bd);border-radius:10px;overflow:hidden}
+table.kv th,table.kv td{padding:9px 13px;text-align:left;border-bottom:1px solid var(--bd);vertical-align:top}
+table.kv th{background:var(--panel);color:var(--dim);font-weight:600;width:34%;font-size:12.5px}
+table.kv td{font-family:var(--mono);font-size:12.7px;color:var(--tx)}
+table.kv tr:last-child td,table.kv tr:last-child th{border-bottom:none}
+.term{background:var(--panel2);border:1px solid var(--bd);border-radius:11px;overflow:hidden;margin:14px 0}
+.term-bar{display:flex;align-items:center;gap:7px;padding:9px 13px;background:#0c1017;border-bottom:1px solid var(--bd)}
+.dot{width:11px;height:11px;border-radius:50%}.dot.r{background:#ff5f56}.dot.y{background:#ffbd2e}.dot.g{background:#27c93f}
+.term-title{margin-left:9px;color:var(--dim);font-size:12.5px;font-family:var(--mono)}
+.term pre{margin:0;padding:15px 17px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.62;color:var(--tx);white-space:pre;tab-size:2}
+.cmt{color:#5c6773}.ok{color:var(--green)}.err{color:var(--red)}.warn{color:var(--amber)}.dim{color:var(--dim)}.hl{color:var(--purple)}.in{color:var(--brt);font-weight:600}
+.note{border-left:3px solid var(--accent);background:rgba(88,166,255,.07);padding:13px 17px;border-radius:0 9px 9px 0;margin:15px 0;font-size:14px}
+.note.trap{border-color:var(--red);background:rgba(255,123,114,.08)}
+.note.warnb{border-color:var(--amber);background:rgba(210,153,34,.08)}
+.note.tip{border-color:var(--green);background:rgba(63,185,80,.07)}
+.note.block{border-color:var(--purple);background:rgba(188,140,255,.08)}
+.note .tag{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 8px;border-radius:6px;margin-bottom:7px}
+.note.trap .tag{background:rgba(255,123,114,.18);color:#ff9d96}
+.note.warnb .tag{background:rgba(210,153,34,.18);color:#e3b341}
+.note.tip .tag{background:rgba(63,185,80,.18);color:#7ee787}
+.note.block .tag{background:rgba(188,140,255,.18);color:#d8b8ff}
+.note b{color:var(--brt)}.note code{font-family:var(--mono);font-size:12.5px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:4px}
+.chartwrap{border:1px solid var(--bd);background:var(--panel2);border-radius:12px;padding:18px 18px 14px;margin:16px 0}
+.chartwrap .ct{font-family:var(--mono);font-size:12.5px;color:var(--brt);margin:0 0 4px}
+.chartwrap .cs{font-size:12.5px;color:var(--dim);margin:0 0 12px}
+.statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:14px 0}
+.stat{border:1px solid var(--bd);background:var(--panel);border-radius:11px;padding:15px 16px}
+.stat .k{font-family:var(--mono);font-size:11.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em}
+.stat .v{font-size:23px;color:var(--brt);font-weight:700;margin-top:5px;letter-spacing:-.01em}
+.stat .n{font-size:12px;color:var(--dim);margin-top:3px}
+.next{display:block;margin:26px 0 0;padding:15px 18px;border:1px solid var(--bd);border-radius:11px;background:var(--panel);color:var(--tx);font-size:14px}
+.next:hover{border-color:var(--accent);text-decoration:none}
+.next b{color:var(--accent)}
+footer{margin-top:30px;padding-top:18px;border-top:1px solid var(--bd);color:var(--dim);font-size:12.5px}
+@media (max-width:560px){.hero h1{font-size:23px}.term pre{font-size:11.4px}.stat .v{font-size:20px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <p class="kicker">실행 보고서 · 4단계 · DX-M1 크로스오버 축 (Raspberry Pi 5 온디바이스)</p>
+    <h1>DEEPX DX-M1 — host-bound ↔ NPU-bound 크로스오버</h1>
+    <p class="sub">직전 벤치(<a href="stage4_deepx_dxm1_report.html">지연·처리량·전력</a>)의 헤드라인은 <b>"천장은 DX-M1이 아니라 Pi 5의 PCIe Gen2×1"</b>(host-bound)이었다 — <code>yolo26n</code>은 코어를 늘려도 처리량이 평평했고, 온보드 프로파일러가 <b>D2H 출력전송 21.8ms ≫ 연산 8.86ms</b>를 보였다. 이 축은 그 <b>캐비앗 #3</b>("host-bound은 Pi 5 탓이지 DX-M1 천장이 아님")을 <b>반대 사례로 닫는다</b>: 같은 DX-M1·같은 Pi 5·같은 dxrun/dxbenchmark에서 <b>모델만 바꿔</b> — 출력이 700× 작은 <code>resnet50</code>(같은 <a href="stage4_deepx_dxm1_accuracy_report.html">정확도 축</a>의 native <code>.dxnn</code> 재사용)을 올리면 <b>NPU 연산이 실제 천장</b>이 되어 <b>3코어 2.19× near-linear 스케일</b>이 부활한다. 세 번째 모델 <code>YOLOV5S</code>로 <b>변수를 격리</b>한다: 연산이 resnet50보다 <b>더 가벼운데도</b> 출력이 크면 D2H-bound로 남는다 → regime을 정하는 건 연산이 아니라 <b>출력(D2H) 크기</b>.</p>
+    <div class="chips">
+      <span class="chip"><b>2026-09-01</b></span>
+      <span class="chip"><b>Raspberry Pi 5 (A76) + DEEPX DX-M1</b></span>
+      <span class="chip"><b>DXRT v3.4.2 · PCIe Gen2×1</b></span>
+      <span class="chip"><b>ResNet50 · yolo26n · YOLOV5S · batch1</b></span>
+      <span class="chip done">ResNet50 3코어 2.19× (NPU-compute-bound)</span>
+      <span class="chip blocked">yolo26n 1.00× (D2H-bound)</span>
+      <span class="chip partial">YOLOV5S 최경량 연산인데 D2H-bound</span>
+    </div>
+  </header>
+
+  <nav class="toc">
+    <a href="#s1">§1 실행 요약</a>
+    <a href="#s2">§2 환경·방법</a>
+    <a href="#s3">§3 코어 스케일링 크로스오버</a>
+    <a href="#s4">§4 프로파일러 스테이지 분해</a>
+    <a href="#s5">§5 변수 격리 (YOLOV5S·buffer-count)</a>
+    <a href="#s6">§6 판정·산출물·캐비앗</a>
+  </nav>
+
+  <h2 class="sec">§1 — 실행 요약</h2>
+  <section id="s1" class="step">
+    <p class="lead">같은 DX-M1(3코어 @1000MHz)·같은 Pi 5에서 세 모델의 코어 스케일링(1→3코어 처리량 비)과 온보드 프로파일러 스테이지 분해(연산 vs D2H)를 나란히 측정. 유일한 변수는 <b>모델 = 출력 텐서 크기</b>.</p>
+    <div class="statgrid">
+      <div class="stat"><div class="k">ResNet50 코어스케일</div><div class="v g">2.19×</div><div class="n">493→1079 fps (1→3코어) · NPU-bound</div></div>
+      <div class="stat"><div class="k">yolo26n 코어스케일</div><div class="v r">1.00×</div><div class="n">91.29→91.19 fps · 완전 평평 · D2H-bound</div></div>
+      <div class="stat"><div class="k">3코어 처리량 격차</div><div class="v">×11.8</div><div class="n">resnet50 1079 vs yolo26n 91 fps</div></div>
+      <div class="stat"><div class="k">D2H 시간 격차</div><div class="v">×200</div><div class="n">yolo26n 21.81ms vs resnet50 0.11ms (p50)</div></div>
+      <div class="stat"><div class="k">출력 텐서 격차</div><div class="v">×706</div><div class="n">yolo26n 2.82MB vs resnet50 4KB</div></div>
+      <div class="stat"><div class="k">YOLOV5S(변수 격리)</div><div class="v a">×26 느림</div><div class="n">연산은 resnet50보다 가벼운데(2.59<2.77ms) 출력 5.48MB → D2H-bound</div></div>
+    </div>
+    <div class="note tip"><span class="tag">헤드라인</span>
+      <b>천장은 하드웨어가 아니라 모델이 정한다.</b> 직전 벤치의 "host-bound(코어 스케일 1.00)"은 <b>DX-M1의 보편 성질이 아니라 <code>yolo26n</code>(큰 출력)의 성질</b>이었다. 출력이 작은 <code>resnet50</code>에선 <b>D2H가 무시가능(0.11ms)</b>해져 <b>NPU 연산(2.77ms)이 실제 병목</b>이 되고, 3코어가 <b>2.19× near-linear 스케일</b>한다. 코어 잡 분포가 결정적 증거 — resnet50은 <b>961/910/1010(3코어 균등)</b>, yolo26n은 <b>472/28/2(코어 1·2 굶김)</b>: 공유 PCIe Gen2×1 D2H 링크가 한 코어치 출력만으로 포화돼 나머지 코어를 못 먹인다.
+    </div>
+  </section>
+
+  <h2 class="sec">§2 — 환경·방법</h2>
+  <section id="s2" class="step">
+    <table class="kv">
+      <tr><th>호스트 / NPU</th><td>Raspberry Pi 5 (Cortex-A76 ×4, 8GB, Debian 13) + DEEPX DX-M1 (M.2, 3코어 @1000MHz) · <b>PCIe Gen2 X1</b> (<code>dxrt-cli -s</code> 확인)</td></tr>
+      <tr><th>런타임 / 도구</th><td>DXRT v3.4.2+d803450 · <code>dxrun</code>(지연·처리량) · <code>dxbenchmark</code>(프로파일러 → <code>profiler.json</code>)</td></tr>
+      <tr><th>모델 (prebuilt <code>.dxnn</code>)</th><td>resnet50_native([1,224,224,3] uint8 → [1,1000] f32, 정확도 축 재사용) · yolo26n([1,640,640,3] → 6-head) · YOLOV5S_1([1,512,512,3] → 3-head, dx_rt 예제)</td></tr>
+      <tr><th>지연 (seq)</th><td><code>dxrun -m M.dxnn -s -t 5 -w 1</code> — 단일 스트림, "FPS" = 1/지연</td></tr>
+      <tr><th>처리량 (async)</th><td><code>dxrun -m M.dxnn -b -n &lt;코어&gt; --buffer-count 8 -t 5 -w 1</code> — 파이프라인 최대 처리량</td></tr>
+      <tr><th>프로파일러</th><td><code>dxbenchmark --dir . -t 5 --warmup 1</code> → cwd에 <code>profiler.json</code>(잡·스테이지별 start/end ns) → <code>analyze_profiler.py</code></td></tr>
+    </table>
+    <div class="note"><span class="tag">방법 정밀화</span>
+      <b><code>-n</code>은 코어 <u>개수</u>가 아니라 코어 <u>ID</u>다.</b> <code>dxrun/dxbenchmark --help</code>: <code>0=NPU_ALL · 1=NPU_0 · 2=NPU_1 · 3=NPU_2 · 4=NPU_0/1 · 5=NPU_1/2 · 6=NPU_0/2</code>. 따라서 이 리포트의 <b>코어-<u>카운트</u> 스윕</b>은 <b>1코어=<code>-n 1</code>(NPU_0) · 2코어=<code>-n 4</code>(NPU_0/1) · 3코어=<code>-n 0</code>(NPU_ALL)</b>로 매핑한다. 직전 벤치의 "async 1/2/3-core=91.5 평평" 축은 실은 <b>세 개별 단일코어(NPU_0/1/2)가 각각 91.5</b>였던 것 — 결론(host-bound)은 동일하되, 이번엔 진짜 코어-카운트 곡선(1→2→3코어 누적)으로 재확증한다. <code>--buffer-count 8</code>은 버퍼 부족 혼입 방지(§5 참조: bc=2면 resnet50조차 641로 굶음).
+    </div>
+    <div class="note tip"><span class="tag">교차확증</span>
+      dxrun async 3코어 ≈ dxbenchmark 프로파일러 내부 파이프라인 fps(독립 도구·독립 측정): resnet50 <b>1078.93 ≈ 1071.49</b> · yolo26n <b>91.19 ≈ 90.86</b> · YOLOV5S <b>41.01 ≈ 40.91</b>. 두 도구가 3모델 모두 일치 → 처리량 수치 신뢰.
+    </div>
+  </section>
+
+  <h2 class="sec">§3 — 코어 스케일링 크로스오버 (헤드라인)</h2>
+  <section id="s3" class="step">
+    <p class="lead">코어를 1→2→3개로 늘렸을 때 처리량 배율. NPU 연산이 병목이면 코어가 늘수록 처리량↑(이상 3.0×), 공유 D2H 링크가 병목이면 코어를 늘려도 평평(1.0×).</p>
+    <div class="chartwrap">
+      <p class="ct">코어 스케일링 배율 (3코어 처리량 / 1코어 처리량)</p>
+      <p class="cs">초록=NPU-compute-bound(스케일함) · 빨강/노랑=D2H-bound(평평) · 세로선 1.0×(스케일 없음)·2.0×·3.0×(이상)</p>
+      <svg viewBox="0 0 900 150" width="100%" role="img" aria-label="코어 스케일링 배율 막대 그래프">
+        <line x1="200" y1="10" x2="200" y2="114" stroke="#242b38" stroke-width="1"/>
+        <line x1="400" y1="10" x2="400" y2="114" stroke="#242b38" stroke-width="1"/>
+        <line x1="600" y1="10" x2="600" y2="114" stroke="#242b38" stroke-width="1"/>
+        <text x="200" y="130" fill="#5c6773" font-size="10" font-family="monospace" text-anchor="middle">1.0× (스케일 없음)</text>
+        <text x="400" y="130" fill="#5c6773" font-size="10" font-family="monospace" text-anchor="middle">2.0×</text>
+        <text x="600" y="130" fill="#5c6773" font-size="10" font-family="monospace" text-anchor="middle">3.0× (이상)</text>
+        <g font-family="monospace" font-size="13">
+          <rect x="0" y="16" width="437.6" height="26" rx="4" fill="#3fb950"/>
+          <text x="445" y="34" fill="#7ee787">ResNet50 · 2.19× · NPU-compute-bound (출력 4KB)</text>
+          <rect x="0" y="48" width="199.8" height="26" rx="4" fill="#ff7b72"/>
+          <text x="207" y="66" fill="#ff9d96">yolo26n · 1.00× · D2H-bound (출력 2.82MB)</text>
+          <rect x="0" y="80" width="204.0" height="26" rx="4" fill="#d29922"/>
+          <text x="212" y="98" fill="#e3b341">YOLOV5S · 1.02× · D2H-bound (출력 5.48MB)</text>
+        </g>
+      </svg>
+    </div>
+    <table class="dt">
+      <thead><tr><th>모델</th><th>seq (1스트림)</th><th>1코어</th><th>2코어</th><th>3코어</th><th>3c/1c</th><th>regime</th></tr></thead>
+      <tbody>
+        <tr class="hi"><td>ResNet50</td><td>352.36</td><td>493.04</td><td>863.82</td><td>1078.93</td><td class="g">2.19×</td><td class="g">NPU-compute-bound</td></tr>
+        <tr class="lo"><td>yolo26n</td><td>32.27</td><td>91.29</td><td>91.23</td><td>91.19</td><td class="r">1.00×</td><td class="r">D2H-bound</td></tr>
+        <tr class="grey"><td>YOLOV5S</td><td>21.85</td><td>40.19</td><td>41.32</td><td>41.01</td><td class="a">1.02×</td><td class="a">D2H-bound</td></tr>
+      </tbody>
+    </table>
+    <p class="lead">단위 fps(async 처리량, <code>--buffer-count 8</code>). ResNet50은 1→2코어 1.75× → 3코어 2.19×로 <b>누적 스케일</b>(3코어에서 ~1080 근처 H2D/호스트-피드 천장에 접근해 살짝 sublinear). 두 YOLO는 <b>모든 단계에서 평평</b> — 코어 1개가 이미 공유 D2H 링크를 포화시켜 2·3코어가 아무것도 더 못 함.</p>
+  </section>
+
+  <h2 class="sec">§4 — 프로파일러 스테이지 분해 (범인 확정)</h2>
+  <section id="s4" class="step">
+    <p class="lead"><code>dxbenchmark</code> 온보드 프로파일러(NPU_ALL)의 스테이지별 p50(ms). 어느 스테이지가 지배하느냐가 regime을 정한다.</p>
+    <table class="dt">
+      <thead><tr><th>모델</th><th>H2D</th><th>연산(Inference)</th><th>D2H</th><th>병목비</th><th>코어 잡 분포</th></tr></thead>
+      <tbody>
+        <tr class="hi"><td>ResNet50</td><td>0.71</td><td class="g">2.77</td><td>0.11</td><td class="g">연산 25.3× D2H</td><td class="g">961 / 910 / 1010 (균등)</td></tr>
+        <tr class="lo"><td>yolo26n</td><td>3.48</td><td>9.00</td><td class="r">21.81</td><td class="r">D2H 2.4× 연산</td><td class="r">472 / 28 / 2 (굶김)</td></tr>
+        <tr class="grey"><td>YOLOV5S</td><td>3.32</td><td>2.59</td><td class="a">21.14</td><td class="a">D2H 8.2× 연산</td><td class="a">295 / 7 (굶김)</td></tr>
+      </tbody>
+    </table>
+    <div class="note trap"><span class="tag">범인 = D2H (PCIe Gen2×1), 모델 출력이 방아쇠</span>
+      <b>ResNet50</b>: 출력 [1,1000] = <b>4,000 B</b> → D2H <b>0.11ms</b>(무시가능), 연산 2.77ms가 <b>25배</b> 지배 → <b>compute-bound</b>. 3코어가 각자 연산하고 tiny 출력을 순식간에 뱉으니 <b>3코어 균등(961/910/1010)</b>.<br>
+      <b>yolo26n</b>: 출력 <b>2,822,400 B</b>(706×) → D2H <b>21.81ms</b>(199×)가 연산 9.0ms를 <b>2.4배</b> 지배 → <b>D2H-bound</b>. 공유 PCIe가 직렬화돼 코어 1·2가 <b>28/2로 굶음</b>.<br>
+      스테이지 자체는 모델 무관(같은 링크·같은 NPU). <b>바뀐 건 출력 텐서 크기 하나뿐</b> — 그게 D2H 시간을 정하고, D2H가 병목 여부를 정하고, 병목이 코어 스케일 가능 여부를 정한다.
+    </div>
+  </section>
+
+  <h2 class="sec">§5 — 변수 격리 (YOLOV5S · buffer-count)</h2>
+  <section id="s5" class="step">
+    <p class="lead">"compute가 무거워서 resnet50이 스케일한 것 아닌가?"를 반증한다. YOLOV5S는 세 모델 중 <b>연산이 가장 가볍다(2.59ms &lt; resnet50 2.77ms)</b>. 그런데도 출력이 가장 크므로(5.48MB) D2H-bound로 남고, 3코어 처리량이 <b>resnet50의 1/26</b>이다.</p>
+    <div class="chartwrap">
+      <p class="ct">3코어 처리량 vs 출력 크기 (연산은 반대 방향)</p>
+      <p class="cs">세로선 250·500·1000 fps · YOLOV5S는 연산 최경량인데 출력 최대 → 최저 처리량</p>
+      <svg viewBox="0 0 900 150" width="100%" role="img" aria-label="3코어 처리량 vs 출력 크기 막대 그래프">
+        <line x1="145.5" y1="10" x2="145.5" y2="114" stroke="#242b38" stroke-width="1"/>
+        <line x1="290.9" y1="10" x2="290.9" y2="114" stroke="#242b38" stroke-width="1"/>
+        <line x1="581.8" y1="10" x2="581.8" y2="114" stroke="#242b38" stroke-width="1"/>
+        <text x="145.5" y="130" fill="#5c6773" font-size="10" font-family="monospace" text-anchor="middle">250</text>
+        <text x="290.9" y="130" fill="#5c6773" font-size="10" font-family="monospace" text-anchor="middle">500</text>
+        <text x="581.8" y="130" fill="#5c6773" font-size="10" font-family="monospace" text-anchor="middle">1000 fps</text>
+        <g font-family="monospace" font-size="13">
+          <rect x="0" y="16" width="627.7" height="26" rx="4" fill="#3fb950"/>
+          <text x="635" y="34" fill="#7ee787">ResNet50 · 1079 fps · 출력 4KB · 연산 2.77ms</text>
+          <rect x="0" y="48" width="53.1" height="26" rx="4" fill="#ff7b72"/>
+          <text x="61" y="66" fill="#ff9d96">yolo26n · 91 fps · 출력 2.82MB · 연산 9.0ms</text>
+          <rect x="0" y="80" width="23.9" height="26" rx="4" fill="#d29922"/>
+          <text x="31" y="98" fill="#e3b341">YOLOV5S · 41 fps · 출력 5.48MB · 연산 2.59ms (최경량!)</text>
+        </g>
+      </svg>
+    </div>
+    <p class="lead"><b>buffer-count 대조 실험</b> — 파이프라인 버퍼를 늘리면 NPU에 여유가 있는 모델만 처리량이 오른다(NPU_ALL):</p>
+    <table class="dt">
+      <thead><tr><th>모델</th><th>bc=2</th><th>bc=4</th><th>bc=8</th><th>bc=16</th><th>해석</th></tr></thead>
+      <tbody>
+        <tr class="hi"><td>ResNet50</td><td>641.35</td><td>1108.34</td><td>1086.39</td><td>1079.08</td><td class="g">bc2→4서 641→1108 급등 (NPU 여유 있음, 버퍼가 굶겼던 것)</td></tr>
+        <tr class="lo"><td>yolo26n</td><td>52.30</td><td>85.47</td><td>91.19</td><td>91.17</td><td class="r">91서 포화 (물리적 D2H 벽, 버퍼로 못 넘음)</td></tr>
+      </tbody>
+    </table>
+    <div class="note tip"><span class="tag">변수 격리 결론</span>
+      regime을 정하는 건 <b>연산량이 아니라 출력(D2H) 크기</b>다. resnet50(연산 2.77ms + 출력 4KB)은 compute-bound라 코어·버퍼가 먹히고, YOLOV5S(연산 2.59ms + 출력 5.48MB)는 <b>더 가벼운 연산인데도</b> D2H-bound라 26× 느리다. DX-M1의 3코어를 살리려면 <b>출력을 작게</b>(분류 헤드·경량 후처리 온-NPU·낮은 해상도) 하거나 <b>PCIe 대역을 넓혀야</b>(네이티브 Gen3×4) 한다.
+    </div>
+  </section>
+
+  <h2 class="sec">§6 — 판정·산출물·캐비앗</h2>
+  <section id="s6" class="step">
+    <table class="dt">
+      <thead><tr><th>질문</th><th>판정</th></tr></thead>
+      <tbody>
+        <tr><td>DX-M1은 항상 host-bound인가? (캐비앗 #3)</td><td class="g">아니오 — resnet50은 NPU-compute-bound, 3코어 2.19× 스케일</td></tr>
+        <tr><td>"host-bound"은 무엇의 성질이었나?</td><td class="a">yolo26n(큰 출력)의 성질 — DX-M1의 보편 성질 아님</td></tr>
+        <tr><td>regime을 정하는 변수는?</td><td class="g">출력(D2H) 크기 — YOLOV5S로 격리(경량 연산인데 D2H-bound)</td></tr>
+        <tr><td>범인 하드웨어는?</td><td class="a">공유 PCIe Gen2×1 D2H 링크 (코어 잡 분포 472/28/2로 증명)</td></tr>
+        <tr><td>측정 신뢰성</td><td class="g">dxrun ↔ dxbenchmark 프로파일러 3모델 일치</td></tr>
+      </tbody>
+    </table>
+    <p class="lead">산출물:</p>
+    <table class="kv">
+      <tr><th>리포트</th><td>이 문서 <code>logs/stage4_deepx_dxm1_crossover_report.html</code></td></tr>
+      <tr><th>실험</th><td><code>experiments/stage4_deepx_dxm1/crossover/</code> — scripts(analyze_profiler·build_crossover_summary) · results(rn50/y26/y5s_npuall.json + <b>crossover_summary.json SSOT</b>) · raw(corescale.csv·bufsweep.csv·모델별 profiler.json+stdout+dxbenchmark html/csv/json)</td></tr>
+      <tr><th>가이드</th><td><code>study_guide/06_multi_soc.md</code> §4-D 크로스오버 콜아웃(순수 삽입)</td></tr>
+    </table>
+    <div class="note warnb"><span class="tag">캐비앗</span>
+      ① 절대 처리량·지연은 <b>batch1·prebuilt <code>.dxnn</code>·Pi 5 Gen2×1</b> 경로 → 상대 관계(코어 스케일·D2H/연산 비)만 유효, 다른 급 기계·다른 배치와 1:1 불가.<br>
+      ② host-bound은 <b>Pi 5의 PCIe Gen2×1</b> 탓 — 네이티브 Gen3×4(~8× 대역)면 두 YOLO의 D2H 벽 위치가 달라질 수 있다(미측정).<br>
+      ③ 코어 스케일링 crossover 결론은 <b>모델(출력 크기) 의존</b> — resnet50↔YOLO는 출력이 706× 달라 대조가 성립. 중간 출력 크기의 전이점은 미측정(2 regime의 존재를 증명, 전이 곡선 아님).<br>
+      ④ YOLOV5S는 dx_rt 예제 prebuilt(입력 512×512)라 yolo26n(640×640)과 입력·헤드 수가 달라 <b>YOLO끼리도 1:1 아님</b> — 공유 결론(둘 다 D2H-bound)만 사용.<br>
+      ⑤ 정확도는 이 축의 논점 아님(지연·처리량·스테이지만) — DX-M1 정확도는 <a href="stage4_deepx_dxm1_accuracy_report.html">정확도 축</a>에서 이미 닫음. Pi 5는 DEEPX 호스트일 뿐 자동차 3벤더 아님.
+    </div>
+    <a class="next" href="stage4_deepx_dxm1_report.html"><b>← 벤치 리포트</b> (지연·처리량·오프로드·전력) · 이 크로스오버 축이 그 캐비앗 #3을 닫는다</a>
+    <footer>
+      DEEPX DX-M1 크로스오버 축 · Raspberry Pi 5 온디바이스 · 2026-09-01 · 모든 수치 SSOT <code>crossover/results/crossover_summary.json</code> 추적 가능 · 커밋·푸시는 규약대로 요청 시.
+    </footer>
+  </section>
+</div>
+</body>
+</html>

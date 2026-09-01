@@ -1,0 +1,22 @@
+{
+  "Runtime Version": "3.4.2",
+  "Firmware Version": "2.7.4",
+  "Device Driver Version": "2.6.0",
+  "PCIe Driver Version": "2.5.0",
+  "results": [
+    {
+      "Model Name": "resnet50_native.dxnn",
+      "FPS": 1066.55,
+      "NPU Inference Time": {
+        "mean": 2.77,
+        "sd": 0.10,
+        "cv": 0.04
+      },
+      "Latency": {
+        "mean": 3.69,
+        "sd": 0.31,
+        "cv": 0.08
+      }
+    }
+  ]
+}

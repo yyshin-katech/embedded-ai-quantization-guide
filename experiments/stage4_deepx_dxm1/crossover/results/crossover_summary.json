@@ -1,0 +1,107 @@
+{
+  "note": "DX-M1 host-bound vs NPU-bound crossover; same DX-M1 + same Pi5, model varied. dxrun -b async, --buffer-count 8 for the core-count sweep. Regime from dxbenchmark profiler p50.",
+  "core_map": {
+    "1 core": "-n 1 (NPU_0)",
+    "2 cores": "-n 4 (NPU_0/1)",
+    "3 cores": "-n 0 (NPU_ALL)"
+  },
+  "models": {
+    "resnet50": {
+      "input_bytes": 150528,
+      "output_bytes": 4000,
+      "seq_fps": 352.36,
+      "async_fps": {
+        "1core": 493.04,
+        "2core": 863.82,
+        "3core": 1078.93
+      },
+      "core_scaling_3c_over_1c": 2.188,
+      "async_over_seq": 3.062,
+      "profiler_p50_ms": {
+        "H2D": 0.7071,
+        "Inference": 2.767,
+        "D2H": 0.1092
+      },
+      "profiler_fps_internal": 1071.49,
+      "core_job_dist": {
+        "0": 961,
+        "1": 910,
+        "2": 1010
+      },
+      "regime": "compute-bound",
+      "infer_over_d2h": 25.34,
+      "d2h_over_infer": 0.04,
+      "buffer_sweep_fps": {
+        "2": 641.35,
+        "4": 1108.34,
+        "8": 1086.39,
+        "16": 1079.08
+      }
+    },
+    "yolo26n": {
+      "input_bytes": 1228800,
+      "output_bytes": 2822400,
+      "seq_fps": 32.27,
+      "async_fps": {
+        "1core": 91.29,
+        "2core": 91.23,
+        "3core": 91.19
+      },
+      "core_scaling_3c_over_1c": 0.999,
+      "async_over_seq": 2.826,
+      "profiler_p50_ms": {
+        "H2D": 3.4762,
+        "Inference": 8.998,
+        "D2H": 21.8051
+      },
+      "profiler_fps_internal": 90.86,
+      "core_job_dist": {
+        "0": 472,
+        "1": 28,
+        "2": 2
+      },
+      "regime": "D2H-bound",
+      "infer_over_d2h": 0.41,
+      "d2h_over_infer": 2.42,
+      "buffer_sweep_fps": {
+        "2": 52.3,
+        "4": 85.47,
+        "8": 91.19,
+        "16": 91.17
+      }
+    },
+    "yolov5s": {
+      "input_bytes": 786432,
+      "output_bytes": 5483520,
+      "seq_fps": 21.85,
+      "async_fps": {
+        "1core": 40.19,
+        "2core": 41.32,
+        "3core": 41.01
+      },
+      "core_scaling_3c_over_1c": 1.02,
+      "async_over_seq": 1.877,
+      "profiler_p50_ms": {
+        "H2D": 3.3162,
+        "Inference": 2.589,
+        "D2H": 21.136
+      },
+      "profiler_fps_internal": 40.91,
+      "core_job_dist": {
+        "0": 295,
+        "1": 7
+      },
+      "regime": "D2H-bound",
+      "infer_over_d2h": 0.12,
+      "d2h_over_infer": 8.16,
+      "buffer_sweep_fps": {}
+    }
+  },
+  "headline": {
+    "output_bytes_ratio_y26_over_rn50": 705.6,
+    "d2h_ratio_y26_over_rn50": 199.7,
+    "async3c_ratio_rn50_over_y26": 11.83,
+    "y5s_lighter_compute_than_rn50": true,
+    "y5s_slower_than_rn50_factor": 26.3
+  }
+}

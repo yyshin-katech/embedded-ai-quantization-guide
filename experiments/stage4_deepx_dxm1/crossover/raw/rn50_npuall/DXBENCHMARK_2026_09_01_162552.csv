@@ -1,0 +1,2 @@
+Runtime Version, Firmware Version, Device Driver Version,PCIe Driver Version,Model Name,FPS,NPU Inference Time Mean,NPU Inference Time SD,NPU Inference Time CV,Latency Mean,Latency SD,Latency CV
+3.4.2,2.7.4,2.6.0,2.5.0,resnet50_native.dxnn,1066.55,2.77,0.10,0.04,3.69,0.31,0.08

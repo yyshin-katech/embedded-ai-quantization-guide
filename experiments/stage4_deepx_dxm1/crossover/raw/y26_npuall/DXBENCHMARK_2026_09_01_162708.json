@@ -1,0 +1,22 @@
+{
+  "Runtime Version": "3.4.2",
+  "Firmware Version": "2.7.4",
+  "Device Driver Version": "2.6.0",
+  "PCIe Driver Version": "2.5.0",
+  "results": [
+    {
+      "Model Name": "yolo26n.dxnn",
+      "FPS": 91.24,
+      "NPU Inference Time": {
+        "mean": 9.11,
+        "sd": 0.69,
+        "cv": 0.08
+      },
+      "Latency": {
+        "mean": 65.07,
+        "sd": 2.25,
+        "cv": 0.03
+      }
+    }
+  ]
+}
