@@ -1,0 +1,91 @@
+Runtime Framework Version: v3.4.2
+Device Driver Version: v2.6.0
+PCIe Driver Version: v2.5.0
+
+--- CPU Information ---
+
+--- Architecture Information ---
+  System Name: Linux
+  Node Name:   yuyeong
+  Release:     6.18.34+rpt-rpi-2712
+  Version:     #1 SMP PREEMPT Debian 1:6.18.34-1+rpt1 (2026-06-09)
+  Machine:     aarch64
+
+--- Memory Information ---
+  Total Physical Memory: 7.87 GB
+  Available Physical Memory: 3.84 GB
+  Total Swap Space: 2.00 GB
+  Free Swap Space: 2.00 GB
+
+Device specification: 'all' (default)
+[0;93m2026-09-02 18:01:10.413407460 [W:onnxruntime:, graph.cc:109 MergeShapeInfo] Error merging shape info for output. 'Gemm_6_matmul_out' source:{1,850,256} target:{850,256}. Falling back to lenient merge.[m
+[0;93m2026-09-02 18:01:10.413721679 [W:onnxruntime:, graph.cc:109 MergeShapeInfo] Error merging shape info for output. 'Gemm_18_matmul_out' source:{1,850,256} target:{850,256}. Falling back to lenient merge.[m
+[0;93m2026-09-02 18:01:10.413947177 [W:onnxruntime:, graph.cc:109 MergeShapeInfo] Error merging shape info for output. 'Gemm_30_matmul_out' source:{1,850,256} target:{850,256}. Falling back to lenient merge.[m
+[0;93m2026-09-02 18:01:10.414157527 [W:onnxruntime:, graph.cc:109 MergeShapeInfo] Error merging shape info for output. 'Gemm_42_matmul_out' source:{1,850,256} target:{850,256}. Falling back to lenient merge.[m
+[0;93m2026-09-02 18:01:10.414367562 [W:onnxruntime:, graph.cc:109 MergeShapeInfo] Error merging shape info for output. 'Gemm_54_matmul_out' source:{1,850,256} target:{850,256}. Falling back to lenient merge.[m
+[0;93m2026-09-02 18:01:10.414591097 [W:onnxruntime:, graph.cc:109 MergeShapeInfo] Error merging shape info for output. 'Gemm_66_matmul_out' source:{1,850,256} target:{850,256}. Falling back to lenient merge.[m
+[0;93m2026-09-02 18:01:10.414791243 [W:onnxruntime:, graph.cc:109 MergeShapeInfo] Error merging shape info for output. 'Gemm_77_matmul_out' source:{1,100,256} target:{100,256}. Falling back to lenient merge.[m
+[0;93m2026-09-02 18:01:10.415154684 [W:onnxruntime:, graph.cc:109 MergeShapeInfo] Error merging shape info for output. 'Gemm_96_matmul_out' source:{1,100,256} target:{100,256}. Falling back to lenient merge.[m
+[0;93m2026-09-02 18:01:10.415507570 [W:onnxruntime:, graph.cc:109 MergeShapeInfo] Error merging shape info for output. 'Gemm_115_matmul_out' source:{1,100,256} target:{100,256}. Falling back to lenient merge.[m
+[0;93m2026-09-02 18:01:10.415869659 [W:onnxruntime:, graph.cc:109 MergeShapeInfo] Error merging shape info for output. 'Gemm_134_matmul_out' source:{1,100,256} target:{100,256}. Falling back to lenient merge.[m
+[0;93m2026-09-02 18:01:10.416244878 [W:onnxruntime:, graph.cc:109 MergeShapeInfo] Error merging shape info for output. 'Gemm_153_matmul_out' source:{1,100,256} target:{100,256}. Falling back to lenient merge.[m
+[0;93m2026-09-02 18:01:10.416603245 [W:onnxruntime:, graph.cc:109 MergeShapeInfo] Error merging shape info for output. 'Gemm_172_matmul_out' source:{1,100,256} target:{100,256}. Falling back to lenient merge.[m
+
+=== Model File: /home/yuyeong/dxm1_detr/prof/detr_2out.dxnn ===
+
+Model Input Tensors:
+  - pixel_values
+Model Output Tensors:
+  - logits
+  - pred_boxes
+
+Tasks:
+  [ ] -> npu_0 -> [cpu_0, ]
+  Task[0] npu_0, NPU, NPU memory usage 618,675,072 bytes (input 2,558,400 bytes, output 23,990,400 bytes), mem_usage:1,210,169,472 bytes
+  Inputs
+     -  pixel_values, UINT8, [1, 800, 1066, 3 ]
+  Outputs
+    -  /model/Transpose_output_0, FLOAT, [1, 850, 256 ]
+    -  /model/encoder/layers.0/self_attn/Softmax_output_0, FLOAT, [1, 8, 850, 850 ]
+
+  [ npu_0, ] -> cpu_0 -> []
+  Task[1] cpu_0, CPU, input 23,990,400 bytes, output 38,400 bytes
+  Inputs
+     -  /model/encoder/layers.0/self_attn/Softmax_output_0, FLOAT, [1, 8, 850, 850 ]
+     -  /model/Transpose_output_0, FLOAT, [1, 850, 256 ]
+  Outputs
+     -  pred_boxes, FLOAT, [1, 100, 4 ]
+     -  logits, FLOAT, [1, 100, 92 ]
+
+
+[DXRT] CPU TASK [cpu_0] Inference Worker - Average Input Queue Load : 76.47%  (DXRT_DYNAMIC_CPU_THREAD: OFF) - To improve FPS, set: 'export DXRT_DYNAMIC_CPU_THREAD=ON'
+Profiler data has been written to profiler.json
+  ==============================================================================================
+  | Task: cpu_0                                                                                |
+  ==============================================================================================
+  ----------------------------------------------------------------------------------------------
+  | CPU                                                                                        |
+  | Name                           |     min (us) |     max (us) | average (us) |      CoV (%) |
+  ----------------------------------------------------------------------------------------------
+  | Buffer Pool Wait               |         5.41 |        20.24 |         8.52 |        22.61 |
+  | CPU Dispatch Wait              |        24.22 |   4441045.67 |   4260800.79 |        18.12 |
+  | CPU Task (total)               |    905096.90 |    937021.72 |    910652.30 |         0.31 |
+  ----------------------------------------------------------------------------------------------
+  ==============================================================================================
+  | Task: npu_0                                                                                |
+  ==============================================================================================
+  ----------------------------------------------------------------------------------------------
+  | Device 0                                                                                   |
+  | Name                           |     min (us) |     max (us) | average (us) |      CoV (%) |
+  ----------------------------------------------------------------------------------------------
+  | Buffer Pool Wait               |         2.31 |   1131632.33 |    850260.59 |        27.40 |
+  | NPU Task (total)               |    113964.22 |    435726.44 |    127226.70 |        42.28 |
+  |   - NPU Input Format Handler   |         0.39 |        57.20 |        10.02 |        81.89 |
+  |   - H2D (Host-to-Device)       |      6891.53 |     24848.10 |      7773.96 |        43.23 |
+  |   - Inference                  |     41091.00 |     61599.00 |     42206.04 |        10.48 |
+  |     - Inference Core 0         |     41091.00 |     61599.00 |     41494.57 |         6.48 |
+  |     - Inference Core 1         |     58465.00 |     61340.00 |     59902.50 |         3.39 |
+  |     - Inference Core 2         |     58042.00 |     60701.00 |     59371.50 |         3.17 |
+  |   - D2H (Device-to-Host)       |     57237.78 |    122507.40 |     60823.82 |        23.20 |
+  |   - NPU Output Format Handler  |      6465.76 |     27984.85 |      9724.05 |        24.88 |
+  ----------------------------------------------------------------------------------------------

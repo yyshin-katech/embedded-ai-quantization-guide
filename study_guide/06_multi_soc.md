@@ -728,6 +728,27 @@ DRP-AI TVM은 **TVM 기반**이라, DRP-AI가 못 맡는 op는 **TVM이 CPU(Arm 
 > 📄 전체 실측·SVG·판정: [`../logs/stage4_deepx_dxm1_detection_report.html`](../logs/stage4_deepx_dxm1_detection_report.html) · 데이터·스크립트·재현: [`../experiments/stage4_deepx_dxm1/detection/`](../experiments/stage4_deepx_dxm1/detection/) · 분류 정확도 짝: [§4-D(정확도)](#4-d정확도--실측-온디바이스-dx-m1-정확도-축--외부-qdq-거부--cpunpu-경로-의존) · 레짐 짝: [§4-D(크로스오버)](#4-d크로스오버--실측-온디바이스-dx-m1-host-bound--npu-bound--코어-스케일링--d2h-병목)
 > **캐비앗:** ① 500장 val2017 서브셋 → 상대 Δ만 유효, 절대 mAP는 문헌 비교 대상 아님(paired FP32−INT8 Δ는 노이즈에 강건). ② prebuilt/PTQ·batch1·Pi5 Gen2×1 → D2H-bound은 Pi 5 링크 성질(네이티브 Gen3×4면 벽 위치 달라짐, 미측정). ③ 지연(host-timed, decode/NMS 포함)과 순수 NPU 연산(profiler 7.3ms) 구분. ④ Option B 컴파일 경고(cosine 0.927 @output0)는 surgeon 근사 — mAP엔 −0.009만 반영. ⑤ Pi 5는 DEEPX 호스트일 뿐 **자동차 3벤더(TI/Qualcomm/Renesas) 아님**.
 
+#### 4-D(트랜스포머). 🔬 실측 (온디바이스): DX-M1 DETR INT8 — 폭락 없음(트랜스포머는 호스트 FP32)
+
+> **CNN 축(분류·검출)을 트랜스포머 검출기로 확장하며, 이 가이드의 핵심 질문을 벤더-NPU에서 시험한다.** [검출 축](#4-d검출--실측-온디바이스-dx-m1-yolo26n-int8-정확도--nms-fold-레짐)의 CNN(`yolo26n`)은 무손실급이었다. 그러나 2단계 §4.5·[Jetson](05_tensorrt.md)에서 확인했듯 **트랜스포머 activation은 넓은 동적 범위 탓에 INT8을 못 견뎌** 강제 양자화 시 mAP가 반토막 났다(stage2 ORT **−42.9%**·Jetson TRT-sym **−43.8%**). 그 폭락이 DX-M1 native PTQ에서도 재현되는가? 같은 보드·같은 툴체인으로 `facebook/detr-resnet-50`(800×1066·COCO val2017 500장)을 올려 답한다.
+
+**헤드라인: DETR INT8은 폭락하지 않는다(−0.0008 mAP·−0.2%) — 단 dx_com이 트랜스포머를 호스트 CPU FP32로 밀어내기 때문이지, 트랜스포머를 잘 양자화해서가 아니다.** FP32 0.4377 → NPU INT8 0.4385. 폭락이 없는 진짜 이유는 컴파일러의 **자동 파티션**: dx_com은 708 노드 그래프를 `1 NPU groups, 1 CPU groups`로 자르고 `Marked 2 MemoryOp(s) from NPU to CPU` — NPU 그룹은 **CNN 백본 + 첫 encoder self-attention(softmax까지)만 INT8**, 나머지 트랜스포머 전체(encoder 잔여 + decoder 6층 + FFN + 예측 헤드)는 **호스트 A76에서 FP32(ORT)**로 돈다. 즉 −0.2%는 **백본 INT8 오차뿐** — 트랜스포머는 레퍼런스에서도 NPU 배포본에서도 FP32라 애초에 양자화 대상이 아니었다. **폭락(강제 INT8)과 무폭락(자동 회피)은 같은 벽의 양면**: 트랜스포머 activation은 INT8이 안 되므로, 강제하면 폭락하고 손대지 않으면 무손실이나 FP 지연을 문다.
+
+`--use-ort` 토글(“NPU 태스크만 vs NPU+호스트 그래프”)이 두 부분을 직접 분해한다 — 호스트 트랜스포머가 파이프라인의 16배를 먹는다:
+
+| dxbenchmark 모드 | 무엇이 도나 | FPS | E2E 지연 | NPU 연산 |
+|---|---|--:|--:|--:|
+| `--use-ort` (풀) | NPU 백본 + **호스트 트랜스포머** | 1.10 | 1036 ms | 42.2 ms |
+| `--use-ort` 없이 | NPU 백본만(트랜스포머 skip) | **17.55** | 331 ms | 47.5 ms |
+| **차이 = 호스트 트랜스포머 몫** | | **16.0× 느림** | +705 ms | ≈ 동일 |
+
+- **스모킹건 (NPU 출력 텐서).** `--use-ort` 없이 돌리면 NPU 그룹의 실제 출력이 `/model/Transpose_output_0 FLOAT [1,850,256]`(백본 feature, 850=25×34 토큰) + `/model/encoder/layers.0/self_attn/Softmax_output_0 FLOAT [1,8,850,850]`(첫 attention 맵, 23.1MB) 둘뿐 — **그래프가 첫 encoder attention의 softmax에서 잘리고** 이후 전부 호스트로 넘어간다. 이 2개가 곧 컴파일 로그의 `2 MemoryOp(s)`다.
+- **제3의 레짐: host-CPU-compute-bound.** E2E 1036ms를 분해하면 **호스트 CPU 트랜스포머 FP32 910.6ms(87.9%) ≫ D2H 24MB attention handoff 57.3ms(5.5%) ≫ NPU INT8 연산 41.1ms(4.0%) ≫ H2D 7.0ms(0.7%)**. [벤치](#4-d--실측-deepx-축-온디바이스-dx-m1-m2-벤더-npu--raspberry-pi-5-cortex-a76-호스트)의 resnet50(NPU-compute-bound)·yolo26n(PCIe-D2H-bound)에 이어 **셋째 병목**을 연다 — 천장이 하드웨어(NPU·PCIe)가 아니라 **벤더 컴파일러가 호스트로 민 FP32 트랜스포머**. NPU 코어를 늘려도 무의미(NPU는 4%뿐), 천장은 A76 단일스레드 ORT다.
+- **가이드 연결.** 이 축은 2단계 §4.5의 "범인=activation 분산"을 벤더-NPU 관점에서 완성한다. 트랜스포머 activation의 넓은 범위 때문에 셋 다 같은 벽의 다른 문이다: (1) 강제 INT8 → 폭락(stage2 −42.9%·Jetson −43.8%), (2) SmoothQuant로 입도 개선 → 부분 회복(Jetson 9%~stage2 59.9%), (3) DX-M1처럼 컴파일러가 손대지 않음 → 무손실이나 **1.04s**.
+
+> 📄 전체 실측·SVG·판정: [`../logs/stage4_deepx_dxm1_detr_report.html`](../logs/stage4_deepx_dxm1_detr_report.html) · 데이터·스크립트·재현: [`../experiments/stage4_deepx_dxm1/detr/`](../experiments/stage4_deepx_dxm1/detr/) · 검출(CNN) 짝: [§4-D(검출)](#4-d검출--실측-온디바이스-dx-m1-yolo26n-int8-정확도--nms-fold-레짐) · 레짐 짝: [§4-D(크로스오버)](#4-d크로스오버--실측-온디바이스-dx-m1-host-bound--npu-bound--코어-스케일링--d2h-병목)
+> **캐비앗:** ① 500장 서브셋·batch1·prebuilt `.dxnn` → **상대 FP32→INT8 Δ만** 유효(절대 mAP는 stage2 dynamic-shape 0.4207과 비교 불가). ② "무손실"은 **트랜스포머 미양자화**의 결과 — DX-M1의 트랜스포머-INT8 능력 주장이 아니며 이 축은 DX-M1에서 트랜스포머-INT8을 시험하지 **않는다**. ③ host-CPU-bound은 Pi5-A76 단일스레드 ORT 성질 — 더 빠른 호스트·attention까지 양자화하는 툴체인이면 천장이 이동. ④ PCIe Gen2×1(DX-M1 네이티브 Gen3×4). ⑤ Pi 5는 DEEPX 호스트일 뿐 **자동차 3벤더(TI/Qualcomm/Renesas) 아님**.
+
 ---
 
 ## 5) 예시 / 결과 해석 — "fallback 비율부터 확인" (정량 지표)

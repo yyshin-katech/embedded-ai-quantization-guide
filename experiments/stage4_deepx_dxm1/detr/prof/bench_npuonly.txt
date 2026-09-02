@@ -1,0 +1,58 @@
+Runtime Framework Version: v3.4.2
+Device Driver Version: v2.6.0
+PCIe Driver Version: v2.5.0
+
+--- CPU Information ---
+
+--- Architecture Information ---
+  System Name: Linux
+  Node Name:   yuyeong
+  Release:     6.18.34+rpt-rpi-2712
+  Version:     #1 SMP PREEMPT Debian 1:6.18.34-1+rpt1 (2026-06-09)
+  Machine:     aarch64
+
+--- Memory Information ---
+  Total Physical Memory: 7.87 GB
+  Available Physical Memory: 3.70 GB
+  Total Swap Space: 2.00 GB
+  Free Swap Space: 2.00 GB
+
+Device specification: 'all' (default)
+
+=== Model File: /home/yuyeong/dxm1_detr/prof/detr_2out.dxnn ===
+
+Model Input Tensors:
+  - pixel_values
+Model Output Tensors:
+  - /model/Transpose_output_0
+  - /model/encoder/layers.0/self_attn/Softmax_output_0
+
+Tasks:
+  [ ] -> npu_0 -> []
+  Task[0] npu_0, NPU, NPU memory usage 618,675,072 bytes (input 2,558,400 bytes, output 23,990,400 bytes), mem_usage:1,210,169,472 bytes
+  Inputs
+     -  pixel_values, UINT8, [1, 800, 1066, 3 ]
+  Outputs
+    -  /model/Transpose_output_0, FLOAT, [1, 850, 256 ]
+    -  /model/encoder/layers.0/self_attn/Softmax_output_0, FLOAT, [1, 8, 850, 850 ]
+
+
+Profiler data has been written to profiler.json
+  ==============================================================================================
+  | Task: npu_0                                                                                |
+  ==============================================================================================
+  ----------------------------------------------------------------------------------------------
+  | Device 0                                                                                   |
+  | Name                           |     min (us) |     max (us) | average (us) |      CoV (%) |
+  ----------------------------------------------------------------------------------------------
+  | Buffer Pool Wait               |         2.35 |    196158.11 |     53606.82 |        86.83 |
+  | NPU Task (total)               |    116520.07 |    444279.52 |    332564.97 |         9.73 |
+  |   - NPU Input Format Handler   |         0.33 |        55.78 |         3.94 |       151.98 |
+  |   - H2D (Host-to-Device)       |      6907.12 |     24236.50 |      7814.90 |        42.42 |
+  |   - Inference                  |     41117.00 |     64973.00 |     47462.86 |         8.11 |
+  |     - Inference Core 0         |     41117.00 |     64885.00 |     46995.55 |         7.49 |
+  |     - Inference Core 1         |     45266.00 |     64973.00 |     47425.92 |         7.05 |
+  |     - Inference Core 2         |     60250.00 |     60319.00 |     60284.50 |         0.08 |
+  |   - D2H (Device-to-Host)       |     61513.22 |    123274.78 |    111363.41 |         6.38 |
+  |   - NPU Output Format Handler  |      4723.83 |     18731.62 |      5635.49 |        34.49 |
+  ----------------------------------------------------------------------------------------------

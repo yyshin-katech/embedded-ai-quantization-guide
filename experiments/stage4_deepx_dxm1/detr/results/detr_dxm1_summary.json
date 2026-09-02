@@ -1,0 +1,71 @@
+{
+  "model": "facebook/detr-resnet-50 (detr_2out.onnx, 2-output: logits+pred_boxes)",
+  "board": "lab Raspberry Pi 5 (Cortex-A76 x4) + DEEPX DX-M1 (M.2, 3-core INT8)",
+  "toolchain": "dx_com 2.4.0 (x86, calib=ema 100 in-domain COCO PNG) / DXRT 3.4.2 / dx_engine cp313",
+  "eval": "COCO val2017 first 500 (fixed 800x1066 force-resize, bit-identical npy across FP32/NPU)",
+  "accuracy": {
+    "fp32_mAP": 0.4377,
+    "npu_int8_mAP": 0.4385,
+    "delta_mAP_fp32_minus_npu": -0.0008,
+    "rel_mAP_drop_pct": 0.2,
+    "fp32_mAP_s": 0.2293,
+    "npu_int8_mAP_s": 0.2317,
+    "delta_mAP_s": -0.0024,
+    "logits_corr": 0.993926,
+    "boxes_corr": 0.972976,
+    "verdict": "near-lossless (backbone-INT8 error only; transformer FP32 in BOTH ref and NPU)"
+  },
+  "partition": {
+    "graph_nodes": 708,
+    "npu_group": "CNN backbone (ResNet50) + first encoder self-attn through its Softmax -> INT8 wbit8/abit8",
+    "npu_outputs": [
+      "/model/Transpose_output_0  FLOAT [1,850,256]  (backbone feature map, 850=25x34 tokens)",
+      "/model/encoder/layers.0/self_attn/Softmax_output_0  FLOAT [1,8,850,850]  (first attention map)"
+    ],
+    "npu_input_bytes": 2558400,
+    "npu_output_bytes": 23990400,
+    "cpu_group": "rest of transformer (enc layers 0(post)-5 + all 6 decoder layers + FFNs + heads) -> HOST CPU FP32 via ORT",
+    "cpu_memoryops_marked": 2,
+    "note": "compiler auto-cut: unquantizable dynamic attention forces the transformer onto the host; this is WHY there is no INT8 collapse -- the transformer is never INT8"
+  },
+  "latency_ms": {
+    "full_pipeline_e2e_dxbench": 1036.34,
+    "full_pipeline_e2e_dxengine_p50": 1017.525,
+    "npu_only_e2e_dxbench": 330.97,
+    "npu_inference_only": 42.21
+  },
+  "throughput_fps": {
+    "full_pipeline": 1.1,
+    "npu_only_transformer_skipped": 17.55,
+    "host_transformer_slowdown_x": 16.0
+  },
+  "regime_decomposition_p50_ms": {
+    "host_cpu_transformer_fp32": 910.6,
+    "npu_int8_inference": 41.11,
+    "d2h_24MB_attention_handoff": 57.28,
+    "h2d_image": 6.97,
+    "host_cpu_pct_of_e2e": 87.9,
+    "npu_pct_of_e2e": 4.0,
+    "regime": "host-CPU-compute-bound (3rd DX-M1 regime: vs ResNet50 NPU-compute-bound / yolo26n PCIe-D2H-bound)"
+  },
+  "cross_model_dxm1": {
+    "resnet50_cnn_cls": {
+      "fp32->int8": "0.7620->0.7660 (~0)",
+      "regime": "NPU-compute-bound (3-core 2.19x)"
+    },
+    "yolo26n_cnn_det": {
+      "fp32->int8": "0.448->0.439 (-2.0%)",
+      "regime": "PCIe-D2H-bound (2.82MB head, flat 1.0x)"
+    },
+    "detr_transformer_det": {
+      "fp32->int8": "0.4377->0.4385 (-0.2%)",
+      "regime": "host-CPU-compute-bound (transformer FP32 on host, NPU 4%)"
+    }
+  },
+  "caveats": [
+    "500-img subset, batch1, prebuilt .dxnn; RELATIVE FP32->INT8 delta only (absolute mAP not comparable to stage2 dynamic-shape 0.4207).",
+    "Near-lossless is NOT evidence DX-M1 quantises transformers -- the compiler keeps the transformer FP32 on the host, so this axis does not test transformer-INT8 on DX-M1.",
+    "host-CPU-bound is a Pi5-A76 property (single-thread ORT FP32 transformer); a faster host or a toolchain that quantised attention would move the ceiling.",
+    "same rn50/yolo26n D2H-bound caveat: PCIe Gen2x1 on Pi5 (DX-M1 native Gen3x4)."
+  ]
+}

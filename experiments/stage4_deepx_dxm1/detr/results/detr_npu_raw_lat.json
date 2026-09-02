@@ -1,0 +1,8 @@
+{
+  "model": "detr_2out.dxnn",
+  "color": "rgb",
+  "images": 500,
+  "lat_p50_ms": 1017.525,
+  "lat_mean_ms": 1018.418,
+  "lat_min_ms": 1015.573
+}

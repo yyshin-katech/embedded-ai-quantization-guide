@@ -1,0 +1,1004 @@
+Compiling Model :   0%|          | 0.0/1.0 [00:00<?, ?model/s ]                                                               [INFO] - 
+Compiling Model :   0%|          | 0.0/1.0 [00:00<?, ?model/s ]                                                               [INFO] - ================================================================================
+Compiling Model :   0%|          | 0.0/1.0 [00:00<?, ?model/s ]                                                               [INFO] -   COMPILATION CONFIGURATION
+Compiling Model :   0%|          | 0.0/1.0 [00:00<?, ?model/s ]                                                               [INFO] - ================================================================================
+Compiling Model :   0%|          | 0.0/1.0 [00:00<?, ?model/s ]                                                               [INFO] -   Compiler Version : 2.4.0
+Compiling Model :   0%|          | 0.0/1.0 [00:00<?, ?model/s ]                                                               [INFO] -   ONNX Model       : /home/yuyeong/dxm1_detr/detr_2out.onnx
+Compiling Model :   0%|          | 0.0/1.0 [00:00<?, ?model/s ]                                                               [INFO] -   Config File      : /home/yuyeong/dxm1_detr/detr_coco_cfg.json
+Compiling Model :   0%|          | 0.0/1.0 [00:00<?, ?model/s ]                                                               [INFO] -   Output Directory : /home/yuyeong/dxm1_detr/out_detr
+Compiling Model :   0%|          | 0.0/1.0 [00:00<?, ?model/s ]                                                               [INFO] -   Optimization Level : 1
+Compiling Model :   0%|          | 0.0/1.0 [00:00<?, ?model/s ]                                                               [INFO] - ================================================================================
+Compiling Model :   0%|          | 0.0/1.0 [00:00<?, ?model/s ]                                                               [INFO] - For faster compilation, consider using opt_level=0 (may increase NPU latency).
+Compiling Model :   0%|          | 0.0/1.0 [00:00<?, ?model/s ]                                                               [INFO] - 
+Compiling Model :   0%|          | 0.0/1.0 [00:00<?, ?model/s ]
+Loading ONNX model:   0%|          | 0/4 [00:00<?, ?step/s][A
+Loading ONNX model and Validating:   0%|          | 0/4 [00:00<?, ?step/s][A
+Loading ONNX model and Validating:  25%|██▌       | 1/4 [00:00<00:01,  1.81step/s][A
+Try to change opset and IR version to 21 and 10:  25%|██▌       | 1/4 [00:00<00:01,  1.81step/s][A
+Try to change opset and IR version to 21 and 10:  50%|█████     | 2/4 [00:02<00:02,  1.43s/step][A
+Running shape inference:  50%|█████     | 2/4 [00:02<00:02,  1.43s/step]                        [A
+Running shape inference:  75%|███████▌  | 3/4 [00:03<00:01,  1.13s/step][A
+Converting ONNX to Internal IR:  75%|███████▌  | 3/4 [00:03<00:01,  1.13s/step][A
+                                                                               [ACompiling Model :  10%|█         | 0.1/1.0 [00:03<00:31, 35.17s/model ]
+Running Surgeon:   0%|          | 0/3 [00:00<?, ?step/s][A
+Running Surgeon:  33%|███▎      | 1/3 [00:00<00:00,  6.83step/s][A
+Running Surgeon: 100%|██████████| 3/3 [00:00<00:00, 10.84step/s][A
+                                                                [ACompiling Model :  20%|██        | 0.2/1.0 [00:03<00:13, 16.27s/model ][0;93m2026-09-02 17:33:07.385697957 [W:onnxruntime:, graph.cc:120 MergeShapeInfo] Error merging shape info for output. 'Gemm_6_matmul_out' source:{1,850,256} target:{850,256}. Falling back to lenient merge.[m
+[0;93m2026-09-02 17:33:07.385836775 [W:onnxruntime:, graph.cc:120 MergeShapeInfo] Error merging shape info for output. 'Gemm_18_matmul_out' source:{1,850,256} target:{850,256}. Falling back to lenient merge.[m
+[0;93m2026-09-02 17:33:07.385959176 [W:onnxruntime:, graph.cc:120 MergeShapeInfo] Error merging shape info for output. 'Gemm_30_matmul_out' source:{1,850,256} target:{850,256}. Falling back to lenient merge.[m
+[0;93m2026-09-02 17:33:07.386081796 [W:onnxruntime:, graph.cc:120 MergeShapeInfo] Error merging shape info for output. 'Gemm_42_matmul_out' source:{1,850,256} target:{850,256}. Falling back to lenient merge.[m
+[0;93m2026-09-02 17:33:07.386198104 [W:onnxruntime:, graph.cc:120 MergeShapeInfo] Error merging shape info for output. 'Gemm_54_matmul_out' source:{1,850,256} target:{850,256}. Falling back to lenient merge.[m
+[0;93m2026-09-02 17:33:07.386312308 [W:onnxruntime:, graph.cc:120 MergeShapeInfo] Error merging shape info for output. 'Gemm_66_matmul_out' source:{1,850,256} target:{850,256}. Falling back to lenient merge.[m
+[0;93m2026-09-02 17:33:07.386420630 [W:onnxruntime:, graph.cc:120 MergeShapeInfo] Error merging shape info for output. 'Gemm_77_matmul_out' source:{1,100,256} target:{100,256}. Falling back to lenient merge.[m
+[0;93m2026-09-02 17:33:07.386611620 [W:onnxruntime:, graph.cc:120 MergeShapeInfo] Error merging shape info for output. 'Gemm_96_matmul_out' source:{1,100,256} target:{100,256}. Falling back to lenient merge.[m
+[0;93m2026-09-02 17:33:07.386801473 [W:onnxruntime:, graph.cc:120 MergeShapeInfo] Error merging shape info for output. 'Gemm_115_matmul_out' source:{1,100,256} target:{100,256}. Falling back to lenient merge.[m
+[0;93m2026-09-02 17:33:07.386992521 [W:onnxruntime:, graph.cc:120 MergeShapeInfo] Error merging shape info for output. 'Gemm_134_matmul_out' source:{1,100,256} target:{100,256}. Falling back to lenient merge.[m
+[0;93m2026-09-02 17:33:07.387181634 [W:onnxruntime:, graph.cc:120 MergeShapeInfo] Error merging shape info for output. 'Gemm_153_matmul_out' source:{1,100,256} target:{100,256}. Falling back to lenient merge.[m
+[0;93m2026-09-02 17:33:07.387366289 [W:onnxruntime:, graph.cc:120 MergeShapeInfo] Error merging shape info for output. 'Gemm_172_matmul_out' source:{1,100,256} target:{100,256}. Falling back to lenient merge.[m
+
+Classifying nodes:   0%|          | 0/708 [00:00<?, ?node/s][A
+                                                            [A                                                                       [INFO] - Infection complete: Marked 2 MemoryOp(s) from NPU to CPU
+Compiling Model :  20%|██        | 0.2/1.0 [00:05<00:13, 16.27s/model ]
+Partitioning graph:   0%|          | 0/3 [00:00<?, ?step/s][A
+Separating nodes:   0%|          | 0/3 [00:00<?, ?step/s]  [A
+Grouping nodes:  33%|███▎      | 1/3 [00:00<00:00, 715.75step/s][A                                                                       
+                                                                [A[INFO] - Final result: 1 NPU groups, 1 CPU groups
+Compiling Model :  20%|██        | 0.2/1.0 [00:09<00:13, 16.27s/model ]
+Grouping nodes:  33%|███▎      | 1/3 [00:03<00:07,  3.94s/step][A
+Grouping nodes:  67%|██████▋   | 2/3 [00:03<00:01,  1.97s/step][A
+Setting up Group connections:  67%|██████▋   | 2/3 [00:03<00:01,  1.97s/step][A
+                                                                             [ACompiling Model :  30%|███       | 0.3/1.0 [00:09<00:24, 34.93s/model ]Quantizing graph:   0%|[37m          [0m| 0/4 [00:00<?]Finding Quantization Positions:   0%|[37m          [0m| 0/4 [00:00<?]
+[1/4] NPU encode+optimize:   0%|[37m          [0m| 0/1 [00:00<?][AFinding Quantization Positions:   0%|[37m          [0m| 0/4 [00:00<?], Current Graph=npu_0
+[1/4] NPU encode+optimize:   0%|[37m          [0m| 0/1 [00:00<?], Graph=npu_0[A                                                                                                                                                          
+                                                                      [A[INFO] - [Quantization] wbit=8, abit=8, mode=ptq
+Compiling Model :  30%|███       | 0.3/1.0 [00:09<00:24, 34.93s/model ]Finding Quantization Positions:   0%|[37m          [0m| 0/4 [00:00<?], Current Graph=npu_0
+[1/4] NPU encode+optimize:   0%|[37m          [0m| 0/1 [00:00<?], Graph=npu_0[A
+[1/4] NPU encode+optimize: 100%|[37m██████████[0m| 1/1 [00:01<00:00], Graph=npu_0[A
+                                                                          [AFinding Quantization Positions:  25%|[37m██▌       [0m| 1/4 [00:01<00:04], Current Graph=npu_0Running Calibration:  50%|[37m█████     [0m| 2/4 [00:01<00:02], Current Graph=npu_0           [0;93m2026-09-02 17:33:13.802859830 [W:onnxruntime:, graph.cc:120 MergeShapeInfo] Error merging shape info for output. 'Gemm_6_matmul_out' source:{1,850,256} target:{850,256}. Falling back to lenient merge.[m
+[0;93m2026-09-02 17:33:13.803043957 [W:onnxruntime:, graph.cc:120 MergeShapeInfo] Error merging shape info for output. 'Gemm_18_matmul_out' source:{1,850,256} target:{850,256}. Falling back to lenient merge.[m
+[0;93m2026-09-02 17:33:13.803200982 [W:onnxruntime:, graph.cc:120 MergeShapeInfo] Error merging shape info for output. 'Gemm_30_matmul_out' source:{1,850,256} target:{850,256}. Falling back to lenient merge.[m
+[0;93m2026-09-02 17:33:13.803354221 [W:onnxruntime:, graph.cc:120 MergeShapeInfo] Error merging shape info for output. 'Gemm_42_matmul_out' source:{1,850,256} target:{850,256}. Falling back to lenient merge.[m
+[0;93m2026-09-02 17:33:13.803505288 [W:onnxruntime:, graph.cc:120 MergeShapeInfo] Error merging shape info for output. 'Gemm_54_matmul_out' source:{1,850,256} target:{850,256}. Falling back to lenient merge.[m
+[0;93m2026-09-02 17:33:13.803656721 [W:onnxruntime:, graph.cc:120 MergeShapeInfo] Error merging shape info for output. 'Gemm_66_matmul_out' source:{1,850,256} target:{850,256}. Falling back to lenient merge.[m
+[0;93m2026-09-02 17:33:13.803795902 [W:onnxruntime:, graph.cc:120 MergeShapeInfo] Error merging shape info for output. 'Gemm_77_matmul_out' source:{1,100,256} target:{100,256}. Falling back to lenient merge.[m
+[0;93m2026-09-02 17:33:13.804046852 [W:onnxruntime:, graph.cc:120 MergeShapeInfo] Error merging shape info for output. 'Gemm_96_matmul_out' source:{1,100,256} target:{100,256}. Falling back to lenient merge.[m
+[0;93m2026-09-02 17:33:13.804298219 [W:onnxruntime:, graph.cc:120 MergeShapeInfo] Error merging shape info for output. 'Gemm_115_matmul_out' source:{1,100,256} target:{100,256}. Falling back to lenient merge.[m
+[0;93m2026-09-02 17:33:13.804544844 [W:onnxruntime:, graph.cc:120 MergeShapeInfo] Error merging shape info for output. 'Gemm_134_matmul_out' source:{1,100,256} target:{100,256}. Falling back to lenient merge.[m
+[0;93m2026-09-02 17:33:13.804790374 [W:onnxruntime:, graph.cc:120 MergeShapeInfo] Error merging shape info for output. 'Gemm_153_matmul_out' source:{1,100,256} target:{100,256}. Falling back to lenient merge.[m
+[0;93m2026-09-02 17:33:13.805040324 [W:onnxruntime:, graph.cc:120 MergeShapeInfo] Error merging shape info for output. 'Gemm_172_matmul_out' source:{1,100,256} target:{100,256}. Falling back to lenient merge.[m
+
+Calibration:   0%|[37m          [0m| 0/100 [00:00<?][A
+Calibration:   0%|[37m          [0m| 0/100 [00:00<?], 1/100[A
+Calibration:   1%|[37m          [0m| 1/100 [00:00<00:46], 1/100[A
+Calibration:   1%|[37m          [0m| 1/100 [00:00<00:46], 2/100[A
+Calibration:   2%|[37m▏         [0m| 2/100 [00:00<00:28], 2/100[A
+Calibration:   2%|[37m▏         [0m| 2/100 [00:00<00:28], 3/100[A
+Calibration:   3%|[37m▎         [0m| 3/100 [00:00<00:22], 3/100[A
+Calibration:   3%|[37m▎         [0m| 3/100 [00:00<00:22], 4/100[A
+Calibration:   4%|[37m▍         [0m| 4/100 [00:00<00:19], 4/100[A
+Calibration:   4%|[37m▍         [0m| 4/100 [00:01<00:19], 5/100[A
+Calibration:   5%|[37m▌         [0m| 5/100 [00:01<00:17], 5/100[A
+Calibration:   5%|[37m▌         [0m| 5/100 [00:01<00:17], 6/100[A
+Calibration:   6%|[37m▌         [0m| 6/100 [00:01<00:16], 6/100[A
+Calibration:   6%|[37m▌         [0m| 6/100 [00:01<00:16], 7/100[A
+Calibration:   7%|[37m▋         [0m| 7/100 [00:01<00:15], 7/100[A
+Calibration:   7%|[37m▋         [0m| 7/100 [00:01<00:15], 8/100[A
+Calibration:   8%|[37m▊         [0m| 8/100 [00:01<00:15], 8/100[A
+Calibration:   8%|[37m▊         [0m| 8/100 [00:01<00:15], 9/100[A
+Calibration:   9%|[37m▉         [0m| 9/100 [00:01<00:14], 9/100[A
+Calibration:   9%|[37m▉         [0m| 9/100 [00:01<00:14], 10/100[A
+Calibration:  10%|[37m█         [0m| 10/100 [00:01<00:14], 10/100[A
+Calibration:  10%|[37m█         [0m| 10/100 [00:02<00:14], 11/100[A
+Calibration:  11%|[37m█         [0m| 11/100 [00:02<00:14], 11/100[A
+Calibration:  11%|[37m█         [0m| 11/100 [00:02<00:14], 12/100[A
+Calibration:  12%|[37m█▏        [0m| 12/100 [00:02<00:14], 12/100[A
+Calibration:  12%|[37m█▏        [0m| 12/100 [00:02<00:14], 13/100[A
+Calibration:  13%|[37m█▎        [0m| 13/100 [00:02<00:13], 13/100[A
+Calibration:  13%|[37m█▎        [0m| 13/100 [00:02<00:13], 14/100[A
+Calibration:  14%|[37m█▍        [0m| 14/100 [00:02<00:13], 14/100[A
+Calibration:  14%|[37m█▍        [0m| 14/100 [00:02<00:13], 15/100[A
+Calibration:  15%|[37m█▌        [0m| 15/100 [00:02<00:13], 15/100[A
+Calibration:  15%|[37m█▌        [0m| 15/100 [00:02<00:13], 16/100[A
+Calibration:  16%|[37m█▌        [0m| 16/100 [00:02<00:13], 16/100[A
+Calibration:  16%|[37m█▌        [0m| 16/100 [00:03<00:13], 17/100[A
+Calibration:  17%|[37m█▋        [0m| 17/100 [00:03<00:13], 17/100[A
+Calibration:  17%|[37m█▋        [0m| 17/100 [00:03<00:13], 18/100[A
+Calibration:  18%|[37m█▊        [0m| 18/100 [00:03<00:12], 18/100[A
+Calibration:  18%|[37m█▊        [0m| 18/100 [00:03<00:12], 19/100[A
+Calibration:  19%|[37m█▉        [0m| 19/100 [00:03<00:12], 19/100[A
+Calibration:  19%|[37m█▉        [0m| 19/100 [00:03<00:12], 20/100[A
+Calibration:  20%|[37m██        [0m| 20/100 [00:03<00:12], 20/100[A
+Calibration:  20%|[37m██        [0m| 20/100 [00:03<00:12], 21/100[A
+Calibration:  21%|[37m██        [0m| 21/100 [00:03<00:12], 21/100[A
+Calibration:  21%|[37m██        [0m| 21/100 [00:03<00:12], 22/100[A
+Calibration:  22%|[37m██▏       [0m| 22/100 [00:03<00:12], 22/100[A
+Calibration:  22%|[37m██▏       [0m| 22/100 [00:03<00:12], 23/100[A
+Calibration:  23%|[37m██▎       [0m| 23/100 [00:03<00:12], 23/100[A
+Calibration:  23%|[37m██▎       [0m| 23/100 [00:04<00:12], 24/100[A
+Calibration:  24%|[37m██▍       [0m| 24/100 [00:04<00:12], 24/100[A
+Calibration:  24%|[37m██▍       [0m| 24/100 [00:04<00:12], 25/100[A
+Calibration:  25%|[37m██▌       [0m| 25/100 [00:04<00:12], 25/100[A
+Calibration:  25%|[37m██▌       [0m| 25/100 [00:04<00:12], 26/100[A
+Calibration:  26%|[37m██▌       [0m| 26/100 [00:04<00:11], 26/100[A
+Calibration:  26%|[37m██▌       [0m| 26/100 [00:04<00:11], 27/100[A
+Calibration:  27%|[37m██▋       [0m| 27/100 [00:04<00:11], 27/100[A
+Calibration:  27%|[37m██▋       [0m| 27/100 [00:04<00:11], 28/100[A
+Calibration:  28%|[37m██▊       [0m| 28/100 [00:04<00:11], 28/100[A
+Calibration:  28%|[37m██▊       [0m| 28/100 [00:04<00:11], 29/100[A
+Calibration:  29%|[37m██▉       [0m| 29/100 [00:04<00:11], 29/100[A
+Calibration:  29%|[37m██▉       [0m| 29/100 [00:05<00:11], 30/100[A
+Calibration:  30%|[37m███       [0m| 30/100 [00:05<00:11], 30/100[A
+Calibration:  30%|[37m███       [0m| 30/100 [00:05<00:11], 31/100[A
+Calibration:  31%|[37m███       [0m| 31/100 [00:05<00:11], 31/100[A
+Calibration:  31%|[37m███       [0m| 31/100 [00:05<00:11], 32/100[A
+Calibration:  32%|[37m███▏      [0m| 32/100 [00:05<00:10], 32/100[A
+Calibration:  32%|[37m███▏      [0m| 32/100 [00:05<00:10], 33/100[A
+Calibration:  33%|[37m███▎      [0m| 33/100 [00:05<00:10], 33/100[A
+Calibration:  33%|[37m███▎      [0m| 33/100 [00:05<00:10], 34/100[A
+Calibration:  34%|[37m███▍      [0m| 34/100 [00:05<00:10], 34/100[A
+Calibration:  34%|[37m███▍      [0m| 34/100 [00:05<00:10], 35/100[A
+Calibration:  35%|[37m███▌      [0m| 35/100 [00:05<00:10], 35/100[A
+Calibration:  35%|[37m███▌      [0m| 35/100 [00:06<00:10], 36/100[A
+Calibration:  36%|[37m███▌      [0m| 36/100 [00:06<00:10], 36/100[A
+Calibration:  36%|[37m███▌      [0m| 36/100 [00:06<00:10], 37/100[A
+Calibration:  37%|[37m███▋      [0m| 37/100 [00:06<00:10], 37/100[A
+Calibration:  37%|[37m███▋      [0m| 37/100 [00:06<00:10], 38/100[A
+Calibration:  38%|[37m███▊      [0m| 38/100 [00:06<00:09], 38/100[A
+Calibration:  38%|[37m███▊      [0m| 38/100 [00:06<00:09], 39/100[A
+Calibration:  39%|[37m███▉      [0m| 39/100 [00:06<00:09], 39/100[A
+Calibration:  39%|[37m███▉      [0m| 39/100 [00:06<00:09], 40/100[A
+Calibration:  40%|[37m████      [0m| 40/100 [00:06<00:09], 40/100[A
+Calibration:  40%|[37m████      [0m| 40/100 [00:06<00:09], 41/100[A
+Calibration:  41%|[37m████      [0m| 41/100 [00:06<00:09], 41/100[A
+Calibration:  41%|[37m████      [0m| 41/100 [00:06<00:09], 42/100[A
+Calibration:  42%|[37m████▏     [0m| 42/100 [00:06<00:09], 42/100[A
+Calibration:  42%|[37m████▏     [0m| 42/100 [00:07<00:09], 43/100[A
+Calibration:  43%|[37m████▎     [0m| 43/100 [00:07<00:09], 43/100[A
+Calibration:  43%|[37m████▎     [0m| 43/100 [00:07<00:09], 44/100[A
+Calibration:  44%|[37m████▍     [0m| 44/100 [00:07<00:09], 44/100[A
+Calibration:  44%|[37m████▍     [0m| 44/100 [00:07<00:09], 45/100[A
+Calibration:  45%|[37m████▌     [0m| 45/100 [00:07<00:08], 45/100[A
+Calibration:  45%|[37m████▌     [0m| 45/100 [00:07<00:08], 46/100[A
+Calibration:  46%|[37m████▌     [0m| 46/100 [00:07<00:08], 46/100[A
+Calibration:  46%|[37m████▌     [0m| 46/100 [00:07<00:08], 47/100[A
+Calibration:  47%|[37m████▋     [0m| 47/100 [00:07<00:08], 47/100[A
+Calibration:  47%|[37m████▋     [0m| 47/100 [00:07<00:08], 48/100[A
+Calibration:  48%|[37m████▊     [0m| 48/100 [00:07<00:08], 48/100[A
+Calibration:  48%|[37m████▊     [0m| 48/100 [00:08<00:08], 49/100[A
+Calibration:  49%|[37m████▉     [0m| 49/100 [00:08<00:08], 49/100[A
+Calibration:  49%|[37m████▉     [0m| 49/100 [00:08<00:08], 50/100[A
+Calibration:  50%|[37m█████     [0m| 50/100 [00:08<00:07], 50/100[A
+Calibration:  50%|[37m█████     [0m| 50/100 [00:08<00:07], 51/100[A
+Calibration:  51%|[37m█████     [0m| 51/100 [00:08<00:07], 51/100[A
+Calibration:  51%|[37m█████     [0m| 51/100 [00:08<00:07], 52/100[A
+Calibration:  52%|[37m█████▏    [0m| 52/100 [00:08<00:07], 52/100[A
+Calibration:  52%|[37m█████▏    [0m| 52/100 [00:08<00:07], 53/100[A
+Calibration:  53%|[37m█████▎    [0m| 53/100 [00:08<00:07], 53/100[A
+Calibration:  53%|[37m█████▎    [0m| 53/100 [00:08<00:07], 54/100[A
+Calibration:  54%|[37m█████▍    [0m| 54/100 [00:08<00:07], 54/100[A
+Calibration:  54%|[37m█████▍    [0m| 54/100 [00:09<00:07], 55/100[A
+Calibration:  55%|[37m█████▌    [0m| 55/100 [00:09<00:07], 55/100[A
+Calibration:  55%|[37m█████▌    [0m| 55/100 [00:09<00:07], 56/100[A
+Calibration:  56%|[37m█████▌    [0m| 56/100 [00:09<00:06], 56/100[A
+Calibration:  56%|[37m█████▌    [0m| 56/100 [00:09<00:06], 57/100[A
+Calibration:  57%|[37m█████▋    [0m| 57/100 [00:09<00:06], 57/100[A
+Calibration:  57%|[37m█████▋    [0m| 57/100 [00:09<00:06], 58/100[A
+Calibration:  58%|[37m█████▊    [0m| 58/100 [00:09<00:06], 58/100[A
+Calibration:  58%|[37m█████▊    [0m| 58/100 [00:09<00:06], 59/100[A
+Calibration:  59%|[37m█████▉    [0m| 59/100 [00:09<00:06], 59/100[A
+Calibration:  59%|[37m█████▉    [0m| 59/100 [00:09<00:06], 60/100[A
+Calibration:  60%|[37m██████    [0m| 60/100 [00:09<00:06], 60/100[A
+Calibration:  60%|[37m██████    [0m| 60/100 [00:09<00:06], 61/100[A
+Calibration:  61%|[37m██████    [0m| 61/100 [00:09<00:06], 61/100[A
+Calibration:  61%|[37m██████    [0m| 61/100 [00:10<00:06], 62/100[A
+Calibration:  62%|[37m██████▏   [0m| 62/100 [00:10<00:05], 62/100[A
+Calibration:  62%|[37m██████▏   [0m| 62/100 [00:10<00:05], 63/100[A
+Calibration:  63%|[37m██████▎   [0m| 63/100 [00:10<00:05], 63/100[A
+Calibration:  63%|[37m██████▎   [0m| 63/100 [00:10<00:05], 64/100[A
+Calibration:  64%|[37m██████▍   [0m| 64/100 [00:10<00:05], 64/100[A
+Calibration:  64%|[37m██████▍   [0m| 64/100 [00:10<00:05], 65/100[A
+Calibration:  65%|[37m██████▌   [0m| 65/100 [00:10<00:05], 65/100[A
+Calibration:  65%|[37m██████▌   [0m| 65/100 [00:10<00:05], 66/100[A
+Calibration:  66%|[37m██████▌   [0m| 66/100 [00:10<00:05], 66/100[A
+Calibration:  66%|[37m██████▌   [0m| 66/100 [00:10<00:05], 67/100[A
+Calibration:  67%|[37m██████▋   [0m| 67/100 [00:10<00:05], 67/100[A
+Calibration:  67%|[37m██████▋   [0m| 67/100 [00:11<00:05], 68/100[A
+Calibration:  68%|[37m██████▊   [0m| 68/100 [00:11<00:05], 68/100[A
+Calibration:  68%|[37m██████▊   [0m| 68/100 [00:11<00:05], 69/100[A
+Calibration:  69%|[37m██████▉   [0m| 69/100 [00:11<00:04], 69/100[A
+Calibration:  69%|[37m██████▉   [0m| 69/100 [00:11<00:04], 70/100[A
+Calibration:  70%|[37m███████   [0m| 70/100 [00:11<00:04], 70/100[A
+Calibration:  70%|[37m███████   [0m| 70/100 [00:11<00:04], 71/100[A
+Calibration:  71%|[37m███████   [0m| 71/100 [00:11<00:04], 71/100[A
+Calibration:  71%|[37m███████   [0m| 71/100 [00:11<00:04], 72/100[A
+Calibration:  72%|[37m███████▏  [0m| 72/100 [00:11<00:04], 72/100[A
+Calibration:  72%|[37m███████▏  [0m| 72/100 [00:11<00:04], 73/100[A
+Calibration:  73%|[37m███████▎  [0m| 73/100 [00:11<00:04], 73/100[A
+Calibration:  73%|[37m███████▎  [0m| 73/100 [00:12<00:04], 74/100[A
+Calibration:  74%|[37m███████▍  [0m| 74/100 [00:12<00:04], 74/100[A
+Calibration:  74%|[37m███████▍  [0m| 74/100 [00:12<00:04], 75/100[A
+Calibration:  75%|[37m███████▌  [0m| 75/100 [00:12<00:03], 75/100[A
+Calibration:  75%|[37m███████▌  [0m| 75/100 [00:12<00:03], 76/100[A
+Calibration:  76%|[37m███████▌  [0m| 76/100 [00:12<00:03], 76/100[A
+Calibration:  76%|[37m███████▌  [0m| 76/100 [00:12<00:03], 77/100[A
+Calibration:  77%|[37m███████▋  [0m| 77/100 [00:12<00:03], 77/100[A
+Calibration:  77%|[37m███████▋  [0m| 77/100 [00:12<00:03], 78/100[A
+Calibration:  78%|[37m███████▊  [0m| 78/100 [00:12<00:03], 78/100[A
+Calibration:  78%|[37m███████▊  [0m| 78/100 [00:12<00:03], 79/100[A
+Calibration:  79%|[37m███████▉  [0m| 79/100 [00:12<00:03], 79/100[A
+Calibration:  79%|[37m███████▉  [0m| 79/100 [00:12<00:03], 80/100[A
+Calibration:  80%|[37m████████  [0m| 80/100 [00:12<00:03], 80/100[A
+Calibration:  80%|[37m████████  [0m| 80/100 [00:13<00:03], 81/100[A
+Calibration:  81%|[37m████████  [0m| 81/100 [00:13<00:02], 81/100[A
+Calibration:  81%|[37m████████  [0m| 81/100 [00:13<00:02], 82/100[A
+Calibration:  82%|[37m████████▏ [0m| 82/100 [00:13<00:02], 82/100[A
+Calibration:  82%|[37m████████▏ [0m| 82/100 [00:13<00:02], 83/100[A
+Calibration:  83%|[37m████████▎ [0m| 83/100 [00:13<00:02], 83/100[A
+Calibration:  83%|[37m████████▎ [0m| 83/100 [00:13<00:02], 84/100[A
+Calibration:  84%|[37m████████▍ [0m| 84/100 [00:13<00:02], 84/100[A
+Calibration:  84%|[37m████████▍ [0m| 84/100 [00:13<00:02], 85/100[A
+Calibration:  85%|[37m████████▌ [0m| 85/100 [00:13<00:02], 85/100[A
+Calibration:  85%|[37m████████▌ [0m| 85/100 [00:13<00:02], 86/100[A
+Calibration:  86%|[37m████████▌ [0m| 86/100 [00:13<00:02], 86/100[A
+Calibration:  86%|[37m████████▌ [0m| 86/100 [00:14<00:02], 87/100[A
+Calibration:  87%|[37m████████▋ [0m| 87/100 [00:14<00:02], 87/100[A
+Calibration:  87%|[37m████████▋ [0m| 87/100 [00:14<00:02], 88/100[A
+Calibration:  88%|[37m████████▊ [0m| 88/100 [00:14<00:01], 88/100[A
+Calibration:  88%|[37m████████▊ [0m| 88/100 [00:14<00:01], 89/100[A
+Calibration:  89%|[37m████████▉ [0m| 89/100 [00:14<00:01], 89/100[A
+Calibration:  89%|[37m████████▉ [0m| 89/100 [00:14<00:01], 90/100[A
+Calibration:  90%|[37m█████████ [0m| 90/100 [00:14<00:01], 90/100[A
+Calibration:  90%|[37m█████████ [0m| 90/100 [00:14<00:01], 91/100[A
+Calibration:  91%|[37m█████████ [0m| 91/100 [00:14<00:01], 91/100[A
+Calibration:  91%|[37m█████████ [0m| 91/100 [00:14<00:01], 92/100[A
+Calibration:  92%|[37m█████████▏[0m| 92/100 [00:14<00:01], 92/100[A
+Calibration:  92%|[37m█████████▏[0m| 92/100 [00:15<00:01], 93/100[A
+Calibration:  93%|[37m█████████▎[0m| 93/100 [00:15<00:01], 93/100[A
+Calibration:  93%|[37m█████████▎[0m| 93/100 [00:15<00:01], 94/100[A
+Calibration:  94%|[37m█████████▍[0m| 94/100 [00:15<00:00], 94/100[A
+Calibration:  94%|[37m█████████▍[0m| 94/100 [00:15<00:00], 95/100[A
+Calibration:  95%|[37m█████████▌[0m| 95/100 [00:15<00:00], 95/100[A
+Calibration:  95%|[37m█████████▌[0m| 95/100 [00:15<00:00], 96/100[A
+Calibration:  96%|[37m█████████▌[0m| 96/100 [00:15<00:00], 96/100[A
+Calibration:  96%|[37m█████████▌[0m| 96/100 [00:15<00:00], 97/100[A
+Calibration:  97%|[37m█████████▋[0m| 97/100 [00:15<00:00], 97/100[A
+Calibration:  97%|[37m█████████▋[0m| 97/100 [00:15<00:00], 98/100[A
+Calibration:  98%|[37m█████████▊[0m| 98/100 [00:15<00:00], 98/100[A
+Calibration:  98%|[37m█████████▊[0m| 98/100 [00:15<00:00], 99/100[A
+Calibration:  99%|[37m█████████▉[0m| 99/100 [00:15<00:00], 99/100[A
+Calibration:  99%|[37m█████████▉[0m| 99/100 [00:16<00:00], 100/100[A
+Calibration: 100%|[37m██████████[0m| 100/100 [00:16<00:00], 100/100[A
+                                                            [ARunning Calibration:  75%|[37m███████▌  [0m| 3/4 [00:17<00:06], Current Graph=npu_0Quantizing NPU Graphs:  75%|[37m███████▌  [0m| 3/4 [00:17<00:06], Current Graph=npu_0
+[4/4] Quant + export:   0%|[37m          [0m| 0/1 [00:00<?][AQuantizing NPU Graphs:  75%|[37m███████▌  [0m| 3/4 [00:17<00:06], Current Graph=npu_0
+[4/4] Quant + export:   0%|[37m          [0m| 0/1 [00:00<?], Graph=npu_0[A
+[4/4] Quant + export: 100%|[37m██████████[0m| 1/1 [00:01<00:00], Graph=npu_0[A
+                                                                     [AQuantizing NPU Graphs: 100%|[37m██████████[0m| 4/4 [00:19<00:00], Current Graph=npu_0                                                                              Compiling Model :  40%|████      | 0.4/1.0 [00:30<01:03, 105.01s/model ]
+Optimizing NPU models:   0%|          | 0/1 [00:00<?, ?model/s][A
+
+Optimizing graph:   0%|          | 0/4 [00:00<?, ?step/s][A[A
+
+Running initial node optimizer:   0%|          | 0/4 [00:00<?, ?step/s][A[A
+
+Running initial node optimizer:  25%|██▌       | 1/4 [00:00<00:00,  6.25step/s][A[A                                                                        
+
+                                                                               [A[A
+                                                               [A[INFO] - Inserting preprocessing operations to NPU graph: 3 nodes added
+Compiling Model :  40%|████      | 0.4/1.0 [00:30<01:03, 105.01s/model ]
+
+Running initial node optimizer:  25%|██▌       | 1/4 [00:00<00:00,  6.25step/s][A[A
+Optimizing NPU models:   0%|          | 0/1 [00:00<?, ?model/s][A                                                                        
+
+                                                                               [A[A
+                                                               [A[INFO] - Added nodes: Div(x=255) -> Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+Compiling Model :  40%|████      | 0.4/1.0 [00:30<01:03, 105.01s/model ]
+
+Running initial node optimizer:  25%|██▌       | 1/4 [00:00<00:00,  6.25step/s][A[A
+Optimizing NPU models:   0%|          | 0/1 [00:00<?, ?model/s][A                                                                        
+
+                                                                               [A[A
+                                                               [A[INFO] - Skipped nodes (cannot be inserted in NPU graph): convertColor, expandDim
+Compiling Model :  40%|████      | 0.4/1.0 [00:30<01:03, 105.01s/model ]
+
+Running initial node optimizer:  25%|██▌       | 1/4 [00:00<00:00,  6.25step/s][A[A
+Optimizing NPU models:   0%|          | 0/1 [00:00<?, ?model/s][A
+
+Change Ops to Internal Ops:  25%|██▌       | 1/4 [00:00<00:00,  6.25step/s]    [A[A
+
+Data Format Conversion for NPU:  50%|█████     | 2/4 [00:00<00:00,  6.25step/s][A[A
+
+Data Format Conversion for PPU:  75%|███████▌  | 3/4 [00:00<00:00,  6.25step/s][A[A
+
+Deciding Input Formats for NPU:  75%|███████▌  | 3/4 [00:00<00:00,  6.25step/s][A[A                                                                        
+
+                                                                               [A[A
+                                                               [A[INFO] - 
+Compiling Model :  40%|████      | 0.4/1.0 [00:31<01:03, 105.01s/model ]
+
+Deciding Input Formats for NPU:  75%|███████▌  | 3/4 [00:00<00:00,  6.25step/s][A[A
+Optimizing NPU models:   0%|          | 0/1 [00:00<?, ?model/s][A                                                                        
+
+                                                                               [A[A
+                                                               [A[INFO] - ================================================================================
+Compiling Model :  40%|████      | 0.4/1.0 [00:31<01:03, 105.01s/model ]
+
+Deciding Input Formats for NPU:  75%|███████▌  | 3/4 [00:00<00:00,  6.25step/s][A[A
+Optimizing NPU models:   0%|          | 0/1 [00:00<?, ?model/s][A                                                                        
+
+                                                                               [A[A
+                                                               [A[INFO] -   INPUT PREPROCESSING GUIDANCE
+Compiling Model :  40%|████      | 0.4/1.0 [00:31<01:03, 105.01s/model ]
+
+Deciding Input Formats for NPU:  75%|███████▌  | 3/4 [00:00<00:00,  6.25step/s][A[A
+Optimizing NPU models:   0%|          | 0/1 [00:00<?, ?model/s][A                                                                        
+
+                                                                               [A[A
+                                                               [A[INFO] - ================================================================================
+Compiling Model :  40%|████      | 0.4/1.0 [00:31<01:03, 105.01s/model ]
+
+Deciding Input Formats for NPU:  75%|███████▌  | 3/4 [00:00<00:00,  6.25step/s][A[A
+Optimizing NPU models:   0%|          | 0/1 [00:00<?, ?model/s][A                                                                        
+
+                                                                               [A[A
+                                                               [A[INFO] -   [pixel_values] Format: FORMATTER | Fused ops: Transpose(HWC→CHW) → Div(x=255) → Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+Compiling Model :  40%|████      | 0.4/1.0 [00:31<01:03, 105.01s/model ]
+
+Deciding Input Formats for NPU:  75%|███████▌  | 3/4 [00:00<00:00,  6.25step/s][A[A
+Optimizing NPU models:   0%|          | 0/1 [00:00<?, ?model/s][A                                                                        
+
+                                                                               [A[A
+                                                               [A[INFO] -            ONNX input : float32 NCHW [1, 3, 800, 1066]
+Compiling Model :  40%|████      | 0.4/1.0 [00:31<01:03, 105.01s/model ]
+
+Deciding Input Formats for NPU:  75%|███████▌  | 3/4 [00:00<00:00,  6.25step/s][A[A
+Optimizing NPU models:   0%|          | 0/1 [00:00<?, ?model/s][A                                                                        
+
+                                                                               [A[A
+                                                               [A[INFO] -            NPU  input : uint8 NHWC [1, 800, 1066, 3]
+Compiling Model :  40%|████      | 0.4/1.0 [00:31<01:03, 105.01s/model ]
+
+Deciding Input Formats for NPU:  75%|███████▌  | 3/4 [00:00<00:00,  6.25step/s][A[A
+Optimizing NPU models:   0%|          | 0/1 [00:00<?, ?model/s][A                                                                        
+
+                                                                               [A[A
+                                                               [A[INFO] - 
+Compiling Model :  40%|████      | 0.4/1.0 [00:31<01:03, 105.01s/model ]
+
+Deciding Input Formats for NPU:  75%|███████▌  | 3/4 [00:00<00:00,  6.25step/s][A[A
+Optimizing NPU models:   0%|          | 0/1 [00:00<?, ?model/s][A                                                                        
+
+                                                                               [A[A
+                                                               [A[INFO] -   For NPU inference, provide uint8 HWC input directly.
+Compiling Model :  40%|████      | 0.4/1.0 [00:31<01:03, 105.01s/model ]
+
+Deciding Input Formats for NPU:  75%|███████▌  | 3/4 [00:00<00:00,  6.25step/s][A[A
+Optimizing NPU models:   0%|          | 0/1 [00:00<?, ?model/s][A                                                                        
+
+                                                                               [A[A
+                                                               [A[INFO] -   You should SKIP these preprocessing in NPU inference. (already handled by NPU):
+Compiling Model :  40%|████      | 0.4/1.0 [00:31<01:03, 105.01s/model ]
+
+Deciding Input Formats for NPU:  75%|███████▌  | 3/4 [00:00<00:00,  6.25step/s][A[A
+Optimizing NPU models:   0%|          | 0/1 [00:00<?, ?model/s][A                                                                        
+
+                                                                               [A[A
+                                                               [A[INFO] -     • div/mul   : pixel value scaling            (fused as Mul node)
+Compiling Model :  40%|████      | 0.4/1.0 [00:31<01:03, 105.01s/model ]
+
+Deciding Input Formats for NPU:  75%|███████▌  | 3/4 [00:00<00:00,  6.25step/s][A[A
+Optimizing NPU models:   0%|          | 0/1 [00:00<?, ?model/s][A                                                                        
+
+                                                                               [A[A
+                                                               [A[INFO] -     • normalize : channel-wise normalization     (fused as Add+Mul nodes)
+Compiling Model :  40%|████      | 0.4/1.0 [00:31<01:03, 105.01s/model ]
+
+Deciding Input Formats for NPU:  75%|███████▌  | 3/4 [00:00<00:00,  6.25step/s][A[A
+Optimizing NPU models:   0%|          | 0/1 [00:00<?, ?model/s][A                                                                        
+
+                                                                               [A[A
+                                                               [A[INFO] -     • transpose : HWC → CHW layout conversion   (handled by NPU input format)
+Compiling Model :  40%|████      | 0.4/1.0 [00:31<01:03, 105.01s/model ]
+
+Deciding Input Formats for NPU:  75%|███████▌  | 3/4 [00:00<00:00,  6.25step/s][A[A
+Optimizing NPU models:   0%|          | 0/1 [00:00<?, ?model/s][A                                                                        
+
+                                                                               [A[A
+                                                               [A[INFO] - ================================================================================
+Compiling Model :  40%|████      | 0.4/1.0 [00:31<01:03, 105.01s/model ]
+
+Deciding Input Formats for NPU:  75%|███████▌  | 3/4 [00:00<00:00,  6.25step/s][A[A
+Optimizing NPU models:   0%|          | 0/1 [00:00<?, ?model/s][A                                                                        
+
+                                                                               [A[A
+                                                               [A[INFO] - 
+Compiling Model :  40%|████      | 0.4/1.0 [00:31<01:03, 105.01s/model ]
+
+Deciding Input Formats for NPU:  75%|███████▌  | 3/4 [00:00<00:00,  6.25step/s][A[A
+Optimizing NPU models:   0%|          | 0/1 [00:00<?, ?model/s][A
+
+                                                                               [A[A
+Optimizing NPU models: 100%|██████████| 1/1 [00:00<00:00,  4.23model/s][A
+                                                                       [A
+Lowering for Backend:   0%|          | 0/1 [00:00<?, ?model/s][A
+                                                              [ACompiling Model :  70%|███████   | 0.7/1.0 [00:31<00:11, 39.57s/model ] 
+Preparing Frontend IR:   0%|          | 0/279 [00:00<?, ?op/s][A
+Preparing Frontend IR:  76%|███████▌  | 211/279 [00:00<00:00, 2064.04op/s][A
+                                                                          [ACompiling Model :  73%|███████▎  | 0.7/1.0 [00:32<00:10, 40.17s/model ]
+Building layer attributes:   0%|          | 0/85 [00:00<?, ?layer/s][A
+                                                                    [A
+Building connections:   0%|          | 0/85 [00:00<?, ?connection/s][A
+                                                                    [A
+Build attributes:   0%|          | 0/85 [00:00<?, ?layer/s][A
+                                                           [A
+Searching for optimal schedule:   0%|          | 0/85 [00:00<?, ?it/s][ACompiling Model :  75%|███████▍  | 0.7/1.0 [00:32<00:09, 38.52s/model ]
+Searching for optimal schedule:   1%|          | 1/85 [00:00<00:13,  6.20it/s][A
+Searching for optimal schedule:   2%|▏         | 2/85 [00:00<00:13,  6.10it/s][A
+Searching for optimal schedule:   5%|▍         | 4/85 [00:00<00:08, 10.09it/s][A
+Searching for optimal schedule:   8%|▊         | 7/85 [00:00<00:07, 10.45it/s][A
+Searching for optimal schedule:  11%|█         | 9/85 [00:01<00:08,  9.08it/s][A
+Searching for optimal schedule:  13%|█▎        | 11/85 [00:01<00:08,  8.47it/s][A
+Searching for optimal schedule:  15%|█▌        | 13/85 [00:01<00:07,  9.50it/s][A
+Searching for optimal schedule:  18%|█▊        | 15/85 [00:01<00:08,  8.48it/s][A
+Searching for optimal schedule:  20%|██        | 17/85 [00:01<00:07,  8.53it/s][A
+Searching for optimal schedule:  21%|██        | 18/85 [00:02<00:09,  7.35it/s][ACompiling Model :  76%|███████▌  | 0.8/1.0 [00:34<00:11, 47.03s/model ]
+Searching for optimal schedule:  25%|██▍       | 21/85 [00:02<00:07,  8.35it/s][A
+Searching for optimal schedule:  28%|██▊       | 24/85 [00:02<00:06,  8.96it/s][A
+Searching for optimal schedule:  29%|██▉       | 25/85 [00:02<00:06,  9.01it/s][A
+Searching for optimal schedule:  32%|███▏      | 27/85 [00:03<00:06,  8.58it/s][A
+Searching for optimal schedule:  34%|███▍      | 29/85 [00:03<00:05, 10.36it/s][A
+Searching for optimal schedule:  36%|███▋      | 31/85 [00:03<00:06,  7.73it/s][A
+Searching for optimal schedule:  40%|████      | 34/85 [00:03<00:05,  8.58it/s][A
+Searching for optimal schedule:  44%|████▎     | 37/85 [00:04<00:05,  9.19it/s][ACompiling Model :  77%|███████▋  | 0.8/1.0 [00:36<00:13, 57.48s/model ]
+Searching for optimal schedule:  47%|████▋     | 40/85 [00:04<00:04,  9.58it/s][A
+Searching for optimal schedule:  49%|████▉     | 42/85 [00:04<00:04, 10.41it/s][A
+Searching for optimal schedule:  52%|█████▏    | 44/85 [00:04<00:04,  9.66it/s][A
+Searching for optimal schedule:  54%|█████▍    | 46/85 [00:05<00:04,  9.14it/s][A
+Searching for optimal schedule:  58%|█████▊    | 49/85 [00:05<00:03,  9.78it/s][A
+Searching for optimal schedule:  60%|██████    | 51/85 [00:05<00:03,  9.29it/s][A
+
+  L1 (1 combos):   0%|          | 0/1 [00:00<?, ?it/s][A[A
+
+
+Searching for optimal schedule:   0%|          | 0/2 [00:00<?, ?it/s][A[A[A
+
+
+Searching for optimal schedule: 100%|██████████| 2/2 [00:00<00:00, 14.33it/s][A[A[A
+
+
+                                                                             [A[A[A
+
+  L1 (1 combos): 100%|██████████| 1/1 [00:00<00:00,  7.13it/s][A[A
+
+                                                              [A[A
+
+Searching for optimal schedule:   0%|          | 0/2 [00:00<?, ?it/s][A[A
+
+                                                                     [A[A
+Searching for optimal schedule:  61%|██████    | 52/85 [00:05<00:04,  7.79it/s][A
+Searching for optimal schedule:  62%|██████▏   | 53/85 [00:06<00:04,  7.10it/s][A
+
+  L1 (1 combos):   0%|          | 0/1 [00:00<?, ?it/s][A[A
+
+
+Searching for optimal schedule:   0%|          | 0/2 [00:00<?, ?it/s][A[A[A
+
+
+                                                                     [A[A[A
+
+                                                      [A[A
+
+Searching for optimal schedule:   0%|          | 0/2 [00:00<?, ?it/s][A[A
+
+                                                                     [A[A
+Searching for optimal schedule:  65%|██████▍   | 55/85 [00:06<00:03,  7.88it/s][A
+Searching for optimal schedule:  66%|██████▌   | 56/85 [00:06<00:04,  7.08it/s][ACompiling Model :  78%|███████▊  | 0.8/1.0 [00:39<00:16, 73.08s/model ]
+Searching for optimal schedule:  68%|██████▊   | 58/85 [00:06<00:03,  8.45it/s][A
+
+  L1 (2 combos):   0%|          | 0/2 [00:00<?, ?it/s][A[A
+
+
+Searching for optimal schedule:   0%|          | 0/2 [00:00<?, ?it/s][A[A[A
+
+
+Searching for optimal schedule:  50%|█████     | 1/2 [00:00<00:00,  9.08it/s][A[A[A
+
+
+                                                                             [A[A[A
+
+  L1 (2 combos):  50%|█████     | 1/2 [00:00<00:00,  8.21it/s][A[A
+
+
+Searching for optimal schedule:   0%|          | 0/3 [00:00<?, ?it/s][A[A[A
+
+
+Searching for optimal schedule:  67%|██████▋   | 2/3 [00:00<00:00, 14.62it/s][A[A[A
+
+
+                                                                             [A[A[A
+
+  L1 (2 combos): 100%|██████████| 2/2 [00:00<00:00,  6.05it/s][A[A
+
+                                                              [A[A
+
+  L2 (1 combos):   0%|          | 0/1 [00:00<?, ?it/s][A[A
+
+
+Searching for optimal schedule:   0%|          | 0/3 [00:00<?, ?it/s][A[A[A
+
+
+Searching for optimal schedule:  67%|██████▋   | 2/3 [00:00<00:00, 14.68it/s][A[A[A
+
+
+                                                                             [A[A[A
+
+  L2 (1 combos): 100%|██████████| 1/1 [00:00<00:00,  6.77it/s][A[A
+
+                                                              [A[A
+
+Searching for optimal schedule:   0%|          | 0/2 [00:00<?, ?it/s][A[A
+
+                                                                     [A[A
+Searching for optimal schedule:  69%|██████▉   | 59/85 [00:07<00:05,  4.66it/s][A
+Searching for optimal schedule:  73%|███████▎  | 62/85 [00:07<00:03,  7.53it/s][A
+Searching for optimal schedule:  76%|███████▋  | 65/85 [00:07<00:02,  8.56it/s][A
+Searching for optimal schedule:  79%|███████▉  | 67/85 [00:07<00:01,  9.74it/s][A
+Searching for optimal schedule:  81%|████████  | 69/85 [00:07<00:01,  9.60it/s][A
+Searching for optimal schedule:  84%|████████▎ | 71/85 [00:08<00:01, 10.79it/s][ACompiling Model :  79%|███████▊  | 0.8/1.0 [00:40<00:17, 81.45s/model ]
+Searching for optimal schedule:  96%|█████████▋| 82/85 [00:14<00:01,  2.32it/s][A
+
+  L1 (1 combos):   0%|          | 0/1 [00:00<?, ?it/s][A[A
+
+
+Searching for optimal schedule:   0%|          | 0/2 [00:00<?, ?it/s][A[A[A
+
+
+                                                                     [A[A[A
+
+                                                      [A[A
+
+Searching for optimal schedule:   0%|          | 0/2 [00:00<?, ?it/s][A[A
+
+                                                                     [A[A
+                                                                               [A
+Memory Management:   0%|          | 0/85 [00:00<?, ?schedule/s][A
+Memory Management:   1%|          | 1/85 [00:00<01:11,  1.18schedule/s][A
+Memory Management:   2%|▏         | 2/85 [00:01<01:05,  1.27schedule/s][A
+Memory Management:   4%|▎         | 3/85 [00:02<00:51,  1.58schedule/s][A
+Memory Management:   5%|▍         | 4/85 [00:02<00:36,  2.21schedule/s][A
+Memory Management:   6%|▌         | 5/85 [00:02<00:27,  2.89schedule/s][A
+Memory Management:   7%|▋         | 6/85 [00:02<00:25,  3.11schedule/s][A
+Memory Management:   8%|▊         | 7/85 [00:02<00:21,  3.61schedule/s][A
+Memory Management:   9%|▉         | 8/85 [00:03<00:24,  3.21schedule/s][A
+Memory Management:  11%|█         | 9/85 [00:03<00:20,  3.65schedule/s][A
+Memory Management:  12%|█▏        | 10/85 [00:03<00:20,  3.74schedule/s][A
+Memory Management:  13%|█▎        | 11/85 [00:03<00:20,  3.54schedule/s][A
+Memory Management:  14%|█▍        | 12/85 [00:04<00:18,  3.94schedule/s][A
+Memory Management:  15%|█▌        | 13/85 [00:04<00:18,  3.95schedule/s][A
+Memory Management:  16%|█▋        | 14/85 [00:04<00:19,  3.67schedule/s][A
+Memory Management:  18%|█▊        | 15/85 [00:04<00:17,  4.12schedule/s][A
+Memory Management:  19%|█▉        | 16/85 [00:05<00:15,  4.53schedule/s][A
+Memory Management:  21%|██        | 18/85 [00:05<00:11,  5.93schedule/s][A
+Memory Management:  24%|██▎       | 20/85 [00:05<00:10,  6.49schedule/s][A
+Memory Management:  25%|██▍       | 21/85 [00:05<00:09,  6.86schedule/s][A
+Memory Management:  27%|██▋       | 23/85 [00:05<00:07,  7.98schedule/s][A
+Memory Management:  28%|██▊       | 24/85 [00:06<00:08,  7.08schedule/s][A
+Memory Management:  31%|███       | 26/85 [00:06<00:07,  8.14schedule/s][A
+Memory Management:  32%|███▏      | 27/85 [00:06<00:07,  8.24schedule/s][A
+Memory Management:  33%|███▎      | 28/85 [00:06<00:07,  7.55schedule/s][A
+Memory Management:  35%|███▌      | 30/85 [00:06<00:05,  9.87schedule/s][A
+Memory Management:  38%|███▊      | 32/85 [00:06<00:04, 10.70schedule/s][A
+Memory Management:  41%|████      | 35/85 [00:06<00:03, 12.70schedule/s][A
+Memory Management:  45%|████▍     | 38/85 [00:07<00:03, 14.01schedule/s][A
+Memory Management:  48%|████▊     | 41/85 [00:07<00:02, 14.87schedule/s][A
+Memory Management:  52%|█████▏    | 44/85 [00:07<00:03, 13.51schedule/s][A
+Memory Management:  55%|█████▌    | 47/85 [00:07<00:02, 15.28schedule/s][A
+Memory Management:  58%|█████▊    | 49/85 [00:07<00:02, 15.91schedule/s][A
+Memory Management:  60%|██████    | 51/85 [00:08<00:02, 14.47schedule/s][A
+Memory Management:  64%|██████▎   | 54/85 [00:08<00:01, 17.26schedule/s][A
+Memory Management:  67%|██████▋   | 57/85 [00:08<00:01, 19.96schedule/s][A
+Memory Management:  74%|███████▍  | 63/85 [00:08<00:01, 16.04schedule/s][A
+Memory Management:  76%|███████▋  | 65/85 [00:09<00:02,  8.04schedule/s][A
+Memory Management:  79%|███████▉  | 67/85 [00:09<00:01,  9.17schedule/s][A
+Memory Management:  81%|████████  | 69/85 [00:10<00:02,  5.69schedule/s][A
+Memory Management:  84%|████████▎ | 71/85 [00:10<00:02,  6.45schedule/s][A
+Memory Management:  96%|█████████▋| 82/85 [00:10<00:00, 13.94schedule/s][A
+                                                                        [ACompiling Model :  81%|████████▏ | 0.8/1.0 [00:58<00:45, 246.99s/model ]
+Processing datablocks:   0%|          | 0/85 [00:00<?, ?schedule/s][A
+
+Processing:   0%|          | 0/5 [00:00<?, ?it/s][A[A
+
+                                                 [A[A
+
+Processing:   0%|          | 0/54 [00:00<?, ?it/s][A[A
+
+                                                  [A[A
+
+Processing:   0%|          | 0/67 [00:00<?, ?it/s][A[A
+
+                                                  [A[A
+
+Processing:   0%|          | 0/20 [00:00<?, ?it/s][A[A
+
+                                                  [A[A
+
+Processing:   0%|          | 0/7 [00:00<?, ?it/s][A[A
+
+                                                 [A[A
+
+Processing:   0%|          | 0/8 [00:00<?, ?it/s][A[A
+
+                                                 [A[A
+
+Processing:   0%|          | 0/20 [00:00<?, ?it/s][A[A
+
+                                                  [A[A
+Processing datablocks:   8%|▊         | 7/85 [00:00<00:01, 62.39schedule/s][A
+
+Processing:   0%|          | 0/100 [00:00<?, ?it/s][A[A
+
+                                                   [A[A
+
+Processing:   0%|          | 0/20 [00:00<?, ?it/s][A[A
+
+                                                  [A[A
+
+Processing:   0%|          | 0/8 [00:00<?, ?it/s][A[A
+
+                                                 [A[A
+
+Processing:   0%|          | 0/100 [00:00<?, ?it/s][A[A
+
+                                                   [A[A
+
+Processing:   0%|          | 0/20 [00:00<?, ?it/s][A[A
+
+                                                  [A[A
+
+Processing:   0%|          | 0/8 [00:00<?, ?it/s][A[A
+
+                                                 [A[A
+
+Processing:   0%|          | 0/100 [00:00<?, ?it/s][A[A
+
+                                                   [A[A
+Processing datablocks:  16%|█▋        | 14/85 [00:00<00:02, 29.29schedule/s][A
+
+Processing:   0%|          | 0/34 [00:00<?, ?it/s][A[A
+
+                                                  [A[A
+
+Processing:   0%|          | 0/10 [00:00<?, ?it/s][A[A
+
+                                                  [A[A
+
+Processing:   0%|          | 0/10 [00:00<?, ?it/s][A[A
+
+                                                  [A[A
+
+Processing:   0%|          | 0/50 [00:00<?, ?it/s][A[A
+
+                                                  [A[A
+
+Processing:   0%|          | 0/10 [00:00<?, ?it/s][A[A
+
+                                                  [A[A
+
+Processing:   0%|          | 0/4 [00:00<?, ?it/s][A[A
+
+                                                 [A[A
+
+Processing:   0%|          | 0/50 [00:00<?, ?it/s][A[A
+
+                                                  [A[A
+Processing datablocks:  25%|██▍       | 21/85 [00:00<00:01, 35.64schedule/s][A
+
+Processing:   0%|          | 0/10 [00:00<?, ?it/s][A[A
+
+                                                  [A[A
+
+Processing:   0%|          | 0/4 [00:00<?, ?it/s][A[A
+
+                                                 [A[A
+
+Processing:   0%|          | 0/50 [00:00<?, ?it/s][A[A
+
+                                                  [A[A
+
+Processing:   0%|          | 0/10 [00:00<?, ?it/s][A[A
+
+                                                  [A[A
+
+Processing:   0%|          | 0/4 [00:00<?, ?it/s][A[A
+
+                                                 [A[A
+
+Processing:   0%|          | 0/50 [00:00<?, ?it/s][A[A
+
+                                                  [A[A
+Processing datablocks:  32%|███▏      | 27/85 [00:00<00:01, 40.35schedule/s][A
+
+Processing:   0%|          | 0/17 [00:00<?, ?it/s][A[A
+
+                                                  [A[A
+
+Processing:   0%|          | 0/25 [00:00<?, ?it/s][A[A
+
+                                                  [A[A
+
+Processing:   0%|          | 0/9 [00:00<?, ?it/s][A[A
+
+                                                 [A[A
+
+Processing:   0%|          | 0/25 [00:00<?, ?it/s][A[A
+
+                                                  [A[A
+
+Processing:   0%|          | 0/9 [00:00<?, ?it/s][A[A
+
+                                                 [A[A
+Processing datablocks:  38%|███▊      | 32/85 [00:00<00:01, 37.29schedule/s][A
+
+Processing:   0%|          | 0/4 [00:00<?, ?it/s][A[A
+
+                                                 [A[A
+
+Processing:   0%|          | 0/25 [00:00<?, ?it/s][A[A
+
+                                                  [A[A
+
+Processing:   0%|          | 0/9 [00:00<?, ?it/s][A[A
+
+                                                 [A[A
+
+Processing:   0%|          | 0/4 [00:00<?, ?it/s][A[A
+
+                                                 [A[A
+
+Processing:   0%|          | 0/25 [00:00<?, ?it/s][A[A
+
+                                                  [A[A
+
+Processing:   0%|          | 0/9 [00:00<?, ?it/s][A[A
+
+                                                 [A[A
+Processing datablocks:  45%|████▍     | 38/85 [00:00<00:01, 42.15schedule/s][A
+
+Processing:   0%|          | 0/4 [00:00<?, ?it/s][A[A
+
+                                                 [A[A
+
+Processing:   0%|          | 0/25 [00:00<?, ?it/s][A[A
+
+                                                  [A[A
+
+Processing:   0%|          | 0/9 [00:00<?, ?it/s][A[A
+
+                                                 [A[A
+
+Processing:   0%|          | 0/4 [00:00<?, ?it/s][A[A
+
+                                                 [A[A
+
+Processing:   0%|          | 0/25 [00:00<?, ?it/s][A[A
+
+                                                  [A[A
+
+Processing:   0%|          | 0/9 [00:00<?, ?it/s][A[A
+
+                                                 [A[A
+Processing datablocks:  52%|█████▏    | 44/85 [00:01<00:00, 46.08schedule/s][A
+
+Processing:   0%|          | 0/4 [00:00<?, ?it/s][A[A
+
+                                                 [A[A
+
+Processing:   0%|          | 0/25 [00:00<?, ?it/s][A[A
+
+                                                  [A[A
+
+Processing:   0%|          | 0/9 [00:00<?, ?it/s][A[A
+
+                                                 [A[A
+
+Processing:   0%|          | 0/50 [00:00<?, ?it/s][A[A
+
+                                                  [A[A
+
+Processing:   0%|          | 0/4 [00:00<?, ?it/s][A[A
+
+                                                 [A[A
+Processing datablocks:  58%|█████▊    | 49/85 [00:01<00:00, 43.90schedule/s][A
+
+Processing:   0%|          | 0/50 [00:00<?, ?it/s][A[A
+
+                                                  [A[A
+
+Processing:   0%|          | 0/5 [00:00<?, ?it/s][A[A
+
+                                                 [A[A
+
+Processing:   0%|          | 0/2 [00:00<?, ?it/s][A[A
+
+                                                 [A[A
+
+Processing:   0%|          | 0/8 [00:00<?, ?it/s][A[A
+
+                                                 [A[A
+
+Processing:   0%|          | 0/5 [00:00<?, ?it/s][A[A
+
+                                                 [A[A
+
+Processing:   0%|          | 0/2 [00:00<?, ?it/s][A[A
+
+                                                 [A[A
+
+Processing:   0%|          | 0/8 [00:00<?, ?it/s][A[A
+
+                                                 [A[A
+
+Processing:   0%|          | 0/4 [00:00<?, ?it/s][A[A
+
+                                                 [A[A
+
+Processing:   0%|          | 0/1 [00:00<?, ?it/s][A[A
+
+                                                 [A[A
+
+Processing:   0%|          | 0/4 [00:00<?, ?it/s][A[A
+
+                                                 [A[A
+
+Processing:   0%|          | 0/1 [00:00<?, ?it/s][A[A
+
+                                                 [A[A
+
+Processing:   0%|          | 0/1 [00:00<?, ?it/s][A[A
+
+                                                 [A[A
+
+Processing:   0%|          | 0/2 [00:00<?, ?it/s][A[A
+
+                                                 [A[A
+Processing datablocks:  73%|███████▎  | 62/85 [00:01<00:00, 65.38schedule/s][A
+
+Processing:   0%|          | 0/2 [00:00<?, ?it/s][A[A
+
+                                                 [A[A
+
+Processing:   0%|          | 0/1 [00:00<?, ?it/s][A[A
+
+                                                 [A[A
+
+Processing:   0%|          | 0/1 [00:00<?, ?it/s][A[A
+
+                                                 [A[A
+
+Processing:   0%|          | 0/1 [00:00<?, ?it/s][A[A
+
+                                                 [A[A
+
+Processing:   0%|          | 0/100 [00:00<?, ?it/s][A[A
+
+                                                   [A[A
+
+Processing:   0%|          | 0/1 [00:00<?, ?it/s][A[A
+
+                                                 [A[A
+
+Processing:   0%|          | 0/1 [00:00<?, ?it/s][A[A
+
+                                                 [A[A
+
+Processing:   0%|          | 0/1 [00:00<?, ?it/s][A[A
+
+                                                 [A[A
+Processing datablocks:  82%|████████▏ | 70/85 [00:01<00:00, 55.92schedule/s][A
+
+Processing:   0%|          | 0/100 [00:00<?, ?it/s][A[A
+
+                                                   [A[A
+
+Processing:   0%|          | 0/1 [00:00<?, ?it/s][A[A
+
+                                                 [A[A
+
+Processing:   0%|          | 0/1 [00:00<?, ?it/s][A[A
+
+                                                 [A[A
+
+Processing:   0%|          | 0/1 [00:00<?, ?it/s][A[A
+
+                                                 [A[A
+
+Processing:   0%|          | 0/1 [00:00<?, ?it/s][A[A
+
+                                                 [A[A
+
+Processing:   0%|          | 0/1 [00:00<?, ?it/s][A[A
+
+                                                 [A[A
+
+Processing:   0%|          | 0/29 [00:00<?, ?it/s][A[A
+
+Processing:  83%|████████▎ | 24/29 [00:00<00:00, 238.67it/s][A[A
+
+                                                            [A[A
+Processing datablocks:  91%|█████████ | 77/85 [00:01<00:00, 35.49schedule/s][A
+
+Processing:   0%|          | 0/1 [00:00<?, ?it/s][A[A
+
+                                                 [A[A
+
+Processing:   0%|          | 0/4 [00:00<?, ?it/s][A[A
+
+                                                 [A[A
+
+Processing:   0%|          | 0/1 [00:00<?, ?it/s][A[A
+
+                                                 [A[A
+
+Processing:   0%|          | 0/1 [00:00<?, ?it/s][A[A
+
+                                                 [A[A
+
+Processing:   0%|          | 0/56 [00:00<?, ?it/s][A[A
+
+                                                  [A[A
+
+Processing:   0%|          | 0/1 [00:00<?, ?it/s][A[A
+
+                                                 [A[A
+
+Processing:   0%|          | 0/47 [00:00<?, ?it/s][A[A
+
+                                                  [A[A
+Processing datablocks:  99%|█████████▉| 84/85 [00:02<00:00, 35.84schedule/s][A
+
+Processing:   0%|          | 0/1 [00:00<?, ?it/s][A[A
+
+                                                 [A[A
+                                                                            [A
+Processing:   0%|          | 0/1 [00:00<?, ?it/s][A
+                                                 [ACompiling Model :  83%|████████▎ | 0.8/1.0 [01:01<00:36, 222.10s/model ]
+Setting DMA Registers:   0%|          | 0/85 [00:00<?, ?schedule/s][A
+Setting DMA Registers:   9%|▉         | 8/85 [00:00<00:01, 65.96schedule/s][A
+Setting DMA Registers:  18%|█▊        | 15/85 [00:00<00:01, 46.22schedule/s][A
+Setting DMA Registers:  25%|██▍       | 21/85 [00:00<00:01, 45.77schedule/s][A
+Setting DMA Registers:  32%|███▏      | 27/85 [00:00<00:01, 46.82schedule/s][A
+Setting DMA Registers:  40%|████      | 34/85 [00:00<00:01, 50.42schedule/s][A
+Setting DMA Registers:  48%|████▊     | 41/85 [00:00<00:00, 55.04schedule/s][A
+Setting DMA Registers:  55%|█████▌    | 47/85 [00:00<00:00, 55.68schedule/s][A
+Setting DMA Registers:  67%|██████▋   | 57/85 [00:01<00:00, 43.13schedule/s][A
+Setting DMA Registers:  91%|█████████ | 77/85 [00:01<00:00, 57.26schedule/s][A
+Setting DMA Registers:  98%|█████████▊| 83/85 [00:02<00:00, 18.58schedule/s][A
+                                                                            [A
+Building RF data:   0%|          | 0/85 [00:00<?, ?schedule/s][A
+                                                              [ACompiling Model :  85%|████████▍ | 0.8/1.0 [01:03<00:32, 215.02s/model ]
+Generate Register Data:   0%|          | 0/85 [00:00<?, ?schedule/s][A
+Generate Register Data:   2%|▏         | 2/85 [00:00<00:11,  7.13schedule/s][ACompiling Model :  86%|████████▌ | 0.9/1.0 [01:04<00:25, 185.18s/model ]
+Generate Register Data:   9%|▉         | 8/85 [00:00<00:03, 20.17schedule/s][A
+Generate Register Data:  13%|█▎        | 11/85 [00:00<00:03, 22.51schedule/s][ACompiling Model :  87%|████████▋ | 0.9/1.0 [01:04<00:19, 153.73s/model ]
+Generate Register Data:  16%|█▋        | 14/85 [00:00<00:02, 24.52schedule/s][ACompiling Model :  88%|████████▊ | 0.9/1.0 [01:04<00:14, 124.16s/model ]
+Generate Register Data:  25%|██▍       | 21/85 [00:00<00:01, 34.50schedule/s][ACompiling Model :  89%|████████▉ | 0.9/1.0 [01:04<00:10, 93.77s/model ] 
+Generate Register Data:  32%|███▏      | 27/85 [00:01<00:02, 24.32schedule/s][ACompiling Model :  90%|█████████ | 0.9/1.0 [01:05<00:07, 79.20s/model ]
+Generate Register Data:  44%|████▎     | 37/85 [00:01<00:01, 37.84schedule/s][ACompiling Model :  92%|█████████▏| 0.9/1.0 [01:05<00:03, 48.89s/model ]
+Generate Register Data:  56%|█████▋    | 48/85 [00:01<00:00, 51.19schedule/s][ACompiling Model :  94%|█████████▎| 0.9/1.0 [01:05<00:02, 38.55s/model ]
+Generate Register Data:  79%|███████▉  | 67/85 [00:01<00:00, 79.06schedule/s][ACompiling Model :  97%|█████████▋| 1.0/1.0 [01:05<00:00, 20.20s/model ]Compiling Model :  99%|█████████▉| 1.0/1.0 [01:05<00:00, 16.47s/model ]
+Generate Register Data:  99%|█████████▉| 84/85 [00:01<00:00, 76.25schedule/s][A
+                                                                             [A
+Saving outputs:   0%|          | 0/12 [00:00<?, ?step/s][A
+Creating directories:   0%|          | 0/12 [00:00<?, ?step/s][A
+Generating RMAP:   0%|          | 0/12 [00:00<?, ?step/s]     [A
+Generating RMAP:  17%|█▋        | 2/12 [00:03<00:18,  1.82s/step][A
+Writing RMAP:  17%|█▋        | 2/12 [00:03<00:18,  1.82s/step]   [A
+Generating RMAP meta info:  17%|█▋        | 2/12 [00:03<00:18,  1.82s/step][A
+Generating simulator info:  17%|█▋        | 2/12 [00:03<00:18,  1.82s/step][A
+Writing simulator info:  17%|█▋        | 2/12 [00:03<00:18,  1.82s/step]   [A
+Generating weights:  17%|█▋        | 2/12 [00:03<00:18,  1.82s/step]    [A
+Generating weights:  58%|█████▊    | 7/12 [00:03<00:02,  2.34step/s][A
+Writing weights:  58%|█████▊    | 7/12 [00:03<00:02,  2.34step/s]   [A
+Generating dummy bit mask:  58%|█████▊    | 7/12 [00:03<00:02,  2.34step/s][A
+Writing dummy bit mask:  58%|█████▊    | 7/12 [00:03<00:02,  2.34step/s]   [A
+Generating PPU data:  58%|█████▊    | 7/12 [00:03<00:02,  2.34step/s]   [A
+Writing PPU data:  58%|█████▊    | 7/12 [00:03<00:02,  2.34step/s]   [A
+                                                                  [ACompiling Model : 100%|█████████▉| 1.0/1.0 [01:10<00:00, 70.29s/model ]

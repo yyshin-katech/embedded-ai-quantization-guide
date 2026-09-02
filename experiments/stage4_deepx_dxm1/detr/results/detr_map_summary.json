@@ -1,0 +1,35 @@
+{
+  "fp32": {
+    "mAP": 0.4377,
+    "mAP50": 0.6364,
+    "mAP75": 0.4666,
+    "mAP_s": 0.2293,
+    "mAP_m": 0.4926,
+    "mAP_l": 0.5905,
+    "n_images": 500
+  },
+  "npu_int8": {
+    "mAP": 0.4385,
+    "mAP50": 0.6347,
+    "mAP75": 0.4711,
+    "mAP_s": 0.2317,
+    "mAP_m": 0.4971,
+    "mAP_l": 0.5818,
+    "n_images": 500
+  },
+  "delta_fp32_minus_npu": {
+    "mAP": -0.0008,
+    "mAP50": 0.0017,
+    "mAP75": -0.0045,
+    "mAP_s": -0.0024,
+    "mAP_m": -0.0045,
+    "mAP_l": 0.0087
+  },
+  "rel_mAP_drop_pct": 0.2,
+  "divergence_npu_vs_fp32": {
+    "logits_corr": 0.993926,
+    "logits_absmax": 16.8941,
+    "boxes_corr": 0.972976,
+    "boxes_absmax": 0.9965
+  }
+}
