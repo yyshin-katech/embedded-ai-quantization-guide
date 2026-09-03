@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI 양자화 → 임베디드 배포 실측 — 논문화·투고 가능성 검토</title>
+<style>
+:root{--bg:#0b0e14;--panel:#131720;--panel2:#0f131b;--bd:#242b38;--tx:#c9d1d9;--dim:#8b949e;--brt:#e6edf3;--accent:#58a6ff;--green:#3fb950;--amber:#d29922;--red:#ff7b72;--purple:#bc8cff;--mono:'JetBrains Mono','SF Mono',ui-monospace,'Cascadia Code',Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans KR','Malgun Gothic',sans-serif}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:var(--sans);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1000px;margin:0 auto;padding:0 20px 120px}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+.hero{padding:48px 0 26px;border-bottom:1px solid var(--bd);margin-bottom:8px}
+.kicker{font-family:var(--mono);font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+.hero h1{margin:0 0 12px;font-size:31px;line-height:1.24;color:var(--brt);letter-spacing:-.01em}
+.hero p.sub{margin:0 0 20px;color:var(--dim);font-size:15px;max-width:82ch}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font-family:var(--mono);font-size:12px;padding:5px 10px;border:1px solid var(--bd);border-radius:999px;background:var(--panel);color:var(--tx)}
+.chip b{color:var(--brt);font-weight:600}
+.chip.done{border-color:rgba(63,185,80,.5);background:rgba(63,185,80,.12);color:#7ee787}
+.chip.partial{border-color:rgba(210,153,34,.5);background:rgba(210,153,34,.12);color:#e3b341}
+.chip.blocked{border-color:rgba(255,123,114,.5);background:rgba(255,123,114,.12);color:#ff9d96}
+nav.toc{display:flex;flex-wrap:wrap;gap:8px;margin:26px 0 6px}
+nav.toc a{font-family:var(--mono);font-size:12.5px;padding:6px 11px;border:1px solid var(--bd);border-radius:8px;background:var(--panel);color:var(--tx)}
+nav.toc a:hover{border-color:var(--accent);color:var(--brt);text-decoration:none}
+h2.sec{font-size:13px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin:44px 0 12px;font-weight:600;border-top:1px solid var(--bd);padding-top:26px}
+.step{margin:24px 0 0;scroll-margin-top:16px}
+.step>h3{display:flex;align-items:center;gap:12px;font-size:19px;color:var(--brt);margin:0 0 8px;letter-spacing:-.01em}
+.num{flex:none;display:inline-grid;place-items:center;width:28px;height:28px;border-radius:8px;background:var(--accent);color:#06101f;font-family:var(--mono);font-weight:700;font-size:13px}
+p{font-size:14.5px}
+.verdict{border:1px solid rgba(88,166,255,.4);background:linear-gradient(180deg,rgba(88,166,255,.10),rgba(88,166,255,.03));border-radius:14px;padding:22px 24px;margin:22px 0}
+.verdict .vh{font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin:0 0 8px}
+.verdict .vt{font-size:20px;color:var(--brt);font-weight:700;margin:0 0 10px;line-height:1.35}
+.verdict p{margin:8px 0 0;font-size:14.5px;color:var(--tx)}
+table.dt{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.3px;border:1px solid var(--bd);border-radius:10px;overflow:hidden}
+table.dt th,table.dt td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--bd);vertical-align:top}
+table.dt th{background:var(--panel);color:var(--dim);font-weight:600;font-size:12px;letter-spacing:.03em}
+table.dt tr:last-child td{border-bottom:none}
+table.dt tr.hi td{background:rgba(63,185,80,.07)}
+table.dt code{font-family:var(--mono);font-size:12px;background:rgba(255,255,255,.05);padding:1px 5px;border-radius:4px}
+.mono{font-family:var(--mono)}
+.g{color:var(--green)}.r{color:var(--red)}.a{color:var(--amber)}.p{color:var(--purple)}.d{color:var(--dim)}.b{color:var(--brt)}
+.badge{display:inline-block;font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.04em;padding:2px 7px;border-radius:6px;white-space:nowrap}
+.nov-hi{background:rgba(63,185,80,.16);color:#7ee787;border:1px solid rgba(63,185,80,.4)}
+.nov-mid{background:rgba(210,153,34,.16);color:#e3b341;border:1px solid rgba(210,153,34,.4)}
+.nov-lo{background:rgba(139,148,158,.14);color:var(--dim);border:1px solid rgba(139,148,158,.3)}
+.note{border-left:3px solid var(--accent);background:rgba(88,166,255,.07);padding:13px 17px;border-radius:0 9px 9px 0;margin:15px 0;font-size:14px}
+.note.trap{border-color:var(--red);background:rgba(255,123,114,.08)}
+.note.warnb{border-color:var(--amber);background:rgba(210,153,34,.08)}
+.note.tip{border-color:var(--green);background:rgba(63,185,80,.07)}
+.note.block{border-color:var(--purple);background:rgba(188,140,255,.08)}
+.note .tag{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 8px;border-radius:6px;margin-bottom:7px}
+.note.trap .tag{background:rgba(255,123,114,.18);color:#ff9d96}
+.note.warnb .tag{background:rgba(210,153,34,.18);color:#e3b341}
+.note.tip .tag{background:rgba(63,185,80,.18);color:#7ee787}
+.note.block .tag{background:rgba(188,140,255,.18);color:#d8b8ff}
+.note b{color:var(--brt)}.note code{font-family:var(--mono);font-size:12.5px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:4px}
+.statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:12px;margin:16px 0}
+.stat{border:1px solid var(--bd);background:var(--panel);border-radius:11px;padding:15px 16px}
+.stat .k{font-family:var(--mono);font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em}
+.stat .v{font-size:22px;color:var(--brt);font-weight:700;margin-top:5px;letter-spacing:-.01em}
+.stat .n{font-size:12px;color:var(--dim);margin-top:3px}
+.stars{font-family:var(--mono);letter-spacing:.05em}
+.stars .on{color:var(--accent)}.stars .off{color:#2b3444}
+ul.tight{margin:8px 0;padding-left:22px}ul.tight li{margin:5px 0;font-size:14px}
+ol.tight{margin:8px 0;padding-left:22px}ol.tight li{margin:7px 0;font-size:14px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:14px 0}
+@media(max-width:760px){.two{grid-template-columns:1fr}}
+.card{border:1px solid var(--bd);background:var(--panel2);border-radius:12px;padding:16px 18px}
+.card h4{margin:0 0 8px;font-size:15px;color:var(--brt)}
+.card.pri{border-color:rgba(63,185,80,.35);background:rgba(63,185,80,.05)}
+.card.alt{border-color:rgba(188,140,255,.3);background:rgba(188,140,255,.05)}
+.outline{font-size:13.5px}
+.outline .on{color:var(--brt);font-weight:600}
+.foot{margin-top:50px;padding-top:20px;border-top:1px solid var(--bd);color:var(--dim);font-size:12.5px;font-family:var(--mono)}
+.tag-inline{font-family:var(--mono);font-size:11px;color:var(--dim)}
+h4.q{color:var(--brt);font-size:15.5px;margin:20px 0 6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="hero">
+  <p class="kicker">Publishability Review · 내부 검토서</p>
+  <h1>AI 양자화 → 임베디드 배포 실측 코퍼스<br>논문화·투고 가능성 검토</h1>
+  <p class="sub">저장소에 축적된 30건의 실측 리포트(<code>logs/</code>)와 9개 실험군(<code>experiments/</code>)이 학술 논문으로 투고할 만한 기여가 되는지, 어떤 서사·벤류·보강이 필요한지를 기여(contribution) 단위로 평가한다. 판정은 문서화된 SSOT(CLAUDE.md 변경 이력 + 로컬 메모리 + 리포트 헤드라인)에 근거하며, 개별 수치를 재실행해 재검증하지는 않았다.</p>
+  <div class="chips">
+    <span class="chip done">실측 리포트 <b>30건</b></span>
+    <span class="chip done">실험군 <b>9</b></span>
+    <span class="chip">하드웨어 <b>7종+</b></span>
+    <span class="chip partial">판정: <b>워크숍/측정 트랙 투고 가능</b></span>
+    <span class="chip blocked">본회의(톱티어): <b>통계 보강 필요</b></span>
+  </div>
+</div>
+
+<nav class="toc">
+  <a href="#verdict">0. 총평</a>
+  <a href="#assets">1. 증거 자산</a>
+  <a href="#contrib">2. 기여·신규성</a>
+  <a href="#thesis">3. 논문 프레이밍</a>
+  <a href="#strength">4. 강점</a>
+  <a href="#threats">5. 위협 요인</a>
+  <a href="#gap">6. 갭 분석</a>
+  <a href="#venue">7. 타깃 벤류</a>
+  <a href="#outline">8. 추천 구조</a>
+  <a href="#next">9. 다음 단계</a>
+</nav>
+
+<!-- ============ 0. 총평 ============ -->
+<h2 class="sec" id="verdict">0 — 총평 (Executive Verdict)</h2>
+
+<div class="verdict">
+  <p class="vh">한 줄 판정</p>
+  <p class="vt">"투고할 만한 내용이 있다 — 단, 지금 그대로는 <span class="a">측정(measurement)·워크숍·실무 경험</span> 트랙이 현실적 목표이고, 톱티어 본회의로 가려면 통계적 엄밀성과 단일 서사가 더 필요하다."</p>
+  <p>이 코퍼스의 가장 강한 자산은 개별 수치가 아니라 <b>여러 하드웨어(ARM CPU·x86 CPU·TRT GPU·NVDLA·벤더 NPU 2종)를 관통하는 통제된 비교 실험</b>이다. 특히 <b>"INT8은 이식 가능하지 않다"</b>—속도 이득의 <em>부호</em>, 수치 출력의 <em>재현성</em>, 배포 <em>가능성</em>이 모두 타깃의 정수 커널 경로에 좌우된다는 발견은 실무자가 인용할 만한, 문헌에서 과소보고된 시스템 측정 결과다. 이것을 <b>단일 논지</b>로 묶으면 워크숍/측정 논문 한 편이 나온다.</p>
+  <p>반대로 대부분의 실측이 <b>batch=1·서브셋·단일 실행·상대값</b>이라는 캐비앗을 공유한다. 이는 코퍼스 스스로 반복적으로 명시한 한계이고, 측정 논문에서는 "상대 비교"로 프레이밍하면 방어 가능하지만, 지연에 신뢰구간이 없고 하드웨어 클래스당 n=1이라는 점은 심사에서 반드시 지적된다.</p>
+</div>
+
+<h4 class="q">투고 준비도 스코어카드</h4>
+<table class="dt">
+  <tr><th>축</th><th style="width:130px">평가</th><th>근거 / 코멘트</th></tr>
+  <tr><td>기여 신규성</td><td class="stars"><span class="on">★★★</span><span class="off">☆☆</span></td><td>C2(INT8 수치 비이식성)·C4(출력크기 병목 레짐)는 신규성 있음. 나머지는 기지 사실의 새 프레이밍/체계화.</td></tr>
+  <tr><td>실험 범위·다양성</td><td class="stars"><span class="on">★★★★</span><span class="off">☆</span></td><td>7종+ 하드웨어, 분류·검출·트랜스포머 3계열, CPU↔가속기↔벤더NPU 경계 관통. 이 폭이 최대 강점.</td></tr>
+  <tr><td>통계적 엄밀성</td><td class="stars"><span class="on">★★</span><span class="off">☆☆☆</span></td><td class="a">최대 약점. batch1·단일실행·서브셋. 지연 CI 없음. 정확도 쪽은 stage1이 McNemar/CI 템플릿을 이미 보유(전이 가능).</td></tr>
+  <tr><td>재현성 아티팩트</td><td class="stars"><span class="on">★★★★</span><span class="off">☆</span></td><td>스크립트 + 30개 HTML 리포트 완비. Artifact Evaluation 배지 현실적.</td></tr>
+  <tr><td>관련연구 위치설정</td><td class="stars"><span class="on">★</span><span class="off">☆☆☆☆</span></td><td>미작성. MLPerf/MLPerf Tiny·양자화 이식성/수치재현성 선행연구 대비 포지셔닝 필요.</td></tr>
+  <tr><td>단일 서사(one thesis)</td><td class="stars"><span class="on">★★</span><span class="off">☆☆☆</span></td><td>현재는 "종합 실측 모음". 논문은 논지 1개로 압축 + 나머지는 보조 섹션으로 강등해야.</td></tr>
+</table>
+<p class="d" style="font-size:13px">→ 종합: <b class="g">2~4주 정리</b>로 워크숍/측정 트랙 투고 가능. <b class="a">통계 보강(반복실행·CI)</b>까지 더하면 MLSys/DATE급 본회의 도전 가능.</p>
+
+<!-- ============ 1. 증거 자산 ============ -->
+<h2 class="sec" id="assets">1 — 증거 자산 인벤토리</h2>
+<p>논문의 실험 파트를 채울 수 있는 물적 근거. 이미 존재한다는 점이 이 프로젝트의 결정적 이점이다.</p>
+<div class="statgrid">
+  <div class="stat"><div class="k">실측 리포트</div><div class="v">30</div><div class="n"><code>logs/*.html</code></div></div>
+  <div class="stat"><div class="k">실험 스크립트군</div><div class="v">9</div><div class="n"><code>experiments/*</code></div></div>
+  <div class="stat"><div class="k">하드웨어 타깃</div><div class="v">7+</div><div class="n">CPU·GPU·DLA·NPU</div></div>
+  <div class="stat"><div class="k">모델 계열</div><div class="v">3</div><div class="n">분류·검출·트랜스포머</div></div>
+</div>
+<table class="dt">
+  <tr><th>하드웨어 클래스</th><th>구체 타깃</th><th>측정 축</th></tr>
+  <tr><td>ARM Cortex-A CPU</td><td>Pi5 A76 · Jetson A78AE · i.MX8MN A53</td><td>양자화 이득 부호·예측 재현성</td></tr>
+  <tr><td>x86 CPU</td><td>i9-10900K (no-VNNI)</td><td>부호 반전 대조군</td></tr>
+  <tr><td>NVIDIA iGPU/GPU</td><td>Jetson AGX Orin iGPU · RTX 3080</td><td>정밀도 사다리·정확도·case-C 파싱</td></tr>
+  <tr><td>NVDLA v2</td><td>Jetson Orin 2×DLA</td><td>INT8-전용·perf/watt·동시부하·전력 스윕</td></tr>
+  <tr><td>벤더 NPU (모바일/자동차)</td><td>Qualcomm Hexagon HTP (클라우드) · DEEPX DX-M1 (온디바이스)</td><td>BYO-QDQ 거부·오프로드·병목 레짐</td></tr>
+</table>
+<p class="d" style="font-size:13px">모델: ResNet18/50(분류) · DETR-R50(트랜스포머 검출) · YOLO26n/YOLOv5s(검출) · BEVFormer-tiny/BEVDet(3D BEV) · QAT(W4A8).</p>
+
+<!-- ============ 2. 기여·신규성 ============ -->
+<h2 class="sec" id="contrib">2 — 후보 기여와 신규성 평가</h2>
+<p>각 발견을 논문 기여 후보로 놓고 신규성을 <span class="badge nov-hi">신규성 높음</span> <span class="badge nov-mid">부분 신규</span> <span class="badge nov-lo">기지 사실</span> 3등급으로 정직하게 채점했다.</p>
+
+<table class="dt">
+  <tr><th style="width:38px">ID</th><th>기여</th><th style="width:96px">신규성</th><th>핵심 근거 (리포트)</th></tr>
+  <tr class="hi"><td class="mono b">C2</td><td><b>INT8은 수치적으로 이식되지 않는다 — 정수 커널 경로 의존성이 CPU↔가속기 경계를 넘는다.</b> FP32 예측은 크로스플랫폼 비트동일(1000/1000)이나 INT8은 갈림: Pi5↔x86 958/1000, 같은 MLAS SDOT면 Jetson↔Pi5 1000/1000, TRT-GPU INT8 vs A78AE MLAS 961/1000, 벤더 NPU(DEEPX) CPU↔NPU 939/1000. 단조 감소(1000→961→939).</td><td><span class="badge nov-hi">신규성 높음</span></td><td class="mono d">stage4_arm_cpu_fallback · stage3_jetson_orin_accuracy · stage4_deepx_dxm1_accuracy</td></tr>
+  <tr><td class="mono b">C4</td><td><b>엣지 NPU 병목 레짐은 하드웨어가 아니라 모델 출력(D2H) 크기가 결정한다.</b> resnet50(출력 4KB)=compute-bound→3코어 2.19× near-linear, yolo26n(2.82MB)=D2H-bound→1.00× 평평. YOLOv5s(5.48MB·연산 최경량인데 26× 느림)로 변수 격리. 3개 레짐: NPU-compute / PCIe-D2H / host-CPU-compute.</td><td><span class="badge nov-hi">신규성 높음</span></td><td class="mono d">stage4_deepx_dxm1_crossover · _detection · _detr</td></tr>
+  <tr><td class="mono b">C1</td><td><b>INT8 속도 이득의 부호는 CPU의 dot-product 명령(SDOT/VNNI) 유무가 결정한다.</b> 같은 ONNX·같은 ORT CPUEP인데 A76/A78AE(dotprod)는 ×1.83/×2.11 빨라지고, x86 no-VNNI 1.76×·A53 no-dotprod 1.65× 느려진다.</td><td><span class="badge nov-mid">부분 신규</span></td><td class="mono d">stage4_arm_cpu_fallback · _imx8mn_a53 · _jetson_a78ae</td></tr>
+  <tr><td class="mono b">C3</td><td><b>벤더 NPU는 양자화를 "소유"한다(BYO-QDQ 미지원) — 두 개의 상반된 실패 양식.</b> Qualcomm HTP는 외부 QDQ를 <em>조용히 무시</em>→top-1 0.75→0.005 붕괴; DEEPX는 <em>시끄럽게 거부</em>→컴파일 에러(106 isolated nodes). 둘 다 native 경로에서만 정상(0.735 / 0.766).</td><td><span class="badge nov-mid">부분 신규</span></td><td class="mono d">stage4_qualcomm_aihub · stage4_deepx_dxm1_accuracy</td></tr>
+  <tr><td class="mono b">C5</td><td><b>트랜스포머 INT8 폭락의 레버는 op-선택이 아니라 activation 입도 — 그리고 온디바이스 회복은 op-커버리지에 종속된다.</b> DETR FP32→INT8 −42.9%(RTX)·−43.8%(Jetson sym)로 크로스 재현. SmoothQuant가 torch에선 gap의 59.9% 회복하나 온디바이스는 ~9%(Gemm만 INT8 가능).</td><td><span class="badge nov-mid">부분 신규</span></td><td class="mono d">stage2_detr · stage2_smoothquant · stage3_jetson_orin_detr_*</td></tr>
+  <tr><td class="mono b">C6</td><td><b>QAT 회복은 진짜지만 공짜가 아니다.</b> W4A8: FP32 68.51→PTQ 44.35→QAT 67.81(97.1% 회복). fake-quant 뺀 동일 파인튜닝 대조군으로 순수 추가학습 몫(+0.80%p)을 분리 → QAT−대조군 −1.50%p가 환원불가 대가.</td><td><span class="badge nov-mid">부분 신규</span></td><td class="mono d">qat_recovery · stage1_50k_rerun</td></tr>
+  <tr><td class="mono b">C7</td><td><b>NVDLA 특성화:</b> DLA는 INT8-전용기(FP16 13.87× 느림)이자 perf/watt 챔피언(51.29 inf/s/W). iGPU∥DLA 동시부하는 공짜 병렬 아님(GPU-폴백 직렬화, ideal의 60.8%). 전력 스윕서 리더 교차(MAXN→50W: iGPU −29.4% vs DLA −2.9%).</td><td><span class="badge nov-mid">부분 신규</span></td><td class="mono d">stage3_jetson_orin_ondevice · _concurrent_power</td></tr>
+  <tr><td class="mono b">C8</td><td><b>양자화 실험의 재현성 함정 카탈로그:</b> 평가셋 검정력(1000장이 top-1 +9.77%p 부풀림)·전처리 선택이 양자화 대가의 9배(−1.07 vs −0.12%p)·SQNR↔Δtop-1 무예측(Spearman −0.04)·무음 폴백 다수(외부 QDQ→CPU/FP32, pip 휠 trtexec 부재).</td><td><span class="badge nov-mid">부분 신규</span></td><td class="mono d">stage1_50k_rerun · stage3_tensorrt · stage5_infrastructure</td></tr>
+</table>
+
+<div class="note warnb">
+  <span class="tag">신규성에 대한 정직한 경고</span>
+  개별 <b>사실</b> 상당수는 이미 알려져 있다 — VNNI/SDOT가 INT8을 가속한다는 것, SmoothQuant가 트랜스포머 양자화를 돕는다는 것, DLA가 INT8 지향이라는 것. 이 코퍼스의 신규성은 "새 사실 발견"이 아니라 <b>(a) 통제된 크로스플랫폼 측정</b>과 <b>(b) 부호 반전·비이식성·병목-레짐이라는 프레이밍</b>에 있다. 논문은 이 점을 정면으로 인정하고 "measurement/systematization 기여"로 포지셔닝해야 심사에서 신뢰를 얻는다.
+</div>
+
+<!-- ============ 3. 논문 프레이밍 ============ -->
+<h2 class="sec" id="thesis">3 — 논문으로 묶는 3가지 프레이밍</h2>
+<p>흩어진 8개 기여를 하나의 논지로 압축하는 방법. <b>추천은 옵션 A</b> — 가장 강한 두 기여(C2·C1·C3)를 관통하는 단일 논지가 있고, 자동차 엣지 배포라는 실무 청중과 맞는다.</p>
+
+<div class="two">
+  <div class="card pri">
+    <h4>🟢 옵션 A (추천) — "INT8은 이식되지 않는다"</h4>
+    <p style="font-size:13.5px;margin:0 0 8px"><span class="tag-inline">가제</span><br><i>Is INT8 Portable? A Cross-Platform Measurement of Quantized-Inference Speedup Sign, Numerical Reproducibility, and Deployability on Embedded/Automotive Accelerators</i></p>
+    <p style="font-size:13.5px;margin:0">핵심축 <b>C2</b>(수치 비이식성) + <b>C1</b>(속도 부호) + <b>C3</b>(배포 가능성/BYO-QDQ), 방법론으로 <b>C8</b>. 논지 하나: <b>INT8의 이식성은 어느 축(속도·수치·배포)에서도 공짜가 아니다.</b> C4/C7은 보조 섹션.</p>
+    <p style="font-size:12.5px;color:var(--green);margin:10px 0 0">강점: 도발적 단일 논지 · 통제 실험 다수 · 자동차 청중 · 재현 아티팩트.</p>
+  </div>
+  <div class="card alt">
+    <h4>🟣 옵션 B — "엣지 NPU 지연은 어디로 가는가"</h4>
+    <p style="font-size:13.5px;margin:0 0 8px"><span class="tag-inline">가제</span><br><i>Where Does Edge-NPU Latency Go? Output-Size-Driven Bottleneck Regimes on a PCIe-Attached Automotive NPU</i></p>
+    <p style="font-size:13.5px;margin:0">핵심축 <b>C4</b> 단독 심화(레짐 3종 + 변수격리 + NMS-fold 반증). 좁고 날카로운 시스템 short paper.</p>
+    <p style="font-size:12.5px;color:var(--amber);margin:10px 0 0">한계: 보드 n=1(DX-M1 on Pi5 Gen2×1) — "D2H-bound가 링크 탓"이라는 반론을 정면 방어해야. 전이 곡선(중간 출력크기) 미측정.</p>
+  </div>
+</div>
+<div class="card" style="margin-top:14px">
+  <h4>⚪ 옵션 C — "실무 경험/교훈" 논문 (experience track)</h4>
+  <p style="font-size:13.5px;margin:0"><b>C8</b>(함정 카탈로그) 중심 + 전 기여를 "엣지 양자화 배포에서 우리가 틀린 것들"로 엮음. IEEE Micro / 실무 트랙에 적합하고 신규성 부담이 가장 낮다. 단독 톱티어는 어려우나 <b>가장 빨리 쓸 수 있는</b> 옵션.</p>
+</div>
+
+<!-- ============ 4. 강점 ============ -->
+<h2 class="sec" id="strength">4 — 심사에서 통할 강점</h2>
+<ul class="tight">
+  <li><b>통제된 크로스플랫폼 설계.</b> 같은 ONNX·같은 스케일·같은 하네스를 여러 백엔드에 돌려 "유일 변수=정수 커널/ISA"로 격리한 실험이 반복적으로 등장(예: <code>rn50_gpu_int8.plan</code>이 CPU 프록시와 같은 <code>resnet50_int8_qdq.onnx</code>에서 빌드 → QDQ scale 동일). 인과 주장을 뒷받침한다.</li>
+  <li><b>반증 실험을 스스로 수행.</b> "NMS-fold가 레짐을 바꾼다" 가설을 세우고 직접 반증, "SmoothQuant 59.9% 회복"이 온디바이스선 ~9%임을 밝혀 자기 결론을 정밀화. 이런 자기비판은 심사자가 신뢰한다.</li>
+  <li><b>음성 결과·무음 오답의 정직한 보고.</b> 외부 QDQ 무음 붕괴(0.005), pip 휠 trtexec 부재, zero-copy 버퍼 에일리어싱(top-1 0.0014) 등 — "함정" 카탈로그 자체가 실무 기여.</li>
+  <li><b>자동차 엣지라는 명확한 응용 맥락.</b> 세 벤더 NPU(Qualcomm/TI/Renesas 지향) + DEEPX 자동차 NPU + Jetson. 소속(자동차 연구원) 정합성이 자동차·엣지 벤류에서 가점.</li>
+  <li><b>완비된 재현 아티팩트.</b> 스크립트 + 30개 리포트 + 비트동일 입력(md5 명시) → Artifact Evaluation 통과 가능성이 높다.</li>
+</ul>
+
+<!-- ============ 5. 위협 요인 ============ -->
+<h2 class="sec" id="threats">5 — 위협 요인 / 반드시 나올 지적 (Threats to Validity)</h2>
+<table class="dt">
+  <tr><th style="width:34px">#</th><th>위협</th><th>영향</th><th>대응 전략</th></tr>
+  <tr><td>T1</td><td class="a"><b>batch=1·단일 실행·지연 CI 부재.</b> 대부분 행이 1회 측정 또는 p50만.</td><td class="r">높음</td><td>지연을 ≥10회 반복, mean±95%CI(또는 p50/p95 + n) 보고. 최우선.</td></tr>
+  <tr><td>T2</td><td><b>서브셋 정확도(200·500·1000장).</b> 이 코퍼스 스스로 1000장이 +9.77%p 부풀린다고 증명.</td><td class="r">높음</td><td>정확도 주장은 전(全) val 또는 검정력 분석 동반. stage1의 McNemar/CI를 크로스플랫폼 예측일치 주장에 적용.</td></tr>
+  <tr><td>T3</td><td><b>하드웨어 클래스당 n=1.</b> Pi5 1대로 "모든 A76" 주장 불가.</td><td class="a">중</td><td>측정 논문으로 명시 스코핑("대표 디바이스") + 가능하면 클래스당 ≥1대 추가.</td></tr>
+  <tr><td>T4</td><td><b>버전 교란.</b> 플랫폼마다 ORT/TRT 상이(예: ORT 1.28 vs 1.29, TRT 10.16 vs 10.3).</td><td class="a">중</td><td>비교쌍은 동일 버전 고정, 또는 버전 효과를 통제 측정으로 별도 보고.</td></tr>
+  <tr><td>T5</td><td><b>절대값 비교 불가(상대만).</b> 경로·해상도·배치 상이.</td><td class="a">중</td><td>측정 논문에서 상대 비교로 프레이밍하면 방어 가능. 절대 벤치 주장 회피.</td></tr>
+  <tr><td>T6</td><td><b>전력 계측 갭.</b> M.2 카드 전력(EXT5V 상류)·DLA(GR3D 미포착) 미측정.</td><td class="d">낮음</td><td>계측 경계를 명시(두 경계 병기). 이미 리포트가 정직하게 처리.</td></tr>
+  <tr><td>T7</td><td><b>init-가중치 모델(캡스톤 BEVDet).</b> mAP≈0, 지연만 유효.</td><td class="d">낮음</td><td>정확도 주장에서 캡스톤 제외, 지연/엔진크기 사례로만 사용.</td></tr>
+</table>
+
+<!-- ============ 6. 갭 분석 ============ -->
+<h2 class="sec" id="gap">6 — 투고 전 체크리스트 (Gap Analysis)</h2>
+<ol class="tight">
+  <li><b>논지 1개 확정</b> — 옵션 A 권장. 나머지 기여는 보조 섹션으로 강등.</li>
+  <li><b>지연 통계 보강</b> — 핵심 비교 구성만이라도 반복 실행 + CI. (T1)</li>
+  <li><b>정확도 검정력</b> — 크로스플랫폼 예측일치(958/961/939)에 McNemar + 신뢰구간. 전 val 또는 검정력 근거. (T2)</li>
+  <li><b>버전 통제</b> — 비교쌍 동일 ORT/TRT 재실행 또는 버전 효과 분리 측정. (T4)</li>
+  <li><b>관련연구 작성</b> — MLPerf / MLPerf Tiny, INT8 수치 재현성·양자화 이식성·SmoothQuant/per-token 선행 대비 위치설정.</li>
+  <li><b>Threats to Validity 절 신설</b> — 이미 흩어진 캐비앗을 한 절로 통합(초안 거의 완성 상태).</li>
+  <li><b>디바이스 스코프 문장화</b> — "대표 디바이스 측정"임을 서론에서 선언. (T3)</li>
+  <li><b>Artifact 패키징</b> — 스크립트/입력/리포트를 재현 번들로 정리, README에 재현 절차.</li>
+</ol>
+<div class="note tip"><span class="tag">현실적 소요</span> 옵션 C(경험 논문)는 <b>~1주</b>, 옵션 A(측정 논문, 통계 보강 포함)는 <b>~3~5주</b> 추정. 아티팩트가 이미 있어 실험 재실행 비용이 낮은 게 결정적 이점.</div>
+
+<!-- ============ 7. 타깃 벤류 ============ -->
+<h2 class="sec" id="venue">7 — 타깃 벤류 (현실적 순위)</h2>
+<table class="dt">
+  <tr><th>벤류</th><th style="width:110px">유형</th><th style="width:80px">적합도</th><th>비고</th></tr>
+  <tr class="hi"><td><b>tinyML Research Symposium</b></td><td>측정/엣지 ML</td><td class="g">매우 높음</td><td>엣지 양자화 측정에 우호적. 옵션 A/B 모두 적합.</td></tr>
+  <tr class="hi"><td><b>EMDL</b> (Embedded & Mobile Deep Learning 워크숍)</td><td>워크숍</td><td class="g">매우 높음</td><td>모바일/임베디드 DL 측정의 정확한 홈. 진입장벽 적정.</td></tr>
+  <tr><td><b>MLSys</b> — 워크숍 트랙 (Efficient ML 등)</td><td>시스템+ML</td><td class="g">높음</td><td>본회의는 통계 보강 후 도전. 워크숍은 지금도 가능.</td></tr>
+  <tr><td><b>IEEE Micro</b> / <b>IEEE Embedded Systems Letters</b></td><td>저널/실무</td><td class="g">높음</td><td>옵션 C(경험 논문)·측정 결과에 적합. ESL은 짧은 논문.</td></tr>
+  <tr><td><b>DATE</b> / <b>ISLPED</b></td><td>설계자동화/저전력</td><td class="a">중~높음</td><td>perf/watt·DLA·전력 스윕(C7) 축을 전면화하면 적합.</td></tr>
+  <tr><td><b>IEEE IV</b> / SAE / 자동차 임베디드 워크숍</td><td>자동차</td><td class="a">중~높음</td><td>소속·벤더 NPU 맥락 활용. "자동차 엣지 AI 배포" 프레임.</td></tr>
+  <tr><td><b>arXiv 프리프린트</b> + 아티팩트 공개</td><td>프리프린트</td><td class="g">즉시</td><td>지금 바로 가능. 우선권 확보 + 워크숍 병행.</td></tr>
+  <tr><td>MLSys / MICRO / ASPLOS <span class="d">본회의</span></td><td>톱티어</td><td class="r">보강 후</td><td>T1~T4 해소 + 단일 서사 + 관련연구 완비 전에는 시기상조.</td></tr>
+</table>
+<p class="d" style="font-size:12.5px">※ 벤류의 성격/트랙은 연도별로 바뀌니 투고 직전 각 CFP를 재확인할 것.</p>
+
+<!-- ============ 8. 추천 구조 ============ -->
+<h2 class="sec" id="outline">8 — 추천 논문 구조 (옵션 A)</h2>
+<div class="card outline">
+  <p><span class="on">Title.</span> Is INT8 Portable? A Cross-Platform Measurement of Quantized-Inference on Embedded Accelerators</p>
+  <p><span class="on">Abstract.</span> INT8 이식성이 속도·수치·배포 세 축에서 모두 공짜가 아님을 7종 하드웨어 통제 측정으로 보인다.</p>
+  <p><span class="on">1. Introduction.</span> "INT8을 켜면 빨라지고 정확도만 조금 잃는다"는 통념 → 세 반례(부호 반전·비이식 수치·배포 거부). 기여 3~4개 명시.</p>
+  <p><span class="on">2. Background &amp; Related Work.</span> PTQ/QAT, VNNI/SDOT, MLPerf(Tiny), 수치 재현성·양자화 이식성 선행. (신규 작성 필요)</p>
+  <p><span class="on">3. Experimental Methodology.</span> 통제 원칙(동일 ONNX/스케일/하네스), 하드웨어 매트릭스, 측정 프로토콜(반복·CI·McNemar), 위협·스코프.</p>
+  <p><span class="on">4. Speedup Sign Is ISA-Determined (C1).</span> dotprod 유무 → 부호 반전. 4 디바이스.</p>
+  <p><span class="on">5. INT8 Outputs Are Not Portable (C2, 헤드라인).</span> FP32 100% vs INT8 94~96%, 경로의존이 CPU↔GPU↔NPU 경계 관통(단조 1000→961→939).</p>
+  <p><span class="on">6. Vendors Own Quantization (C3).</span> 무음 무시 vs 시끄러운 거부 — BYO-QDQ 배포 함정.</p>
+  <p><span class="on">7. Secondary: Bottleneck Regimes &amp; Accelerator Traits (C4·C7 요약).</span></p>
+  <p><span class="on">8. Lessons / Pitfalls (C8).</span> 함정 카탈로그.</p>
+  <p><span class="on">9. Threats to Validity.</span> T1~T7 통합.</p>
+  <p><span class="on">10. Conclusion.</span> 엣지 양자화 이식성에 대한 실무 권고.</p>
+  <p style="color:var(--dim)"><span class="on" style="color:var(--dim)">Artifact Appendix.</span> 재현 번들 · 리포트 인덱스.</p>
+</div>
+
+<!-- ============ 9. 다음 단계 ============ -->
+<h2 class="sec" id="next">9 — 결론 &amp; 다음 단계</h2>
+<div class="verdict">
+  <p class="vh">결론</p>
+  <p class="vt">투고할 가치가 <span class="g">있다</span>. 가장 빠른 길은 <b>arXiv 프리프린트 + tinyML/EMDL 워크숍</b>(옵션 A), 병행해 통계 보강으로 본회의를 노린다.</p>
+  <p>이 코퍼스는 "새 알고리즘"이 아니라 <b>"엣지 양자화의 이식성은 어느 축에서도 공짜가 아니다"</b>라는 <em>측정 논문</em>으로서 가장 강하다. C2(수치 비이식성)와 C4(출력크기 병목 레짐)가 신규성의 핵심이고, 통제 실험 설계와 완비된 아티팩트가 방어선이다. 남은 일은 발견이 아니라 <b>엄밀화와 서사 압축</b>이다.</p>
+</div>
+<p><b>즉시 착수 가능한 3가지</b></p>
+<ol class="tight">
+  <li>옵션 A로 논지 확정하고, C2/C1/C3의 핵심 비교 구성에 <b>반복 실행 + CI</b>를 재실행(아티팩트 재사용).</li>
+  <li>관련연구 + Threats to Validity 절 초안 작성(캐비앗은 이미 흩어져 있으니 통합 수준).</li>
+  <li><code>publication/</code>에 논문 스캐폴드(초록·개요·그림 목록) 착수 — 이 검토서가 그 설계도.</li>
+</ol>
+
+<div class="foot">
+  내부 검토서 · <span class="d">근거: CLAUDE.md 변경 이력 · 로컬 메모리 · logs/ 리포트 헤드라인(SSOT)</span><br>
+  ⚠ 판정은 문서화된 수치에 근거하며 개별 실험을 재실행해 재검증하지 않음. 투고 전 각 벤류 CFP·핵심 수치 재확인 요망.<br>
+  파일: <code>publication/publishability_assessment.html</code>
+</div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,319 @@
+% refs.bib --- references for "Is INT8 Portable?"
+% All entries verified against arXiv/publisher pages on 2026-09-04.
+% Build: pdflatex paper1_isint8portable; bibtex paper1_isint8portable; pdflatex x2
+
+% ---- Quantization foundations ----
+@inproceedings{jacob2018,
+  title     = {Quantization and Training of Neural Networks for Efficient Integer-Arithmetic-Only Inference},
+  author    = {Jacob, Benoit and Kligys, Skirmantas and Chen, Bo and Zhu, Menglong and Tang, Matthew and Howard, Andrew and Adam, Hartwig and Kalenichenko, Dmitry},
+  booktitle = {IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+  pages     = {2704--2713},
+  year      = {2018},
+  note      = {arXiv:1712.05877}
+}
+@misc{krishnamoorthi2018,
+  title  = {Quantizing Deep Convolutional Networks for Efficient Inference: A Whitepaper},
+  author = {Krishnamoorthi, Raghuraman},
+  year   = {2018},
+  note   = {arXiv:1806.08342}
+}
+@misc{nagel2021whitepaper,
+  title  = {A White Paper on Neural Network Quantization},
+  author = {Nagel, Markus and Fournarakis, Marios and Amjad, Rana Ali and Bondarenko, Yelysei and van Baalen, Mart and Blankevoort, Tijmen},
+  year   = {2021},
+  note   = {arXiv:2106.08295}
+}
+@misc{gholami2021survey,
+  title  = {A Survey of Quantization Methods for Efficient Neural Network Inference},
+  author = {Gholami, Amir and Kim, Sehoon and Dong, Zhen and Yao, Zhewei and Mahoney, Michael W. and Keutzer, Kurt},
+  year   = {2021},
+  note   = {arXiv:2103.13630}
+}
+@misc{wu2020,
+  title  = {Integer Quantization for Deep Learning Inference: Principles and Empirical Evaluation},
+  author = {Wu, Hao and Judd, Patrick and Zhang, Xiaojie and Isaev, Mikhail and Micikevicius, Paulius},
+  year   = {2020},
+  note   = {arXiv:2004.09602}
+}
+@inproceedings{nagel2020adaround,
+  title     = {Up or Down? Adaptive Rounding for Post-Training Quantization},
+  author    = {Nagel, Markus and Amjad, Rana Ali and van Baalen, Mart and Louizos, Christos and Blankevoort, Tijmen},
+  booktitle = {International Conference on Machine Learning (ICML)},
+  year      = {2020},
+  note      = {arXiv:2004.10568}
+}
+
+% ---- Integer GEMM kernels & dot-product ISAs ----
+@misc{khudia2021fbgemm,
+  title  = {FBGEMM: Enabling High-Performance Low-Precision Deep Learning Inference},
+  author = {Khudia, Daya and Huang, Jianyu and Basu, Protonu and Deng, Summer and Liu, Haixin and Park, Jongsoo and Smelyanskiy, Mikhail},
+  year   = {2021},
+  note   = {arXiv:2101.05615}
+}
+@misc{park2018facebook,
+  title  = {Deep Learning Inference in Facebook Data Centers: Characterization, Performance Optimizations and Hardware Implications},
+  author = {Park, Jongsoo and Naumov, Maxim and Basu, Protonu and others},
+  year   = {2018},
+  note   = {arXiv:1811.09886}
+}
+@misc{gemmlowp,
+  title        = {{gemmlowp}: A Small Self-Contained Low-Precision {GEMM} Library},
+  author       = {{Google}},
+  howpublished = {\url{https://github.com/google/gemmlowp}},
+  note         = {Accessed 2026}
+}
+@misc{xnnpack,
+  title        = {{XNNPACK}: Optimized Floating-Point and Quantized Neural Network Inference Operators},
+  author       = {{Google}},
+  howpublished = {\url{https://github.com/google/XNNPACK}},
+  note         = {ARM DotProd (SDOT / i8mm) INT8 path; accessed 2026}
+}
+@misc{mlas,
+  title        = {{MLAS}: Microsoft Linear Algebra Subprograms ({ONNX} Runtime CPU kernels)},
+  author       = {{Microsoft}},
+  howpublished = {\url{https://github.com/microsoft/onnxruntime}},
+  note         = {Accessed 2026}
+}
+@manual{armisa,
+  title  = {Arm Architecture Reference Manual (ARMv8.2-A DotProd: SDOT/UDOT)},
+  author = {{Arm Ltd.}},
+  note   = {ISA primary source}
+}
+@manual{intelisa,
+  title  = {Intel Architecture Instruction Set Extensions Programming Reference (AVX-512 VNNI)},
+  author = {{Intel Corporation}},
+  note   = {ISA primary source}
+}
+
+% ---- Edge / mobile inference benchmarking ----
+@inproceedings{reddi2020mlperf,
+  title     = {MLPerf Inference Benchmark},
+  author    = {Reddi, Vijay Janapa and Cheng, Christine and Kanter, David and Mattson, Peter and Schmuelling, Guenther and Wu, Carole-Jean and others},
+  booktitle = {ACM/IEEE International Symposium on Computer Architecture (ISCA)},
+  pages     = {446--459},
+  year      = {2020},
+  note      = {arXiv:1911.02549; DOI:10.1109/ISCA45697.2020.00045}
+}
+@inproceedings{banbury2021mlperftiny,
+  title     = {MLPerf Tiny Benchmark},
+  author    = {Banbury, Colby and Reddi, Vijay Janapa and Torelli, Peter and others},
+  booktitle = {NeurIPS Datasets and Benchmarks Track},
+  year      = {2021},
+  note      = {arXiv:2106.07597}
+}
+@misc{reddi2020mobile,
+  title  = {MLPerf Mobile Inference Benchmark},
+  author = {Janapa Reddi, Vijay and others},
+  year   = {2020},
+  note   = {arXiv:2012.02328}
+}
+@inproceedings{ignatov2018,
+  title     = {AI Benchmark: Running Deep Neural Networks on Android Smartphones},
+  author    = {Ignatov, Andrey and Timofte, Radu and Chou, William and Wang, Ke and Wu, Max and Hartley, Tim and Van Gool, Luc},
+  booktitle = {ECCV Workshops},
+  year      = {2018},
+  note      = {arXiv:1810.01109}
+}
+@misc{ignatov2019,
+  title  = {AI Benchmark: All About Deep Learning on Smartphones in 2019},
+  author = {Ignatov, Andrey and Timofte, Radu and others},
+  year   = {2019},
+  note   = {arXiv:1910.06663}
+}
+@misc{edgedetection2024,
+  title  = {A Comprehensive Evaluation of Deep Learning Object Detection Models on Heterogeneous Edge Devices},
+  author = {Alqahtani, Daghash K. and Cheema, Muhammad Aamir and Rodriguez, Maria A. and Toosi, Adel N.},
+  year   = {2024},
+  note   = {arXiv:2409.16808}
+}
+@misc{millar2025,
+  title  = {Benchmarking Ultra-Low-Power {$\mu$}NPUs},
+  author = {Millar, Josh and Huang, Yushan and Sethi, Sarab and Haddadi, Hamed and Madhavapeddy, Anil},
+  year   = {2025},
+  note   = {arXiv:2503.22567}
+}
+
+% ---- Numerical reproducibility / determinism (headline C2) ----
+@misc{chen2026integeralibi,
+  title  = {The Integer Alibi: Localizing Cross-Kernel Divergence in INT8-Quantized {LLM} Inference},
+  author = {Chen, Teng-Ruei},
+  year   = {2026},
+  note   = {arXiv:2608.13756; companion to arXiv:2608.11693. Concurrent work}
+}
+@misc{chen2026deterministic,
+  title  = {Deterministic {LLM} Inference Across {GPU} Kernels: Power-of-Two INT8 Quantization Scales and the Limits of Tolerance-Based Conformance},
+  author = {Chen, Teng-Ruei},
+  year   = {2026},
+  note   = {arXiv:2609.00363. Concurrent work}
+}
+@inproceedings{li2021mqbench,
+  title     = {MQBench: Towards Reproducible and Deployable Model Quantization Benchmark},
+  author    = {Li, Yuhang and Shen, Mingzhu and Ma, Jian and Ren, Yan and Zhao, Mingxin and Zhang, Qi and Gong, Ruihao and Yu, Fengwei and Yan, Junjie},
+  booktitle = {NeurIPS Datasets and Benchmarks Track},
+  year      = {2021},
+  note      = {arXiv:2111.03759}
+}
+@misc{masoudian2026,
+  title  = {What We Observe as {LLM} Behavior Can Be a Side-effect of Inference Backend},
+  author = {Masoudian, Shahed and Shafaei, Passant and Swain, Monorama and Schedl, Markus},
+  year   = {2026},
+  note   = {arXiv:2608.04714}
+}
+@misc{fpnonassoc2024,
+  title  = {Impacts of Floating-Point Non-Associativity on Reproducibility for {HPC} and Deep Learning Applications},
+  author = {Shanmugavelu, Sanjif and Taillefumier, Mathieu and Culver, Christopher and Hernandez, Oscar and Coletti, Mark and Sedova, Ada},
+  year   = {2024},
+  note   = {arXiv:2408.05148}
+}
+@misc{repdl2025,
+  title  = {RepDL: Bit-level Reproducible Deep Learning Training and Inference},
+  author = {Xie, Peichen and Zhang, Xian and Chen, Shuo},
+  year   = {2025},
+  note   = {arXiv:2510.09180 (originally drafted 2023)}
+}
+
+% ---- Transformer quantization ----
+@inproceedings{xiao2022smoothquant,
+  title     = {SmoothQuant: Accurate and Efficient Post-Training Quantization for Large Language Models},
+  author    = {Xiao, Guangxuan and Lin, Ji and Seznec, Mickael and Wu, Hao and Demouth, Julien and Han, Song},
+  booktitle = {International Conference on Machine Learning (ICML)},
+  year      = {2023},
+  note      = {arXiv:2211.10438}
+}
+@inproceedings{dettmers2022llmint8,
+  title     = {{LLM.int8()}: 8-bit Matrix Multiplication for Transformers at Scale},
+  author    = {Dettmers, Tim and Lewis, Mike and Belkada, Younes and Zettlemoyer, Luke},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2022},
+  note      = {arXiv:2208.07339}
+}
+@inproceedings{bondarenko2021,
+  title     = {Understanding and Overcoming the Challenges of Efficient Transformer Quantization},
+  author    = {Bondarenko, Yelysei and Nagel, Markus and Blankevoort, Tijmen},
+  booktitle = {Conference on Empirical Methods in Natural Language Processing (EMNLP)},
+  year      = {2021},
+  note      = {arXiv:2109.12948}
+}
+@inproceedings{frantar2022gptq,
+  title     = {{GPTQ}: Accurate Post-Training Quantization for Generative Pre-trained Transformers},
+  author    = {Frantar, Elias and Ashkboos, Saleh and Hoefler, Torsten and Alistarh, Dan},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2023},
+  note      = {arXiv:2210.17323}
+}
+@inproceedings{lin2023awq,
+  title     = {{AWQ}: Activation-aware Weight Quantization for {LLM} Compression and Acceleration},
+  author    = {Lin, Ji and Tang, Jiaming and Tang, Haotian and Yang, Shang and Chen, Wei-Ming and Wang, Wei-Chen and Xiao, Guangxuan and Dang, Xingyu and Gan, Chuang and Han, Song},
+  booktitle = {Conference on Machine Learning and Systems (MLSys)},
+  year      = {2024},
+  note      = {arXiv:2306.00978}
+}
+@inproceedings{yuan2022ptq4vit,
+  title     = {PTQ4ViT: Post-Training Quantization for Vision Transformers with Twin Uniform Quantization},
+  author    = {Yuan, Zhihang and Xue, Chenhao and Chen, Yiqi and Wu, Qiang and Sun, Guangyu},
+  booktitle = {European Conference on Computer Vision (ECCV)},
+  year      = {2022},
+  note      = {arXiv:2111.12293}
+}
+@inproceedings{liu2021ptqvit,
+  title     = {Post-Training Quantization for Vision Transformer},
+  author    = {Liu, Zhenhua and Wang, Yunhe and Han, Kai and Ma, Siwei and Gao, Wen},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2021},
+  note      = {arXiv:2106.14156}
+}
+
+% ---- Vendor NPU toolchains (C3) ----
+@misc{dhahri2025quanttrim,
+  title  = {Quant-Trim in Practice: Improved Cross-Platform Low-Bit Deployment on Edge NPUs},
+  author = {Dhahri, Rayen and Urban, Steffen},
+  year   = {2025},
+  note   = {arXiv:2511.15300; accepted to a EurIPS 2025 workshop (work in progress)}
+}
+@misc{qualcomm_qnn,
+  title        = {Qualcomm AI Engine Direct ({QNN}) and {AI} Hub},
+  author       = {{Qualcomm}},
+  howpublished = {\url{https://app.aihub.qualcomm.com}},
+  note         = {Vendor documentation; accessed 2026}
+}
+@misc{coreml,
+  title        = {Core ML Tools ({coremltools})},
+  author       = {{Apple}},
+  howpublished = {\url{https://apple.github.io/coremltools}},
+  note         = {Vendor documentation; accessed 2026}
+}
+@misc{litert,
+  title        = {LiteRT (TensorFlow Lite) Delegates and NNAPI},
+  author       = {{Google}},
+  howpublished = {\url{https://ai.google.dev/edge/litert}},
+  note         = {Vendor documentation; accessed 2026}
+}
+
+% ---- Accelerator characterization: roofline / data movement (C4) ----
+@article{williams2009roofline,
+  title   = {Roofline: An Insightful Visual Performance Model for Multicore Architectures},
+  author  = {Williams, Samuel and Waterman, Andrew and Patterson, David},
+  journal = {Communications of the ACM},
+  volume  = {52},
+  number  = {4},
+  pages   = {65--76},
+  year    = {2009},
+  note    = {DOI:10.1145/1498765.1498785}
+}
+@inproceedings{chen2016eyeriss,
+  title     = {Eyeriss: A Spatial Architecture for Energy-Efficient Dataflow for Convolutional Neural Networks},
+  author    = {Chen, Yu-Hsin and Emer, Joel and Sze, Vivienne},
+  booktitle = {ACM/IEEE International Symposium on Computer Architecture (ISCA)},
+  year      = {2016},
+  note      = {DOI:10.1145/3007787.3001177}
+}
+@article{sze2017efficient,
+  title   = {Efficient Processing of Deep Neural Networks: A Tutorial and Survey},
+  author  = {Sze, Vivienne and Chen, Yu-Hsin and Yang, Tien-Ju and Emer, Joel S.},
+  journal = {Proceedings of the IEEE},
+  volume  = {105},
+  number  = {12},
+  pages   = {2295--2329},
+  year    = {2017},
+  note    = {arXiv:1703.09039; DOI:10.1109/JPROC.2017.2761740}
+}
+
+% ---- NVDLA / DLA & fixed-function INT8 accelerators ----
+@misc{nvdla,
+  title        = {{NVDLA}: {NVIDIA} Deep Learning Accelerator (Open Architecture)},
+  author       = {{NVIDIA}},
+  howpublished = {\url{http://nvdla.org}},
+  note         = {Accessed 2026}
+}
+@inproceedings{farshchi2019nvdla,
+  title     = {Integrating {NVIDIA} Deep Learning Accelerator ({NVDLA}) with {RISC-V} SoC on FireSim},
+  author    = {Farshchi, Farzad and Huang, Qijing and Yun, Heechul},
+  booktitle = {2nd Workshop on Energy Efficient Machine Learning and Cognitive Computing for Embedded Applications (EMC2)},
+  year      = {2019},
+  note      = {arXiv:1903.06495}
+}
+@misc{jetsonconcurrent2025,
+  title  = {Profiling Concurrent Vision Inference Workloads on {NVIDIA} Jetson --- Extended},
+  author = {Chakraborty, Abhinaba and Tavernier, Wouter and Kourtis, Akis and Pickavet, Mario and Oikonomakis, Andreas and Colle, Didier},
+  year   = {2025},
+  note   = {arXiv:2508.08430}
+}
+
+% ---- Automotive compute & redundancy (framing) ----
+@manual{iso26262,
+  title  = {ISO 26262: Road Vehicles --- Functional Safety},
+  author = {{International Organization for Standardization}},
+  year   = {2018}
+}
+@misc{nvidiadrive,
+  title  = {{NVIDIA} DRIVE Functional-Safety Architecture},
+  author = {{NVIDIA}},
+  year   = {2018},
+  note   = {Whitepaper}
+}
+@misc{hetsched2022,
+  title  = {HetSched: Quality-of-Mission Aware Scheduling for Autonomous Vehicle SoCs},
+  author = {Amarnath, Aporva and Pal, Subhankar and Kassa, Hiwot and Vega, Augusto and Buyuktosunoglu, Alper and Franke, Hubertus and Wellman, John-David and Dreslinski, Ronald and Bose, Pradip},
+  year   = {2022},
+  note   = {arXiv:2203.13396}
+}
