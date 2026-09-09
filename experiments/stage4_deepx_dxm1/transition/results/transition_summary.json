@@ -1,0 +1,585 @@
+{
+  "axis": "DX-M1 regime transition curve (compute-bound <-> D2H-bound)",
+  "closes": "crossover axis (274bffa) caveat #3: proved 2 regimes exist at the extremes (resnet50 compute-bound / yolo26n D2H-bound) but did not trace the transition",
+  "environment": {
+    "host": "Raspberry Pi 5 (Cortex-A76 x4, Debian 13)",
+    "npu": "DEEPX DX-M1 (3 cores @1000MHz), PCIe Gen2 x1",
+    "runtime": "DXRT v3.4.2 (dxbenchmark), FW v2.7.4",
+    "method": "fixed heavy conv trunk (body_depth=18, ~2.7ms Inference, all NPU / 0 CPU group) + 4-ch bottleneck + 1x1 expander head sweeps output(D2H) size at constant compute; dxbenchmark synthesizes input (latency/regime only, random weights -> no accuracy claim)",
+    "core_map": "-n 1 = 1 core (NPU_0) | -n 4 = 2 cores (NPU_0/1) | -n 0 = 3 cores (NPU_ALL)"
+  },
+  "fixed_compute_check": {
+    "inference_p50_1c_ms_min": 2.677,
+    "inference_p50_1c_ms_max": 2.809,
+    "inference_p50_1c_ms_mean": 2.704,
+    "spread_pct": 4.9,
+    "h2d_p50_1c_ms_min": 0.466,
+    "h2d_p50_1c_ms_max": 0.559,
+    "out_bytes_min": 3920,
+    "out_bytes_max": 3999968,
+    "output_sweep_x": 1020.4,
+    "note": "Inference and H2D ~constant across the 1020.4x output-size sweep -> compute and input transfer are the FIXED variables; only D2H (output) is swept (D2H itself spans ~126x in time, less than output size because a fixed ~0.14ms transfer-overhead floor dominates at small output)."
+  },
+  "transition": {
+    "compute_bound_plateau": "cout<=163 (out<=125KB): scaling ~2.98x near-linear, jobs 33/33/33",
+    "transition_band": "out ~250KB-1MB: scaling 1.99x->1.21x, core2 progressively starved",
+    "d2h_bound": "out>=~2MB: scaling ~1.00x flat, one core hogs link (93/6/0 -> 98/2/0, matches crossover-axis yolo26n 472/28/2)",
+    "intrinsic_crossover_out_bytes": 1095949,
+    "intrinsic_crossover_note": "D2H p50 == fixed Inference (2.70ms) -> a SINGLE inference becomes D2H-bound (~1.05 MB output)",
+    "link_saturation_onset_out_bytes": 326377,
+    "link_saturation_note": "D2H == Inference/3 -> 3 cores can no longer all be fed by the one shared PCIe link, 3c/1c scaling starts breaking (~319 KB)",
+    "band_width_x": 3.36,
+    "band_width_note": "transition band spans ~3.4x in output size ~= N_cores (3): N cores share one D2H link, so multi-core throughput saturates at 1/N the per-core D2H that bounds a single inference",
+    "d2h_linear_fit": {
+      "ms_per_MB": 2.456,
+      "intercept_ms": 0.137,
+      "region": "cout<=1276 (out<=1MB); D2H turns super-linear above ~2MB"
+    }
+  },
+  "headline": {
+    "scaling_span": "3c/1c core-scaling traces 2.98x (compute-bound) -> 1.00x (D2H-bound) monotonically across a 1020.4x output-size sweep at FIXED compute",
+    "vs_crossover_axis": "refines 274bffa: the regime boundary is not a knife-edge but a ~3x-wide band (= N_cores), because output size sets D2H and N cores share one PCIe link"
+  },
+  "rows": [
+    {
+      "name": "tr_c5",
+      "cout": 5,
+      "out_bytes": 3920,
+      "out_shape": [
+        1,
+        5,
+        14,
+        14
+      ],
+      "body_depth": 18,
+      "trunk_gmacs": 8.923,
+      "groups": [
+        [
+          "1",
+          "NPU"
+        ],
+        [
+          "0",
+          "CPU"
+        ]
+      ],
+      "inference_p50_1c_ms": 2.677,
+      "inference_p50_3c_ms": 2.68,
+      "h2d_p50_1c_ms": 0.494,
+      "d2h_p50_1c_ms": 0.141,
+      "d2h_p50_3c_ms": 0.153,
+      "fps_1c": 368.46,
+      "fps_2c": 736.65,
+      "fps_3c": 1098.65,
+      "scale_3c_1c": 2.982,
+      "scale_2c_1c": 1.999,
+      "jobs_3c": [
+        1023,
+        1023,
+        1024
+      ],
+      "jobs_3c_pct": [
+        33,
+        33,
+        33
+      ],
+      "single_inference_regime": "compute-bound",
+      "throughput_scaling_regime": "near-linear"
+    },
+    {
+      "name": "tr_c20",
+      "cout": 20,
+      "out_bytes": 15680,
+      "out_shape": [
+        1,
+        20,
+        14,
+        14
+      ],
+      "body_depth": 18,
+      "trunk_gmacs": 8.923,
+      "groups": [
+        [
+          "1",
+          "NPU"
+        ],
+        [
+          "0",
+          "CPU"
+        ]
+      ],
+      "inference_p50_1c_ms": 2.678,
+      "inference_p50_3c_ms": 2.68,
+      "h2d_p50_1c_ms": 0.466,
+      "d2h_p50_1c_ms": 0.147,
+      "d2h_p50_3c_ms": 0.194,
+      "fps_1c": 368.48,
+      "fps_2c": 735.8,
+      "fps_3c": 1092.58,
+      "scale_3c_1c": 2.965,
+      "scale_2c_1c": 1.997,
+      "jobs_3c": [
+        1024,
+        1024,
+        1024
+      ],
+      "jobs_3c_pct": [
+        33,
+        33,
+        33
+      ],
+      "single_inference_regime": "compute-bound",
+      "throughput_scaling_regime": "near-linear"
+    },
+    {
+      "name": "tr_c41",
+      "cout": 41,
+      "out_bytes": 32144,
+      "out_shape": [
+        1,
+        41,
+        14,
+        14
+      ],
+      "body_depth": 18,
+      "trunk_gmacs": 8.923,
+      "groups": [
+        [
+          "1",
+          "NPU"
+        ],
+        [
+          "0",
+          "CPU"
+        ]
+      ],
+      "inference_p50_1c_ms": 2.677,
+      "inference_p50_3c_ms": 2.682,
+      "h2d_p50_1c_ms": 0.466,
+      "d2h_p50_1c_ms": 0.174,
+      "d2h_p50_3c_ms": 0.218,
+      "fps_1c": 367.43,
+      "fps_2c": 730.56,
+      "fps_3c": 1096.71,
+      "scale_3c_1c": 2.985,
+      "scale_2c_1c": 1.988,
+      "jobs_3c": [
+        1024,
+        1024,
+        1024
+      ],
+      "jobs_3c_pct": [
+        33,
+        33,
+        33
+      ],
+      "single_inference_regime": "compute-bound",
+      "throughput_scaling_regime": "near-linear"
+    },
+    {
+      "name": "tr_c82",
+      "cout": 82,
+      "out_bytes": 64288,
+      "out_shape": [
+        1,
+        82,
+        14,
+        14
+      ],
+      "body_depth": 18,
+      "trunk_gmacs": 8.923,
+      "groups": [
+        [
+          "1",
+          "NPU"
+        ],
+        [
+          "0",
+          "CPU"
+        ]
+      ],
+      "inference_p50_1c_ms": 2.679,
+      "inference_p50_3c_ms": 2.683,
+      "h2d_p50_1c_ms": 0.467,
+      "d2h_p50_1c_ms": 0.319,
+      "d2h_p50_3c_ms": 0.379,
+      "fps_1c": 367.39,
+      "fps_2c": 735.57,
+      "fps_3c": 1097.27,
+      "scale_3c_1c": 2.987,
+      "scale_2c_1c": 2.002,
+      "jobs_3c": [
+        1024,
+        1024,
+        1024
+      ],
+      "jobs_3c_pct": [
+        33,
+        33,
+        33
+      ],
+      "single_inference_regime": "compute-bound",
+      "throughput_scaling_regime": "near-linear"
+    },
+    {
+      "name": "tr_c163",
+      "cout": 163,
+      "out_bytes": 127792,
+      "out_shape": [
+        1,
+        163,
+        14,
+        14
+      ],
+      "body_depth": 18,
+      "trunk_gmacs": 8.923,
+      "groups": [
+        [
+          "1",
+          "NPU"
+        ],
+        [
+          "0",
+          "CPU"
+        ]
+      ],
+      "inference_p50_1c_ms": 2.682,
+      "inference_p50_3c_ms": 3.279,
+      "h2d_p50_1c_ms": 0.468,
+      "d2h_p50_1c_ms": 0.433,
+      "d2h_p50_3c_ms": 0.754,
+      "fps_1c": 367.42,
+      "fps_2c": 734.07,
+      "fps_3c": 892.28,
+      "scale_3c_1c": 2.429,
+      "scale_2c_1c": 1.998,
+      "jobs_3c": [
+        1024,
+        1024,
+        1024
+      ],
+      "jobs_3c_pct": [
+        33,
+        33,
+        33
+      ],
+      "single_inference_regime": "compute-bound",
+      "throughput_scaling_regime": "near-linear"
+    },
+    {
+      "name": "tr_c327",
+      "cout": 327,
+      "out_bytes": 256368,
+      "out_shape": [
+        1,
+        327,
+        14,
+        14
+      ],
+      "body_depth": 18,
+      "trunk_gmacs": 8.923,
+      "groups": [
+        [
+          "1",
+          "NPU"
+        ],
+        [
+          "0",
+          "CPU"
+        ]
+      ],
+      "inference_p50_1c_ms": 2.687,
+      "inference_p50_3c_ms": 3.291,
+      "h2d_p50_1c_ms": 0.472,
+      "d2h_p50_1c_ms": 0.776,
+      "d2h_p50_3c_ms": 1.386,
+      "fps_1c": 362.81,
+      "fps_2c": 656.71,
+      "fps_3c": 720.24,
+      "scale_3c_1c": 1.985,
+      "scale_2c_1c": 1.81,
+      "jobs_3c": [
+        943,
+        855,
+        879
+      ],
+      "jobs_3c_pct": [
+        35,
+        32,
+        33
+      ],
+      "single_inference_regime": "compute-bound",
+      "throughput_scaling_regime": "sub-linear"
+    },
+    {
+      "name": "tr_c490",
+      "cout": 490,
+      "out_bytes": 384160,
+      "out_shape": [
+        1,
+        490,
+        14,
+        14
+      ],
+      "body_depth": 18,
+      "trunk_gmacs": 8.923,
+      "groups": [
+        [
+          "1",
+          "NPU"
+        ],
+        [
+          "0",
+          "CPU"
+        ]
+      ],
+      "inference_p50_1c_ms": 2.692,
+      "inference_p50_3c_ms": 4.326,
+      "h2d_p50_1c_ms": 0.477,
+      "d2h_p50_1c_ms": 1.016,
+      "d2h_p50_3c_ms": 1.742,
+      "fps_1c": 361.59,
+      "fps_2c": 652.99,
+      "fps_3c": 676.61,
+      "scale_3c_1c": 1.871,
+      "scale_2c_1c": 1.806,
+      "jobs_3c": [
+        916,
+        913,
+        909
+      ],
+      "jobs_3c_pct": [
+        33,
+        33,
+        33
+      ],
+      "single_inference_regime": "compute-bound",
+      "throughput_scaling_regime": "sub-linear"
+    },
+    {
+      "name": "tr_c653",
+      "cout": 653,
+      "out_bytes": 511952,
+      "out_shape": [
+        1,
+        653,
+        14,
+        14
+      ],
+      "body_depth": 18,
+      "trunk_gmacs": 8.923,
+      "groups": [
+        [
+          "1",
+          "NPU"
+        ],
+        [
+          "0",
+          "CPU"
+        ]
+      ],
+      "inference_p50_1c_ms": 2.7,
+      "inference_p50_3c_ms": 4.336,
+      "h2d_p50_1c_ms": 0.487,
+      "d2h_p50_1c_ms": 1.367,
+      "d2h_p50_3c_ms": 2.224,
+      "fps_1c": 360.34,
+      "fps_2c": 642.89,
+      "fps_3c": 574.61,
+      "scale_3c_1c": 1.595,
+      "scale_2c_1c": 1.784,
+      "jobs_3c": [
+        774,
+        667,
+        722
+      ],
+      "jobs_3c_pct": [
+        36,
+        31,
+        33
+      ],
+      "single_inference_regime": "compute-bound",
+      "throughput_scaling_regime": "sub-linear"
+    },
+    {
+      "name": "tr_c980",
+      "cout": 980,
+      "out_bytes": 768320,
+      "out_shape": [
+        1,
+        980,
+        14,
+        14
+      ],
+      "body_depth": 18,
+      "trunk_gmacs": 8.923,
+      "groups": [
+        [
+          "1",
+          "NPU"
+        ],
+        [
+          "0",
+          "CPU"
+        ]
+      ],
+      "inference_p50_1c_ms": 2.704,
+      "inference_p50_3c_ms": 2.72,
+      "h2d_p50_1c_ms": 0.517,
+      "d2h_p50_1c_ms": 1.98,
+      "d2h_p50_3c_ms": 3.605,
+      "fps_1c": 360.88,
+      "fps_2c": 534.51,
+      "fps_3c": 538.31,
+      "scale_3c_1c": 1.492,
+      "scale_2c_1c": 1.481,
+      "jobs_3c": [
+        862,
+        846,
+        175
+      ],
+      "jobs_3c_pct": [
+        46,
+        45,
+        9
+      ],
+      "single_inference_regime": "compute-bound",
+      "throughput_scaling_regime": "sub-linear"
+    },
+    {
+      "name": "tr_c1276",
+      "cout": 1276,
+      "out_bytes": 1000384,
+      "out_shape": [
+        1,
+        1276,
+        14,
+        14
+      ],
+      "body_depth": 18,
+      "trunk_gmacs": 8.923,
+      "groups": [
+        [
+          "1",
+          "NPU"
+        ],
+        [
+          "0",
+          "CPU"
+        ]
+      ],
+      "inference_p50_1c_ms": 2.711,
+      "inference_p50_3c_ms": 2.719,
+      "h2d_p50_1c_ms": 0.519,
+      "d2h_p50_1c_ms": 2.429,
+      "d2h_p50_3c_ms": 4.483,
+      "fps_1c": 359.79,
+      "fps_2c": 432.73,
+      "fps_3c": 435.64,
+      "scale_3c_1c": 1.211,
+      "scale_2c_1c": 1.203,
+      "jobs_3c": [
+        837,
+        811,
+        42
+      ],
+      "jobs_3c_pct": [
+        50,
+        48,
+        2
+      ],
+      "single_inference_regime": "compute-bound",
+      "throughput_scaling_regime": "sub-linear"
+    },
+    {
+      "name": "tr_c2551",
+      "cout": 2551,
+      "out_bytes": 1999984,
+      "out_shape": [
+        1,
+        2551,
+        14,
+        14
+      ],
+      "body_depth": 18,
+      "trunk_gmacs": 8.923,
+      "groups": [
+        [
+          "1",
+          "NPU"
+        ],
+        [
+          "0",
+          "CPU"
+        ]
+      ],
+      "inference_p50_1c_ms": 2.748,
+      "inference_p50_3c_ms": 2.749,
+      "h2d_p50_1c_ms": 0.542,
+      "d2h_p50_1c_ms": 8.892,
+      "d2h_p50_3c_ms": 8.893,
+      "fps_1c": 223.46,
+      "fps_2c": 222.64,
+      "fps_3c": 222.52,
+      "scale_3c_1c": 0.996,
+      "scale_2c_1c": 0.996,
+      "jobs_3c": [
+        979,
+        65,
+        5
+      ],
+      "jobs_3c_pct": [
+        93,
+        6,
+        0
+      ],
+      "single_inference_regime": "D2H-bound",
+      "throughput_scaling_regime": "flat"
+    },
+    {
+      "name": "tr_c5102",
+      "cout": 5102,
+      "out_bytes": 3999968,
+      "out_shape": [
+        1,
+        5102,
+        14,
+        14
+      ],
+      "body_depth": 18,
+      "trunk_gmacs": 8.923,
+      "groups": [
+        [
+          "1",
+          "NPU"
+        ],
+        [
+          "0",
+          "CPU"
+        ]
+      ],
+      "inference_p50_1c_ms": 2.809,
+      "inference_p50_3c_ms": 2.808,
+      "h2d_p50_1c_ms": 0.559,
+      "d2h_p50_1c_ms": 17.708,
+      "d2h_p50_3c_ms": 17.71,
+      "fps_1c": 112.09,
+      "fps_2c": 111.81,
+      "fps_3c": 112.04,
+      "scale_3c_1c": 1.0,
+      "scale_2c_1c": 0.998,
+      "jobs_3c": [
+        591,
+        10,
+        2
+      ],
+      "jobs_3c_pct": [
+        98,
+        2,
+        0
+      ],
+      "single_inference_regime": "D2H-bound",
+      "throughput_scaling_regime": "flat"
+    }
+  ]
+}

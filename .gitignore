@@ -19,6 +19,15 @@ experiments/stage4_deepx_dxm1/detection/results/predictions_fp32.json
 experiments/stage4_deepx_dxm1/detection/results/predictions_npu_coco.json
 experiments/stage4_deepx_dxm1/detection/results/predictions_npu_ppe.json
 
+# 4단계 DEEPX 전이 곡선 축 대용량/아카이브 (합성 고정연산 모델 스윕)
+#   정본 SSOT는 results/transition_summary.json + raw/(analyzed_n{1,2,3}.json·corescale.csv)
+#   + dxnn/manifest.json 으로 충분. 아래는 스크립트(build_transition_models.py·
+#   run_transition_bench.sh)로 재생성 가능한 빌드 산출물·원시 프로파일러 덤프.
+experiments/stage4_deepx_dxm1/transition/onnx/
+experiments/stage4_deepx_dxm1/transition/dxnn/tr_c*/
+experiments/stage4_deepx_dxm1/transition/logs/
+experiments/stage4_deepx_dxm1/transition/raw/tr_c*/profiler_n3.json
+
 # Python
 __pycache__/
 *.py[cod]

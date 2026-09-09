@@ -701,6 +701,34 @@ DRP-AI TVM은 **TVM 기반**이라, DRP-AI가 못 맡는 op는 **TVM이 CPU(Arm 
 > 📄 전체 실측·SVG·판정: [`../logs/stage4_deepx_dxm1_crossover_report.html`](../logs/stage4_deepx_dxm1_crossover_report.html) · 데이터·스크립트·재현: [`../experiments/stage4_deepx_dxm1/crossover/`](../experiments/stage4_deepx_dxm1/crossover/) · 벤치(캐비앗 ③) 짝: [§4-D](#4-d--실측-deepx-축-온디바이스-dx-m1-m2-벤더-npu--raspberry-pi-5-cortex-a76-호스트)
 > **캐비앗:** ① 절대 처리량·지연은 batch1·prebuilt `.dxnn`·Pi 5 Gen2×1 → 상대 관계(코어 스케일·D2H/연산 비)만 유효. ② host-bound은 **Pi 5의 Gen2×1** 탓 — 네이티브 Gen3×4(~8× 대역)면 두 YOLO의 D2H 벽 위치가 달라질 수 있음(미측정). ③ crossover는 **2 regime의 존재를 증명**(전이 곡선 아님 — 중간 출력 크기 미측정). ④ YOLOV5S(입력 512×512)는 yolo26n(640×640)과 1:1 아님 — 공유 결론(둘 다 D2H-bound)만 사용. ⑤ Pi 5는 DEEPX 호스트일 뿐 **자동차 3벤더(TI/Qualcomm/Renesas) 아님**.
 
+#### 4-D(전이). 🔬 실측 (온디바이스): DX-M1 compute-bound ↔ D2H-bound 전이 곡선 — 밴드 폭 = N_cores
+
+> **위 §4-D(크로스오버) 캐비앗 ③("crossover는 2 regime의 존재를 증명 — 전이 곡선 아님, 중간 출력 크기 미측정")을 실측으로 닫는다.** 크로스오버 축은 서로 다른 **모델**(resnet50 4KB / yolo26n 2.82MB)로 두 극점만 찍었다. 여기선 **하나의 변수(출력 크기)만 연속 스윕**해 그 사이 곡선을 긋는다. 장치 = **변수 격리**: **고정된 무거운 conv 트렁크**(body_depth=18, 8.923 GMACs, Inference ~2.70ms, 전부 NPU)가 연산을 상수로 잡고, **4채널 병목 + 1×1 확장 헤드**(`Conv2d(4→C_out,1×1)`)가 출력 `[1,C_out,14,14]` fp32 ≈ 784·C_out B만 키운다 → C_out ∈ {5…5102}로 출력만 **3.83KB→3.82MB(1020×)** 스윕(랜덤 weight·합성 입력 → 지연·레짐만, 정확도 무주장).
+
+**헤드라인 (1): 연산 고정에서 출력만 키우니 3코어 스케일이 2.98×→1.00× 단조 하강.** Inference 1코어 p50 = **2.677–2.809ms**(평균 2.704, spread **4.9%**)로 사실상 고정(H2D도 0.466–0.559ms 고정), 오직 D2H만 스윕:
+
+| 출력 | Inf 1c | D2H 1c | **3c/1c** | 잡 분포% | single-inf |
+|--:|--:|--:|:--:|:--:|:--|
+| 3.83 KB | 2.677 | 0.141 | **2.982** | 33/33/33 | compute |
+| 124.8 KB | 2.682 | 0.433 | **2.429** | 33/33/33 | compute |
+| 250.4 KB | 2.687 | 0.776 | **1.985** | 35/32/33 | compute |
+| 500.0 KB | 2.700 | 1.367 | **1.595** | 36/31/33 | compute |
+| 750.3 KB | 2.704 | 1.980 | **1.492** | 46/45/9 | compute |
+| 977.0 KB | 2.711 | 2.429 | **1.211** | 50/48/2 | compute |
+| 1.95 MB | 2.748 | 8.892 | **0.996** | 93/6/0 | **D2H** |
+| 3.82 MB | 2.809 | 17.708 | **1.000** | 98/2/0 | **D2H** |
+
+*(≤125KB 구간은 3c/1c ~2.98× 평탄; 12개 모델 전량은 리포트·[`results/transition_summary.json`](../experiments/stage4_deepx_dxm1/transition/results/transition_summary.json).)* → 연산이 고정인데 **3코어 처리량 이득이 매끄럽게 무너지고**, 동시에 3코어 잡 분포가 **33/33/33 → 98/2/0**으로 이동(공유 PCIe가 코어 1·2를 굶기고 코어 0이 링크 독점 — D2H-bound 축 yolo26n 472/28/2와 같은 시그니처). 크로스오버가 찍은 두 극점 **사이의 곡선을 실제로 그은 것**.
+
+**헤드라인 (2): 레짐 경계는 칼날이 아니라 폭 ~3.36× 밴드 — 그 폭 = N_cores.** 전이엔 두 문턱이 있다: **링크 포화 시작**(D2H = Inference/3 → **~319KB**, 3코어를 하나의 링크가 더는 다 못 먹여 3c/1c 스케일링이 깨지기 시작) → **고유 크로스오버**(D2H = Inference(2.70ms) → **~1.05MB**, 단일 추론이 D2H-bound로 전환). 두 문턱의 비 = 1.05MB/319KB = **3.36× ≈ N_cores(3)**. 우연이 아니다 — **N개 코어가 하나의 D2H 링크를 공유**하므로, 단일 추론을 묶는 per-core D2H의 **1/N** 지점에서 이미 멀티코어 처리량이 포화한다(D2H 선형 fit 2.456 ms/MB로 두 문턱 산출). 이는 크로스오버(274bffa)를 **반증이 아니라 정밀화** — "regime이 갈린다"는 이진 결론에 **경계는 폭을 가진 밴드이고 그 폭이 코어 수**라는 정량 구조를 더한다.
+
+- **왜 D2H만 스윕됐나(변수 격리 확증).** 12개 모델 전부 `groups = [["1","NPU"],["0","CPU"]]` = **1 NPU / 0 CPU 그룹**(전부 온-NPU) → D2H는 순수 device→host 출력 전송이지 [트랜스포머 축](#4-d트랜스포머--실측-온디바이스-dx-m1-detr-int8--폭락-없음트랜스포머는-호스트-fp32)의 host-compute confound가 아니다. 출력은 1020× 늘지만 D2H 시간은 126×만(작은 출력에선 ~0.14ms 전송 오버헤드 바닥이 지배).
+- **스테이지 규약(크로스오버 축과 동일).** D2H p50은 고유값(1c≈3c). Inference p50은 **1코어(비경합)** 값 — 3코어 Inference는 전이 구간(출력 125–500KB)에서 3.28–4.34ms로 부풀지만 이는 **연산 증가가 아니라 출력 핸드오프 backpressure(처리량 아티팩트)**. `dxbenchmark -n`은 코어 ID(1코어 `-n 1`·2코어 `-n 4`·3코어 `-n 0`).
+- **설계 규칙(크로스오버·§2-4와 정합).** 멀티코어 이득의 상한은 코어 수가 아니라 **출력이 밴드의 어디 있느냐**다 — 출력 < 링크포화문턱(여기 ~319KB)이면 N× 스케일, 그 위 밴드에선 선형 감쇠, 크로스오버 위(여기 ~1.05MB)에선 코어를 늘려도 무의미. "가속기 코어 수보다 데이터 경로가 천장"(§2-4 iGPU∥DLA와 같은 결).
+
+> 📄 전체 실측·SVG·판정: [`../logs/stage4_deepx_dxm1_transition_report.html`](../logs/stage4_deepx_dxm1_transition_report.html) · 데이터·스크립트·재현: [`../experiments/stage4_deepx_dxm1/transition/`](../experiments/stage4_deepx_dxm1/transition/) · 극점(2 regime) 짝: [§4-D(크로스오버)](#4-d크로스오버--실측-온디바이스-dx-m1-host-bound--npu-bound--코어-스케일링--d2h-병목)
+> **캐비앗:** ① 합성 랜덤-weight 모델 → **지연·레짐만 유효**(정확도 무주장). ② batch1·Pi5 PCIe Gen2×1 → **밴드 폭 = N_cores**는 링크 대역 무관(코어가 링크 공유하는 구조적 사실)이나 밴드의 **절대 위치**(319KB·1.05MB)는 Gen2×1 대역 의존(네이티브 Gen3×4면 오른쪽 이동, 미측정). ③ 3코어 Inference 부풀림은 처리량 아티팩트이지 연산 증가 아님 — 고정연산 근거는 1코어 p50(2.70ms·spread 4.9%). ④ 두 문턱은 선형 fit(2.456 ms/MB, 출력≤1MB) 외삽값(D2H는 ~2MB 초과서 super-linear) — 정의("D2H=Inf/3"/"D2H=Inf")의 산출이지 직접 측정점 아님. ⑤ Pi 5는 DEEPX 호스트일 뿐 **자동차 3벤더(TI/Qualcomm/Renesas) 아님**.
+
 #### 4-D(검출). 🔬 실측 (온디바이스): DX-M1 YOLO26n INT8 정확도 + NMS-fold 레짐
 
 > **정확도 축과 크로스오버 축을 하나의 검출 모델로 잇는다.** [정확도 축](#4-d정확도--실측-온디바이스-dx-m1-정확도-축--외부-qdq-거부--cpunpu-경로-의존)은 분류(ResNet50 top-1)였고 [크로스오버 축](#4-d크로스오버--실측-온디바이스-dx-m1-host-bound--npu-bound--코어-스케일링--d2h-병목)은 host-bound↔NPU-bound 레짐이었으나 정확도 미측정(`yolo26n` 라벨셋)이었다. 여기서 **같은 `yolo26n` 640으로 COCO val2017 mAP(정확도)와 온보드 스테이지 프로파일(레짐)을 동시에** 잰다. 결정적 장치(정확도 축과 동일): **비트 동일 letterbox npy + 공유 `[1,300,6]` 디코드**로 FP32(x86 ORT)·INT8(Pi DX-M1)이 같은 입력을 같은 코드로 디코드 → mAP 차 = 양자화 only.

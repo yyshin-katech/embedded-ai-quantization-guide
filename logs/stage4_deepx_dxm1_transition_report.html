@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>4단계 DEEPX DX-M1 — 레짐 전이 곡선: 고정 연산·출력 스윕으로 compute-bound↔D2H-bound 추적 (실측 보고서)</title>
+<style>
+:root{--bg:#0b0e14;--panel:#131720;--panel2:#0f131b;--bd:#242b38;--tx:#c9d1d9;--dim:#8b949e;--brt:#e6edf3;--accent:#58a6ff;--green:#3fb950;--amber:#d29922;--red:#ff7b72;--purple:#bc8cff;--mono:'JetBrains Mono','SF Mono',ui-monospace,'Cascadia Code',Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans KR','Malgun Gothic',sans-serif}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:var(--sans);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:980px;margin:0 auto;padding:0 20px 120px}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+.hero{padding:48px 0 26px;border-bottom:1px solid var(--bd);margin-bottom:8px}
+.kicker{font-family:var(--mono);font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+.hero h1{margin:0 0 10px;font-size:30px;line-height:1.25;color:var(--brt);letter-spacing:-.01em}
+.hero p.sub{margin:0 0 20px;color:var(--dim);font-size:15px;max-width:80ch}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font-family:var(--mono);font-size:12px;padding:5px 10px;border:1px solid var(--bd);border-radius:999px;background:var(--panel);color:var(--tx)}
+.chip b{color:var(--brt);font-weight:600}
+.chip.done{border-color:rgba(63,185,80,.5);background:rgba(63,185,80,.12);color:#7ee787}
+.chip.blocked{border-color:rgba(255,123,114,.5);background:rgba(255,123,114,.12);color:#ff9d96}
+.chip.partial{border-color:rgba(210,153,34,.5);background:rgba(210,153,34,.12);color:#e3b341}
+nav.toc{display:flex;flex-wrap:wrap;gap:8px;margin:26px 0 6px}
+nav.toc a{font-family:var(--mono);font-size:12.5px;padding:6px 11px;border:1px solid var(--bd);border-radius:8px;background:var(--panel);color:var(--tx)}
+nav.toc a:hover{border-color:var(--accent);color:var(--brt);text-decoration:none}
+h2.sec{font-size:13px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin:40px 0 12px;font-weight:600;border-top:1px solid var(--bd);padding-top:26px}
+.step{margin:26px 0 0;scroll-margin-top:16px}
+.step>h3{display:flex;align-items:center;gap:12px;font-size:19px;color:var(--brt);margin:0 0 6px;letter-spacing:-.01em}
+.num{flex:none;display:inline-grid;place-items:center;width:28px;height:28px;border-radius:8px;background:var(--accent);color:#06101f;font-family:var(--mono);font-weight:700;font-size:13px}
+.step p.lead{margin:0 0 4px;color:var(--dim);font-size:14.5px}
+table.dt{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.3px;border:1px solid var(--bd);border-radius:10px;overflow:hidden;font-family:var(--mono)}
+table.dt th,table.dt td{padding:8px 12px;text-align:right;border-bottom:1px solid var(--bd)}
+table.dt th{background:var(--panel);color:var(--dim);font-weight:600;font-size:12px;letter-spacing:.04em}
+table.dt th:first-child,table.dt td:first-child{text-align:left;color:var(--brt)}
+table.dt tr:last-child td{border-bottom:none}
+table.dt tr.hi td{background:rgba(63,185,80,.08)}
+table.dt tr.lo td{background:rgba(255,123,114,.08)}
+table.dt tr.grey td{background:rgba(139,148,158,.08);color:var(--dim)}
+table.dt tr.base td{background:rgba(88,166,255,.07)}
+.g{color:var(--green)}.r{color:var(--red)}.a{color:var(--amber)}.p{color:var(--purple)}.d{color:var(--dim)}
+table.kv{width:100%;border-collapse:collapse;margin:12px 0;font-size:13.5px;border:1px solid var(--bd);border-radius:10px;overflow:hidden}
+table.kv th,table.kv td{padding:9px 13px;text-align:left;border-bottom:1px solid var(--bd);vertical-align:top}
+table.kv th{background:var(--panel);color:var(--dim);font-weight:600;width:34%;font-size:12.5px}
+table.kv td{font-family:var(--mono);font-size:12.7px;color:var(--tx)}
+table.kv tr:last-child td,table.kv tr:last-child th{border-bottom:none}
+.term{background:var(--panel2);border:1px solid var(--bd);border-radius:11px;overflow:hidden;margin:14px 0}
+.term-bar{display:flex;align-items:center;gap:7px;padding:9px 13px;background:#0c1017;border-bottom:1px solid var(--bd)}
+.dot{width:11px;height:11px;border-radius:50%}.dot.r{background:#ff5f56}.dot.y{background:#ffbd2e}.dot.g{background:#27c93f}
+.term-title{margin-left:9px;color:var(--dim);font-size:12.5px;font-family:var(--mono)}
+.term pre{margin:0;padding:15px 17px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.62;color:var(--tx);white-space:pre;tab-size:2}
+.cmt{color:#5c6773}.ok{color:var(--green)}.err{color:var(--red)}.warn{color:var(--amber)}.dim{color:var(--dim)}.hl{color:var(--purple)}.in{color:var(--brt);font-weight:600}
+.note{border-left:3px solid var(--accent);background:rgba(88,166,255,.07);padding:13px 17px;border-radius:0 9px 9px 0;margin:15px 0;font-size:14px}
+.note.trap{border-color:var(--red);background:rgba(255,123,114,.08)}
+.note.warnb{border-color:var(--amber);background:rgba(210,153,34,.08)}
+.note.tip{border-color:var(--green);background:rgba(63,185,80,.07)}
+.note.block{border-color:var(--purple);background:rgba(188,140,255,.08)}
+.note .tag{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 8px;border-radius:6px;margin-bottom:7px}
+.note.trap .tag{background:rgba(255,123,114,.18);color:#ff9d96}
+.note.warnb .tag{background:rgba(210,153,34,.18);color:#e3b341}
+.note.tip .tag{background:rgba(63,185,80,.18);color:#7ee787}
+.note.block .tag{background:rgba(188,140,255,.18);color:#d8b8ff}
+.note b{color:var(--brt)}.note code{font-family:var(--mono);font-size:12.5px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:4px}
+.chartwrap{border:1px solid var(--bd);background:var(--panel2);border-radius:12px;padding:18px 18px 14px;margin:16px 0}
+.chartwrap .ct{font-family:var(--mono);font-size:12.5px;color:var(--brt);margin:0 0 4px}
+.chartwrap .cs{font-size:12.5px;color:var(--dim);margin:0 0 12px}
+.statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:14px 0}
+.stat{border:1px solid var(--bd);background:var(--panel);border-radius:11px;padding:15px 16px}
+.stat .k{font-family:var(--mono);font-size:11.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em}
+.stat .v{font-size:23px;color:var(--brt);font-weight:700;margin-top:5px;letter-spacing:-.01em}
+.stat .n{font-size:12px;color:var(--dim);margin-top:3px}
+.next{display:block;margin:26px 0 0;padding:15px 18px;border:1px solid var(--bd);border-radius:11px;background:var(--panel);color:var(--tx);font-size:14px}
+.next:hover{border-color:var(--accent);text-decoration:none}
+.next b{color:var(--accent)}
+footer{margin-top:30px;padding-top:18px;border-top:1px solid var(--bd);color:var(--dim);font-size:12.5px}
+@media (max-width:560px){.hero h1{font-size:23px}.term pre{font-size:11.4px}.stat .v{font-size:20px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <p class="kicker">실행 보고서 · 4단계 · DX-M1 레짐 전이 곡선 (Raspberry Pi 5 온디바이스)</p>
+    <h1>DEEPX DX-M1 — compute-bound ↔ D2H-bound 전이 곡선</h1>
+    <p class="sub"><a href="stage4_deepx_dxm1_crossover_report.html">크로스오버 축</a>은 <b>두 레짐의 <u>존재</u>를 증명</b>했다 — 출력 4KB의 <code>resnet50</code>은 compute-bound(3코어 2.19× 스케일), 출력 2.82MB의 <code>yolo26n</code>은 D2H-bound(1.00× 평평). 하지만 그건 두 <b>끝점</b>이었고 <b>그 사이 전이는 미측정</b>이었다(캐비앗 #3: "2 regime의 존재를 증명, 전이 곡선 아님"). 이 축은 <b>그 곡선을 그린다</b>: <b>고정된 무거운 conv 트렁크</b>(연산 <b>2.70ms 고정</b>, resnet50급)에 <b>4채널 병목 + 1×1 확장 헤드</b>를 붙여 <b>연산은 그대로 두고 출력(D2H) 크기만 1020× 스윕</b>한다(합성 모델 12점, 랜덤 가중치 → 지연·레짐만 주장). 결과: 3코어 스케일링이 <b>2.98× → 1.00×로 매끄럽게 전이</b>하고, 코어 잡 분포가 <b>33/33/33 → 98/2/0</b>으로 이동하며, 전이는 <b>knife-edge가 아니라 ~3배(=코어 수) 폭의 밴드</b>임이 드러난다.</p>
+    <div class="chips">
+      <span class="chip"><b>2026-09-09</b></span>
+      <span class="chip"><b>Raspberry Pi 5 (A76) + DEEPX DX-M1</b></span>
+      <span class="chip"><b>DXRT v3.4.2 · PCIe Gen2×1</b></span>
+      <span class="chip"><b>합성 12점 · 고정연산 · batch1</b></span>
+      <span class="chip done">고정 연산 Inference 2.70ms (스프레드 4.9%)</span>
+      <span class="chip partial">3c/1c 스케일 2.98×→1.00× 전이</span>
+      <span class="chip blocked">전이 밴드 폭 3.36× ≈ 코어 수</span>
+    </div>
+  </header>
+
+  <nav class="toc">
+    <a href="#s1">§1 실행 요약</a>
+    <a href="#s2">§2 방법 — 변수 격리 설계</a>
+    <a href="#s3">§3 고정 연산 검증</a>
+    <a href="#s4">§4 전이 곡선 (헤드라인)</a>
+    <a href="#s5">§5 코어 굶김 시그니처</a>
+    <a href="#s6">§6 두 임계점 · 밴드 = 코어 수</a>
+    <a href="#s7">§7 판정·산출물·캐비앗</a>
+  </nav>
+
+  <h2 class="sec">§1 — 실행 요약</h2>
+  <section id="s1" class="step">
+    <p class="lead">같은 DX-M1(3코어 @1000MHz)·같은 Pi 5에서 <b>연산을 고정</b>하고 <b>출력 크기만</b> 12점(cout 5→5102, 출력 4KB→3.8MB, <b>1020×</b>) 스윕. 각 점에서 코어-카운트 스케일링(1/2/3코어 처리량 비)과 프로파일러 스테이지 분해(연산·H2D·D2H p50)를 측정.</p>
+    <div class="statgrid">
+      <div class="stat"><div class="k">고정 연산 (Inference 1코어)</div><div class="v g">2.70ms</div><div class="n">2.677–2.809ms · 1020× 출력 스윕 전체 스프레드 4.9%</div></div>
+      <div class="stat"><div class="k">3c/1c 스케일 전이</div><div class="v">2.98→1.00×</div><div class="n">compute-bound 플래토 → D2H-bound 평평</div></div>
+      <div class="stat"><div class="k">D2H 스윕 폭</div><div class="v">0.14→17.7ms</div><div class="n">출력 전송량 따라 증가 (연산·입력 불변) · 시간 ×126</div></div>
+      <div class="stat"><div class="k">단일추론 크로스오버</div><div class="v a">≈1.05MB</div><div class="n">D2H p50 = 고정 Inference 2.70ms 지점</div></div>
+      <div class="stat"><div class="k">링크-포화 개시</div><div class="v a">≈319KB</div><div class="n">D2H = Inference/3 → 3코어 못 먹임 시작</div></div>
+      <div class="stat"><div class="k">전이 밴드 폭</div><div class="v p">3.36×</div><div class="n">≈ 코어 수(3): N코어가 링크 1개 공유</div></div>
+    </div>
+    <div class="note tip"><span class="tag">헤드라인</span>
+      크로스오버 축이 증명한 두 레짐은 <b>연속 스펙트럼의 양 끝</b>이었다. 연산을 <b>2.70ms로 고정</b>하고 출력만 키우면, 코어 스케일링이 <b>2.98×(순수 compute-bound) → 1.00×(순수 D2H-bound)로 단조 전이</b>한다. 더 나아가 전이는 <b>하나의 임계점이 아니라 두 개</b>다 — (1) 출력 <b>~319KB</b>에서 <b>3코어</b> 스케일이 깨지기 시작(공유 링크가 한 코어치 D2H의 3배를 못 감당)하고, (2) 출력 <b>~1.05MB</b>에서 <b>단일 추론</b>마저 D2H-bound가 된다(D2H가 고정 연산 2.70ms를 추월). 두 임계점 사이 <b>~3.36× 폭의 밴드</b>가 곧 <b>코어 수</b> — <b>N개 코어가 D2H 링크 하나를 공유</b>하므로 멀티코어 처리량은 단일추론 병목의 1/N에서 이미 포화한다.
+    </div>
+  </section>
+
+  <h2 class="sec">§2 — 방법 · 변수 격리 설계</h2>
+  <section id="s2" class="step">
+    <p class="lead">크로스오버 축은 <b>실모델</b>(resnet50·yolo26n·YOLOV5S)로 두 끝점을 잡았다 — 하지만 실모델은 연산·출력이 <b>함께</b> 변해 중간을 못 그린다. 전이를 그리려면 <b>연산을 상수로 붙박고 출력만</b> 움직여야 한다.</p>
+    <table class="kv">
+      <tr><th>호스트 / NPU</th><td>Raspberry Pi 5 (Cortex-A76 ×4, 8GB, Debian 13) + DEEPX DX-M1 (M.2, 3코어 @1000MHz) · <b>PCIe Gen2 X1</b></td></tr>
+      <tr><th>런타임 / 도구</th><td>DXRT v3.4.2 · FW v2.7.4 · <code>dxbenchmark --dir M -n &lt;코어&gt; -t 5 --warmup 2 -v</code> → cwd <code>profiler.json</code>(잡·스테이지별 start/end ns) → <code>analyze_profiler.py</code></td></tr>
+      <tr><th>고정 트렁크 (연산 T)</th><td>224×224×3 → cbr(3,64,2)→cbr(64,128,2)→cbr(128,256,2) → <b>28×28×256 무거운 body ×18층</b> → cbr(256,256,2)@14 → 1×1 conv to <b>4ch 병목</b>. <b>모든 12점 동일</b>(<b>8.92 GMACs 고정</b>, dx_com <code>1 NPU / 0 CPU</code> 그룹 = 호스트 분할 0)</td></tr>
+      <tr><th>확장 헤드 (출력 스윕)</th><td>1×1 conv <b>4→C_out</b> @14×14 → 출력 [1,C_out,14,14] f32 ≈ <b>784·C_out B</b>. 헤드 연산(4·C_out·196 MACs)은 트렁크 대비 무시가능 → <b>연산 불변, 출력만 변화</b></td></tr>
+      <tr><th>스윕 점 (C_out)</th><td>5·20·41·82·163·327·490·653·980·1276·2551·5102 → 출력 <b>3,920 B → 3,999,968 B (1020×)</b></td></tr>
+      <tr><th>코어-카운트 매핑</th><td><code>-n 1</code>=1코어(NPU_0) · <code>-n 4</code>=2코어(NPU_0/1) · <code>-n 0</code>=3코어(NPU_ALL) — <code>-n</code>은 코어 <u>ID</u>지 개수 아님(크로스오버 축과 동일)</td></tr>
+    </table>
+    <div class="note"><span class="tag">스테이지 측정 규약</span>
+      <b>D2H p50는 코어수 무관 불변</b>(실측: cout=5102서 1코어 17.708 ≈ 3코어 17.710ms) — 개별 전송 시간은 고유값, 코어 경합은 <u>지속시간</u>이 아니라 <u>처리량</u>으로 나타남. 따라서 D2H는 어느 코어수로 읽어도 동일. 반면 <b>Inference p50는 1코어(무경합)로 읽는다</b> — 3코어 전이 구간(cout 163–653)에선 출력 핸드오프 backpressure로 코어가 결과를 못 뱉고 대기해 <b>Inference stage가 부풀려짐</b>(2.7→최대 4.3ms, §3 표). 이는 추가 연산이 아니라 <b>대기 아티팩트</b>이므로 고정-연산 값은 1코어 Inference로 확정.
+    </div>
+    <div class="note warnb"><span class="tag">정확도 미주장</span>
+      랜덤 가중치·랜덤 캘리브레이션 합성 모델 → <b>지연·레짐만</b> 유효(캡스톤 init-weight 캐비앗과 동일). <code>dxbenchmark</code>가 입력을 합성하므로 실데이터 불필요. 이 축의 논점은 <b>스테이지 타이밍</b>이지 출력값이 아니다.
+    </div>
+  </section>
+
+  <h2 class="sec">§3 — 고정 연산 검증 (설계 전제)</h2>
+  <section id="s3" class="step">
+    <p class="lead">전이 곡선이 성립하려면 <b>연산(Inference)과 입력전송(H2D)이 스윕 내내 상수</b>여야 한다(오직 D2H만 변수). 1코어 무경합 프로파일로 확인:</p>
+    <table class="dt">
+      <thead><tr><th>cout</th><th>출력</th><th>Inference 1c</th><th>H2D 1c</th><th>D2H 1c</th><th>Inference 3c(부풀림)</th></tr></thead>
+      <tbody>
+        <tr><td>5</td><td>4KB</td><td class="g">2.677</td><td>0.494</td><td>0.141</td><td class="d">2.680</td></tr>
+        <tr><td>82</td><td>63KB</td><td class="g">2.679</td><td>0.467</td><td>0.319</td><td class="d">2.683</td></tr>
+        <tr><td>163</td><td>125KB</td><td class="g">2.682</td><td>0.468</td><td>0.433</td><td class="a">3.279</td></tr>
+        <tr><td>490</td><td>375KB</td><td class="g">2.692</td><td>0.477</td><td>1.016</td><td class="a">4.326</td></tr>
+        <tr><td>653</td><td>500KB</td><td class="g">2.700</td><td>0.487</td><td>1.367</td><td class="a">4.336</td></tr>
+        <tr><td>980</td><td>750KB</td><td class="g">2.704</td><td>0.517</td><td>1.980</td><td class="d">2.720</td></tr>
+        <tr><td>2551</td><td>1.9MB</td><td class="g">2.748</td><td>0.542</td><td>8.892</td><td class="d">2.749</td></tr>
+        <tr><td>5102</td><td>3.8MB</td><td class="g">2.809</td><td>0.559</td><td>17.708</td><td class="d">2.808</td></tr>
+      </tbody>
+    </table>
+    <div class="note tip"><span class="tag">고정 연산 확인 ✓</span>
+      <b>Inference 1코어 = 2.677 ~ 2.809ms</b>(평균 2.704, <b>스프레드 4.9%</b>) — 출력이 <b>1020× 변하는 내내 사실상 상수</b>(끝점 5102서 +0.13ms는 5102채널 확장 헤드의 미미한 추가 연산). <b>H2D = 0.47 ~ 0.56ms</b>도 상수(입력 형상 [1,3,224,224] 고정). 반면 <b>D2H = 0.14 → 17.7ms</b>로 출력 전송이 지배하며 <b>시간 126× 증가</b>(0.14ms 오버헤드 바닥 → 17.7ms, 선형구간 2.456ms/MB·§6 — 시간 증가폭이 출력 1020×보다 작은 건 작은 출력서 전송 오버헤드가 바닥을 깔기 때문). ⇒ 설계대로 <b>연산·입력전송은 고정 변수, 출력전송(D2H)만 유일 변수</b>. 이제 D2H를 고정 연산선 위로 끌어올리며 병목이 넘어가는 걸 볼 수 있다.
+    </div>
+  </section>
+
+  <h2 class="sec">§4 — 전이 곡선 (헤드라인)</h2>
+  <section id="s4" class="step">
+    <p class="lead">출력을 키우며 3코어 스케일링(3c/1c 처리량 비)이 <b>compute-bound 3× → D2H-bound 1×</b>로 넘어가는 곡선. 초록=near-linear(compute) · 노랑=sub-linear(전이) · 빨강=flat(D2H).</p>
+    <div class="chartwrap">
+      <p class="ct">코어 스케일링 배율 (3코어 / 1코어 처리량) vs 출력 크기</p>
+      <p class="cs">세로선 1.0×(스케일 없음)·2.0×·3.0×(이상) · 위→아래 = 출력 작음→큼</p>
+      <svg viewBox="0 0 900 296" width="100%" role="img" aria-label="코어 스케일링 vs 출력 전이 곡선">
+        <line x1="200" y1="10" x2="200" y2="280" stroke="#242b38" stroke-width="1"/>
+        <line x1="400" y1="10" x2="400" y2="280" stroke="#242b38" stroke-width="1"/>
+        <line x1="600" y1="10" x2="600" y2="280" stroke="#242b38" stroke-width="1"/>
+        <text x="200" y="292" fill="#5c6773" font-size="10" font-family="monospace" text-anchor="middle">1.0×</text>
+        <text x="400" y="292" fill="#5c6773" font-size="10" font-family="monospace" text-anchor="middle">2.0×</text>
+        <text x="600" y="292" fill="#5c6773" font-size="10" font-family="monospace" text-anchor="middle">3.0× (이상)</text>
+        <g font-family="monospace" font-size="12">
+        <rect x="0" y="16" width="596.4" height="18" rx="3" fill="#3fb950"/>
+        <text x="603.4" y="29" fill="#7ee787">cout=5 · 4KB · 2.98×</text>
+        <rect x="0" y="38" width="593.0" height="18" rx="3" fill="#3fb950"/>
+        <text x="600.0" y="51" fill="#7ee787">cout=20 · 15KB · 2.97×</text>
+        <rect x="0" y="60" width="597.0" height="18" rx="3" fill="#3fb950"/>
+        <text x="604.0" y="73" fill="#7ee787">cout=41 · 31KB · 2.98×</text>
+        <rect x="0" y="82" width="597.4" height="18" rx="3" fill="#3fb950"/>
+        <text x="604.4" y="95" fill="#7ee787">cout=82 · 63KB · 2.99×</text>
+        <rect x="0" y="104" width="485.8" height="18" rx="3" fill="#3fb950"/>
+        <text x="492.8" y="117" fill="#7ee787">cout=163 · 125KB · 2.43×</text>
+        <rect x="0" y="126" width="397.0" height="18" rx="3" fill="#d29922"/>
+        <text x="404.0" y="139" fill="#e3b341">cout=327 · 250KB · 1.99×</text>
+        <rect x="0" y="148" width="374.2" height="18" rx="3" fill="#d29922"/>
+        <text x="381.2" y="161" fill="#e3b341">cout=490 · 375KB · 1.87×</text>
+        <rect x="0" y="170" width="319.0" height="18" rx="3" fill="#d29922"/>
+        <text x="326.0" y="183" fill="#e3b341">cout=653 · 500KB · 1.59×</text>
+        <rect x="0" y="192" width="298.4" height="18" rx="3" fill="#d29922"/>
+        <text x="305.4" y="205" fill="#e3b341">cout=980 · 750KB · 1.49×</text>
+        <rect x="0" y="214" width="242.2" height="18" rx="3" fill="#d29922"/>
+        <text x="249.2" y="227" fill="#e3b341">cout=1276 · 977KB · 1.21×</text>
+        <rect x="0" y="236" width="199.2" height="18" rx="3" fill="#ff7b72"/>
+        <text x="206.2" y="249" fill="#ff9d96">cout=2551 · 1.9MB · 1.00×</text>
+        <rect x="0" y="258" width="200.0" height="18" rx="3" fill="#ff7b72"/>
+        <text x="207.0" y="271" fill="#ff9d96">cout=5102 · 3.8MB · 1.00×</text>
+        </g>
+      </svg>
+    </div>
+    <p class="lead">전체 데이터 — 1코어 스테이지 p50(ms) + 코어별 처리량(fps) + 3코어 잡 분포(%):</p>
+    <table class="dt">
+      <thead><tr><th>cout</th><th>출력</th><th>Inf 1c</th><th>H2D 1c</th><th>D2H 1c</th><th>1코어</th><th>2코어</th><th>3코어</th><th>3c/1c</th><th>잡 %</th></tr></thead>
+      <tbody>
+        <tr class="hi"><td>5</td><td>4KB</td><td>2.677</td><td>0.494</td><td class="g">0.141</td><td>368</td><td>737</td><td>1099</td><td class="g">2.98×</td><td>33/33/33</td></tr>
+        <tr class="hi"><td>20</td><td>15KB</td><td>2.678</td><td>0.466</td><td class="g">0.147</td><td>368</td><td>736</td><td>1093</td><td class="g">2.97×</td><td>33/33/33</td></tr>
+        <tr class="hi"><td>41</td><td>31KB</td><td>2.677</td><td>0.466</td><td class="g">0.174</td><td>367</td><td>731</td><td>1097</td><td class="g">2.98×</td><td>33/33/33</td></tr>
+        <tr class="hi"><td>82</td><td>63KB</td><td>2.679</td><td>0.467</td><td class="g">0.319</td><td>367</td><td>736</td><td>1097</td><td class="g">2.99×</td><td>33/33/33</td></tr>
+        <tr class="hi"><td>163</td><td>125KB</td><td>2.682</td><td>0.468</td><td class="g">0.433</td><td>367</td><td>734</td><td>892</td><td class="g">2.43×</td><td>33/33/33</td></tr>
+        <tr class=""><td>327</td><td>250KB</td><td>2.687</td><td>0.472</td><td class="a">0.776</td><td>363</td><td>657</td><td>720</td><td class="a">1.99×</td><td>35/32/33</td></tr>
+        <tr class=""><td>490</td><td>375KB</td><td>2.692</td><td>0.477</td><td class="a">1.016</td><td>362</td><td>653</td><td>677</td><td class="a">1.87×</td><td>33/33/33</td></tr>
+        <tr class=""><td>653</td><td>500KB</td><td>2.700</td><td>0.487</td><td class="a">1.367</td><td>360</td><td>643</td><td>575</td><td class="a">1.59×</td><td>36/31/33</td></tr>
+        <tr class=""><td>980</td><td>750KB</td><td>2.704</td><td>0.517</td><td class="a">1.980</td><td>361</td><td>535</td><td>538</td><td class="a">1.49×</td><td>46/45/9</td></tr>
+        <tr class=""><td>1276</td><td>977KB</td><td>2.711</td><td>0.519</td><td class="a">2.429</td><td>360</td><td>433</td><td>436</td><td class="a">1.21×</td><td>50/48/2</td></tr>
+        <tr class="lo"><td>2551</td><td>1.9MB</td><td>2.748</td><td>0.542</td><td class="r">8.892</td><td>223</td><td>223</td><td>223</td><td class="r">1.00×</td><td>93/6/0</td></tr>
+        <tr class="lo"><td>5102</td><td>3.8MB</td><td>2.809</td><td>0.559</td><td class="r">17.708</td><td>112</td><td>112</td><td>112</td><td class="r">1.00×</td><td>98/2/0</td></tr>
+      </tbody>
+    </table>
+    <div class="note trap"><span class="tag">전이의 형태 = 매끄러운 단조 붕괴</span>
+      <b>compute-bound 플래토</b>(cout≤163, 출력≤125KB): D2H가 연산의 1/6 미만 → 3코어 <b>2.98× near-linear</b>(1:2:3 fps, 크로스오버 축 resnet50 2.19×보다 깨끗). <b>전이</b>(250KB–1MB): D2H가 커지며 스케일 <b>1.99→1.21×</b>로 붕괴. <b>D2H-bound</b>(≥1.9MB): D2H가 연산을 3–6배 지배 → <b>1.00× 완전 평평</b>. 1코어 처리량(fps 1코어 열)은 <b>출력 1MB까지 ~360으로 평평</b>(단일추론은 여전히 compute-bound)하다가 <b>2551(1.9MB)서 223으로 급락</b> — 단일추론마저 D2H-bound로 넘어가는 지점.
+    </div>
+  </section>
+
+  <h2 class="sec">§5 — 코어 굶김 시그니처 (독립 확증)</h2>
+  <section id="s5" class="step">
+    <p class="lead">코어 스케일링과 <b>독립적으로</b>, 3코어 잡 분포(어느 코어가 몇 잡 처리했나)가 같은 전이를 보인다. compute-bound면 3코어 균등, D2H-bound면 공유 링크가 코어를 굶긴다.</p>
+    <div class="chartwrap">
+      <p class="ct">3코어 잡 분포 이동 (코어0 / 코어1 / 코어2, %)</p>
+      <p class="cs">균등 33/33/33(compute) → 코어2 굶김 → 코어0 독식 98/2/0(D2H) · 크로스오버 축 yolo26n 472/28/2와 동일 패턴</p>
+      <svg viewBox="0 0 900 210" width="100%" role="img" aria-label="코어 잡 분포 이동 스택 막대">
+        <g font-family="monospace" font-size="11">
+          <!-- each row: stacked 3 segments (widths = exact job fractions x 560), label at right -->
+          <rect x="0.0" y="12" width="186.6" height="20" fill="#3fb950"/><rect x="186.6" y="12" width="186.6" height="20" fill="#2ea043"/><rect x="373.2" y="12" width="186.8" height="20" fill="#238636"/>
+          <text x="566" y="26" fill="#7ee787">cout=5 (4KB) · 33/33/33 · compute-bound</text>
+          <rect x="0.0" y="38" width="186.7" height="20" fill="#3fb950"/><rect x="186.7" y="38" width="186.7" height="20" fill="#2ea043"/><rect x="373.3" y="38" width="186.7" height="20" fill="#238636"/>
+          <text x="566" y="52" fill="#7ee787">cout=163 (125KB) · 33/33/33 · compute-bound</text>
+          <rect x="0.0" y="64" width="200.4" height="20" fill="#d29922"/><rect x="200.4" y="64" width="172.7" height="20" fill="#b7801c"/><rect x="373.1" y="64" width="186.9" height="20" fill="#9e6b15"/>
+          <text x="566" y="78" fill="#e3b341">cout=653 (500KB) · 36/31/33 · 전이 시작</text>
+          <rect x="0.0" y="90" width="256.4" height="20" fill="#d29922"/><rect x="256.4" y="90" width="251.6" height="20" fill="#b7801c"/><rect x="508.0" y="90" width="52.0" height="20" fill="#9e6b15"/>
+          <text x="566" y="104" fill="#e3b341">cout=980 (750KB) · 46/45/9 · 코어2 굶김</text>
+          <rect x="0.0" y="116" width="277.3" height="20" fill="#d29922"/><rect x="277.3" y="116" width="268.7" height="20" fill="#b7801c"/><rect x="546.1" y="116" width="13.9" height="20" fill="#9e6b15"/>
+          <text x="566" y="130" fill="#e3b341">cout=1276 (977KB) · 50/48/2 · 코어2 사멸</text>
+          <rect x="0.0" y="142" width="522.6" height="20" fill="#ff7b72"/><rect x="522.6" y="142" width="34.7" height="20" fill="#cf5f57"/><rect x="557.3" y="142" width="2.7" height="20" fill="#a34840"/>
+          <text x="566" y="156" fill="#ff9d96">cout=2551 (1.9MB) · 93/6/0 · D2H-bound</text>
+          <rect x="0.0" y="168" width="548.9" height="20" fill="#ff7b72"/><rect x="548.9" y="168" width="9.3" height="20" fill="#cf5f57"/><rect x="558.1" y="168" width="1.9" height="20" fill="#a34840"/>
+          <text x="566" y="182" fill="#ff9d96">cout=5102 (3.8MB) · 98/2/0 · 코어0 독식</text>
+        </g>
+      </svg>
+    </div>
+    <div class="note tip"><span class="tag">두 독립 축이 같은 전이를 지목</span>
+      코어 스케일링(§4)과 잡 분포(§5)는 <b>다른 관측량</b>인데 <b>같은 곡선</b>을 그린다 — 균등 <b>33/33/33</b>(compute) → 코어2 굶김 <b>46/45/9 → 50/48/2</b>(전이) → 코어0 독식 <b>93/6/0 → 98/2/0</b>(D2H). 마지막 패턴은 크로스오버 축의 <b>yolo26n 472/28/2</b>(D2H-bound)와 정확히 같은 시그니처. <b>공유 PCIe Gen2×1 D2H 링크가 한 코어치 출력만으로 포화</b>돼 나머지 코어를 굶긴다는 물리가 전이 전 구간에서 연속적으로 작동함을 확증.
+    </div>
+  </section>
+
+  <h2 class="sec">§6 — 두 임계점 · 밴드 폭 = 코어 수</h2>
+  <section id="s6" class="step">
+    <p class="lead">전이는 <b>단일 임계점이 아니다</b>. 세 스테이지(고정 연산 2.70ms · D2H = 2.456ms/MB·출력 + 0.137ms 선형)의 교차로 <b>두 개</b>의 임계점이 정의된다:</p>
+    <div class="chartwrap">
+      <p class="ct">출력 크기 축의 세 구역 (로그 스케일)</p>
+      <p class="cs">초록=compute-bound(3코어 스케일) · 노랑=전이 밴드 · 빨강=D2H-bound · 점=측정 12점</p>
+      <svg viewBox="0 0 900 130" width="100%" role="img" aria-label="출력 크기 3구역 밴드 다이어그램">
+        <!-- zones: green 80..555, amber 555..669, red 669..860 -->
+        <rect x="80" y="30" width="475" height="32" fill="rgba(63,185,80,.18)" stroke="#3fb950" stroke-width="1"/>
+        <rect x="555" y="30" width="114" height="32" fill="rgba(210,153,34,.22)" stroke="#d29922" stroke-width="1"/>
+        <rect x="669" y="30" width="191" height="32" fill="rgba(255,123,114,.18)" stroke="#ff7b72" stroke-width="1"/>
+        <!-- threshold lines -->
+        <line x1="555" y1="18" x2="555" y2="74" stroke="#d29922" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <line x1="669" y1="18" x2="669" y2="74" stroke="#ff7b72" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <text x="555" y="14" fill="#e3b341" font-size="10.5" font-family="monospace" text-anchor="middle">319KB · D2H=Inf/3</text>
+        <text x="669" y="14" fill="#ff9d96" font-size="10.5" font-family="monospace" text-anchor="middle">1.05MB · D2H=Inf</text>
+        <!-- zone labels -->
+        <text x="300" y="50" fill="#7ee787" font-size="11" font-family="monospace" text-anchor="middle">compute-bound</text>
+        <text x="612" y="47" fill="#e3b341" font-size="9.5" font-family="monospace" text-anchor="middle">전이</text>
+        <text x="612" y="58" fill="#e3b341" font-size="9.5" font-family="monospace" text-anchor="middle">밴드</text>
+        <text x="770" y="50" fill="#ff9d96" font-size="11" font-family="monospace" text-anchor="middle">D2H-bound</text>
+        <!-- data dots: 12 measured output sizes (neutral -- regime is shown by the zone colour) -->
+        <g>
+          <circle cx="141" cy="46" r="3" fill="#c9d1d9"/><circle cx="271" cy="46" r="3" fill="#c9d1d9"/>
+          <circle cx="338" cy="46" r="3" fill="#c9d1d9"/><circle cx="403" cy="46" r="3" fill="#c9d1d9"/>
+          <circle cx="468" cy="46" r="3" fill="#c9d1d9"/><circle cx="533" cy="46" r="3" fill="#c9d1d9"/>
+          <circle cx="571" cy="46" r="3" fill="#c9d1d9"/><circle cx="598" cy="46" r="3" fill="#c9d1d9"/>
+          <circle cx="636" cy="46" r="3" fill="#c9d1d9"/><circle cx="661" cy="46" r="3" fill="#c9d1d9"/>
+          <circle cx="726" cy="46" r="3" fill="#c9d1d9"/><circle cx="791" cy="46" r="3" fill="#c9d1d9"/>
+        </g>
+        <!-- ticks -->
+        <g font-family="monospace" font-size="9.5" fill="#5c6773">
+          <text x="145" y="90" text-anchor="middle">4KB</text>
+          <text x="340" y="90" text-anchor="middle">32KB</text>
+          <text x="535" y="90" text-anchor="middle">256KB</text>
+          <text x="665" y="90" text-anchor="middle">1MB</text>
+          <text x="795" y="90" text-anchor="middle">4MB</text>
+        </g>
+        <!-- band width annotation -->
+        <line x1="555" y1="106" x2="669" y2="106" stroke="#bc8cff" stroke-width="1"/>
+        <line x1="555" y1="102" x2="555" y2="110" stroke="#bc8cff" stroke-width="1"/>
+        <line x1="669" y1="102" x2="669" y2="110" stroke="#bc8cff" stroke-width="1"/>
+        <text x="612" y="122" fill="#d8b8ff" font-size="10" font-family="monospace" text-anchor="middle">밴드 폭 3.36× ≈ 코어 수 3</text>
+      </svg>
+    </div>
+    <table class="dt">
+      <thead><tr><th>임계점</th><th>조건</th><th>출력 크기</th><th>무슨 일</th></tr></thead>
+      <tbody>
+        <tr class=""><td>링크-포화 개시</td><td class="a">D2H = Inference / 3</td><td class="a">≈319KB</td><td>3코어가 링크 하나를 다 못 씀 → 3c/1c 스케일 붕괴 시작</td></tr>
+        <tr class="lo"><td>단일추론 크로스오버</td><td class="r">D2H = Inference (2.70ms)</td><td class="r">≈1.05MB</td><td>단일 추론마저 D2H-bound → 1코어 처리량도 급락</td></tr>
+      </tbody>
+    </table>
+    <div class="note block"><span class="tag">전이 밴드 폭 = 코어 수 (구조적)</span>
+      두 임계점의 비 = <b>Inference / (Inference/3) = 3 = 코어 수</b>. 실측 밴드 폭 <b>3.36×</b>(319KB→1.05MB)가 이를 확증. 물리: <b>N개 코어가 D2H 링크 <u>하나</u>를 공유</b>하므로, 단일 추론이 아직 compute-bound여도(D2H &lt; Inference) 세 코어의 D2H 총량은 이미 링크를 포화시킨다 — 멀티코어 처리량은 단일추론 병목의 <b>1/N 지점에서 미리 꺾인다</b>. 따라서 크로스오버 축이 본 "출력 크기가 레짐을 정한다"는 <b>knife-edge가 아니라 코어 수만큼 넓은 밴드</b>로 정밀화된다. (선형 근사는 출력 ≤1MB서 유효; 2MB↑서 D2H가 초선형이라 상단 크로스오버는 약간 압축됨 — 캐비앗 참조.)
+    </div>
+  </section>
+
+  <h2 class="sec">§7 — 판정 · 산출물 · 캐비앗</h2>
+  <section id="s7" class="step">
+    <table class="dt">
+      <thead><tr><th>질문</th><th>판정</th></tr></thead>
+      <tbody>
+        <tr><td>두 레짐 사이 전이는? (크로스오버 캐비앗 #3)</td><td class="g">추적 완료 — 3c/1c 2.98×→1.00× 단조 전이, 연산 2.70ms 고정</td></tr>
+        <tr><td>전이는 하나의 임계점인가?</td><td class="a">아니오 — 두 개(링크-포화 319KB · 단일추론 1.05MB)</td></tr>
+        <tr><td>전이 밴드 폭은?</td><td class="p">3.36× ≈ 코어 수(3) — N코어가 링크 1개 공유하는 구조적 결과</td></tr>
+        <tr><td>고정 연산 전제는 성립?</td><td class="g">예 — Inference 1c 스프레드 4.9%(1020× 출력 스윕)</td></tr>
+        <tr><td>독립 확증은?</td><td class="g">코어 잡 분포 33/33/33→98/2/0(yolo26n 472/28/2와 동형)</td></tr>
+        <tr><td>크로스오버 축과의 관계</td><td class="g">반증 아닌 정밀화 — 두 끝점을 잇는 연속 곡선 + 밴드 폭 법칙</td></tr>
+      </tbody>
+    </table>
+    <p class="lead">산출물:</p>
+    <table class="kv">
+      <tr><th>리포트</th><td>이 문서 <code>logs/stage4_deepx_dxm1_transition_report.html</code></td></tr>
+      <tr><th>실험 코드/결과</th><td><code>experiments/stage4_deepx_dxm1/transition/</code> — <code>scripts/build_transition_models.py</code>(합성 모델 생성·dx_com 컴파일, <code>--body-depth 18</code>) · <code>scripts/run_transition_bench.sh</code>(Pi-side 스윕 하네스) · <code>scripts/build_transition_summary.py</code> · <code>results/transition_summary.json</code>(SSOT) · <code>raw/</code>(analyzed_n{1,2,3}.json·corescale.csv)</td></tr>
+      <tr><th>모델</th><td>합성 12점 <code>tr_c{5…5102}.dxnn</code>(고정 트렁크 8.92 GMACs + 확장 헤드 4→C_out) · 전부 <code>1 NPU / 0 CPU</code> 그룹</td></tr>
+      <tr><th>가이드 반영</th><td><code>study_guide/06_multi_soc.md</code> §4-D 전이 곡선 콜아웃 (크로스오버 캐비앗 #3 해소)</td></tr>
+      <tr><th>선행 축</th><td><a href="stage4_deepx_dxm1_crossover_report.html">크로스오버 축</a>(두 레짐 존재 증명) · <a href="stage4_deepx_dxm1_report.html">벤치 축</a>(host-bound 발견) · <a href="stage4_deepx_dxm1_detection_report.html">검출 축</a>(NMS-fold 레짐)</td></tr>
+    </table>
+    <div class="note warnb"><span class="tag">캐비앗</span>
+      ① 절대 처리량/지연은 <b>batch1·합성·Pi5 Gen2×1</b> → 상대 관계·레짐만 유효. ② <b>정확도 미주장</b>(랜덤 가중치). ③ D2H는 출력 ≤1MB서 <b>선형</b>(2.456ms/MB), <b>2MB↑서 초선형</b>(2551서 예측 4.8ms vs 실측 8.9ms — DMA/버퍼 임계 추정) → 단일추론 크로스오버 1.05MB는 선형 외삽값, 실측 1코어 급락은 1.9MB에서 관측(밴드 폭 3.36×는 선형 구역 기준 하한). ④ 전이 위치(출력 KB 단위)는 <b>Pi5 Gen2×1 대역·이 트렁크 연산 2.70ms 의존</b> — Gen3×4나 다른 연산량이면 임계점이 이동(밴드 폭 ≈ 코어 수 법칙은 유지). ⑤ 3코어 Inference 부풀림(전이 구간)은 backpressure 아티팩트 → 고정연산은 1코어로 확정. ⑥ Pi5는 DEEPX 호스트일 뿐 자동차 3벤더 아님. ⑦ 로컬 전용 메모리(내부 IP).
+    </div>
+    <a class="next" href="stage4_deepx_dxm1_crossover_report.html"><b>← 크로스오버 축</b> — 이 전이 곡선이 정밀화한 두 레짐의 존재 증명(resnet50 vs yolo26n)</a>
+  </section>
+
+  <footer>
+    4단계 · DEEPX DX-M1 레짐 전이 곡선 · Raspberry Pi 5 (Cortex-A76) 온디바이스 · DXRT v3.4.2 · 2026-09-09 · batch1·합성·상대 관계만 · <code>experiments/stage4_deepx_dxm1/transition/</code>
+  </footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,108 @@
+{
+  "label": "tr_c5102_n3c",
+  "n_jobs": 603,
+  "window_s": 5.3821,
+  "fps": 112.04,
+  "active_cores": [
+    "Inference Core 0",
+    "Inference Core 1",
+    "Inference Core 2"
+  ],
+  "stages": {
+    "H2D": {
+      "mean_ms": 0.6627,
+      "p50_ms": 0.5649,
+      "p90_ms": 0.7788,
+      "min_ms": 0.5324,
+      "max_ms": 4.9607,
+      "n": 603
+    },
+    "D2H": {
+      "mean_ms": 17.6796,
+      "p50_ms": 17.7104,
+      "p90_ms": 17.8802,
+      "min_ms": 9.2376,
+      "max_ms": 20.8788,
+      "n": 603
+    },
+    "NPU Task": {
+      "mean_ms": 52.9705,
+      "p50_ms": 53.134,
+      "p90_ms": 53.379,
+      "min_ms": 19.1373,
+      "max_ms": 70.1405,
+      "n": 603
+    },
+    "NPU Input Format Handler": {
+      "mean_ms": 0.0757,
+      "p50_ms": 0.0673,
+      "p90_ms": 0.0867,
+      "min_ms": 0.0437,
+      "max_ms": 0.3637,
+      "n": 603
+    },
+    "NPU Output Format Handler": {
+      "mean_ms": 6.6989,
+      "p50_ms": 6.4779,
+      "p90_ms": 7.8251,
+      "min_ms": 6.2064,
+      "max_ms": 9.1161,
+      "n": 603
+    },
+    "Buffer Pool Wait": {
+      "mean_ms": 8.7514,
+      "p50_ms": 8.7843,
+      "p90_ms": 10.7951,
+      "min_ms": 0.0023,
+      "max_ms": 30.8001,
+      "n": 603
+    },
+    "Framework Overhead": {
+      "mean_ms": 24.6553,
+      "p50_ms": 25.2028,
+      "p90_ms": 25.4297,
+      "min_ms": 0.0136,
+      "max_ms": 34.5397,
+      "n": 603
+    },
+    "Service Process Wait": {
+      "mean_ms": 40.6002,
+      "p50_ms": 9.0052,
+      "p90_ms": 11.456,
+      "min_ms": 2.8212,
+      "max_ms": 11979.761,
+      "n": 603
+    }
+  },
+  "inference_per_core": {
+    "Inference Core 0": {
+      "mean_ms": 2.8087,
+      "p50_ms": 2.808,
+      "p90_ms": 2.809,
+      "min_ms": 2.798,
+      "max_ms": 2.951,
+      "n": 591
+    },
+    "Inference Core 1": {
+      "mean_ms": 2.8564,
+      "p50_ms": 2.8415,
+      "p90_ms": 2.942,
+      "min_ms": 2.817,
+      "max_ms": 2.942,
+      "n": 10
+    },
+    "Inference Core 2": {
+      "mean_ms": 2.868,
+      "p50_ms": 2.868,
+      "p90_ms": 2.87,
+      "min_ms": 2.866,
+      "max_ms": 2.87,
+      "n": 2
+    }
+  },
+  "inference_all_cores": {
+    "mean_ms": 2.8097,
+    "p50_ms": 2.808,
+    "n": 603
+  }
+}

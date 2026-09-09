@@ -1,0 +1,99 @@
+{
+  "label": "tr_c653_n2c",
+  "n_jobs": 1024,
+  "window_s": 1.5928,
+  "fps": 642.89,
+  "active_cores": [
+    "Inference Core 0",
+    "Inference Core 1"
+  ],
+  "stages": {
+    "H2D": {
+      "mean_ms": 0.6776,
+      "p50_ms": 0.6155,
+      "p90_ms": 0.8943,
+      "min_ms": 0.4677,
+      "max_ms": 2.0692,
+      "n": 1024
+    },
+    "D2H": {
+      "mean_ms": 2.2479,
+      "p50_ms": 2.3536,
+      "p90_ms": 2.8719,
+      "min_ms": 1.4438,
+      "max_ms": 4.1802,
+      "n": 1024
+    },
+    "NPU Task": {
+      "mean_ms": 9.2735,
+      "p50_ms": 9.4959,
+      "p90_ms": 10.2601,
+      "min_ms": 6.6353,
+      "max_ms": 18.8181,
+      "n": 1024
+    },
+    "NPU Input Format Handler": {
+      "mean_ms": 0.0746,
+      "p50_ms": 0.0692,
+      "p90_ms": 0.0961,
+      "min_ms": 0.0536,
+      "max_ms": 0.2101,
+      "n": 1024
+    },
+    "NPU Output Format Handler": {
+      "mean_ms": 0.9377,
+      "p50_ms": 0.9107,
+      "p90_ms": 1.0826,
+      "min_ms": 0.8038,
+      "max_ms": 1.798,
+      "n": 1024
+    },
+    "Buffer Pool Wait": {
+      "mean_ms": 1.5333,
+      "p50_ms": 1.2423,
+      "p90_ms": 3.1097,
+      "min_ms": 0.0009,
+      "max_ms": 10.2971,
+      "n": 1024
+    },
+    "Framework Overhead": {
+      "mean_ms": 0.086,
+      "p50_ms": 0.0179,
+      "p90_ms": 0.0698,
+      "min_ms": 0.0085,
+      "max_ms": 2.2718,
+      "n": 1024
+    },
+    "Service Process Wait": {
+      "mean_ms": 3.0912,
+      "p50_ms": 3.2758,
+      "p90_ms": 3.3212,
+      "min_ms": 2.2454,
+      "max_ms": 10.1937,
+      "n": 1024
+    }
+  },
+  "inference_per_core": {
+    "Inference Core 0": {
+      "mean_ms": 2.9704,
+      "p50_ms": 2.725,
+      "p90_ms": 3.304,
+      "min_ms": 2.699,
+      "max_ms": 3.343,
+      "n": 1019
+    },
+    "Inference Core 1": {
+      "mean_ms": 2.9728,
+      "p50_ms": 2.725,
+      "p90_ms": 3.305,
+      "min_ms": 2.698,
+      "max_ms": 3.33,
+      "n": 1019
+    }
+  },
+  "inference_all_cores": {
+    "mean_ms": 2.9716,
+    "p50_ms": 2.725,
+    "n": 2038
+  }
+}

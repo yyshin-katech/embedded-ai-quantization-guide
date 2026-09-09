@@ -1,0 +1,90 @@
+{
+  "label": "tr_c327_n1c",
+  "n_jobs": 1024,
+  "window_s": 2.8225,
+  "fps": 362.81,
+  "active_cores": [
+    "Inference Core 0"
+  ],
+  "stages": {
+    "H2D": {
+      "mean_ms": 0.4759,
+      "p50_ms": 0.4717,
+      "p90_ms": 0.4962,
+      "min_ms": 0.4603,
+      "max_ms": 0.5179,
+      "n": 1024
+    },
+    "D2H": {
+      "mean_ms": 0.784,
+      "p50_ms": 0.776,
+      "p90_ms": 0.816,
+      "min_ms": 0.7665,
+      "max_ms": 0.8374,
+      "n": 1024
+    },
+    "NPU Task": {
+      "mean_ms": 16.4431,
+      "p50_ms": 16.215,
+      "p90_ms": 16.2304,
+      "min_ms": 16.1356,
+      "max_ms": 22.9393,
+      "n": 1024
+    },
+    "NPU Input Format Handler": {
+      "mean_ms": 0.0599,
+      "p50_ms": 0.0586,
+      "p90_ms": 0.0679,
+      "min_ms": 0.0524,
+      "max_ms": 0.0801,
+      "n": 1024
+    },
+    "NPU Output Format Handler": {
+      "mean_ms": 0.4506,
+      "p50_ms": 0.4177,
+      "p90_ms": 0.5667,
+      "min_ms": 0.4029,
+      "max_ms": 0.6181,
+      "n": 1024
+    },
+    "Buffer Pool Wait": {
+      "mean_ms": 2.7302,
+      "p50_ms": 2.6926,
+      "p90_ms": 2.7053,
+      "min_ms": 2.6198,
+      "max_ms": 9.4205,
+      "n": 1024
+    },
+    "Framework Overhead": {
+      "mean_ms": 0.0122,
+      "p50_ms": 0.0121,
+      "p90_ms": 0.0143,
+      "min_ms": 0.0081,
+      "max_ms": 0.0214,
+      "n": 1024
+    },
+    "Service Process Wait": {
+      "mean_ms": 2.7367,
+      "p50_ms": 2.6988,
+      "p90_ms": 2.7014,
+      "min_ms": 2.6849,
+      "max_ms": 9.4141,
+      "n": 1024
+    }
+  },
+  "inference_per_core": {
+    "Inference Core 0": {
+      "mean_ms": 2.6876,
+      "p50_ms": 2.687,
+      "p90_ms": 2.688,
+      "min_ms": 2.686,
+      "max_ms": 2.691,
+      "n": 1024
+    }
+  },
+  "inference_all_cores": {
+    "mean_ms": 2.6876,
+    "p50_ms": 2.687,
+    "n": 1024
+  }
+}

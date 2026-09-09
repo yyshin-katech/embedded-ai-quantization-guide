@@ -1,0 +1,362 @@
+[
+  {
+    "name": "tr_c5",
+    "cout": 5,
+    "out_shape": [
+      1,
+      5,
+      14,
+      14
+    ],
+    "nominal_out_bytes": 3920,
+    "onnx_bytes": 46325283,
+    "body_depth": 18,
+    "trunk_gmacs": 8.923,
+    "compile_ok": true,
+    "compile_s": 5.6,
+    "dxnn": [
+      "tr_c5.dxnn"
+    ],
+    "dxnn_bytes": 23389663,
+    "groups": [
+      [
+        "1",
+        "NPU"
+      ],
+      [
+        "0",
+        "CPU"
+      ]
+    ]
+  },
+  {
+    "name": "tr_c20",
+    "cout": 20,
+    "out_shape": [
+      1,
+      20,
+      14,
+      14
+    ],
+    "nominal_out_bytes": 15680,
+    "onnx_bytes": 46325585,
+    "body_depth": 18,
+    "trunk_gmacs": 8.923,
+    "compile_ok": true,
+    "compile_s": 4.8,
+    "dxnn": [
+      "tr_c20.dxnn"
+    ],
+    "dxnn_bytes": 23391666,
+    "groups": [
+      [
+        "1",
+        "NPU"
+      ],
+      [
+        "0",
+        "CPU"
+      ]
+    ]
+  },
+  {
+    "name": "tr_c41",
+    "cout": 41,
+    "out_shape": [
+      1,
+      41,
+      14,
+      14
+    ],
+    "nominal_out_bytes": 32144,
+    "onnx_bytes": 46326007,
+    "body_depth": 18,
+    "trunk_gmacs": 8.923,
+    "compile_ok": true,
+    "compile_s": 4.7,
+    "dxnn": [
+      "tr_c41.dxnn"
+    ],
+    "dxnn_bytes": 23393618,
+    "groups": [
+      [
+        "1",
+        "NPU"
+      ],
+      [
+        "0",
+        "CPU"
+      ]
+    ]
+  },
+  {
+    "name": "tr_c82",
+    "cout": 82,
+    "out_shape": [
+      1,
+      82,
+      14,
+      14
+    ],
+    "nominal_out_bytes": 64288,
+    "onnx_bytes": 46326827,
+    "body_depth": 18,
+    "trunk_gmacs": 8.923,
+    "compile_ok": true,
+    "compile_s": 4.7,
+    "dxnn": [
+      "tr_c82.dxnn"
+    ],
+    "dxnn_bytes": 23400996,
+    "groups": [
+      [
+        "1",
+        "NPU"
+      ],
+      [
+        "0",
+        "CPU"
+      ]
+    ]
+  },
+  {
+    "name": "tr_c163",
+    "cout": 163,
+    "out_shape": [
+      1,
+      163,
+      14,
+      14
+    ],
+    "nominal_out_bytes": 127792,
+    "onnx_bytes": 46328450,
+    "body_depth": 18,
+    "trunk_gmacs": 8.923,
+    "compile_ok": true,
+    "compile_s": 4.6,
+    "dxnn": [
+      "tr_c163.dxnn"
+    ],
+    "dxnn_bytes": 23409704,
+    "groups": [
+      [
+        "1",
+        "NPU"
+      ],
+      [
+        "0",
+        "CPU"
+      ]
+    ]
+  },
+  {
+    "name": "tr_c327",
+    "cout": 327,
+    "out_shape": [
+      1,
+      327,
+      14,
+      14
+    ],
+    "nominal_out_bytes": 256368,
+    "onnx_bytes": 46331730,
+    "body_depth": 18,
+    "trunk_gmacs": 8.923,
+    "compile_ok": true,
+    "compile_s": 4.6,
+    "dxnn": [
+      "tr_c327.dxnn"
+    ],
+    "dxnn_bytes": 23433544,
+    "groups": [
+      [
+        "1",
+        "NPU"
+      ],
+      [
+        "0",
+        "CPU"
+      ]
+    ]
+  },
+  {
+    "name": "tr_c490",
+    "cout": 490,
+    "out_shape": [
+      1,
+      490,
+      14,
+      14
+    ],
+    "nominal_out_bytes": 384160,
+    "onnx_bytes": 46334990,
+    "body_depth": 18,
+    "trunk_gmacs": 8.923,
+    "compile_ok": true,
+    "compile_s": 4.8,
+    "dxnn": [
+      "tr_c490.dxnn"
+    ],
+    "dxnn_bytes": 23450472,
+    "groups": [
+      [
+        "1",
+        "NPU"
+      ],
+      [
+        "0",
+        "CPU"
+      ]
+    ]
+  },
+  {
+    "name": "tr_c653",
+    "cout": 653,
+    "out_shape": [
+      1,
+      653,
+      14,
+      14
+    ],
+    "nominal_out_bytes": 511952,
+    "onnx_bytes": 46338250,
+    "body_depth": 18,
+    "trunk_gmacs": 8.923,
+    "compile_ok": true,
+    "compile_s": 4.7,
+    "dxnn": [
+      "tr_c653.dxnn"
+    ],
+    "dxnn_bytes": 23474248,
+    "groups": [
+      [
+        "1",
+        "NPU"
+      ],
+      [
+        "0",
+        "CPU"
+      ]
+    ]
+  },
+  {
+    "name": "tr_c980",
+    "cout": 980,
+    "out_shape": [
+      1,
+      980,
+      14,
+      14
+    ],
+    "nominal_out_bytes": 768320,
+    "onnx_bytes": 46344790,
+    "body_depth": 18,
+    "trunk_gmacs": 8.923,
+    "compile_ok": true,
+    "compile_s": 4.8,
+    "dxnn": [
+      "tr_c980.dxnn"
+    ],
+    "dxnn_bytes": 23517032,
+    "groups": [
+      [
+        "1",
+        "NPU"
+      ],
+      [
+        "0",
+        "CPU"
+      ]
+    ]
+  },
+  {
+    "name": "tr_c1276",
+    "cout": 1276,
+    "out_shape": [
+      1,
+      1276,
+      14,
+      14
+    ],
+    "nominal_out_bytes": 1000384,
+    "onnx_bytes": 46350712,
+    "body_depth": 18,
+    "trunk_gmacs": 8.923,
+    "compile_ok": true,
+    "compile_s": 4.7,
+    "dxnn": [
+      "tr_c1276.dxnn"
+    ],
+    "dxnn_bytes": 23550284,
+    "groups": [
+      [
+        "1",
+        "NPU"
+      ],
+      [
+        "0",
+        "CPU"
+      ]
+    ]
+  },
+  {
+    "name": "tr_c2551",
+    "cout": 2551,
+    "out_shape": [
+      1,
+      2551,
+      14,
+      14
+    ],
+    "nominal_out_bytes": 1999984,
+    "onnx_bytes": 46376212,
+    "body_depth": 18,
+    "trunk_gmacs": 8.923,
+    "compile_ok": true,
+    "compile_s": 4.9,
+    "dxnn": [
+      "tr_c2551.dxnn"
+    ],
+    "dxnn_bytes": 23713740,
+    "groups": [
+      [
+        "1",
+        "NPU"
+      ],
+      [
+        "0",
+        "CPU"
+      ]
+    ]
+  },
+  {
+    "name": "tr_c5102",
+    "cout": 5102,
+    "out_shape": [
+      1,
+      5102,
+      14,
+      14
+    ],
+    "nominal_out_bytes": 3999968,
+    "onnx_bytes": 46427234,
+    "body_depth": 18,
+    "trunk_gmacs": 8.923,
+    "compile_ok": true,
+    "compile_s": 5.1,
+    "dxnn": [
+      "tr_c5102.dxnn"
+    ],
+    "dxnn_bytes": 24041501,
+    "groups": [
+      [
+        "1",
+        "NPU"
+      ],
+      [
+        "0",
+        "CPU"
+      ]
+    ]
+  }
+]

@@ -28,7 +28,7 @@ We find that all three parts of the folklore fail, and they fail in ways that ma
 
 3. **Vendors own quantization (§6).** A model you quantized yourself is not deployable to a vendor NPU as-is. Qualcomm's Hexagon HTP *silently* ignores external QDQ scales and collapses accuracy (0.75 → 0.005) while compiling, profiling, and running without error; the DEEPX compiler *loudly* rejects the same class of graph. Both are correct only through the vendor's own quantization path. These are opposite symptoms of one fact: the accelerator, not your toolchain, defines the numerics.
 
-Beyond portability, we contribute a systems observation that reframes edge-NPU performance analysis: **latency regime is set by output/data-movement size, not compute (§7).** On one M.2 NPU, a classifier with a 4 KB output is compute-bound and scales 2.19× across cores, while a detector with a 2.82 MB raw output on the same device, same runtime, is data-movement-bound and does not scale at all — and a *lighter*-compute detector with an even larger output is 26× slower still. We isolate output size as the causal variable.
+Beyond portability, we contribute a systems observation that reframes edge-NPU performance analysis: **latency regime is set by output/data-movement size, not compute (§7).** On one M.2 NPU, a classifier with a 4 KB output is compute-bound and scales 2.19× across cores, while a detector with a 2.82 MB raw output on the same device, same runtime, is data-movement-bound and does not scale at all — and a *lighter*-compute detector with an even larger output is 26× slower still. A controlled single-variable sweep — compute held fixed, output swept 1020× — then traces the full transition curve and shows the regime boundary is not a knife-edge but a band whose width equals the core count (*N* cores share one data-movement link), yielding a closed-form rule for the output size at which adding cores stops helping. We isolate output size as the causal variable.
 
 We frame these findings for their intended audience. The submitting institution works on automotive edge AI, where the failures above are not academic: non-portable INT8 numerics undermine the determinism and cross-module consistency that safety cases and redundant (dual-compute) architectures rely on. §8–§10 add supporting characterization (transformer INT8 breakdown, DLA behavior) and a catalog of silent-failure pitfalls we hit, and §11 states the study's limits honestly.
 
@@ -37,7 +37,7 @@ We frame these findings for their intended audience. The submitting institution 
 - C1: the INT8 speedup sign is determined by the CPU dot-product ISA, shown across four CPUs (§4).
 - C2 (headline): INT8 numerical non-portability across CPU↔CPU and CPU↔accelerator boundaries, with FP32 as a bit-identical control (§5).
 - C3: vendor NPUs own quantization; two opposite BYO-QDQ failure modes (§6).
-- C4: edge-NPU bottleneck regimes are set by output/data-movement size, not compute (§7).
+- C4: edge-NPU bottleneck regimes are set by output/data-movement size, not compute; a controlled fixed-compute sweep traces the transition, whose boundary is a band of width = core count (§7).
 - A reproducibility artifact: scripts plus 30 measurement reports.
 
 ---
@@ -159,6 +159,18 @@ Reasoning about "is this NPU fast enough" usually starts from compute (FLOPs/TOP
 
 The YOLOv5s row isolates the causal variable: it has the *smallest* compute of the three yet is by far the slowest, because it has the largest output to move across the PCIe Gen2×1 link. Compute does not predict the regime; output/D2H size does.
 
+**A controlled single-variable sweep traces the transition curve.** The three models above bracket the two regimes but cannot trace the boundary between them, because they differ in compute as well as output. We remove that residual confound with a synthetic sweep on the same device and runtime: a fixed heavy convolutional trunk holds NPU compute constant (1-core inference p50 = 2.70 ms, spread 4.9% across the sweep) while a 4-channel bottleneck feeding a 1×1 "expander" head varies *only* the output tensor, over 1020× (3.83 KB → 3.82 MB). Holding compute fixed and sweeping output alone, 3-core throughput scaling descends monotonically from 2.98× (compute-bound) to 1.00× (D2H-bound), and the per-core job distribution migrates 33/33/33 → 98/2/0 as the one shared PCIe link progressively starves all but one core (reproducing the YOLO26n 472/28/2 signature). The single-inference crossover — where D2H equals the fixed 2.70 ms compute — falls at ≈1.05 MB of output.
+
+| Output (fixed 2.70 ms compute) | 3-core scaling |
+|---|---|
+| 3.83 KB | 2.98× (compute-bound plateau) |
+| 250 KB | 1.99× (transition band) |
+| 500 KB | 1.60× (transition band) |
+| 977 KB | 1.21× (transition band) |
+| 1.95 MB | 1.00× (D2H-bound) |
+
+**The regime boundary is a band whose width equals the core count.** The transition is not a knife-edge but a band bounded by two thresholds: multi-core scaling begins to break when D2H reaches compute/*N* (≈319 KB — the one shared link can no longer feed all *N* cores), and a *single* inference turns D2H-bound when D2H reaches compute (≈1.05 MB). Their ratio is *N*: we measure a 3.36× band on a 3-core device, because *N* cores share one D2H link, so aggregate throughput saturates at 1/*N* of the per-core D2H that bounds one inference. This gives a closed-form provisioning rule — from compute time and link bandwidth alone, an *N*-core accelerator behind a bus stops scaling once the output exceeds ≈(compute-time × link-bandwidth)/*N* — turning the qualitative "provision by data movement" into a quantitative threshold. (Thresholds are linear-fit extrapolations, 2.456 ms/MB, specific to this Gen2×1 link; the band-width = *N* ratio is bandwidth-independent. See §11.)
+
 We observe a third regime with the transformer detector DETR, where the DEEPX compiler auto-splits the graph and leaves the transformer on the host CPU in FP32: end-to-end 1036.34 ms decomposes as host-CPU transformer FP32 910.6 ms (87.9%) ≫ D2H 57.28 ms ≫ NPU INT8 41.11 ms (4.0%) ≫ H2D 6.97 ms — **host-CPU-compute-bound**. Three models on one accelerator thus exhibit three different bottlenecks (NPU-compute, PCIe-D2H, host-CPU-compute). For context, in its favorable (compute-bound) regime the same NPU delivers large wins over the host CPU — e.g., YOLO26n throughput 91.51 fps vs. 8.01 fps on the A76 (×11.42) and host-side perf/watt ×29.29 — but those wins evaporate the moment the model's output pushes it into the D2H-bound regime. The design rule: for edge accelerators behind a bus, provision and partition by data movement, not by TOPS.
 
 ---
@@ -200,7 +212,8 @@ We state the study's limits plainly; several are properties of a measurement-fir
 - **Version confounds.** Runtime versions differ across platforms (e.g., ORT and TensorRT versions differ by target). Where a comparison could be confounded by version (e.g., a cross-run 1000/1000 spanning two ORT versions), we flag it; the same-machine comparisons (the core of C1/C2) are not version-confounded.
 - **Relative, not absolute.** Batch size, input resolution, and evaluation subset differ across sections; absolute latency/accuracy are not cross-comparable. All claims are within-comparison relative deltas.
 - **Power-measurement gap.** Some perf-per-watt figures use a host-side power boundary because on-board/M.2 card power (upstream of the accessible rail) or DLA power (not captured by the GPU utilization counter) could not be isolated; we report the measurement boundary alongside each figure.
-- **Init-weight models excluded from accuracy.** The BEV capstone models ran with initialization weights (public weights unavailable), so their mAP is ~0 by construction and is used only for latency/engine-size characterization, never for accuracy claims.
+- **Init-weight models excluded from accuracy.** The BEV capstone models ran with initialization weights (public weights unavailable), so their mAP is ~0 by construction and is used only for latency/engine-size characterization, never for accuracy claims. The §7 regime-transition sweep likewise uses synthetic random-weight models with a synthesized input; they are valid only for latency/regime, never accuracy.
+- **Extrapolated, link-specific thresholds (§7).** The two transition thresholds (≈319 KB, ≈1.05 MB) are extrapolations of a linear D2H fit (2.456 ms/MB), not directly measured points, and their *absolute* positions are specific to this host's PCIe Gen2×1 link (a wider link shifts them). The structural result — a transition band of width = core count — is link-bandwidth-independent, since it follows only from *N* cores sharing one D2H link.
 - **Vendor scope.** Vendor-NPU findings cover Qualcomm and DEEPX; other automotive NPUs (TI, Renesas) were not available and are left to future work.
 
 ---
