@@ -13,7 +13,7 @@
 %  Related Work (Sec. 2) and all 46 refs verified against arXiv/publisher
 %  pages on 2026-09-04. All numbers are relative comparisons (see Sec. 10).
 %  No internal infrastructure identifiers are included.
-%  Authorship placeholder is for the submitting author(s); Claude is NOT an author.
+%  Sole author is the submitting author; Claude is NOT an author.
 %
 %  NOTE: this file was hand-written and could not be test-compiled on the
 %  authoring machine (no local LaTeX toolchain). Build once on Overleaf/arXiv.
@@ -40,7 +40,8 @@
   linkcolor=blue!55!black,
   citecolor=blue!55!black,
   urlcolor=blue!55!black,
-  pdftitle={Is INT8 Portable? A Cross-Platform Measurement Study of Quantized Inference on Embedded and Automotive Accelerators}
+  pdftitle={Is INT8 Portable? A Cross-Platform Measurement Study of Quantized Inference on Embedded and Automotive Accelerators},
+  pdfauthor={Yuyeong Shin}
 }
 
 % left- and centre-aligned fixed-width column types (reduce overfull boxes)
@@ -51,7 +52,7 @@
 \title{Is INT8 Portable?\\[2pt]
 \large A Cross-Platform Measurement Study of Quantized Inference on Embedded and Automotive Accelerators}
 
-\author{[Author]\thanks{Contact: \texttt{[email]}. Korea Automotive Technology Institute (KATECH). Co-authors TBD.}}
+\author{Yuyeong Shin\thanks{Contact: \texttt{yyshin@katech.re.kr}. Korea Automotive Technology Institute (KATECH).}}
 
 \date{Draft v0.3 (pre-submission) --- \today}
 
@@ -550,7 +551,7 @@ Across seven hardware classes we find that INT8 quantization is not portable on 
 
 The practical recommendations are concrete: re-validate INT8 per target rather than once; treat vendor-native quantization as mandatory, not optional; provision accelerators by output/data-movement size; and, for safety-relevant or redundant automotive compute, do not assume two heterogeneous units running the same INT8 model agree per input --- they do under FP32 and may not under INT8. Where per-input cross-target determinism is required, constraining quantization to power-of-two scales --- shown to restore bit-identical cross-kernel agreement in the single-GPU LLM setting \citep{chen2026deterministic} --- is an appealing mitigation, but we tested it across a \emph{physical} device boundary and it did not transfer: forcing every scale to a power of two on our INT8 ResNet-50 left the x86$\leftrightarrow$A76 pair \emph{further} from agreement than the unmodified baseline (958/1000 $\to$ 869/1000 for ceil rounding, 919/1000 for nearest), because these two MLAS kernels do not implement $M = 2^k$ as a shared exact shift and the coarsened scale grid enlarges the epilogue divergence rather than removing it (\S5). Whether it transfers across other boundaries (CPU$\leftrightarrow$accelerator, CPU$\leftrightarrow$vendor-NPU), or with a kernel pair that \emph{does} share an exact power-of-two shift, remains open; on the evidence here, per-target re-validation --- not a scale constraint --- is the dependable path. These findings also motivate our follow-on work characterizing a heterogeneous multi-module automotive compute platform, where the inter-module data-movement bottleneck (a level up from \S7) and cross-module INT8 consistency (a level up from \S5) become first-order system design constraints.
 
-\paragraph{Artifact availability.} Measurement scripts and 32 HTML reports are released with this paper; Appendix~\ref{app:map} maps every numbered claim to the report and script that produced it. \texttt{[link TBD]}
+\paragraph{Artifact availability.} Measurement scripts and 32 HTML reports are released with this paper; Appendix~\ref{app:map} maps every numbered claim to the report and script that produced it. Available at \url{https://github.com/you0ddr/embedded-ai-quantization-guide/tree/paper1-v1}.
 
 % ---------------------------------------------------------------------
 % References verified against arXiv/publisher pages on 2026-09-04 (46 entries).
@@ -564,7 +565,7 @@ The practical recommendations are concrete: re-validate INT8 per target rather t
 \section{Claim-to-Artifact Map}
 \label{app:map}
 
-Every numbered claim in this paper is backed by a measurement report in \texttt{logs/} and by the scripts and result files that produced it in \texttt{experiments/}. Report names below are relative to \texttt{logs/}; artifact paths are relative to \texttt{experiments/}. Within an artifact cell, an entry that contains no slash is a file in the same directory as the first entry of that cell. Of the 32 reports released, the 24 cited here are the ones a claim in this paper depends on; the remaining eight cover the same corpus's supporting work (environment setup, PTQ deep-dive and raw run logs, QAT recovery, the BEVFormer/BEVDet capstone, and a CNN-detector accuracy axis) and are not load-bearing for any claim above. Claims are abbreviated here, and the absolute values they quote (latency, top-1, mAP, perf-per-watt) are batch-1, subset-based, and measured on different paths, so only the within-comparison \emph{relative} relations they support are valid (\S10).
+Every numbered claim in this paper is backed by a measurement report in \texttt{logs/} and by the scripts and result files that produced it in \texttt{experiments/}. Report names below are relative to \texttt{logs/}; artifact paths are relative to \texttt{experiments/}, both in the artifact repository linked above. Within an artifact cell, an entry that contains no slash is a file in the same directory as the first entry of that cell. Of the 32 reports released, the 24 cited here are the ones a claim in this paper depends on; the remaining eight cover the same corpus's supporting work (environment setup, PTQ deep-dive and raw run logs, QAT recovery, the BEVFormer/BEVDet capstone, and a CNN-detector accuracy axis) and are not load-bearing for any claim above. Claims are abbreviated here, and the absolute values they quote (latency, top-1, mAP, perf-per-watt) are batch-1, subset-based, and measured on different paths, so only the within-comparison \emph{relative} relations they support are valid (\S10).
 
 \begingroup
 \scriptsize

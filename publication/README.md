@@ -10,7 +10,7 @@
 |------|------|
 | `publishability_assessment.html` | **투고 가능성 검토서.** (2026-09-01 작성 시점) 30개 리포트를 기여(C1~C8) 단위로 신규성 채점, 위협 요인·갭 분석·타깃 벤류·추천 논문 구조를 정리. 논문 착수 전 설계도. |
 | `paper1_isint8portable.md` | **논문 1 초안 v0.3** (arXiv 타깃, 영어). "Is INT8 Portable?" — INT8 비이식성 3축(속도 부호 C1·수치 C2·배포 C3) + 병목 레짐 C4 + 함정 C8. §2 관련연구·References(BibTeX) **완료** — 문헌 조사 반영, 핵심은 **Chen 2026 동시 발표작**(arXiv:2608.13756/2609.00363, C2 메커니즘을 단일 GPU·LLM에서 선규명)에 대한 정직한 포지셔닝(§5 헤드라인을 "발견"→"물리적 디바이스 간 측정"으로, FP32 비트동일 대조 + power-of-two 완화책 **실측·NO-GO**). **PoT 완화책은 이제 미검증 아님(2026-09-10 실행)** — §5/§10/§11에 "tested → NO-GO" 반영: 스케일을 2^k로 강제해도 x86↔A76 INT8 일치가 958→869(ceil)/919(nearest)로 **되레 떨어짐**(MLAS가 `M=2^k`를 공유 시프트로 특수처리하지 않아 격자만 거칠어져 epilogue 발산 ×4.34/×2.35 확대), 리포트 `logs/stage5_pot_scales_report.html`. **BibTeX 46건 전량 웹 실검증 완료(2026-09-04, arXiv/publisher 대조)** — 오류 6건(저자명·제목·venue) 수정, `[unverified]` 잔존 0. 인프라 식별자 제외·DEEPX 포함. |
-| `paper1_isint8portable.tex` + `refs.bib` | **논문 1 LaTeX 변환본** (arXiv-ready). MD v0.3를 자체완결형 `\documentclass[11pt]{article}`로 손수 전사 — 표 7종 booktabs, 인용 `\citep`(natbib numbers/unsrtnat), 유니코드→수식 전 변환. 정적 린트 통과(비ASCII 0·환경/중괄호 균형·**인용 46=정의 46 정확 일치**·표 열 정합). ⚠️로컬 LaTeX 툴체인 부재로 **테스트 컴파일 불가** → Overleaf/arXiv에서 `pdflatex→bibtex→pdflatex×2` 1회 빌드 필요. 저자=플레이스홀더(제출자, Claude 제외). |
+| `paper1_isint8portable.tex` + `refs.bib` | **논문 1 LaTeX 변환본** (arXiv-ready). MD v0.3를 자체완결형 `\documentclass[11pt]{article}`로 손수 전사 — 표 7종 booktabs, 인용 `\citep`(natbib numbers/unsrtnat), 유니코드→수식 전 변환. 정적 린트 통과(비ASCII 0·환경/중괄호 균형·**인용 46=정의 46 정확 일치**·표 열 정합). ⚠️로컬 LaTeX 툴체인 부재로 **테스트 컴파일 불가** → Overleaf/arXiv에서 `pdflatex→bibtex→pdflatex×2` 1회 빌드 필요. 저자=Yuyeong Shin(KATECH) 단독 · Claude는 저자 아님. |
 
 ## 검토 요약 (2026-09-01 검토서 기준 · 갱신 2026-09-09)
 
