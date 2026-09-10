@@ -1,3 +1,5 @@
+\pdfoutput=1  % arXiv: select pdflatex. Must stay within the first 5 lines.
+% NOTE: compile with pdfLaTeX, not LuaLaTeX (the line above is undefined under LuaTeX).
 % =====================================================================
 %  Is INT8 Portable? A Cross-Platform Measurement Study
 %  arXiv preprint (cs.LG / cs.PF / cs.AR).  Self-contained article class.
@@ -7,16 +9,17 @@
 %          pdflatex paper1_isint8portable
 %          pdflatex paper1_isint8portable
 %  Needs:  refs.bib (in the same directory).
+%  arXiv:  upload paper1_isint8portable.tex together with the generated
+%          .bbl -- arXiv runs pdflatex but does NOT run bibtex.
 %
-%  DRAFT v0.3 (pre-submission). Empirical sections wired from the
-%  repository SSOT (32 reports in logs/, 9 suites in experiments/).
+%  Empirical sections are wired from the repository SSOT
+%  (32 reports in logs/, 9 suites in experiments/).
 %  Related Work (Sec. 2) and all 46 refs verified against arXiv/publisher
 %  pages on 2026-09-04. All numbers are relative comparisons (see Sec. 10).
 %  No internal infrastructure identifiers are included.
 %  Sole author is the submitting author; Claude is NOT an author.
 %
-%  NOTE: this file was hand-written and could not be test-compiled on the
-%  authoring machine (no local LaTeX toolchain). Build once on Overleaf/arXiv.
+%  Artifact: https://github.com/yyshin-katech/embedded-ai-quantization-guide/tree/paper1-v1
 % =====================================================================
 \documentclass[11pt]{article}
 
@@ -54,7 +57,7 @@
 
 \author{Yuyeong Shin\thanks{Contact: \texttt{yyshin@katech.re.kr}. Korea Automotive Technology Institute (KATECH).}}
 
-\date{Draft v0.3 (pre-submission) --- \today}
+\date{}
 
 \begin{document}
 \maketitle

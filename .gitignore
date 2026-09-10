@@ -39,3 +39,11 @@ desktop.ini
 *.swp
 .idea/
 .vscode/
+# publication/ LaTeX 빌드 산출물 (Overleaf 다운로드 포함)
+publication/*.pdf
+publication/*.zip
+publication/*.aux
+publication/*.log
+publication/*.out
+publication/*.blg
+publication/*.synctex.gz
