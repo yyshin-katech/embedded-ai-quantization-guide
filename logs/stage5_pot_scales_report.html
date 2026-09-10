@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>P3 — Power-of-two 스케일 크로스디바이스 비트동일성 완화책: NO-GO (실측 보고서)</title>
+<style>
+:root{--bg:#0b0e14;--panel:#131720;--panel2:#0f131b;--bd:#242b38;--tx:#c9d1d9;--dim:#8b949e;--brt:#e6edf3;--accent:#58a6ff;--green:#3fb950;--amber:#d29922;--red:#ff7b72;--purple:#bc8cff;--mono:'JetBrains Mono','SF Mono',ui-monospace,'Cascadia Code',Menlo,Consolas,monospace;--sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans KR','Malgun Gothic',sans-serif}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:var(--sans);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:980px;margin:0 auto;padding:0 20px 120px}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+.hero{padding:48px 0 26px;border-bottom:1px solid var(--bd);margin-bottom:8px}
+.kicker{font-family:var(--mono);font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+.hero h1{margin:0 0 10px;font-size:30px;line-height:1.25;color:var(--brt);letter-spacing:-.01em}
+.hero p.sub{margin:0 0 20px;color:var(--dim);font-size:15px;max-width:80ch}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font-family:var(--mono);font-size:12px;padding:5px 10px;border:1px solid var(--bd);border-radius:999px;background:var(--panel);color:var(--tx)}
+.chip b{color:var(--brt);font-weight:600}
+.chip.done{border-color:rgba(63,185,80,.5);background:rgba(63,185,80,.12);color:#7ee787}
+.chip.blocked{border-color:rgba(255,123,114,.5);background:rgba(255,123,114,.12);color:#ff9d96}
+.chip.partial{border-color:rgba(210,153,34,.5);background:rgba(210,153,34,.12);color:#e3b341}
+nav.toc{display:flex;flex-wrap:wrap;gap:8px;margin:26px 0 6px}
+nav.toc a{font-family:var(--mono);font-size:12.5px;padding:6px 11px;border:1px solid var(--bd);border-radius:8px;background:var(--panel);color:var(--tx)}
+nav.toc a:hover{border-color:var(--accent);color:var(--brt);text-decoration:none}
+h2.sec{font-size:13px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin:40px 0 12px;font-weight:600;border-top:1px solid var(--bd);padding-top:26px}
+.step{margin:26px 0 0;scroll-margin-top:16px}
+.step>h3{display:flex;align-items:center;gap:12px;font-size:19px;color:var(--brt);margin:0 0 6px;letter-spacing:-.01em}
+.num{flex:none;display:inline-grid;place-items:center;width:28px;height:28px;border-radius:8px;background:var(--accent);color:#06101f;font-family:var(--mono);font-weight:700;font-size:13px}
+.step p.lead{margin:0 0 4px;color:var(--dim);font-size:14.5px}
+table.dt{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.3px;border:1px solid var(--bd);border-radius:10px;overflow:hidden;font-family:var(--mono)}
+table.dt th,table.dt td{padding:8px 12px;text-align:right;border-bottom:1px solid var(--bd)}
+table.dt th{background:var(--panel);color:var(--dim);font-weight:600;font-size:12px;letter-spacing:.04em}
+table.dt th:first-child,table.dt td:first-child{text-align:left;color:var(--brt)}
+table.dt tr:last-child td{border-bottom:none}
+table.dt tr.hi td{background:rgba(63,185,80,.08)}
+table.dt tr.lo td{background:rgba(255,123,114,.08)}
+table.dt tr.grey td{background:rgba(139,148,158,.08);color:var(--dim)}
+table.dt tr.base td{background:rgba(88,166,255,.07)}
+.g{color:var(--green)}.r{color:var(--red)}.a{color:var(--amber)}.p{color:var(--purple)}.d{color:var(--dim)}
+table.kv{width:100%;border-collapse:collapse;margin:12px 0;font-size:13.5px;border:1px solid var(--bd);border-radius:10px;overflow:hidden}
+table.kv th,table.kv td{padding:9px 13px;text-align:left;border-bottom:1px solid var(--bd);vertical-align:top}
+table.kv th{background:var(--panel);color:var(--dim);font-weight:600;width:34%;font-size:12.5px}
+table.kv td{font-family:var(--mono);font-size:12.7px;color:var(--tx)}
+table.kv tr:last-child td,table.kv tr:last-child th{border-bottom:none}
+.term{background:var(--panel2);border:1px solid var(--bd);border-radius:11px;overflow:hidden;margin:14px 0}
+.term-bar{display:flex;align-items:center;gap:7px;padding:9px 13px;background:#0c1017;border-bottom:1px solid var(--bd)}
+.dot{width:11px;height:11px;border-radius:50%}.dot.r{background:#ff5f56}.dot.y{background:#ffbd2e}.dot.g{background:#27c93f}
+.term-title{margin-left:9px;color:var(--dim);font-size:12.5px;font-family:var(--mono)}
+.term pre{margin:0;padding:15px 17px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.62;color:var(--tx);white-space:pre;tab-size:2}
+.cmt{color:#5c6773}.ok{color:var(--green)}.err{color:var(--red)}.warn{color:var(--amber)}.dim{color:var(--dim)}.hl{color:var(--purple)}.in{color:var(--brt);font-weight:600}
+.note{border-left:3px solid var(--accent);background:rgba(88,166,255,.07);padding:13px 17px;border-radius:0 9px 9px 0;margin:15px 0;font-size:14px}
+.note.trap{border-color:var(--red);background:rgba(255,123,114,.08)}
+.note.warnb{border-color:var(--amber);background:rgba(210,153,34,.08)}
+.note.tip{border-color:var(--green);background:rgba(63,185,80,.07)}
+.note.block{border-color:var(--purple);background:rgba(188,140,255,.08)}
+.note .tag{display:inline-block;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 8px;border-radius:6px;margin-bottom:7px}
+.note.trap .tag{background:rgba(255,123,114,.18);color:#ff9d96}
+.note.warnb .tag{background:rgba(210,153,34,.18);color:#e3b341}
+.note.tip .tag{background:rgba(63,185,80,.18);color:#7ee787}
+.note.block .tag{background:rgba(188,140,255,.18);color:#d8b8ff}
+.note b{color:var(--brt)}.note code{font-family:var(--mono);font-size:12.5px;background:rgba(255,255,255,.06);padding:1px 5px;border-radius:4px}
+.chartwrap{border:1px solid var(--bd);background:var(--panel2);border-radius:12px;padding:18px 18px 14px;margin:16px 0}
+.chartwrap .ct{font-family:var(--mono);font-size:12.5px;color:var(--brt);margin:0 0 4px}
+.chartwrap .cs{font-size:12.5px;color:var(--dim);margin:0 0 12px}
+.statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:14px 0}
+.stat{border:1px solid var(--bd);background:var(--panel);border-radius:11px;padding:15px 16px}
+.stat .k{font-family:var(--mono);font-size:11.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em}
+.stat .v{font-size:23px;color:var(--brt);font-weight:700;margin-top:5px;letter-spacing:-.01em}
+.stat .n{font-size:12px;color:var(--dim);margin-top:3px}
+.next{display:block;margin:26px 0 0;padding:15px 18px;border:1px solid var(--bd);border-radius:11px;background:var(--panel);color:var(--tx);font-size:14px}
+.next:hover{border-color:var(--accent);text-decoration:none}
+.next b{color:var(--accent)}
+footer{margin-top:30px;padding-top:18px;border-top:1px solid var(--bd);color:var(--dim);font-size:12.5px}
+@media (max-width:560px){.hero h1{font-size:23px}.term pre{font-size:11.4px}.stat .v{font-size:20px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <p class="kicker">실행 보고서 · P3 · PoT 스케일 완화책 (x86 ↔ Raspberry Pi 5 크로스디바이스)</p>
+    <h1>Power-of-two 스케일 — 크로스디바이스 INT8 비트동일성 완화책: <span style="color:var(--red)">NO-GO</span></h1>
+    <p class="sub">논문 C2의 헤드라인은 <b>같은 INT8 QDQ ONNX·같은 scale인데 정수 커널이 다르면 예측이 갈린다</b>이다(x86↔Pi5 <b>958/1000</b>). Chen 2026이 <b>단일 GPU·LLM</b>에서 그 원인을 재양자화 epilogue로 국소화하고 <b>power-of-two(PoT) 스케일이 커널 간 비트동일성을 복원</b>함을 보였다. 이 축은 그 완화책이 <b>물리적 디바이스 경계</b>(x86 i9-10900K no-VNNI MLAS ↔ Pi 5 A76 SDOT MLAS)를 넘는지 실측한다. <b>결과: NO-GO</b> — PoT는 일치를 복원하기는커녕 <b>오히려 악화</b>시킨다(958 → <b>869</b> ceil / <b>919</b> nearest). 메커니즘 심층분석으로 런북이 병기한 두 잔여 위험을 분리: <b>위험 #1(epilogue 발산 확대) 확증·증폭</b>, <b>위험 #2(타이 브레이킹) 반증</b>.</p>
+    <div class="chips">
+      <span class="chip"><b>2026-09-10</b></span>
+      <span class="chip"><b>x86 i9-10900K (no-VNNI) ↔ Raspberry Pi 5 (A76 SDOT)</b></span>
+      <span class="chip"><b>ONNX Runtime 1.23.2 · MLAS CPUEP · ResNet50 1000장</b></span>
+      <span class="chip blocked">주 게이트 958→869/1000 NO-GO (ceil)</span>
+      <span class="chip blocked">nearest 958→919/1000 NO-GO</span>
+      <span class="chip done">30회 반복 비트동일 (분산 0)</span>
+      <span class="chip partial">메커니즘 = 위험 #1(발산 ×4.3), 위험 #2 반증</span>
+    </div>
+  </header>
+
+  <nav class="toc">
+    <a href="#s1">§1 실행 요약</a>
+    <a href="#s2">§2 방법 — 재작성 + 게이트</a>
+    <a href="#s3">§3 게이트 판정 (헤드라인)</a>
+    <a href="#s4">§4 반복성 — 30회 비트동일</a>
+    <a href="#s5">§5 메커니즘 — 두 위험 분리</a>
+    <a href="#s6">§6 라운딩 · 정확도 대가</a>
+    <a href="#s7">§7 판정·산출물·캐비앗</a>
+  </nav>
+
+  <h2 class="sec">§1 — 실행 요약</h2>
+  <section id="s1" class="step">
+    <p class="lead">같은 <code>resnet50_int8_qdq.onnx</code>(대칭 QInt8·per-channel·<b>zero_point 전부 0</b>·INT32 bias DQ 없음 → epilogue의 유일 발산항은 requant multiplier <code>M</code> 하나)의 <b>모든 Q/DQ scale을 2의 거듭제곱으로 강제</b>(<code>pot_rewrite.py</code>, weight 재양자화 포함)한 뒤, 두 물리 디바이스에서 1,000장 번들을 돌려 크로스디바이스 top-1 예측 일치 + logits 비트동일 여부를 <code>pot_agree.py</code> 게이트로 판정.</p>
+    <div class="statgrid">
+      <div class="stat"><div class="k">기준선 (int8↔int8, 대조군)</div><div class="v">958/1000</div><div class="n">x86 no-VNNI MLAS ↔ A76 SDOT MLAS · 42장 상이</div></div>
+      <div class="stat"><div class="k">주 게이트 · PoT ceil</div><div class="v r">869/1000</div><div class="n">958 → 869 · 42→<b>131</b>장 상이 · <b>NO-GO</b></div></div>
+      <div class="stat"><div class="k">PoT nearest</div><div class="v r">919/1000</div><div class="n">958 → 919 · 42→<b>81</b>장 상이 · <b>NO-GO</b></div></div>
+      <div class="stat"><div class="k">반복성 (2머신×3정밀도×5)</div><div class="v g">분산 0</div><div class="n">30회 전부 logits_md5 비트동일 → 게이트 수치는 점추정 아닌 <b>정확값</b></div></div>
+      <div class="stat"><div class="k">위험 #1 · |Δlogit| 평균</div><div class="v a">×4.34</div><div class="n">0.1441 → 0.6254 (ceil) · 발산 확대 <b>확증</b></div></div>
+      <div class="stat"><div class="k">위험 #2 · 근접 타이 모수</div><div class="v g">41 → 36</div><div class="n">flip 수와 역행(ceil가 flip 최다인데 타이 최소) → <b>반증</b></div></div>
+    </div>
+    <div class="note trap"><span class="tag">헤드라인 — NO-GO</span>
+      <b>PoT는 크로스디바이스 비트동일성을 복원하지 못한다.</b> 두 정밀도 모두 게이트 실패이며, 요점이 미묘하다 — <b>PoT는 일치를 개선하지 않고 오히려 악화</b>시킨다(958 → 869/919). 즉 MLAS는 <code>M=2^k</code>를 <b>양쪽 커널이 동일하게 구현하는 정확한 시프트로 특수처리하지 않는다.</b> scale을 2의 거듭제곱으로 강제하면 모든 재양자화 weight·activation scale이 교란되어 <b>격자가 거칠어지고</b>, 그 결과 x86 no-VNNI 커널과 A76 SDOT 커널 사이의 <b>float32 epilogue 발산(런북 위험 #1)이 오히려 2~4배 커진다</b>. 메커니즘 분석(§5)은 이를 두 갈래로 분리한다 — <b>위험 #1(발산 확대)은 확증·증폭, 위험 #2(타이 브레이킹)는 반증</b>(PoT가 근접 타이를 늘리지 않음). Chen의 단일-GPU 결과를 부정하는 것이 아니라, <b>그 완화책이 물리적 ISA 경계를 넘지 못함</b>을 실측으로 확정한다.
+    </div>
+    <div class="note"><span class="tag">게이트 의미론 (엄격)</span>
+      게이트는 <b>양쪽이 다 PoT인 쌍</b>(<code>int8_pot ↔ int8_pot</code>)만 채점한다. 기준선 <code>int8 ↔ int8</code>은 재작성 전 <b>대조군</b>(다섯 쌍이 원래 958~965라 채점하면 무조건 실패)이고, 같은 보드의 <code>int8 ↔ int8_pot</code> 교차 쌍은 <b>정확도 대가</b>를 읽는 참고값이다. <b>GO 조건은 n/n</b> — <b>999/1000도 NO-GO</b>. PoT의 요점은 epilogue가 시프트가 되어 정확히 재현되거나 아니거나이므로, 한 장이라도 갈리면 <code>M</code> 말고 다른 발산원이 남았다는 뜻이다. 실측은 그 잔여 발산원을 §5에서 지목한다.
+    </div>
+  </section>
+
+  <h2 class="sec">§2 — 방법 · PoT 재작성 + 게이트 설계</h2>
+  <section id="s2" class="step">
+    <p class="lead">INT8 GEMM의 INT32 누산은 <b>정확</b>하다 — 두 커널이 갈릴 여지가 없다. 갈리는 곳은 그 뒤 epilogue: <code>out = round(acc_int32 × M) + zp</code>, <code>M = (s_a·s_w)/s_out</code>. <code>M</code>은 임의 실수라 커널마다 다르게 근사한다. <b>모든 <code>s</code>를 2의 거듭제곱으로 강제하면</b> <code>M = 2^(k_a+k_w−k_out)</code> = 순수 산술 시프트가 되어 근사할 것이 남지 않는다 — 이것이 Chen 2026의 완화책이다.</p>
+    <table class="kv">
+      <tr><th>두 디바이스 (물리 경계)</th><td>x86 <b>Core i9-10900K</b>(AVX-512 VNNI <b>없음</b>) ↔ Raspberry Pi 5 <b>Cortex-A76</b>(ARM dotprod <b>SDOT 있음</b>) — 둘 다 ONNX Runtime <b>CPUExecutionProvider</b>(MLAS 커널), <b>같은 ORT 1.23.2</b>(버전 confound 제거), <code>--threads 4</code> 고정</td></tr>
+      <tr><th>모델 (SSOT scale)</th><td><code>resnet50_int8_qdq.onnx</code>(md5 <code>b4120882…</code>) — 대칭 QInt8·per-channel·<b>zero_point 전부 0</b>·INT32 bias DQ 없음. epilogue 발산 가능 항 = <code>M</code> <b>하나뿐</b>(<code>pot_rewrite.py</code> 리포트 <code>nonzero_zero_points=[]</code>로 확인)</td></tr>
+      <tr><th>재작성 (<code>pot_rewrite.py</code>)</th><td>최상위 그래프의 <b>모든</b> Q/DQ scale을 2^k로 재작성(<b>173개 initializer · 27,616개 scale 값</b>) + weight initializer <b>53개 텐서 재양자화</b>(scale만 바꾸면 가중치가 조용히 스케일되므로). 중첩 서브그래프·비-initializer scale은 <b>탐지·거부</b>(쓰기 후 재검증 <code>non_pot_after_write=[]</code>). zero_point 불변(0 유지)</td></tr>
+      <tr><th>두 라운딩 모드</th><td><code>ceil</code>(<code>k=⌈log2 s⌉</code>, <b>기본</b>): <code>s'≥s</code> 격자 거칠어지기만 → <b>포화 0건</b>, scale 최대 <b>1비트(2×)</b> 이동 · <code>nearest</code>(<code>k=round(log2 s)</code>): 격자 최근접(√2 이내)이나 <code>s'&lt;s</code> 채널서 극값 <b>41,447개 포화</b></td></tr>
+      <tr><th>측정 (<code>pot_bench.py</code>)</th><td>1,000장 번들 → <code>pred_cls</code> + <b>logits md5</b>(argmax 일치가 비트동일을 증명 못 하므로). 전처리는 <code>cpu_proxy/rpi_bench.py</code>와 <b>바이트 동일</b> · <code>--warmup 20 --iters 200 --threads 4</code></td></tr>
+      <tr><th>판정 (<code>pot_agree.py</code>)</th><td>쌍별 top-1 일치 + logits 비트동일 + go/no-go 게이트. <b><code>int8_pot ↔ int8_pot</code>만 채점</b>, <code>int8↔int8</code>=대조군, 같은 보드 교차=정확도 대가 참고값. PASS/FAIL/N-A = exit 0/1/2</td></tr>
+    </table>
+    <div class="note"><span class="tag">왜 이 모델이 이상적인가</span>
+      <code>resnet50_int8_qdq.onnx</code>는 <b>zero_point가 전부 0</b>이고 INT32 bias DQ도 없어(3단계 대칭 재양자화 산물), epilogue에서 커널 간 발산 가능한 항이 <code>M</code> <b>하나로 좁혀져 있다</b>. 변수를 하나로 좁힌 상태에서 그 하나(<code>M</code>)를 2의 거듭제곱으로 제거하는 것이 이 실험의 설계다 — 그런데도 발산이 <b>커진다</b>면(§3·§5) 원인은 <code>M</code>의 근사가 아니라 <b>다른 곳</b>에 있다는 결정적 증거가 된다.
+    </div>
+    <div class="note warnb"><span class="tag">A53 세 쌍은 측정 불가</span>
+      부가 게이트의 A53(i.MX8M Nano) 쌍 3건은 <code>pot_bench.py</code>에 저메모리 lazy 경로가 아직 없어(2GB·무swap에서 602MB 전처리 배열이 SIGKILL) 측정하지 못했다. <b>주 게이트 x86↔A76은 영향 없음.</b> 부가 게이트 A78AE↔A76(원래 1000/1000, 같은 SDOT 커널)도 이 축에선 미측정(퇴행 감시 대상으로 런북에 남김).
+    </div>
+  </section>
+
+  <h2 class="sec">§3 — 게이트 판정 (헤드라인 NO-GO)</h2>
+  <section id="s3" class="step">
+    <p class="lead">주 게이트 <b>x86 ↔ Pi 5(A76), INT8</b>. GO 조건은 958 → <b>1000/1000</b>. 아래는 크로스디바이스 <b>상이 장수</b>(differ, 낮을수록 좋음, GO=0)로 본 세 정밀도 — 초록 세로선이 GO 목표(0장 상이).</p>
+    <div class="chartwrap">
+      <p class="ct">크로스디바이스 상이 장수 (x86 ↔ Pi 5 A76, 1000장 중) — 낮을수록 좋음</p>
+      <p class="cs">왼쪽 끝 0 = GO(1000/1000 일치) · 막대가 길수록 더 많이 갈림 · PoT 두 모드 모두 기준선보다 <b>오른쪽</b>(악화)</p>
+      <svg viewBox="0 0 900 176" width="100%" role="img" aria-label="크로스디바이스 상이 장수 막대 — PoT가 기준선보다 악화">
+        <line x1="0" y1="12" x2="0" y2="150" stroke="#3fb950" stroke-width="2"/>
+        <text x="6" y="166" fill="#7ee787" font-size="10" font-family="monospace">0 = GO (1000/1000)</text>
+        <line x1="186.7" y1="12" x2="186.7" y2="150" stroke="#242b38" stroke-width="1" stroke-dasharray="4 3"/>
+        <line x1="373.3" y1="12" x2="373.3" y2="150" stroke="#242b38" stroke-width="1" stroke-dasharray="4 3"/>
+        <line x1="560.0" y1="12" x2="560.0" y2="150" stroke="#242b38" stroke-width="1" stroke-dasharray="4 3"/>
+        <text x="186.7" y="166" fill="#5c6773" font-size="10" font-family="monospace" text-anchor="middle">50</text>
+        <text x="373.3" y="166" fill="#5c6773" font-size="10" font-family="monospace" text-anchor="middle">100</text>
+        <text x="560.0" y="166" fill="#5c6773" font-size="10" font-family="monospace" text-anchor="middle">150장 상이</text>
+        <g font-family="monospace" font-size="12">
+          <rect x="0" y="24" width="156.8" height="26" rx="3" fill="#58a6ff"/>
+          <text x="163.8" y="41" fill="#79c0ff">기준선 int8 ↔ int8 · 42장 상이 · 958/1000 (대조군)</text>
+          <rect x="0" y="66" width="302.4" height="26" rx="3" fill="#d29922"/>
+          <text x="309.4" y="83" fill="#e3b341">PoT nearest (int8_potn) · 81장 상이 · 919/1000 · NO-GO</text>
+          <rect x="0" y="108" width="489.1" height="26" rx="3" fill="#ff7b72"/>
+          <text x="496.1" y="125" fill="#ff9d96">PoT ceil (int8_pot) · 131장 상이 · 869/1000 · NO-GO ← 주 게이트</text>
+        </g>
+      </svg>
+    </div>
+    <table class="dt">
+      <thead><tr><th>비교 쌍</th><th>정밀도</th><th>일치</th><th>상이</th><th>logits</th><th>판정</th></tr></thead>
+      <tbody>
+        <tr class="base"><td>x86 ↔ rpi5(A76)</td><td>int8 (대조군)</td><td>958/1000</td><td>42</td><td class="d">differ</td><td class="d">기준선(불변, 미채점)</td></tr>
+        <tr class="lo"><td>x86 ↔ rpi5(A76)</td><td><b>int8_pot (ceil)</b></td><td class="r">869/1000</td><td class="r">131</td><td class="r">differ</td><td class="r"><b>NO-GO</b> (주 게이트)</td></tr>
+        <tr class="lo"><td>x86 ↔ rpi5(A76)</td><td>int8_potn (nearest)</td><td class="a">919/1000</td><td class="a">81</td><td class="a">differ</td><td class="r"><b>NO-GO</b></td></tr>
+      </tbody>
+    </table>
+    <div class="term">
+      <div class="term-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="term-title">pot_agree.py --gate  (요약 발췌)</span></div>
+      <pre><span class="cmt"># int8_pot ↔ int8_pot 쌍만 채점 (기준선 int8↔int8 = 대조군)</span>
+int8_pot   x86/int8_pot  <-> rpi5/int8_pot    <span class="err">869/1000</span>    131 differ
+int8_potn  x86/int8_potn <-> rpi5/int8_potn   <span class="warn">919/1000</span>     81 differ
+
+baseline INT8 pairs (control -- expected to disagree, NOT gated):
+   x86/int8 <-> rpi5/int8                      <span class="dim">958/1000 (42 differ)</span>
+
+<span class="err">GATE: FAIL -- 2 of 2 PoT INT8 pair(s) short of 1000/1000:</span>
+   x86/int8_pot  <-> rpi5/int8_pot    869/1000 (131 differ)
+   x86/int8_potn <-> rpi5/int8_potn   919/1000 (81 differ)
+<span class="cmt">[exit 1]</span></pre>
+    </div>
+    <div class="note trap"><span class="tag">게이트가 말하는 것</span>
+      두 PoT 정밀도 모두 <b>1000/1000에 도달하지 못했을 뿐 아니라 기준선 958보다 나빠졌다</b>(869·919). logits는 물론 <b>differ</b>(비트동일 실패). 게이트는 <b>FAIL 2/2</b>. 일치가 <b>개선이 아니라 악화</b>됐다는 것이 핵심 — PoT가 <code>M</code>을 공유 시프트로 만들었다면 최소한 나빠지지는 말아야 한다. 나빠졌다는 것은 곧 <b>커널이 <code>M=2^k</code>를 정확한 시프트로 특수처리하지 않고, 여전히 발산하는 float epilogue를 거치며, PoT의 격자 거칠어짐이 그 발산을 증폭</b>한다는 뜻이다(§5에서 정량화).
+    </div>
+  </section>
+
+  <h2 class="sec">§4 — 반복성 · 30회 비트동일 (사용자 요청)</h2>
+  <section id="s4" class="step">
+    <p class="lead">논문의 최대 약점(단일 실행·CI 부재)을 직접 겨냥해, 두 머신 × 세 정밀도를 <b>각 5회</b>(r1~r5) 동일 파라미터로 재실행. 정수 CPU 연산 + 고정 스레드 수(4) → 리덕션 순서 고정 → 실행 간 <code>logits_md5</code>가 <b>비트 단위로 동일</b>해야 한다.</p>
+    <table class="dt">
+      <thead><tr><th>config</th><th>실행 수</th><th>distinct logits_md5</th><th>top-1</th><th>판정</th></tr></thead>
+      <tbody>
+        <tr class="hi"><td>x86 / int8</td><td>5</td><td class="g">1</td><td>0.7530</td><td class="g">비트동일</td></tr>
+        <tr class="hi"><td>x86 / int8_pot (ceil)</td><td>5</td><td class="g">1</td><td>0.7510</td><td class="g">비트동일</td></tr>
+        <tr class="hi"><td>x86 / int8_potn (nearest)</td><td>5</td><td class="g">1</td><td>0.7350</td><td class="g">비트동일</td></tr>
+        <tr class="hi"><td>rpi5 / int8</td><td>5</td><td class="g">1</td><td>0.7500</td><td class="g">비트동일</td></tr>
+        <tr class="hi"><td>rpi5 / int8_pot (ceil)</td><td>5</td><td class="g">1</td><td>0.7390</td><td class="g">비트동일</td></tr>
+        <tr class="hi"><td>rpi5 / int8_potn (nearest)</td><td>5</td><td class="g">1</td><td>0.7440</td><td class="g">비트동일</td></tr>
+      </tbody>
+    </table>
+    <div class="note tip"><span class="tag">분산 0 → 게이트 수치는 정확값</span>
+      <b>30회 전부(6 config × 5) 각 config 내에서 logits_md5가 단 하나</b> — 실행 간 분산 0. 두 가지가 따라온다. ① 게이트 수치(958·869·919)는 run-to-run 노이즈에 흔들리는 점추정이 아니라 <b>결정론적 정확값</b>이다 — 신뢰구간을 붙일 필요조차 없다(구간 폭 0). ② 따라서 크로스디바이스 불일치는 스레드 스케줄링 노이즈가 아니라 <b>x86 커널과 A76 커널의 결정론적 ISA 차이</b>다. 각 디바이스는 자기 자신에 대해 완벽히 재현되지만 <b>서로에 대해서는 재현되지 않는다</b> — 이것이 C2의 정확한 형태이고, PoT가 그 간극을 닫지 못한다는 것이 이 축의 결과다.
+    </div>
+  </section>
+
+  <h2 class="sec">§5 — 메커니즘 · 두 잔여 위험의 분리 (사용자 요청 "b")</h2>
+  <section id="s5" class="step">
+    <p class="lead">게이트는 <b>판정</b>(FAIL)을, 이 절은 <b>이유</b>를 준다. 런북이 병기한 GO가 자동이 아닌 두 위험을 raw logits에서 분리(<code>pot_mech.py</code>) — <b>위험 #1</b>: PoT가 크로스커널 발산 <b>자체를 키운다</b>(float32 epilogue가 더 벌어짐). <b>위험 #2</b>: PoT가 결정을 <b>knife-edge로 더 밀어넣는다</b>(정확히 <code>.5</code> 근접 타이가 늘어 half-even↔half-away 커널이 그 지점서 갈림). 정밀도별로 크로스디바이스 <b>|Δlogit| 크기</b>와 <b>top1−top2 결정 마진</b> 분포를 동시에 재고, flip을 마진 축 위에 위치시켜 둘을 가른다.</p>
+
+    <div class="chartwrap">
+      <p class="ct">위험 #1 — 크로스커널 |Δlogit| per-element 평균 (x86 ↔ A76, 매칭 정밀도)</p>
+      <p class="cs">PoT가 발산을 줄여야 GO인데, 오히려 <b>단조 증가</b> · 막대 옆 = flip 장수(발산과 lockstep)</p>
+      <svg viewBox="0 0 900 176" width="100%" role="img" aria-label="크로스커널 |Δlogit| 평균이 PoT에서 증가">
+        <line x1="0" y1="12" x2="0" y2="150" stroke="#242b38" stroke-width="1"/>
+        <line x1="200" y1="12" x2="200" y2="150" stroke="#242b38" stroke-width="1" stroke-dasharray="4 3"/>
+        <line x1="400" y1="12" x2="400" y2="150" stroke="#242b38" stroke-width="1" stroke-dasharray="4 3"/>
+        <line x1="600" y1="12" x2="600" y2="150" stroke="#242b38" stroke-width="1" stroke-dasharray="4 3"/>
+        <text x="200" y="166" fill="#5c6773" font-size="10" font-family="monospace" text-anchor="middle">0.25</text>
+        <text x="400" y="166" fill="#5c6773" font-size="10" font-family="monospace" text-anchor="middle">0.50</text>
+        <text x="600" y="166" fill="#5c6773" font-size="10" font-family="monospace" text-anchor="middle">0.75  |Δlogit| 평균</text>
+        <g font-family="monospace" font-size="12">
+          <rect x="0" y="24" width="115.3" height="26" rx="3" fill="#58a6ff"/>
+          <text x="122.3" y="41" fill="#79c0ff">기준선 int8 · 0.1441 · flip 42</text>
+          <rect x="0" y="66" width="270.6" height="26" rx="3" fill="#d29922"/>
+          <text x="277.6" y="83" fill="#e3b341">nearest · 0.3383 (×2.35) · flip 81</text>
+          <rect x="0" y="108" width="500.3" height="26" rx="3" fill="#ff7b72"/>
+          <text x="507.3" y="125" fill="#ff9d96">ceil · 0.6254 (×4.34) · flip 131</text>
+        </g>
+      </svg>
+    </div>
+
+    <table class="dt">
+      <thead><tr><th>측정량</th><th>기준선 int8</th><th>ceil (int8_pot)</th><th>nearest (int8_potn)</th><th>읽기</th></tr></thead>
+      <tbody>
+        <tr class="grey"><td>agree / differ</td><td>958 / 42</td><td>869 / 131</td><td>919 / 81</td><td class="d">게이트와 동일</td></tr>
+        <tr><td colspan="5" style="text-align:left;color:#7ee787;font-family:var(--mono);font-size:12px;background:rgba(63,185,80,.06)">위험 #1 — 크로스커널 발산이 PoT에서 <b>커지는가?</b> → 예 (확증·증폭)</td></tr>
+        <tr class="lo"><td>|Δlogit| per-elem 평균</td><td>0.1441</td><td class="r">0.6254 (×4.34)</td><td class="a">0.3383 (×2.35)</td><td>발산 <b>단조 증가</b></td></tr>
+        <tr class="lo"><td>|Δlogit| per-elem p99</td><td>0.4854</td><td class="r">2.25</td><td class="a">1.25</td><td>꼬리도 확대</td></tr>
+        <tr class="lo"><td>|Δlogit| per-elem 최대</td><td>2.184</td><td class="r">8.0</td><td class="a">4.75</td><td>최악 원소 ×3.7</td></tr>
+        <tr class="lo"><td>이미지별 최악 |Δlogit| p50</td><td>0.7281</td><td class="r">3.0 (×4.12)</td><td class="a">1.5 (×2.06)</td><td>장당 발산도 확대</td></tr>
+        <tr><td colspan="5" style="text-align:left;color:#7ee787;font-family:var(--mono);font-size:12px;background:rgba(63,185,80,.06)">위험 #2 — PoT가 결정을 <b>knife-edge로 미는가?</b> → 아니오 (반증)</td></tr>
+        <tr class="hi"><td>근접 타이 모수 (마진&lt;τ, 1e-5~1e-1 평평)</td><td>41</td><td class="g">36</td><td class="g">45</td><td><b>flip과 역행</b>(ceil flip 최다인데 타이 최소)</td></tr>
+        <tr class="hi"><td>중앙 top1−top2 마진</td><td>3.155</td><td class="g">3.0</td><td class="g">2.75</td><td>안정(전역 재스케일 아님)</td></tr>
+        <tr class="hi"><td>FLIP된 이미지의 중앙 마진</td><td>0.2427</td><td class="g">0.5</td><td class="g">0.25</td><td>ceil flip은 <b>덜</b> 아슬한 데서</td></tr>
+        <tr class="hi"><td>마진&lt;1e-1에서 일어난 flip</td><td>15/42 (36%)</td><td class="g">23/131 (18%)</td><td class="g">22/81 (27%)</td><td>flip 다수는 <b>확신 구간</b>에서</td></tr>
+      </tbody>
+    </table>
+
+    <div class="note trap"><span class="tag">정정 (중요) — 메커니즘은 타이 브레이킹이 아니다</span>
+      최초 가설은 위험 #2(타이 브레이킹)였다("PoT가 <code>.5</code> 타이를 늘려 half-even↔half-away 커널이 갈린다"). <b>실측이 이를 반증한다.</b> 만약 타이 브레이킹이 원인이라면 flip이 가장 많은 <code>ceil</code>이 근접 타이도 가장 많아야 하는데, <b>정반대</b> — <code>ceil</code>은 flip 최다(131)인데 근접 타이 모수는 <b>최소</b>(41→36). 근접 타이 모수는 세 정밀도에서 <b>사실상 평평</b>(41→36/45)하고 flip 수와 <b>역행</b>한다. 게다가 <code>ceil</code> flip의 <b>82%가 마진&gt;0.1</b>인 <b>확신 구간</b>에서 일어나며(23/131만 아슬), FLIP된 이미지의 중앙 마진은 오히려 <b>커진다</b>(0.2427→0.5). 이는 작은 노이즈가 아슬한 결정을 뒤집는 그림이 아니라 <b>큰 발산이 확신 있던 결정까지 밀어내는</b> 그림이다. ⇒ <b>진짜 메커니즘은 위험 #1</b>: PoT가 크로스커널 발산 자체를 2~4배 키운다.
+    </div>
+    <div class="note block"><span class="tag">왜 발산이 커지는가 — 격자 거칠어짐</span>
+      <code>M=2^k</code>면 <code>acc×M</code>은 float 곱에서 <b>정확</b>하다 — 단 <code>|acc_int32| &lt; 2²⁴</code>일 때만(런북 위험 #1의 2²⁴ 벽). 그런데 PoT는 <b>출력 scale <code>s_out</code>도 2^k로 밀어</b> 출력 logits를 <b>거친 격자</b>(2^k 배수)에 얹는다 — PoT logits의 |Δ|가 정확히 0.5·3.0·8.0 같은 <b>깔끔한 배수</b>로 나오는 이유다. 두 커널이 인접 격자점으로 갈릴 때 그 <b>한 칸이 더 크다</b> → per-decision 점프가 커진다. 결정적 대조: <code>ceil</code>은 weight <b>포화 0건</b>인데도 <code>nearest</code>(포화 <b>41,447</b>건)보다 <b>더</b> 발산한다(0.6254&gt;0.3383). 즉 발산을 키우는 건 <b>weight 포화가 아니라 scale 격자의 거칠기</b>다(ceil은 scale을 최대 <b>2×</b>=1비트, nearest는 √2까지만 이동). 중앙 마진이 ~3으로 안정적이므로 커진 |Δlogit|은 전역 재스케일 착시가 아니라 <b>실질 상대 발산</b>이다.
+    </div>
+  </section>
+
+  <h2 class="sec">§6 — 라운딩 모드 · 정확도 대가</h2>
+  <section id="s6" class="step">
+    <p class="lead">비트동일성은 <b>두 모드 모두</b> 실패한다(둘 다 <code>M</code>이 2^k). 모드 선택은 순전히 <b>정확도 대가 vs 발산 크기</b>의 트레이드오프 — 그리고 둘이 <b>반대 방향</b>으로 움직인다.</p>
+    <table class="dt">
+      <thead><tr><th>재작성 속성</th><th>ceil (기본)</th><th>nearest</th></tr></thead>
+      <tbody>
+        <tr><td>scale initializer 재작성</td><td>173</td><td>173</td></tr>
+        <tr><td>scale 값 재작성 / 검사</td><td>27,616 / 27,736</td><td>27,616 / 27,736</td></tr>
+        <tr><td>weight 텐서 재양자화</td><td>53</td><td>53</td></tr>
+        <tr><td>최대 |log2 scale 이동|</td><td class="a">0.99998 (≤1비트, 2×)</td><td class="g">0.49999 (≤½비트, √2)</td></tr>
+        <tr><td>최대 weight 상대오차</td><td class="a">0.99997</td><td class="g">0.4142 (√2−1)</td></tr>
+        <tr><td>weight 값 포화</td><td class="g">0</td><td class="r">41,447</td></tr>
+        <tr><td>nonzero zero-points</td><td>[] (없음)</td><td>[] (없음)</td></tr>
+        <tr class="lo"><td>크로스디바이스 발산 |Δlogit| 평균</td><td class="r">0.6254 (더 큼)</td><td class="a">0.3383</td></tr>
+        <tr class="lo"><td>크로스디바이스 일치</td><td class="r">869/1000</td><td class="a">919/1000</td></tr>
+      </tbody>
+    </table>
+    <table class="dt">
+      <thead><tr><th>top-1 (1000장)</th><th>x86</th><th>rpi5 (A76)</th><th>비고</th></tr></thead>
+      <tbody>
+        <tr class="base"><td>int8 (기준선)</td><td>0.7530</td><td>0.7500</td><td class="d">재작성 전</td></tr>
+        <tr><td>int8_pot (ceil)</td><td>0.7510</td><td>0.7390</td><td class="d">−0.2 ~ −1.1%p</td></tr>
+        <tr><td>int8_potn (nearest)</td><td>0.7350</td><td>0.7440</td><td class="d">−0.6 ~ −1.8%p</td></tr>
+      </tbody>
+    </table>
+    <div class="note warnb"><span class="tag">반대로 움직이는 두 대가 — "무료 PoT"는 없다</span>
+      <b>ceil</b>: weight 포화가 없어(격자가 거칠어지기만) 국소 정확도는 덜 다치지만, 바로 그 <b>거친 격자</b>가 크로스커널 발산을 <b>가장 크게</b> 키워 일치가 최악(869). <b>nearest</b>: 격자는 최근접(√2)이라 발산은 덜하지만(919), <code>s'&lt;s</code> 채널의 극값 <b>41,447개가 포화</b>돼 정확도가 더 흔들린다. 즉 <b>격자를 곱게 하면(nearest) 일치는 낫지만 포화 대가, 격자를 안전하게 거칠게 하면(ceil) 포화는 없지만 발산 대가</b> — 어느 쪽도 크로스디바이스 비트동일에 이르지 못한다. 같은 보드의 <code>int8↔int8_pot</code> 교차 쌍(재작성이 예측을 흔든 장수)은 x86 72장·rpi5 135장(ceil), x86 142장·rpi5 128장(nearest)으로, 재작성 자체가 <b>같은 커널에서도</b> 예측을 상당히 흔든다 — PoT가 공짜 완화책이 아님을 재확인.
+    </div>
+  </section>
+
+  <h2 class="sec">§7 — 판정 · 산출물 · 캐비앗</h2>
+  <section id="s7" class="step">
+    <table class="dt">
+      <thead><tr><th>질문</th><th>판정</th></tr></thead>
+      <tbody>
+        <tr><td>PoT가 물리적 디바이스 경계서 비트동일성 복원? (주 게이트)</td><td class="r"><b>NO-GO</b> — 958→869(ceil)/919(nearest), 개선 아닌 악화</td></tr>
+        <tr><td>메커니즘 위험 #1 (epilogue 발산 확대)?</td><td class="a">확증·증폭 — |Δlogit| 평균 ×4.34(ceil)/×2.35(nearest), flip과 lockstep</td></tr>
+        <tr><td>메커니즘 위험 #2 (타이 브레이킹)?</td><td class="g">반증 — 근접 타이 모수 평평(41→36/45)·flip과 역행·flip 다수는 확신 구간</td></tr>
+        <tr><td>발산의 원인은 weight 포화인가?</td><td class="p">아니오 — ceil(포화 0)이 nearest(포화 41,447)보다 더 발산 → 원인은 <b>격자 거칠기</b></td></tr>
+        <tr><td>게이트 수치는 재현되는가?</td><td class="g">예 — 30회 전부 비트동일(분산 0), 크로스디바이스 불일치는 결정론적 ISA 차이</td></tr>
+        <tr><td>Chen 2026 단일-GPU 결과 반증?</td><td class="d">아니오 — 그 결과는 부정하지 않음. <b>물리적 ISA 경계로의 이전 실패</b>를 확정</td></tr>
+      </tbody>
+    </table>
+    <div class="note trap"><span class="tag">결론 — 잔여 발산원 지목</span>
+      게이트 실패는 곧 <code>M</code> 말고 <b>다른 발산원이 남아 있다</b>는 뜻이었고, 이 축이 그것을 지목한다: <b>x86 no-VNNI MLAS 커널과 A76 SDOT MLAS 커널의 float32 재양자화 epilogue는 <code>M</code>의 근사 외에도 갈린다</b>(FMA 순서·중간 정밀도·반올림·2²⁴ 벽). PoT는 <code>M</code> 항을 겨냥하지만, 그 커널들은 <code>M=2^k</code>를 공유 시프트로 특수처리하지 않으므로 그 발산이 남고, PoT의 격자 거칠어짐이 남은 발산의 <b>per-decision 진폭을 키운다</b>. Chen의 단일-GPU 성공(같은 GPU에서 커널만 교체 → epilogue 구현이 사실상 동형이라 <code>M</code> 제거로 충분)과의 차이가 바로 이 지점이다. 안전 관련 이중화 컴퓨트에서 <b>사용자 쪽 PoT 레버는 x86↔A76 경계를 닫지 못한다.</b>
+    </div>
+    <p class="lead">산출물:</p>
+    <table class="kv">
+      <tr><th>리포트</th><td>이 문서 <code>logs/stage5_pot_scales_report.html</code></td></tr>
+      <tr><th>실험 코드</th><td><code>experiments/stage5_infrastructure/pot_scales/</code> — <code>pot_rewrite.py</code>(scale 2^k 재작성+weight 재양자화·selftest) · <code>pot_bench.py</code>(측정+logits md5) · <code>pot_agree.py</code>(쌍별 일치+게이트) · <code>pot_mech.py</code>(메커니즘 2-way 분리, 이 축 신규) · <code>README.md</code>(런북/SSOT)</td></tr>
+      <tr><th>결과 (SSOT)</th><td><code>results/</code> — <code>{x86,rpi5}_{int8,int8_pot,int8_potn}.json</code>(예측 덤프) · <code>pot_rewrite_{ceil,nearest}.json</code>(재작성 리포트) · <code>mech_{ceil,nearest}.json</code>(메커니즘) · <code>repeat/</code>(24 반복 덤프 r2~r5). per-image logits <code>.npy</code>는 대용량이라 리포지터리 밖(<code>--save-logits</code>로 재생성)</td></tr>
+      <tr><th>모델</th><td><code>resnet50_int8_qdq.onnx</code>(md5 <code>b4120882…</code>) → <code>resnet50_int8_pot.onnx</code>(ceil <code>3a1a14d6…</code>) · <code>resnet50_int8_potn.onnx</code>(nearest <code>d1ea034d…</code>) · 세 모델 두 보드에 md5 일치</td></tr>
+      <tr><th>논문 반영</th><td><code>publication/paper1_isint8portable.{md,tex}</code> §5(Relation to concurrent work) · §10(Threats) · §11(Conclusion) — "untested and a concrete next step" → <b>"tested: NO-GO + 메커니즘"</b></td></tr>
+      <tr><th>선행 축</th><td><a href="stage4_arm_cpu_fallback_report.html">CPU 폴백 프록시</a>(958/1000 기준선의 출처) · <a href="stage3_jetson_orin_accuracy_report.html">Jetson 정확도 축</a>(CPU↔iGPU 961/1000) · <a href="stage4_deepx_dxm1_accuracy_report.html">DEEPX 정확도 축</a>(CPU↔벤더NPU 939/1000)</td></tr>
+    </table>
+    <div class="note warnb"><span class="tag">캐비앗</span>
+      ① 절대값(지연·top-1)은 <b>batch1·1,000장 서브셋·경로 상이</b> → 상대 관계만 유효(리포지터리 공통). ② <b>정확도 대가는 부수 측정</b> — 게이트는 <i>일치</i>를 보는 것이지 <i>정확도 보존</i>이 아니다(§6 병기). ③ 주 게이트는 <b>x86↔A76 한 경계</b> — A53 세 쌍은 저메모리 lazy 경로 미포팅으로, A78AE↔A76 퇴행 감시는 이 축에선 미측정(런북에 남김). ④ 발산 원인 "격자 거칠기 &gt; 포화"는 이 모델·두 라운딩 모드에서의 대조로, 커널 내부 introspection이 아니라 <b>입출력 관측</b>에 근거(|Δlogit| 크기·포화 수·마진 분포의 정합). ⑤ Chen 2026은 단일 GPU·LLM — 우리는 크로스 CPU·비전, <b>설정이 달라 1:1 반증이 아니라 이전 실패</b>. ⑥ PoT 미지원 경계(Qualcomm HTP·DEEPX DX-M1은 scale 소유 → 구조적 제외, 런북 참조). ⑦ 로컬 개발기 실측(ORT 1.23.2), 커밋 요청 시 스캔 후.
+    </div>
+    <a class="next" href="stage4_arm_cpu_fallback_report.html"><b>← CPU 폴백 프록시 축</b> — 이 실험이 닫으려던 958/1000 기준선(x86 no-VNNI ↔ A76 SDOT)의 출처</a>
+  </section>
+
+  <footer>
+    P3 · Power-of-two 스케일 크로스디바이스 완화책 (NO-GO) · x86 i9-10900K ↔ Raspberry Pi 5 (Cortex-A76) · ONNX Runtime 1.23.2 MLAS CPUEP · 2026-09-10 · batch1·1000장·상대 관계만 · <code>experiments/stage5_infrastructure/pot_scales/</code>
+  </footer>
+</div>
+</body>
+</html>

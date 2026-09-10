@@ -1,0 +1,24 @@
+{
+  "checked_scale_values": 27736,
+  "exponent_range": [
+    -50,
+    -2
+  ],
+  "input": "resnet50_int8_qdq.onnx",
+  "max_abs_log2_scale_shift": 0.49998871499563424,
+  "max_weight_abs_error": 1.6403105445206165,
+  "max_weight_rel_error": 0.41420250019893157,
+  "non_pot_after_write": [],
+  "nonzero_zero_points": [],
+  "output": "resnet50_int8_potn.onnx",
+  "qdq_in_subgraphs": [],
+  "qdq_in_subgraphs_after_write": [],
+  "rounding": "nearest",
+  "scale_initializers_rewritten": 173,
+  "scale_values_rewritten": 27616,
+  "scales_not_initializer": [],
+  "scales_not_initializer_after_write": [],
+  "weight_tensors_requantized": 53,
+  "weight_values_saturated": 41447,
+  "weights_shared_by_several_dq": []
+}
