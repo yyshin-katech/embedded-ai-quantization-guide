@@ -1,0 +1,9 @@
+# 저장소 정본은 LF. Windows 측 도구가 /mnt/h 의 워킹 파일을 CRLF로 바꿔도
+# git이 비교·커밋 전에 LF로 정규화하므로 435건 규모의 개행-only diff가
+# 다시 나타나지 않는다. (2026-09-10, 개행-only 435건 정리와 함께 도입)
+* text=auto eol=lf
+
+# 바이너리: 정규화 금지
+*.npz -text
+*.npy -text
+*.gz  -text
