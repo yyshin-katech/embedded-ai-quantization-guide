@@ -1,0 +1,261 @@
+\begin{thebibliography}{46}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Chen(2026{\natexlab{a}})]{chen2026integeralibi}
+Teng-Ruei Chen.
+\newblock The integer alibi: Localizing cross-kernel divergence in int8-quantized {LLM} inference, 2026{\natexlab{a}}.
+\newblock arXiv:2608.13756; companion to arXiv:2608.11693. Concurrent work.
+
+\bibitem[Jacob et~al.(2018)Jacob, Kligys, Chen, Zhu, Tang, Howard, Adam, and Kalenichenko]{jacob2018}
+Benoit Jacob, Skirmantas Kligys, Bo~Chen, Menglong Zhu, Matthew Tang, Andrew Howard, Hartwig Adam, and Dmitry Kalenichenko.
+\newblock Quantization and training of neural networks for efficient integer-arithmetic-only inference.
+\newblock In \emph{IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)}, pages 2704--2713, 2018.
+\newblock arXiv:1712.05877.
+
+\bibitem[Krishnamoorthi(2018)]{krishnamoorthi2018}
+Raghuraman Krishnamoorthi.
+\newblock Quantizing deep convolutional networks for efficient inference: A whitepaper, 2018.
+\newblock arXiv:1806.08342.
+
+\bibitem[Nagel et~al.(2021)Nagel, Fournarakis, Amjad, Bondarenko, van Baalen, and Blankevoort]{nagel2021whitepaper}
+Markus Nagel, Marios Fournarakis, Rana~Ali Amjad, Yelysei Bondarenko, Mart van Baalen, and Tijmen Blankevoort.
+\newblock A white paper on neural network quantization, 2021.
+\newblock arXiv:2106.08295.
+
+\bibitem[Gholami et~al.(2021)Gholami, Kim, Dong, Yao, Mahoney, and Keutzer]{gholami2021survey}
+Amir Gholami, Sehoon Kim, Zhen Dong, Zhewei Yao, Michael~W. Mahoney, and Kurt Keutzer.
+\newblock A survey of quantization methods for efficient neural network inference, 2021.
+\newblock arXiv:2103.13630.
+
+\bibitem[Wu et~al.(2020)Wu, Judd, Zhang, Isaev, and Micikevicius]{wu2020}
+Hao Wu, Patrick Judd, Xiaojie Zhang, Mikhail Isaev, and Paulius Micikevicius.
+\newblock Integer quantization for deep learning inference: Principles and empirical evaluation, 2020.
+\newblock arXiv:2004.09602.
+
+\bibitem[Nagel et~al.(2020)Nagel, Amjad, van Baalen, Louizos, and Blankevoort]{nagel2020adaround}
+Markus Nagel, Rana~Ali Amjad, Mart van Baalen, Christos Louizos, and Tijmen Blankevoort.
+\newblock Up or down? adaptive rounding for post-training quantization.
+\newblock In \emph{International Conference on Machine Learning (ICML)}, 2020.
+\newblock arXiv:2004.10568.
+
+\bibitem[{Arm Ltd.}()]{armisa}
+{Arm Ltd.}
+\newblock \emph{Arm Architecture Reference Manual (ARMv8.2-A DotProd: SDOT/UDOT)}.
+\newblock ISA primary source.
+
+\bibitem[{Intel Corporation}()]{intelisa}
+{Intel Corporation}.
+\newblock \emph{Intel Architecture Instruction Set Extensions Programming Reference (AVX-512 VNNI)}.
+\newblock ISA primary source.
+
+\bibitem[{Google}({\natexlab{a}})]{gemmlowp}
+{Google}.
+\newblock {gemmlowp}: A small self-contained low-precision {GEMM} library.
+\newblock \url{https://github.com/google/gemmlowp}, {\natexlab{a}}.
+\newblock Accessed 2026.
+
+\bibitem[{Google}({\natexlab{b}})]{xnnpack}
+{Google}.
+\newblock {XNNPACK}: Optimized floating-point and quantized neural network inference operators.
+\newblock \url{https://github.com/google/XNNPACK}, {\natexlab{b}}.
+\newblock ARM DotProd (SDOT / i8mm) INT8 path; accessed 2026.
+
+\bibitem[Khudia et~al.(2021)Khudia, Huang, Basu, Deng, Liu, Park, and Smelyanskiy]{khudia2021fbgemm}
+Daya Khudia, Jianyu Huang, Protonu Basu, Summer Deng, Haixin Liu, Jongsoo Park, and Mikhail Smelyanskiy.
+\newblock Fbgemm: Enabling high-performance low-precision deep learning inference, 2021.
+\newblock arXiv:2101.05615.
+
+\bibitem[{Microsoft}()]{mlas}
+{Microsoft}.
+\newblock {MLAS}: Microsoft linear algebra subprograms ({ONNX} runtime cpu kernels).
+\newblock \url{https://github.com/microsoft/onnxruntime}.
+\newblock Accessed 2026.
+
+\bibitem[Park et~al.(2018)Park, Naumov, Basu, et~al.]{park2018facebook}
+Jongsoo Park, Maxim Naumov, Protonu Basu, et~al.
+\newblock Deep learning inference in facebook data centers: Characterization, performance optimizations and hardware implications, 2018.
+\newblock arXiv:1811.09886.
+
+\bibitem[Reddi et~al.(2020)Reddi, Cheng, Kanter, Mattson, Schmuelling, Wu, et~al.]{reddi2020mlperf}
+Vijay~Janapa Reddi, Christine Cheng, David Kanter, Peter Mattson, Guenther Schmuelling, Carole-Jean Wu, et~al.
+\newblock Mlperf inference benchmark.
+\newblock In \emph{ACM/IEEE International Symposium on Computer Architecture (ISCA)}, pages 446--459, 2020.
+\newblock arXiv:1911.02549; DOI:10.1109/ISCA45697.2020.00045.
+
+\bibitem[Banbury et~al.(2021)Banbury, Reddi, Torelli, et~al.]{banbury2021mlperftiny}
+Colby Banbury, Vijay~Janapa Reddi, Peter Torelli, et~al.
+\newblock Mlperf tiny benchmark.
+\newblock In \emph{NeurIPS Datasets and Benchmarks Track}, 2021.
+\newblock arXiv:2106.07597.
+
+\bibitem[Janapa~Reddi et~al.(2020)]{reddi2020mobile}
+Vijay Janapa~Reddi et~al.
+\newblock Mlperf mobile inference benchmark, 2020.
+\newblock arXiv:2012.02328.
+
+\bibitem[Ignatov et~al.(2018)Ignatov, Timofte, Chou, Wang, Wu, Hartley, and Van~Gool]{ignatov2018}
+Andrey Ignatov, Radu Timofte, William Chou, Ke~Wang, Max Wu, Tim Hartley, and Luc Van~Gool.
+\newblock Ai benchmark: Running deep neural networks on android smartphones.
+\newblock In \emph{ECCV Workshops}, 2018.
+\newblock arXiv:1810.01109.
+
+\bibitem[Ignatov et~al.(2019)Ignatov, Timofte, et~al.]{ignatov2019}
+Andrey Ignatov, Radu Timofte, et~al.
+\newblock Ai benchmark: All about deep learning on smartphones in 2019, 2019.
+\newblock arXiv:1910.06663.
+
+\bibitem[Alqahtani et~al.(2024)Alqahtani, Cheema, Rodriguez, and Toosi]{edgedetection2024}
+Daghash~K. Alqahtani, Muhammad~Aamir Cheema, Maria~A. Rodriguez, and Adel~N. Toosi.
+\newblock A comprehensive evaluation of deep learning object detection models on heterogeneous edge devices, 2024.
+\newblock arXiv:2409.16808.
+
+\bibitem[Millar et~al.(2025)Millar, Huang, Sethi, Haddadi, and Madhavapeddy]{millar2025}
+Josh Millar, Yushan Huang, Sarab Sethi, Hamed Haddadi, and Anil Madhavapeddy.
+\newblock Benchmarking ultra-low-power {$\mu$}npus, 2025.
+\newblock arXiv:2503.22567.
+
+\bibitem[Chen(2026{\natexlab{b}})]{chen2026deterministic}
+Teng-Ruei Chen.
+\newblock Deterministic {LLM} inference across {GPU} kernels: Power-of-two int8 quantization scales and the limits of tolerance-based conformance, 2026{\natexlab{b}}.
+\newblock arXiv:2609.00363. Concurrent work.
+
+\bibitem[Li et~al.(2021)Li, Shen, Ma, Ren, Zhao, Zhang, Gong, Yu, and Yan]{li2021mqbench}
+Yuhang Li, Mingzhu Shen, Jian Ma, Yan Ren, Mingxin Zhao, Qi~Zhang, Ruihao Gong, Fengwei Yu, and Junjie Yan.
+\newblock Mqbench: Towards reproducible and deployable model quantization benchmark.
+\newblock In \emph{NeurIPS Datasets and Benchmarks Track}, 2021.
+\newblock arXiv:2111.03759.
+
+\bibitem[Masoudian et~al.(2026)Masoudian, Shafaei, Swain, and Schedl]{masoudian2026}
+Shahed Masoudian, Passant Shafaei, Monorama Swain, and Markus Schedl.
+\newblock What we observe as {LLM} behavior can be a side-effect of inference backend, 2026.
+\newblock arXiv:2608.04714.
+
+\bibitem[Shanmugavelu et~al.(2024)Shanmugavelu, Taillefumier, Culver, Hernandez, Coletti, and Sedova]{fpnonassoc2024}
+Sanjif Shanmugavelu, Mathieu Taillefumier, Christopher Culver, Oscar Hernandez, Mark Coletti, and Ada Sedova.
+\newblock Impacts of floating-point non-associativity on reproducibility for {HPC} and deep learning applications, 2024.
+\newblock arXiv:2408.05148.
+
+\bibitem[Xie et~al.(2025)Xie, Zhang, and Chen]{repdl2025}
+Peichen Xie, Xian Zhang, and Shuo Chen.
+\newblock Repdl: Bit-level reproducible deep learning training and inference, 2025.
+\newblock arXiv:2510.09180 (originally drafted 2023).
+
+\bibitem[Dettmers et~al.(2022)Dettmers, Lewis, Belkada, and Zettlemoyer]{dettmers2022llmint8}
+Tim Dettmers, Mike Lewis, Younes Belkada, and Luke Zettlemoyer.
+\newblock {LLM.int8()}: 8-bit matrix multiplication for transformers at scale.
+\newblock In \emph{Advances in Neural Information Processing Systems (NeurIPS)}, 2022.
+\newblock arXiv:2208.07339.
+
+\bibitem[Bondarenko et~al.(2021)Bondarenko, Nagel, and Blankevoort]{bondarenko2021}
+Yelysei Bondarenko, Markus Nagel, and Tijmen Blankevoort.
+\newblock Understanding and overcoming the challenges of efficient transformer quantization.
+\newblock In \emph{Conference on Empirical Methods in Natural Language Processing (EMNLP)}, 2021.
+\newblock arXiv:2109.12948.
+
+\bibitem[Xiao et~al.(2023)Xiao, Lin, Seznec, Wu, Demouth, and Han]{xiao2022smoothquant}
+Guangxuan Xiao, Ji~Lin, Mickael Seznec, Hao Wu, Julien Demouth, and Song Han.
+\newblock Smoothquant: Accurate and efficient post-training quantization for large language models.
+\newblock In \emph{International Conference on Machine Learning (ICML)}, 2023.
+\newblock arXiv:2211.10438.
+
+\bibitem[Lin et~al.(2024)Lin, Tang, Tang, Yang, Chen, Wang, Xiao, Dang, Gan, and Han]{lin2023awq}
+Ji~Lin, Jiaming Tang, Haotian Tang, Shang Yang, Wei-Ming Chen, Wei-Chen Wang, Guangxuan Xiao, Xingyu Dang, Chuang Gan, and Song Han.
+\newblock {AWQ}: Activation-aware weight quantization for {LLM} compression and acceleration.
+\newblock In \emph{Conference on Machine Learning and Systems (MLSys)}, 2024.
+\newblock arXiv:2306.00978.
+
+\bibitem[Frantar et~al.(2023)Frantar, Ashkboos, Hoefler, and Alistarh]{frantar2022gptq}
+Elias Frantar, Saleh Ashkboos, Torsten Hoefler, and Dan Alistarh.
+\newblock {GPTQ}: Accurate post-training quantization for generative pre-trained transformers.
+\newblock In \emph{International Conference on Learning Representations (ICLR)}, 2023.
+\newblock arXiv:2210.17323.
+
+\bibitem[Yuan et~al.(2022)Yuan, Xue, Chen, Wu, and Sun]{yuan2022ptq4vit}
+Zhihang Yuan, Chenhao Xue, Yiqi Chen, Qiang Wu, and Guangyu Sun.
+\newblock Ptq4vit: Post-training quantization for vision transformers with twin uniform quantization.
+\newblock In \emph{European Conference on Computer Vision (ECCV)}, 2022.
+\newblock arXiv:2111.12293.
+
+\bibitem[Liu et~al.(2021)Liu, Wang, Han, Ma, and Gao]{liu2021ptqvit}
+Zhenhua Liu, Yunhe Wang, Kai Han, Siwei Ma, and Wen Gao.
+\newblock Post-training quantization for vision transformer.
+\newblock In \emph{Advances in Neural Information Processing Systems (NeurIPS)}, 2021.
+\newblock arXiv:2106.14156.
+
+\bibitem[Dhahri and Urban(2025)]{dhahri2025quanttrim}
+Rayen Dhahri and Steffen Urban.
+\newblock Quant-trim in practice: Improved cross-platform low-bit deployment on edge npus, 2025.
+\newblock arXiv:2511.15300; accepted to a EurIPS 2025 workshop (work in progress).
+
+\bibitem[{Qualcomm}()]{qualcomm_qnn}
+{Qualcomm}.
+\newblock Qualcomm ai engine direct ({QNN}) and {AI} hub.
+\newblock \url{https://app.aihub.qualcomm.com}.
+\newblock Vendor documentation; accessed 2026.
+
+\bibitem[{Apple}()]{coreml}
+{Apple}.
+\newblock Core ml tools ({coremltools}).
+\newblock \url{https://apple.github.io/coremltools}.
+\newblock Vendor documentation; accessed 2026.
+
+\bibitem[{Google}({\natexlab{c}})]{litert}
+{Google}.
+\newblock Litert (tensorflow lite) delegates and nnapi.
+\newblock \url{https://ai.google.dev/edge/litert}, {\natexlab{c}}.
+\newblock Vendor documentation; accessed 2026.
+
+\bibitem[Williams et~al.(2009)Williams, Waterman, and Patterson]{williams2009roofline}
+Samuel Williams, Andrew Waterman, and David Patterson.
+\newblock Roofline: An insightful visual performance model for multicore architectures.
+\newblock \emph{Communications of the ACM}, 52\penalty0 (4):\penalty0 65--76, 2009.
+\newblock DOI:10.1145/1498765.1498785.
+
+\bibitem[Chen et~al.(2016)Chen, Emer, and Sze]{chen2016eyeriss}
+Yu-Hsin Chen, Joel Emer, and Vivienne Sze.
+\newblock Eyeriss: A spatial architecture for energy-efficient dataflow for convolutional neural networks.
+\newblock In \emph{ACM/IEEE International Symposium on Computer Architecture (ISCA)}, 2016.
+\newblock DOI:10.1145/3007787.3001177.
+
+\bibitem[Sze et~al.(2017)Sze, Chen, Yang, and Emer]{sze2017efficient}
+Vivienne Sze, Yu-Hsin Chen, Tien-Ju Yang, and Joel~S. Emer.
+\newblock Efficient processing of deep neural networks: A tutorial and survey.
+\newblock \emph{Proceedings of the IEEE}, 105\penalty0 (12):\penalty0 2295--2329, 2017.
+\newblock arXiv:1703.09039; DOI:10.1109/JPROC.2017.2761740.
+
+\bibitem[Chakraborty et~al.(2025)Chakraborty, Tavernier, Kourtis, Pickavet, Oikonomakis, and Colle]{jetsonconcurrent2025}
+Abhinaba Chakraborty, Wouter Tavernier, Akis Kourtis, Mario Pickavet, Andreas Oikonomakis, and Didier Colle.
+\newblock Profiling concurrent vision inference workloads on {NVIDIA} jetson --- extended, 2025.
+\newblock arXiv:2508.08430.
+
+\bibitem[{NVIDIA}()]{nvdla}
+{NVIDIA}.
+\newblock {NVDLA}: {NVIDIA} deep learning accelerator (open architecture).
+\newblock \url{http://nvdla.org}.
+\newblock Accessed 2026.
+
+\bibitem[Farshchi et~al.(2019)Farshchi, Huang, and Yun]{farshchi2019nvdla}
+Farzad Farshchi, Qijing Huang, and Heechul Yun.
+\newblock Integrating {NVIDIA} deep learning accelerator ({NVDLA}) with {RISC-V} soc on firesim.
+\newblock In \emph{2nd Workshop on Energy Efficient Machine Learning and Cognitive Computing for Embedded Applications (EMC2)}, 2019.
+\newblock arXiv:1903.06495.
+
+\bibitem[{International Organization for Standardization}(2018)]{iso26262}
+{International Organization for Standardization}.
+\newblock \emph{ISO 26262: Road Vehicles --- Functional Safety}, 2018.
+
+\bibitem[{NVIDIA}(2018)]{nvidiadrive}
+{NVIDIA}.
+\newblock {NVIDIA} drive functional-safety architecture, 2018.
+\newblock Whitepaper.
+
+\bibitem[Amarnath et~al.(2022)Amarnath, Pal, Kassa, Vega, Buyuktosunoglu, Franke, Wellman, Dreslinski, and Bose]{hetsched2022}
+Aporva Amarnath, Subhankar Pal, Hiwot Kassa, Augusto Vega, Alper Buyuktosunoglu, Hubertus Franke, John-David Wellman, Ronald Dreslinski, and Pradip Bose.
+\newblock Hetsched: Quality-of-mission aware scheduling for autonomous vehicle socs, 2022.
+\newblock arXiv:2203.13396.
+
+\end{thebibliography}

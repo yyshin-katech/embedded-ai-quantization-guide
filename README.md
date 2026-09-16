@@ -1,5 +1,9 @@
 # embedded-ai-quantization-guide
 
+[![arXiv](https://img.shields.io/badge/arXiv-2609.16085-b31b1b.svg)](https://arxiv.org/abs/2609.16085)
+
+> 📄 이 저장소의 실측 코퍼스를 정리한 논문이 arXiv에 공개되었습니다 — **[Is INT8 Portable? A Cross-Platform Measurement Study of Quantized Inference on Embedded and Automotive Accelerators](https://arxiv.org/abs/2609.16085)** (arXiv:2609.16085, cs.AR). 논문이 인용하는 아티팩트 스냅샷은 태그 [`paper1-v1`](../../tree/paper1-v1)이며, 작업 공간은 [`publication/`](publication/)입니다.
+
 **AI 모델 양자화 → 임베디드 배포 실전 학습 가이드.** 멀티카메라 Transformer 인식 모델을 INT8 양자화하여 멀티 SoC(NVIDIA Orin/Thor · TI Jacinto · Qualcomm · Renesas RZ/V)에 올려 구동하는 전 과정을, **Ubuntu 22.04 + NVIDIA RTX GPU**에서 "읽고 따라 하면 실제로 실행되는" 단계별 문서로 정리했습니다.
 
 > 모든 버전·링크는 2026-07 기준으로 웹 검증했습니다. 실제 설치 시점엔 각 공식 페이지에서 재확인하세요.

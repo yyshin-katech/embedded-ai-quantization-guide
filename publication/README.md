@@ -2,6 +2,8 @@
 
 이 저장소에 축적된 실측 코퍼스(`logs/` 32건 · `experiments/` 9군)를 학술 논문으로 정리하기 위한 작업 폴더.
 
+> ✅ **논문 1 arXiv 공개 완료 (2026-09-16).** **[arXiv:2609.16085](https://arxiv.org/abs/2609.16085)** — *Is INT8 Portable? A Cross-Platform Measurement Study of Quantized Inference on Embedded and Automotive Accelerators* (Yuyeong Shin, KATECH 단독). 2026-09-14 05:29 UTC 제출 → **on hold** 경유 → 공개. **분류가 제출본과 다름**: primary가 제출 시 `cs.LG`였으나 공개본은 **`cs.AR`**(Hardware Architecture), 교차 `cs.LG`·`cs.PF` — 모더레이터 재분류로 보이며 hold 사유도 이것일 가능성이 높다(arXiv는 hold 사유를 공개하지 않으므로 확증 아님). Comments: `22 pages, 3 figures, 8 tables` + 아티팩트 URL. 아티팩트 스냅샷 태그 `paper1-v1`.
+
 > ⚠️ 기존 `paper/` 폴더와 다름. `paper/`는 `learning_resources.html`용 참고문헌 수집(fetch) 스크립트 전용이고, 여기 `publication/`은 **우리 실측 결과의 논문화**를 위한 공간이다.
 
 ## 산출물
@@ -11,6 +13,7 @@
 | `publishability_assessment.html` | **투고 가능성 검토서.** (2026-09-01 작성 시점) 30개 리포트를 기여(C1~C8) 단위로 신규성 채점, 위협 요인·갭 분석·타깃 벤류·추천 논문 구조를 정리. 논문 착수 전 설계도. |
 | `paper1_isint8portable.md` | **논문 1 초안 v0.3** (arXiv 타깃, 영어). "Is INT8 Portable?" — INT8 비이식성 3축(속도 부호 C1·수치 C2·배포 C3) + 병목 레짐 C4 + 함정 C8. §2 관련연구·References(BibTeX) **완료** — 문헌 조사 반영, 핵심은 **Chen 2026 동시 발표작**(arXiv:2608.13756/2609.00363, C2 메커니즘을 단일 GPU·LLM에서 선규명)에 대한 정직한 포지셔닝(§5 헤드라인을 "발견"→"물리적 디바이스 간 측정"으로, FP32 비트동일 대조 + power-of-two 완화책 **실측·NO-GO**). **PoT 완화책은 이제 미검증 아님(2026-09-10 실행)** — §5/§10/§11에 "tested → NO-GO" 반영: 스케일을 2^k로 강제해도 x86↔A76 INT8 일치가 958→869(ceil)/919(nearest)로 **되레 떨어짐**(MLAS가 `M=2^k`를 공유 시프트로 특수처리하지 않아 격자만 거칠어져 epilogue 발산 ×4.34/×2.35 확대), 리포트 `logs/stage5_pot_scales_report.html`. **BibTeX 46건 전량 웹 실검증 완료(2026-09-04, arXiv/publisher 대조)** — 오류 6건(저자명·제목·venue) 수정, `[unverified]` 잔존 0. 인프라 식별자 제외·DEEPX 포함. |
 | `paper1_isint8portable.tex` + `refs.bib` | **논문 1 LaTeX 변환본** (arXiv-ready). MD v0.3를 자체완결형 `\documentclass[11pt]{article}`로 손수 전사 — 표 7종 booktabs, 인용 `\citep`(natbib numbers/unsrtnat), 유니코드→수식 전 변환. 정적 린트 통과(비ASCII 0·환경/중괄호 균형·**인용 46=정의 46 정확 일치**·표 열 정합). ⚠️로컬 LaTeX 툴체인 부재로 **테스트 컴파일 불가** → Overleaf/arXiv에서 `pdflatex→bibtex→pdflatex×2` 1회 빌드 필요. 저자=Yuyeong Shin(KATECH) 단독 · Claude는 저자 아님. |
+| `paper1_isint8portable_ko.tex` | **논문 1 한국어판** (Overleaf/PDF용, 907줄 단일 파일). 영문 arXiv 공개본의 전문 번역 — 본문 11절 + 부록 A, 표 8종, TikZ 그림 3종. **컴파일러는 XeLaTeX**(`kotex`; pdfLaTeX 불가, LuaLaTeX 대안), `\pdfoutput`/`inputenc`/`fontenc`/`lmodern`/`microtype` 제거. 참고문헌 46건을 `thebibliography`로 인라인해 `.bib` 없이 `.tex` 하나만 업로드하면 됨(BibTeX 실행 불필요). 정적 린트 통과(중괄호·환경 균형 · label 11=ref 11 · 인용 46=정의 46 · 표 열 정합) + **영문판과 숫자 토큰 다중집합 대조**로 수치 동일성 확인. 부록 A의 아티팩트 경로 23행은 영문 소스와 바이트 단위 동일. ⚠️ 로컬 LaTeX 툴체인 부재로 테스트 컴파일 불가 · **arXiv 제출물 아님**(국내 공유·발표용). |
 
 ## 검토 요약 (2026-09-01 검토서 기준 · 갱신 2026-09-09)
 

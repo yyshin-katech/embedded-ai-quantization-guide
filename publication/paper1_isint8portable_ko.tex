@@ -1,0 +1,907 @@
+% =====================================================================
+%  INT8은 이식 가능한가? -- 임베디드/차량용 가속기 크로스플랫폼 측정 연구
+%  (영문 arXiv 프리프린트 "Is INT8 Portable?"의 한국어판)
+%
+%  ***  Overleaf 컴파일 방법  ***
+%    Menu -> Compiler -> XeLaTeX  로 반드시 변경한 뒤 Recompile.
+%    (pdfLaTeX로는 한글이 깨지거나 컴파일이 실패합니다.)
+%    LuaLaTeX로도 컴파일됩니다. XeLaTeX가 실패할 경우 대안으로 사용하세요.
+%
+%  참고문헌은 본 파일 안에 thebibliography로 포함되어 있으므로
+%  .bib 파일 없이 이 .tex 하나만 업로드하면 됩니다. BibTeX 실행 불필요.
+%
+%  한글 폰트 오류가 날 경우(아주 드묾): 아래 setmainhangulfont 줄의
+%  주석(%)을 풀어 NanumMyeongjo 또는 UnBatang을 명시하세요.
+%
+%  모든 수치는 영문판과 동일합니다. 수치 정본은 저장소의 측정 리포트입니다.
+%  아티팩트: https://github.com/yyshin-katech/embedded-ai-quantization-guide/tree/paper1-v1
+% =====================================================================
+\documentclass[11pt]{article}
+
+\usepackage{kotex}                 % 한글 조판 (XeLaTeX -> xetexko)
+%\setmainhangulfont{NanumMyeongjo} % 폰트 오류 시 주석 해제
+%\setmainhangulfont{UnBatang}      % 위가 없으면 이것을 사용
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usepackage[numbers,square,comma,sort&compress]{natbib}
+\usepackage{hyperref}
+\usepackage{url}
+\hypersetup{
+  unicode=true,
+  colorlinks=true,
+  linkcolor=blue!55!black,
+  citecolor=blue!55!black,
+  urlcolor=blue!55!black,
+  pdftitle={INT8은 이식 가능한가? 임베디드 및 차량용 가속기에서 양자화 추론에 대한 크로스플랫폼 측정 연구},
+  pdfauthor={Yuyeong Shin}
+}
+
+% 캡션/절 이름 한글화 (kotex 옵션에 의존하지 않고 명시적으로 고정)
+\renewcommand{\figurename}{그림}
+\renewcommand{\tablename}{표}
+\renewcommand{\abstractname}{초록}
+\renewcommand{\refname}{참고문헌}
+\renewcommand{\bibname}{참고문헌}
+\renewcommand{\appendixname}{부록}
+\renewcommand{\contentsname}{목차}
+
+% 좌/중앙/우 정렬 고정폭 열 타입 (overfull box 완화)
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+\newcolumntype{R}[1]{>{\raggedleft\arraybackslash}p{#1}}
+
+\title{INT8은 이식 가능한가?\\[2pt]
+\large 임베디드 및 차량용 가속기에서 양자화 추론에 대한 크로스플랫폼 측정 연구\\[6pt]
+\normalsize\textit{Is INT8 Portable? A Cross-Platform Measurement Study of\\
+Quantized Inference on Embedded and Automotive Accelerators}}
+
+\author{신유영 (Yuyeong Shin)\thanks{연락처: \texttt{yyshin@katech.re.kr}. 한국자동차연구원(Korea Automotive Technology Institute, KATECH). 본 문서는 영문 arXiv 프리프린트의 한국어판이며, 모든 수치와 주장은 영문판과 동일하다.}}
+
+\date{}
+
+\begin{document}
+\maketitle
+
+% ---------------------------------------------------------------------
+\begin{abstract}
+8비트 정수(INT8) 학습 후 양자화(post-training quantization)는 엣지 배포의 기본 레시피이며, 널리 공유되는 가정 위에 서 있다. 즉 INT8은 작고 예측 가능한 정확도 비용으로 추론을 빠르게 만들며, 한 번 양자화한 모델은 어떤 타깃으로든 그대로 옮길 수 있다는 것이다. 본 연구는 이 가정을 7개 하드웨어 클래스---ARM 및 x86 CPU, 외장 GPU, NVIDIA Jetson AGX Orin의 iGPU와 NVDLA, 그리고 두 벤더 NPU(Qualcomm Hexagon HTP, DEEPX DX-M1)---에 걸친 통제된 측정으로 검증한다. ONNX 아티팩트와 양자화 스케일을 고정하여 정수 커널 또는 ISA가 유일한 자유 변수가 되도록 설계했다. 이식성은 세 축 모두에서 실패한다. \textbf{(1)}~INT8 속도 향상의 \emph{부호}가 CPU의 내적(dot-product) 명령어(ARM \texttt{dotprod}/SDOT, x86 VNNI)에 의해 결정된다. 동일한 모델과 런타임인데도 해당 명령어를 가진 코어는 최대 $2.1\times$ 빨라지고, 없는 코어는 $1.7\times$ \emph{느려진다}. \textbf{(2)}~INT8 출력은 이식되지 않으며, 그 규칙은 점진적 구배가 아니라 \emph{불변}이다. FP32 예측은 모든 쌍에서 비트 단위로 동일(1000/1000)한 반면, INT8 예측은 두 타깃이 정수 커널을 공유할 때 정확히 1000/1000, 공유하지 않으면 958--965/1000으로 갈린다. 이는 경계가 CPU$\leftrightarrow$CPU인지 CPU$\leftrightarrow$가속기인지와 무관하며, top-1 정확도는 보존되므로 표준 정확도 보고서에는 전혀 드러나지 않는다. \textbf{(3)}~벤더 NPU가 양자화를 소유한다. 사용자가 직접 양자화한 QDQ 그래프는 한쪽 NPU에서는 조용히 실패하고(외부 스케일 무시, 컴파일\,$\cdot$\,프로파일\,$\cdot$\,실행이 모두 오류 없이 끝나면서 정확도 $0.75 \rightarrow 0.005$ 붕괴), 다른 쪽에서는 시끄럽게 실패한다(컴파일러가 그래프를 거부). 결국 벤더 자체 경로만이 올바른 엔진을 산출한다. 나아가 엣지 NPU의 지연 \emph{레짐}이 연산이 아니라 출력/디바이스$\rightarrow$호스트 전송 크기로 결정됨을 보이고, 연산을 고정한 스윕으로 그 전이 지점을 특정한다. 스크립트와 32건의 리포트를 공개한다. ``한 번 양자화하여 어디에나 배포한다''는 명제는, 입력 단위 결정성과 이중화가 중요한 임베디드\,$\cdot$\,차량용 배포에서는 안전하지 않다.
+\end{abstract}
+
+% ---------------------------------------------------------------------
+\section{서론}
+
+부동소수점 신경망을 8비트 정수로 양자화하는 것은 임베디드 배포 파이프라인에서 첫 번째이자 대개 유일한 압축 단계다. 현장의 통념은 간결하고 매력적이다. \emph{(i)}~정수 연산이 더 싸고 메모리를 덜 움직이므로 INT8은 FP32/FP16보다 빠르다. \emph{(ii)}~정확도 비용은 작고 그 범위가 정해져 있다. \emph{(iii)}~한 번 양자화한 모델은 이식 가능한 아티팩트---QDQ 노드를 가진 ONNX 파일이나 TFLite 모델---이며 어떤 런타임이나 가속기에도 넘겨줄 수 있다. 이 통념은 양자화를 가르치고, 벤치마킹하고(속도 향상 하나와 정확도 하나를 보고한다), 제품에 싣는 방식 전체의 바탕에 깔려 있다.
+
+본 논문은 이 통념이 실제의 이종 하드웨어와 접촉하고도 살아남는지를 묻는다. 우리는 7개 하드웨어 클래스와 3개 모델 계열(이미지 분류, CNN 객체 검출, 트랜스포머 검출)에 걸쳐 통제된 측정을 수행했으며, 모델 아티팩트와---결정적으로---양자화 \emph{스케일}을 타깃 간에 고정했다. 따라서 관측되는 차이는 다른 양자화기가 아니라 타깃의 정수 커널 또는 명령어 집합에 귀속된다.
+
+통념의 세 부분은 모두 무너지며, 무너지는 방식이 임베디드\,$\cdot$\,차량용 시스템에 특히 문제가 된다.
+
+\begin{enumerate}
+\item \textbf{속도 향상은 음수가 될 수 있고, 그 부호는 ISA의 성질이다(4절).} 동일한 INT8 모델을 동일한 CPU 런타임(ONNX Runtime, MLAS)에서 돌렸을 때, ARM 내적 명령어를 가진 Raspberry Pi 5 Cortex-A76과 Jetson A78AE는 각각 $1.83\times$, $2.11\times$ \emph{빨라지는} 반면, AVX-512 VNNI가 없는 x86 Core i9과 내적 명령어가 없는 Cortex-A53은 $1.65$--$1.76\times$ \emph{느려진다}. INT8은 ``빠른'' 것이 아니라, 타깃이 올바른 누산 명령어를 가진 \emph{경우에 한해} 빠르다.
+
+\item \textbf{INT8 출력은 수치적으로 이식되지 않는다(5절, 핵심 결과).} FP32 예측은 FP32를 측정한 모든 플랫폼 쌍에서 비트 단위로 동일하다(1000/1000). INT8 예측은 그렇지 않다. CPU$\leftrightarrow$CPU 쌍에서도, (\emph{동일한} QDQ 스케일로 빌드한) CPU$\leftrightarrow$GPU 경계에서도 약 4\%의 입력에서 예측이 갈린다. 그리고 그 규칙은 구배가 아니라 불변이다. 두 타깃이 정수 커널을 공유하면 일치도는 1000/1000이고, 공유하지 않으면 958--965/1000이며, 경계가 CPU$\leftrightarrow$CPU인지 CPU$\leftrightarrow$가속기인지와 무관하다. CPU$\leftrightarrow$벤더 NPU 쌍은 더 벌어지지만(939/1000) 스케일을 고정할 수 없으므로, 불변 주장 바깥의 배포 관측치로만 보고한다. top-1 정확도는 보존된다---뒤집힘이 순증감 0이기 때문이다---따라서 표준 정확도 리포트에는 보이지 않는다. 그러나 이는 타깃을 바꾸는 순간 양자화 모델이 입력에 대한 결정론적 함수가 아니게 된다는 뜻이다. 동시기 연구는 \emph{단일} GPU 위에서 LLM용 INT8 커널을 교체하는 방식으로 그 바탕의 에필로그 반올림 메커니즘을 국소화했다\citep{chen2026integeralibi}. 우리의 기여는 이와 직교하며 배포 관점에서 더 중대하다. 동일한 ONNX 파일과 동일한 스케일 아래, 비전\,$\cdot$\,검출 모델에 대해 \emph{물리적 디바이스를 가로지르는} 측정을 수행하고, FP32 비트 동일성을 대조군으로 둔다(5절).
+
+\item \textbf{양자화는 벤더가 소유한다(6절).} 직접 양자화한 모델은 벤더 NPU에 그대로 배포할 수 없다. Qualcomm의 Hexagon HTP는 외부 QDQ 스케일을 \emph{조용히} 무시하며, 컴파일\,$\cdot$\,프로파일\,$\cdot$\,실행이 모두 오류 없이 끝나는 동안 정확도는 $0.75 \rightarrow 0.005$로 붕괴한다. DEEPX 컴파일러는 같은 부류의 그래프를 \emph{시끄럽게} 거부한다. 둘 다 벤더 자체 양자화 경로를 통해서만 올바르게 동작한다. 이는 하나의 사실이 만드는 정반대 증상이다. 수치를 정의하는 것은 당신의 툴체인이 아니라 가속기다.
+\end{enumerate}
+
+이식성 문제를 넘어, 엣지 NPU 성능 분석의 틀을 다시 짜는 시스템 관측을 하나 더 제시한다. \textbf{지연 레짐은 연산이 아니라 출력/데이터 이동 크기로 결정된다(7절).} 하나의 M.2 NPU에서, 출력이 4\,KB인 분류기는 연산 바운드이며 코어 수에 따라 $2.19\times$ 확장되는 반면, 같은 디바이스\,$\cdot$\,같은 런타임에서 원시 출력이 2.82\,MB인 검출기는 데이터 이동 바운드이며 전혀 확장되지 않는다. 더 나아가 연산이 \emph{더 가벼운} 검출기가 출력은 더 클 때 역시 확장에 실패하고($1.02\times$) 분류기보다 $26\times$ 느리게 동작한다. 이어서 연산을 고정하고 출력만 $1020\times$ 스윕한 단일 변수 실험이 전이 곡선 전체를 추적하며, 레짐 경계가 칼날 같은 한 점이 아니라 폭이 코어 수와 같은 \emph{밴드}임을 보인다($N$개 코어가 하나의 데이터 이동 링크를 공유한다). 이로부터 코어를 늘려도 더 이상 이득이 없어지는 출력 크기에 대한 닫힌 형태의 규칙이 나온다. 우리는 출력 크기를 인과 변수로 분리해낸다.
+
+이 결과들은 의도된 독자를 염두에 두고 배치했다. 투고 기관은 차량용 엣지 AI를 다루며, 위의 실패들은 그 맥락에서 학술적 호기심에 그치지 않는다. 이식되지 않는 INT8 수치는 안전 논증과 이중화(dual-compute) 아키텍처가 의존하는 결정성 및 모듈 간 일관성을 잠식한다. 8절과 9절은 보조적 특성 분석(트랜스포머 INT8 붕괴, DLA 거동)과 우리가 실제로 부딪힌 조용한 실패(silent failure) 목록을 더하고, 10절은 본 연구의 한계를 정직하게 밝힌다.
+
+\paragraph{기여.}
+\begin{itemize}
+\item 동일 아티팩트\,$\cdot$\,동일 스케일을 유지하여 정수 커널/ISA만을 유일한 변수로 분리하는 통제된 크로스플랫폼 방법론(3절).
+\item C1: INT8 속도 향상의 부호가 CPU 내적 ISA로 결정됨을 4종 CPU에서 제시(4절).
+\item C2(핵심): CPU$\leftrightarrow$CPU 및 CPU$\leftrightarrow$가속기 경계에서의 INT8 수치 비이식성, FP32 비트 동일성을 대조군으로 사용(5절).
+\item C3: 벤더 NPU가 양자화를 소유하며, BYO-QDQ 실패가 정반대 두 양식으로 나타남(6절).
+\item C4: 엣지 NPU의 병목 레짐이 연산이 아니라 출력/데이터 이동 크기로 결정되며, 연산 고정 스윕이 전이를 추적하고 그 경계가 폭 $=$ 코어 수인 밴드임을 제시(7절).
+\item 재현성 아티팩트: 스크립트와 32건의 측정 리포트, 그리고 주장-아티팩트 대응표(부록~\ref{app:map}).
+\end{itemize}
+
+% ---------------------------------------------------------------------
+\section{배경 및 관련 연구}
+
+\paragraph{양자화의 토대.}
+정수 연산만으로 추론하는 방식---가중치와 활성값을 INT8로 사상하고, 곱의 누산을 INT32로 수행한 뒤 다시 스케일을 되돌리는 방식---은 Jacob 등\citep{jacob2018}이 정식화했고, 학습 후 사용을 위한 형태로 Krishnamoorthi\citep{krishnamoorthi2018}와 Nagel 등\citep{nagel2021whitepaper}의 백서에 정리되었으며, Gholami 등\citep{gholami2021survey}의 광범위한 서베이가 있다. per-tensor 대 per-channel, 대칭 대 비대칭이라는 설계 축과, CNN에서 대칭 INT8이 통상 FP32 대비 1\% 이내에 머문다는 결과는 NVIDIA의 평가\citep{wu2020}로 정립되었다. 양자화 시점의 반올림 선택 자체도 정확도에 결정적이다\citep{nagel2020adaround}. 본 연구는 새로운 양자화 알고리즘을 제안하지 않는다. \emph{기존의}, 올바르게 생성된 INT8이 하드웨어 경계를 넘는 순간 어떻게 거동하는지를 측정한다. 중요한 점은 Jacob의 파이프라인에서 INT32 누산은 정확하고 순서에 무관하다는 것이다. 구현의 자유도---그리고 우리와 동시기 연구가 보이듯 비이식성---가 살고 있는 곳은 재양자화 \emph{에필로그}다.
+
+\paragraph{정수 커널과 내적 ISA.}
+INT8의 속도 이점은 하드웨어 내적/누산 명령어에 의존한다. ARM \texttt{dotprod}(SDOT/UDOT, ARMv8.2-A)\citep{armisa}와 x86 AVX-512 VNNI\citep{intelisa}가 그것이며, 저정밀 GEMM 라이브러리 gemmlowp\citep{gemmlowp}, XNNPACK\citep{xnnpack}, FBGEMM\citep{khudia2021fbgemm}, 그리고 Microsoft의 MLAS\citep{mlas}(본 연구의 ONNX Runtime CPU 경로가 쓰는 커널 라이브러리)가 이를 활용한다. 데이터센터 INT8 추론에 대한 선행 특성 분석\citep{park2018facebook}은 처리량 측면에서 이 의존성을 문서화했다. 우리는 \emph{크로스 디바이스 부호 반전}이라는 틀---동일한 모델과 런타임이 오직 타깃 CPU가 해당 명령어를 갖는지에 따라 빨라지거나 느려진다---을 기여하고, 이를 정확도 측면의 귀결과 연결한다(4절 $\rightarrow$ 5절).
+
+\paragraph{엣지\,$\cdot$\,모바일 추론 벤치마킹.}
+MLPerf Inference\citep{reddi2020mlperf}, MLPerf Tiny\citep{banbury2021mlperftiny}, MLPerf Mobile\citep{reddi2020mobile}, AI-Benchmark\citep{ignatov2018, ignatov2019}가 표준적인 크로스 디바이스 벤치마크이며, 최근 연구들은 우리가 쓰는 바로 그 하드웨어 계열(Jetson, Raspberry Pi 5, Coral)에서 검출기를 벤치마킹한다\citep{edgedetection2024, millar2025}. 이들은 설계상 \emph{제출 단위\,$\cdot$\,백엔드 단위로} 양자화하고 디바이스별 처리량/정확도 점수를 보고한다. 타깃 간 양자화 스케일을 고정하는 연구도, 타깃 간 수치 \emph{일치도}를 보고하는 연구도 없다. 바로 그 축---스케일 고정 하의 수치 이식성---이 우리의 C2다.
+
+\paragraph{수치 재현성과 결정성(핵심 결과와 가장 가까운 선행 연구).}
+C2의 바탕 메커니즘은 본 연구와 동시기에 Chen\citep{chen2026integeralibi, chen2026deterministic}이 국소화했다. LLM 서빙 스택 \emph{단일 GPU} 안에서 INT8 GEMM 커널만(CUTLASS 대 Triton) 교체하면, 각자에 대해서는 비트 단위로 재현되지만 생성 시퀀스는 단 하나도 일치하지 않는 두 엔진이 나오며, 그 발산은 \emph{에필로그}의 스케일 적용과 출력 반올림으로 추적된다(INT32 누산은 정확하다). 또한 2의 거듭제곱 스케일이 커널 간 비트 동일성을 복원한다. 우리는 이를 동시기 선행 연구로 인용하며 메커니즘의 발견을 주장하지 않는다. 우리의 기여는 설정과 방법에서 직교한다. Chen은 한 디바이스에서 LLM용 커널을 교체하지만, 우리는 동일한 ONNX 파일과 동일한 내장 QDQ 스케일을 사용하여 비전\,$\cdot$\,검출 모델에 대해 \emph{물리적 하드웨어 경계를 가로지르는} 입력 단위 예측 불일치---내적 CPU $\leftrightarrow$ 비내적 CPU, CPU $\leftrightarrow$ GPU, CPU $\leftrightarrow$ 벤더 NPU---를 측정하고, 같은 디바이스 위에서 INT8 발산을 FP32 비트 동일성과 대비시킨다. 더 넓게는, MQBench\citep{li2021mqbench}가 백엔드 간 하드웨어 배포 가능성의 \emph{정확도 격차}를 측정하지만 동일 스케일 하의 입력 단위\,$\cdot$\,비트 수준 불일치는 다루지 않는다. 추론 백엔드가 greedy 디코딩 LLM의 거동조차 교란함이 보고된 바 있고\citep{masoudian2026}, 부동소수점의 비결합성\citep{fpnonassoc2024}과 축약 순서 고정을 통한 해법\citep{repdl2025}이 FP 쪽을 다룬다. 이에 따라 우리는 ``FP32 비트 동일'' 주장을 관측된 고정 스레드 구성으로 한정한다(5절, 10절). 이 발산은 양자화 TFLite의 CPU 대 NPU 출력이나 ONNX Runtime의 EP 간 출력에 관한 실무자 이슈 트래커에서는 흔한 이야기이지만, 우리가 아는 한 임베디드\,$\cdot$\,차량용 가속기 전반에 걸쳐 체계적으로 측정된 적은 없다.
+
+\paragraph{트랜스포머 양자화.}
+트랜스포머의 INT8 취약성은 활성값 이상치가 주된 원인이며\citep{dettmers2022llmint8, bondarenko2021}, 활성값 이전(SmoothQuant\citep{xiao2022smoothquant}), 활성값 인지 가중치 스케일링(AWQ\citep{lin2023awq}), 가중치 전용 PTQ(GPTQ\citep{frantar2022gptq})로 대응한다. 비전 트랜스포머에 대해서는 PTQ4ViT\citep{yuan2022ptq4vit}와 Liu 등\citep{liu2021ptqvit}이 softmax 이후\,$\cdot$\,GELU 활성값을 다룬다. 우리는 이 연구들을 온디바이스에서 DETR INT8이 \emph{왜} 붕괴하는지 설명하고, 활성값 입도 레버가 실제 툴체인과 fake-quant 환경에서 각각 얼마나 회복시키는지 정량화하는 데 사용한다(8절). 이는 취약한 축이 연산자 선택이 아니라 활성값임을 강화한다.
+
+\paragraph{벤더 NPU 툴체인.}
+벤더 컴파일러는 스케일링, 클리핑, 커널 지원이 서로 달라서 같은 체크포인트가 백엔드마다 다른 정확도를 낳는다. 이는 MQBench\citep{li2021mqbench}가 지적했고, 가장 직접적으로는 학습 시점의 하드웨어 중립 체크포인트를 제안한 Quant-Trim\citep{dhahri2025quanttrim}이 지적했다. Qualcomm의 QNN/AI-Hub 스택은 자체 네이티브 형식으로 양자화하며\citep{qualcomm_qnn}, Apple Core ML\citep{coreml}과 TFLite/LiteRT 델리게이트\citep{litert}도 마찬가지다. 이 연구들은 벤더가 자체 양자화를 선호한다는 사실을 확립했다. 우리는 \emph{BYO-QDQ 거부}에 대한 통제된 벤더 간 기술과 그 정반대의 두 실패 양식---조용한 실패(실행되면서 정확도 붕괴) 대 시끄러운 실패(컴파일 거부)---을 기여하고, 네이티브 경로가 정확할 뿐 아니라 더 빠르다는 것도 보인다(6절).
+
+\paragraph{가속기 특성 분석.}
+연산 바운드 대 메모리 바운드라는 이분법은 Roofline 모델\citep{williams2009roofline}이며, 연산 대비 데이터 이동 에너지의 우위는 Eyeriss 계열 연구\citep{chen2016eyeriss, sze2017efficient}가 다룬다. 우리는 배포 수준의 그림에 세 번째, 출력 크기가 이끄는 레짐---디바이스$\rightarrow$호스트(D2H)/PCIe 바운드---을 추가하고, PCIe로 연결된 한 엣지 NPU에서 병목(및 멀티코어가 도움이 되는지 여부)이 모델의 연산이 아니라 출력 텐서 크기로 정해짐을 보인다(7절). Jetson에서의 동시 추론 프로파일링\citep{jetsonconcurrent2025}은 GPU 폴백 서브그래프가 병렬이어야 할 가속기 작업을 직렬화시킨다는 우리의 관련 발견을 뒷받침한다.
+
+\paragraph{NVDLA와 고정 기능 INT8 가속기.}
+Orin의 DLA는 NVDLA v2 인스턴스이며\citep{nvdla, farshchi2019nvdla}, 우리는 이를 INT8 전용이고 CNN에 유리한 데이터패스---CNN에 대해서는 와트당 성능 선두이지만 트랜스포머에서는 파편화되는---로 특성화한다(8절).
+
+\paragraph{차량용 컴퓨트와 이중화(문제 설정).}
+CPU/GPU/DLA에 걸친 이종\,$\cdot$\,이중화 컴퓨트는 차량 기능안전 아키텍처(ISO~26262 / ASIL\citep{iso26262}, NVIDIA DRIVE\citep{nvidiadrive})와 이종 AV-SoC 스케줄링\citep{hetsched2022}의 근간이다. 이것이 우리의 동기다. 이식되지 않는 INT8 수치(5절)는 이중 컴퓨트 이중화가 전제하는 모듈 간 일치를 직접 위협하며, 이 우려가 다중 모듈 플랫폼에 대한 후속 연구(11절)의 출발점이다.
+
+% ---------------------------------------------------------------------
+\section{실험 방법론}
+
+\subsection{하드웨어 매트릭스}
+표~\ref{tab:hw}는 본 연구가 다루는 7개 하드웨어 클래스로 묶인 8개 타깃과 각각의 역할을 정리한 것이다.
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{L{3.0cm} L{4.9cm} L{4.6cm}}
+\toprule
+\textbf{클래스} & \textbf{타깃} & \textbf{연구에서의 역할} \\
+\midrule
+ARM CPU (dotprod 있음)   & Raspberry Pi 5, Cortex-A76                 & C1 부호, C2 일치도 \\
+ARM CPU (dotprod 있음)   & Jetson AGX Orin, Cortex-A78AE              & C1 부호, C2 CPU$\leftrightarrow$가속기 \\
+ARM CPU (dotprod 없음)   & i.MX8M-Nano, Cortex-A53                    & C1 부호(음의 방향) \\
+x86 CPU (VNNI 없음)      & Core i9-10900K                            & C1 부호(음의 방향), C2 \\
+외장 GPU                  & RTX 3080 (Ampere)                         & 정밀도 사다리, 트랜스포머 INT8 \\
+엣지 iGPU + NVDLA        & Jetson AGX Orin (iGPU, $2\times$NVDLA v2) & 가속기 특성 분석, C2 GPU 커널 \\
+벤더 NPU (모바일/차량)   & Qualcomm Hexagon HTP (QCS8550, SA8775P)   & C3 (조용한 BYO-QDQ 실패) \\
+벤더 NPU (차량)          & DEEPX DX-M1 (M.2, PCIe Gen2$\times$1)     & C3 (시끄러운 BYO-QDQ 실패), C4 레짐 \\
+\bottomrule
+\end{tabular}
+\caption{하드웨어 매트릭스. 모든 디바이스는 클래스당 1대($n=1$)이므로, 우리는 ISA 전체에 대한 모집단 주장이 아니라 대표 디바이스에 대한 \emph{상대적} 주장만 한다(10절 참조).}
+\label{tab:hw}
+\end{table}
+
+\subsection{모델과 데이터셋}
+ResNet-18/50(ImageNet-1k 분류), DETR-ResNet-50(COCO 검출, 트랜스포머), YOLO26n과 YOLOv5s(COCO 검출, CNN), 그리고 지연/엔진 특성 분석에만 사용한 BEVFormer/BEVDet(3D BEV)을 사용한다. 정확도는 ImageNet val(서브셋 또는 전량, 결과마다 명시)과 COCO val2017 서브셋에서 보고한다. 배치 크기, 입력 해상도, 평가 서브셋이 절마다 다르므로 절대 정확도\,$\cdot$\,지연은 절 간 비교가 불가능하다. 우리는 통제된 비교 안에서의 \emph{상대} 차이만 보고한다.
+
+\subsection{통제된 비교 원칙}
+본 논문의 핵심 방법론 장치다. 모든 타깃 간 비교에서 모델 아티팩트와 양자화 \emph{스케일}을 고정하여, 유일한 자유 변수가 타깃의 정수 커널/ISA가 되도록 한다. 구체적으로 동일한 \texttt{resnet50\_int8\_qdq.onnx}(내장 QDQ 스케일 포함)를 (a)~여러 CPU EP에서 실행하고 (b)~TensorRT INT8 엔진을 \emph{빌드}하는 데 사용한다. 따라서 GPU 정수 커널과 CPU 정수 커널은 동일한 스케일을 소비한다. 스케일을 고정할 수 없는 비교(예: 외부 QDQ를 거부하는 벤더 NPU)에서는 그 사실을 명시하고, 결과를 커널 비교가 아니라 배포 관측치로 취급한다.
+
+\subsection{측정 프로토콜과 범위}
+지연은 GPU/가속기 경로에서는 이벤트 타이밍으로, CPU/하네스 경로에서는 wall-clock으로 측정한다(둘은 직접 비교할 수 없으며 하나의 주장 안에서 섞지 않는다). 별도 언급이 없으면 배치 크기는 1이다. 수치 일치도는 고정된 번들(분류의 경우 통상 1000장) 중 두 타깃이 \emph{동일한} top-1 예측을 내는 입력의 개수로 보고한다. \textbf{알려진 한계:} 대부분의 지연은 신뢰구간 없는 단일 실행 p50이고, 여러 정확도 수치는 서브셋 기반이다. 10절에서 이것이 왜 우리의 주장을 상대 비교로 한정하는지 정량화하며, 본 연구의 9절 자체가 서브셋 평가가 top-1을 약 9.77\,\%p 부풀릴 수 있음을 보인다.
+
+% ---------------------------------------------------------------------
+\section{속도 향상의 부호는 ISA가 결정한다 (C1)}
+
+우리는 동일한 ResNet-50 INT8 QDQ 모델을 동일한 런타임(ONNX Runtime, CPU 실행 제공자, MLAS 커널)으로 4종의 CPU에서 실행하고, 각 기기에서 같은 모델의 FP32와 비교했다. 표~\ref{tab:c1}과 그림~\ref{fig:c1}이 네 측정 결과를 보여준다.
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{L{4.0cm} L{2.9cm} L{3.0cm} L{2.6cm}}
+\toprule
+\textbf{CPU} & \textbf{내적 ISA} & \textbf{FP32 $\rightarrow$ INT8} & \textbf{INT8 효과} \\
+\midrule
+Cortex-A76 (Raspberry Pi 5)    & ARM \texttt{dotprod} (SDOT) & $144.95 \rightarrow 79.08$\,ms & \textbf{1.83$\times$ 빠름} \\
+Cortex-A78AE (Jetson AGX Orin) & ARM \texttt{dotprod}        & $38.47 \rightarrow 18.22$\,ms  & \textbf{2.11$\times$ 빠름} \\
+Core i9-10900K (x86)           & AVX-512 VNNI 없음           & $9.28 \rightarrow 16.34$\,ms   & \textbf{1.76$\times$ 느림} \\
+Cortex-A53 (i.MX8M-Nano)       & 내적 명령어 없음            & $680.20 \rightarrow 1123.02$\,ms & \textbf{1.65$\times$ 느림} \\
+\bottomrule
+\end{tabular}
+\caption{동일한 모델과 런타임에서, INT8 속도 향상의 부호는 CPU의 내적 ISA가 결정한다.}
+\label{tab:c1}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\footnotesize
+\begin{tikzpicture}[x=1cm,y=1cm]
+\definecolor{cfast}{RGB}{62,110,175}
+\definecolor{cslow}{RGB}{201,111,45}
+\draw[black!12] (-3.000,0.30) -- (-3.000,-2.770);
+\draw[black!45] (-3.000,-2.770) -- (-3.000,-2.910);
+\node[below,black!55,font=\scriptsize] at (-3.000,-2.910) {0.5$\times$};
+\draw[black!12] (-1.500,0.30) -- (-1.500,-2.770);
+\draw[black!45] (-1.500,-2.770) -- (-1.500,-2.910);
+\node[below,black!55,font=\scriptsize] at (-1.500,-2.910) {0.71$\times$};
+\draw[black!12] (0.000,0.30) -- (0.000,-2.770);
+\draw[black!45] (0.000,-2.770) -- (0.000,-2.910);
+\node[below,black!55,font=\scriptsize] at (0.000,-2.910) {1$\times$};
+\draw[black!12] (1.500,0.30) -- (1.500,-2.770);
+\draw[black!45] (1.500,-2.770) -- (1.500,-2.910);
+\node[below,black!55,font=\scriptsize] at (1.500,-2.910) {1.41$\times$};
+\draw[black!12] (3.000,0.30) -- (3.000,-2.770);
+\draw[black!45] (3.000,-2.770) -- (3.000,-2.910);
+\node[below,black!55,font=\scriptsize] at (3.000,-2.910) {2$\times$};
+\draw[black!45] (-3.300,-2.770) -- (3.320,-2.770);
+\draw[black!75,thick] (0,0.30) -- (0,-2.770);
+\fill[cfast] (0.000,-0.370) rectangle (2.622,0.070);
+\node[left,font=\footnotesize] at (-3.400,-0.150) {Cortex-A76 (Pi~5)~\textcolor{black!55}{\scriptsize dotprod}};
+\node[right,font=\footnotesize] at (3.500,-0.150) {1.83$\times$ 빠름};
+\fill[cfast] (0.000,-1.070) rectangle (3.235,-0.630);
+\node[left,font=\footnotesize] at (-3.400,-0.850) {Cortex-A78AE (Orin)~\textcolor{black!55}{\scriptsize dotprod}};
+\node[right,font=\footnotesize] at (3.500,-0.850) {2.11$\times$ 빠름};
+\fill[cslow] (-2.450,-1.770) rectangle (0.000,-1.330);
+\node[left,font=\footnotesize] at (-3.400,-1.550) {Core i9-10900K~\textcolor{black!55}{\scriptsize VNNI 없음}};
+\node[right,font=\footnotesize] at (3.500,-1.550) {1.76$\times$ 느림};
+\fill[cslow] (-2.170,-2.470) rectangle (0.000,-2.030);
+\node[left,font=\footnotesize] at (-3.400,-2.250) {Cortex-A53 (i.MX8M)~\textcolor{black!55}{\scriptsize dotprod 없음}};
+\node[right,font=\footnotesize] at (3.500,-2.250) {1.65$\times$ 느림};
+\end{tikzpicture}
+\caption{INT8 속도 향상의 부호는 ISA의 성질이다. 막대 길이는 동일한 ResNet-50 INT8 QDQ 모델을 동일한 ONNX Runtime CPU(MLAS) 경로에서 돌렸을 때의 로그 스케일 속도 향상(FP32 지연 $\div$ INT8 지연)이다. $1\times$ 오른쪽 막대는 INT8에서 빨라진 것, 왼쪽 막대는 느려진 것이다. ARM 내적 명령어를 가진 두 코어는 이득을 보고, 없는 두 코어는 손해를 본다. 표~\ref{tab:c1}과 동일한 데이터.}
+\label{fig:c1}
+\end{figure}
+
+결정 요인은 ISA \emph{계열}이 아니다(ARM과 x86이 양쪽 모두에 등장한다). A53은 ARM이지만 느려지고, A76/A78AE는 ARM이면서 빨라진다. 결정 요인은 내적/누산 명령어(ARM \texttt{dotprod}, x86 VNNI)의 존재 여부다. 그것이 없으면 INT8의 재양자화와 폭 확장 오버헤드가 더 빠른 내적으로 상쇄되지 않고, INT8은 \emph{성능 악화}가 된다. 실무적 귀결은 즉각적이다. 이종 엣지 CPU로 구성된 플릿에서는 INT8이 이득이라고 가정할 수 없다. 같은 바이너리가 잘못된 코어 위에서는 오히려 퇴보한다.
+
+% ---------------------------------------------------------------------
+\section{INT8 출력은 이식되지 않는다 (C2) --- 핵심 결과}
+
+두 타깃이 \emph{같은} 양자화 모델을 \emph{같은} 스케일로 실행하면 같은 예측을 내놓는가? FP32에 대해서는 그렇다, 정확히. INT8에 대해서는 아니다.
+
+\paragraph{FP32는 비트 단위로 동일한 대조군이다.}
+FP32를 측정한 모든 플랫폼 쌍에서 FP32 top-1 예측은 1000/1000 입력에서 일치한다. 따라서 INT8에서 관측되는 발산은 우리 하네스의 부동소수점 축약 순서에 기인한 인공물이 아니라 정수 경로에 특유한 현상이다. 우리는 이 비트 동일성을 관측된 구성(고정 스레드 수, 타깃당 단일 축약 경로)으로 한정한다. 부동소수점의 비결합성 때문에 병렬화나 하드웨어가 달라지면 FP 축약이 비결정적일 수 있으므로\citep{fpnonassoc2024}, 정확한 주장은 ``측정된 범위에서 FP32는 이들 타깃에 걸쳐 비트 단위로 동일했다''이지 FP32가 구조적으로 이식 가능하다는 것이 아니다. 우리가 의존하는 대비---\emph{같은} 디바이스와 하네스에서 FP32는 동일하고 INT8은 갈린다---는 그와 무관하게 성립한다.
+
+\paragraph{커널 발산 순으로 본 INT8 불일치.}
+표~\ref{tab:c2}는 측정한 모든 쌍을 나열하고, 그림~\ref{fig:c2}는 같은 데이터를 하나의 일치도 축 위에 그려 이분성(bimodality)을 즉시 드러낸다.
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{L{4.4cm} L{2.7cm} L{3.0cm} C{1.3cm} C{1.5cm}}
+\toprule
+\textbf{비교} & \textbf{경계} & \textbf{정수 커널} & \textbf{FP32} & \textbf{INT8} \\
+\midrule
+Jetson A78AE 대 Pi~5 A76 & CPU$\leftrightarrow$CPU & \textbf{동일} (MLAS SDOT) & 1000/1000 & \textbf{1000/1000} \\
+i.MX8M-Nano A53 대 Pi~5 A76 & CPU$\leftrightarrow$CPU & 상이 & 1000/1000 & 965/1000 \\
+i.MX8M-Nano A53 대 x86 i9 & CPU$\leftrightarrow$CPU & 상이 & 1000/1000 & 961/1000 \\
+Raspberry Pi~5 A76 대 x86 i9 & CPU$\leftrightarrow$CPU & 상이 & 1000/1000 & 958/1000 \\
+Jetson iGPU (TensorRT) 대 A78AE (MLAS) & \textbf{CPU$\leftrightarrow$가속기} & 상이 & 1000/1000 & \textbf{961/1000} \\
+DEEPX DX-M1 (NPU) 대 호스트 A76 CPU~$\ddagger$ & \textbf{CPU$\leftrightarrow$벤더 NPU} & 상이, \emph{스케일도 상이} & --- & 939/1000 \\
+\bottomrule
+\end{tabular}
+\caption{같은 모델 아티팩트를 실행하는 타깃 간 INT8 top-1 일치도. 일치도는 이분적이다. 정수 커널을 공유하면 1000/1000, 공유하지 않으면 958--965/1000이며, 하드웨어 경계가 어디에 놓이는지와 무관하다. FP32는 측정된 모든 쌍에서 1000/1000이다. $\ddagger$~불변 주장에서 제외(스케일을 고정할 수 없음, 본문 참조).}
+\label{tab:c2}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\scriptsize
+\begin{tikzpicture}[x=1cm,y=1cm]
+\definecolor{cint}{RGB}{35,80,150}
+\fill[black!8] (3.500,0.32) rectangle (4.375,-3.520);
+\node[above,black!45,font=\scriptsize,align=center] at (3.938,0.34) {서로 다른\\정수 커널};
+\draw[black!45,dashed] (8.750,0.32) -- (8.750,-3.520);
+\node[above,black!45,font=\scriptsize,align=center] at (8.750,0.34) {동일한\\정수 커널};
+\draw[black!45] (0.000,-3.520) -- (9.000,-3.520);
+\draw[black!45] (1.250,-3.520) -- (1.250,-3.650);
+\node[below,black!55,font=\scriptsize] at (1.250,-3.650) {940};
+\draw[black!45] (3.750,-3.520) -- (3.750,-3.650);
+\node[below,black!55,font=\scriptsize] at (3.750,-3.650) {960};
+\draw[black!45] (6.250,-3.520) -- (6.250,-3.650);
+\node[below,black!55,font=\scriptsize] at (6.250,-3.650) {980};
+\draw[black!45] (8.750,-3.520) -- (8.750,-3.650);
+\node[below,black!55,font=\scriptsize] at (8.750,-3.650) {1000};
+\node[below,black!55,font=\scriptsize] at (5.000,-4.000) {1000개 입력 중 일치한 개수};
+\draw[black!7] (0,0.000) -- (9.000,0.000);
+\node[left,font=\scriptsize,text=black] at (-0.18,0.000) {Jetson A78AE $\leftrightarrow$ Pi~5 A76};
+\draw[black!65,fill=white] (8.750,0.120) circle (0.085);
+\fill[cint] (8.750,-0.120) circle (0.085);
+\node[right,font=\scriptsize,text=black] at (9.100,0.000) {1000};
+\draw[black!7] (0,-0.620) -- (9.000,-0.620);
+\node[left,font=\scriptsize,text=black] at (-0.18,-0.620) {i.MX8M A53 $\leftrightarrow$ Pi~5 A76};
+\draw[black!65,fill=white] (8.750,-0.500) circle (0.085);
+\fill[cint] (4.375,-0.740) circle (0.085);
+\node[right,font=\scriptsize,text=black] at (9.100,-0.620) {965};
+\draw[black!7] (0,-1.240) -- (9.000,-1.240);
+\node[left,font=\scriptsize,text=black] at (-0.18,-1.240) {i.MX8M A53 $\leftrightarrow$ x86 i9};
+\draw[black!65,fill=white] (8.750,-1.120) circle (0.085);
+\fill[cint] (3.875,-1.360) circle (0.085);
+\node[right,font=\scriptsize,text=black] at (9.100,-1.240) {961};
+\draw[black!7] (0,-1.860) -- (9.000,-1.860);
+\node[left,font=\scriptsize,text=black] at (-0.18,-1.860) {Pi~5 A76 $\leftrightarrow$ x86 i9};
+\draw[black!65,fill=white] (8.750,-1.740) circle (0.085);
+\fill[cint] (3.500,-1.980) circle (0.085);
+\node[right,font=\scriptsize,text=black] at (9.100,-1.860) {958};
+\draw[black!7] (0,-2.480) -- (9.000,-2.480);
+\node[left,font=\scriptsize,text=black] at (-0.18,-2.480) {Jetson iGPU (TRT) $\leftrightarrow$ A78AE (MLAS)};
+\draw[black!65,fill=white] (8.750,-2.360) circle (0.085);
+\fill[cint] (3.875,-2.600) circle (0.085);
+\node[right,font=\scriptsize,text=black] at (9.100,-2.480) {961};
+\draw[black!7] (0,-3.100) -- (9.000,-3.100);
+\node[left,font=\scriptsize,text=black!45] at (-0.18,-3.100) {DX-M1 NPU $\leftrightarrow$ 호스트 A76 $\ddagger$};
+\fill[black!45] (1.125,-3.220) circle (0.085);
+\node[right,font=\scriptsize,text=black!45] at (9.100,-3.100) {939};
+\draw[black!65,fill=white] (0.15,-4.000) circle (0.085);
+\node[right,black!55,font=\scriptsize] at (0.28,-4.000) {FP32};
+\fill[cint] (1.35,-4.000) circle (0.085);
+\node[right,black!55,font=\scriptsize] at (1.48,-4.000) {INT8};
+\end{tikzpicture}
+\caption{INT8 일치도는 이분적이며, 하드웨어 경계의 위치는 이를 예측하지 못한다. 각 행은 같은 모델 아티팩트를 실행하는 한 타깃 쌍이다. $\circ$는 FP32 top-1 일치도, $\bullet$는 INT8이다. FP32는 측정된 곳마다 1000/1000이다. INT8은 정수 커널을 공유하는 단 하나의 쌍에서 정확히 1000/1000이고, 공유하지 않는 모든 쌍에서 958--965/1000 밴드(음영) 안에 들어간다. 여기에는 CPU$\leftrightarrow$가속기 쌍도 포함되며, 그 쌍은 CPU$\leftrightarrow$CPU 범위 \emph{안}에 앉는다. DEEPX 행($\ddagger$, 회색)은 스케일을 고정할 수 없어(6절) 배포 관측치이며 불변 주장에서 제외된다. 표~\ref{tab:c2}와 동일한 데이터.}
+\label{fig:c2}
+\end{figure}
+
+\textbf{이 결과는 구배가 아니라 불변이다.} 하나의 모델 아티팩트와 그 내장 스케일을 공유하는 다섯 쌍에서 일치도는 본질적으로 두 값만 취한다. \textbf{두 타깃이 같은 정수 커널을 실행하면 1000/1000, 그렇지 않으면 958--965/1000이다.} 그 밖의 어떤 것도 이를 예측하지 못하며, 특히 하드웨어 경계의 \emph{위치}가 그렇다. CPU$\leftrightarrow$가속기 쌍(961/1000)은 세 CPU$\leftrightarrow$CPU 쌍이 만드는 범위(958--965/1000) 안에 들어가고, 완벽히 일치하는 유일한 쌍은 서로 다른 두 SoC, 서로 다른 두 보드, 서로 다른 두 ONNX Runtime 버전(1.23.2와 1.28.0)을 가로지르는 CPU$\leftrightarrow$CPU 쌍이다. 정수 커널을 공유하는 것은 예측이 동일하기 위한 \emph{충분}조건이고, 칩 경계를 넘는 것은 예측을 깨뜨리기에 \emph{충분하지 않다}. 예측을 깨뜨리는 것은 서로 다른 재양자화 에필로그다.
+
+CPU$\leftrightarrow$GPU 행은 메커니즘을 명시적으로 드러낸다. CPU EP가 실행하는 바로 그 \texttt{resnet50\_int8\_qdq.onnx}로 TensorRT 엔진을 빌드했으므로 QDQ 스케일은 비트 단위로 동일하고 유일한 자유 변수는 정수 커널(TensorRT의 INT8 커널 대 MLAS의 것)이다. 그럼에도 둘은 1000개 중 39개 입력에서 갈린다. 이 발산은 하드웨어 잡음이나 스케일 불일치가 아니라 커널 고유의 반올림과 누산이다.
+
+\textbf{벤더 NPU 행은 불변 주장에서 제외한다.} 이는 여기서 유일하게 스케일을 고정할 수 없는 비교다. DEEPX 컴파일러는 외부 QDQ 그래프를 아예 거부하고(6절) 자체 PTQ를 돌리므로, 이 쌍은 정수 커널, 양자화기, 캘리브레이션 셋이 동시에 다르다. 3.3절의 통제된 비교 원칙에 따라 939/1000은 커널 비교가 아니라 \emph{배포} 관측치---실제로 배치된 CPU + 벤더 NPU 조합이 내놓는 값---로 보고한다. 위의 불변과 모순되지는 않지만 그것을 입증하지도 않는다.
+
+\paragraph{정확도는 이를 감춘다.}
+불일치는 순증감이 0이다. Jetson iGPU에서 정확도 유효 INT8의 top-1은 0.7620으로, 자기 자신의 FP32 대비 \emph{무손실}이며 CPU MLAS INT8의 0.7500보다 오히려 높다. 두 INT8 경로가 수십 개의 개별 입력에서 예측을 뒤집는데도 그렇다. 표준적인 ``양자화 후 정확도'' 리포트라면 아무 문제도 보여주지 않았을 것이다. 이식성 실패는 \emph{타깃 간 입력 단위 예측}을 비교해야만 보인다.
+
+\paragraph{동시기 연구와의 관계.}
+이 불일치의 메커니즘---정확한 INT32 누산 이후 재양자화 \emph{에필로그}(스케일 적용과 출력 반올림)에서 들어오는 발산---은 Chen\citep{chen2026integeralibi, chen2026deterministic}이 본 연구와 동시기에 국소화했다. 그는 LLM에 대해 \emph{단일 GPU} 위에서 INT8 GEMM 커널(CUTLASS 대 Triton)을 교체했고, 2의 거듭제곱 스케일이 커널 간 비트 동일성을 복원함을 보였다. 우리는 이 메커니즘을 발견했다고 주장하지 않으며, 해당 연구를 동시기 선행 연구로 인용한다. 우리의 결과는 보완적이며 배포 관점에서 세 가지 면에서 더 중대하다. 발산이 \emph{서로 다른 물리적 디바이스}에 걸쳐 지속되고(내적 CPU 대 비내적 CPU, 같은 스케일로 빌드한 CPU 대 GPU, CPU 대 서드파티 벤더 NPU), LLM이 아니라 비전\,$\cdot$\,검출 모델에서 성립하며, 같은 디바이스 위의 FP32 비트 동일 대조군과 대비하여 측정된다. Chen이 한 GPU 위의 두 커널이 일치하는지를 묻는다면, 우리는 실제로 배치된 이종 타깃의 집합이 일치하는지를 묻는다. 이것이 모듈 간 차량용 플랫폼이 실제로 던지는 질문이다.
+
+\paragraph{그 완화책을 물리적 경계에서 시험했고, 이식되지 않았다.}
+Chen의 2의 거듭제곱 결과는 한 GPU 위의 두 커널에 대해 입증되었다. 우리는 \texttt{resnet50\_int8\_qdq.onnx}의 \emph{모든} Q/DQ 스케일을 2의 거듭제곱으로 강제하여---재양자화 승수 $M = (s_a \cdot s_w)/s_\mathrm{out}$을 어떤 커널이든 동일하게 구현할 \emph{수밖에 없는} 순수 시프트 $2^{k_a + k_w - k_\mathrm{out}}$으로 만들고---모델을 재구성한 뒤(가중치는 새 스케일로 재양자화했고, 영점은 이미 전부 0이므로 $M$이 유일한 발산 항이다) x86 $\leftrightarrow$ Pi~5(A76) 쌍을 다시 측정했다. 결과는 실패이며, 그 실패가 시사적이다. 일치도는 1000/1000으로 오르기는커녕 \emph{기준선 아래로 떨어진다}. 958/1000 $\to$ \textbf{869/1000}(ceil 반올림, 스케일이 최대 1비트 상승)과 \textbf{919/1000}(nearest, 최대 $\sqrt{2}$배)으로, 양쪽 모두 게이트 FAIL이다. MLAS는 $M = 2^k$를 공유된 정확한 시프트로 특수 처리하지 않는다. 2의 거듭제곱 강제는 오히려 재양자화 격자를 거칠게 만들어, 제거하려던 에필로그 발산을 \emph{확대한다}. 요소별 커널 간 $|\Delta\mathrm{logit}|$은 $\times2.35$(nearest)에서 $\times4.34$(ceil)까지 커지며 뒤집힘 개수와 단조롭게 함께 움직인다. 메커니즘 프로브(리포트 \texttt{stage5\_pot\_scales\_report.html})는 두 가능한 원인을 분리한다. 발산 크기 증가는 확인되고 증폭되는 반면, 경합 가설---2의 거듭제곱 스케일이 정확한 \texttt{.5} 동률을 더 많이 만들어 half-even 커널과 half-away 커널이 그 지점에서 갈린다는 가설---은 \emph{반증된다}. 준동률 인구는 기준선/ceil/nearest에서 41 $\to$ 36 / 45로 사실상 평평하며 뒤집힘 개수와 \emph{반대} 방향으로 움직인다. 모든 수치는 점추정이 아니라 정확값이다. 30회 반복 실행이 비트 단위로 동일했다. Chen의 단일 GPU 결과가 반박되는 것은 아니다. 우리의 측정은 그것이 x86$\leftrightarrow$A76 경계를 넘어가지 못한다는 것만을 보인다---그 범위는 11절이 한정하는 2의 거듭제곱 완화책이다.
+
+\paragraph{왜 중요한가.}
+양자화 모델은 흔히 결정론적 함수 $f(x)$로 취급된다. C2는 타깃을 바꾸는 순간 $f$가 측정 가능한 비율의 입력에서, 조용히, 어떤 정확도 신호도 없이 달라진다고 말한다. 차량용 시스템에서 이것이 핵심이다. 이중 컴퓨트 이중화와 모듈 간 일관성 검사는 같은 입력을 계산하는 두 유닛이 일치한다고 전제하는데, C2는 그 전제가 FP32에서는 성립하지만 이종 정수 커널에 걸친 INT8에서는 성립하지 않음을 보인다. 이 불변은 설계 제약이 무엇인지를 더 날카롭게 만든다. 결정성은 하드웨어 거리에 따라 점진적으로 나빠지지 않으므로, ``더 가까운'' 두 번째 타깃을 골라서 되사올 수 없다. 결정성은 정수 커널에 대해 이진적이다. 두 유닛은 같은 정수 커널을 돌릴 때에만 입력 단위로 일치하는데, 이는 이종 이중화 아키텍처가 애초에 \emph{피하려고} 선택한 바로 그 성질이다.
+
+% ---------------------------------------------------------------------
+\section{양자화는 벤더가 소유한다: 두 가지 실패 양식 (C3)}
+
+C1--C2는 양자화 모델을 타깃에서 \emph{실행할 수는 있다}고 전제한다. 벤더 NPU에서는 그조차 자주 불가능하다. 가속기가 모델을 직접 양자화하겠다고 고집하기 때문이다.
+
+\paragraph{Qualcomm Hexagon HTP --- 조용한 실패.}
+외부에서 양자화한 ONNX-QDQ ResNet-50을 Qualcomm AI Hub에 제출하면 컴파일, 프로파일, 온디바이스 실행이 모두 오류 없이 끝난다. 그러나 HTP는 외부 QDQ 스케일을 무시하고, 온디바이스 top-1은 0.75에서 \textbf{0.005}로 붕괴한다. 동일한 ONNX가 x86 CPU에서는 올바르게 동작하고(0.753), HTP의 FP32/fp16 경로도 충실하다(0.745). 따라서 이 실패는 \emph{외부에서 공급된} INT8 스케일이 폐기되는 데 특유하다. 올바른 경로는 벤더 자체의 \texttt{submit\_quantize\_job}(HTP 네이티브 QDQ)이며, top-1을 \textbf{0.735}로 회복시킬 뿐 아니라 외부 QDQ 엔진보다 \emph{더 빠르고 가볍다}(748\,$\mu$s 대 1052\,$\mu$s).
+
+\paragraph{DEEPX DX-M1 --- 시끄러운 실패.}
+같은 부류의 외부 양자화 그래프를 DEEPX 컴파일러에 넣으면 하드 에러가 발생한다. \texttt{GraphStructureError: 106 isolated node(s)} $\rightarrow$ \texttt{InternalError}이며 엔진은 산출되지 않는다. 네이티브 경로(FP32를 공급하고 DEEPX 컴파일러가 자체 PTQ를 돌리게 하는 경로)는 깨끗하게 컴파일되고 top-1 \textbf{0.7660}, 즉 무손실급에 도달한다.
+
+\paragraph{하나의 근본 원인, 정반대의 증상.}
+Qualcomm은 \emph{열린} 방향으로 실패하고(조용히 망가진 모델을 실행한다---망가진 모델이 출하될 수 있으므로 위험하다), DEEPX는 \emph{닫힌} 방향으로 실패한다(빌드를 거부한다---망가진 것이 출하될 수 없으므로 안전하다). 둘은 같은 규칙을 표현한다. 양자화를 소유하는 것은 당신의 툴체인이 아니라 가속기다. 배포 관점의 귀결은, 한 타깃에서 검증한 양자화가 벤더 NPU에 대해서는 이식 가능한 아티팩트가 전혀 아니라는 것이다. 이는 배포 가능성 측면에서 C2를 보강하며, Qualcomm 사례에서는 구체적인 안전 관련 위험(컴파일과 프로파일을 통과하는, 조용히 틀린 INT8 모델)을 추가한다.
+
+% ---------------------------------------------------------------------
+\section{병목 레짐은 하드웨어가 아니라 출력 크기가 정한다 (C4)}
+
+``이 NPU가 충분히 빠른가''라는 판단은 보통 연산량(FLOPs/TOPS)에서 출발한다. PCIe로 연결된 엣지 NPU에서 우리는 지연 \emph{레짐}---그리고 코어를 더 붙이는 것이 도움이 되는지 여부---이 같은 디바이스, 같은 런타임에서 모델의 출력(디바이스$\rightarrow$호스트, D2H) 전송 크기로 정해짐을 발견했다. 표~\ref{tab:c4}는 그 하나의 가속기 위에 세 모델을 올린 결과다.
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{L{3.0cm} L{2.0cm} L{5.4cm} L{3.6cm}}
+\toprule
+\textbf{모델 (DX-M1)} & \textbf{출력} & \textbf{레짐} & \textbf{멀티코어 스케일링} \\
+\midrule
+ResNet-50 & 4\,KB           & \textbf{연산 바운드} (연산 2.77\,ms $\gg$ D2H 0.11\,ms) & 3코어에서 $2.19\times$, 준선형 \\
+YOLO26n   & 2.82\,MB (원시 헤드) & \textbf{D2H 바운드} (D2H 21.81\,ms $\gg$ 연산 9.0\,ms) & $1.00\times$, 평평 \\
+YOLOv5s   & 5.48\,MB        & \textbf{D2H 바운드}, 더 심함 & $1.02\times$ 평평. 연산은 가장 가벼운데(2.59\,ms) \textbf{ResNet-50보다 26$\times$ 느림} \\
+\bottomrule
+\end{tabular}
+\caption{PCIe로 연결된 한 엣지 NPU에서, 지연 레짐과 멀티코어 스케일링은 연산이 아니라 출력/D2H 크기를 따라간다.}
+\label{tab:c4}
+\end{table}
+
+YOLOv5s 행이 인과 변수를 분리해낸다. 셋 중 연산이 \emph{가장 작은데도} 압도적으로 가장 느리다. 3코어에서 41.01\,fps인데 ResNet-50은 1078.93\,fps로, 잘못된 방향으로 $26.3\times$ 벌어진다. 이유는 PCIe Gen2$\times$1 링크를 건너야 할 출력이 가장 크기 때문이다. 연산은 레짐을 예측하지 못하고, 출력/D2H 크기가 예측한다.
+
+\textbf{통제된 단일 변수 스윕이 전이 곡선을 추적한다.} 위의 세 모델은 두 레짐을 양쪽에서 감싸지만 그 사이 경계를 추적하지는 못한다. 출력뿐 아니라 연산도 서로 다르기 때문이다. 우리는 같은 디바이스, 같은 런타임에서 합성 스윕으로 이 잔여 교란을 제거한다. 고정된 무거운 합성곱 트렁크가 NPU 연산을 일정하게 유지하고(1코어 추론 p50 $=2.70$\,ms, 스윕 전체에서 편차 4.9\%), 4채널 병목을 거쳐 $1\times1$ ``확장기'' 헤드가 오직 출력 텐서만 $1020\times$ 범위로 바꾼다(3{,}920\,B $\to$ 3{,}999{,}968\,B, 12개 지점). 연산을 고정하고 출력만 스윕하면, 3코어 처리량 스케일링은 출력이 약 63\,KB 아래인 동안 $2.97$--$2.99\times$의 평평한 연산 바운드 고원에 머물다가 단조롭게 $1.00\times$(D2H 바운드)로 하강하고, 코어별 작업 분포는 33/33/33 $\to$ 98/2/0으로 이동한다. 공유된 하나의 PCIe 링크가 한 코어를 제외한 나머지를 점차 굶기기 때문이다(YOLO26n의 472/28/2 시그니처를 재현한다). 단일 추론 교차점---D2H가 고정된 2.70\,ms 연산과 같아지는 지점---은 출력 약 1.05\,MB에서 나타난다. 표~\ref{tab:c4sweep}은 스윕의 대표 5개 지점을, 그림~\ref{fig:c4}는 12개 전부를 보여준다.
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{R{3.8cm} R{2.0cm} L{4.8cm}}
+\toprule
+\textbf{출력 바이트 (연산 2.70\,ms 고정)} & \textbf{D2H p50} & \textbf{3코어 스케일링} \\
+\midrule
+3{,}920     & 0.141\,ms & $2.98\times$ (연산 바운드 고원) \\
+256{,}368   & 0.776\,ms & $1.99\times$ (전이 밴드) \\
+511{,}952   & 1.367\,ms & $1.59\times$ (전이 밴드) \\
+1{,}000{,}384 & 2.429\,ms & $1.21\times$ (전이 밴드) \\
+1{,}999{,}984 & 8.892\,ms & $1.00\times$ (D2H 바운드) \\
+\bottomrule
+\end{tabular}
+\caption{통제된 스윕. 연산을 고정한 상태에서 출력/D2H 크기가 커질수록 3코어 스케일링이 연산 바운드 고원을 지나 하강하며, 연산 바운드 $\to$ D2H 바운드 전이를 그려낸다. 두 레짐 문턱이 관례적인 반올림 수 사이에 떨어지므로 출력 크기는 KB/MB로 반올림하지 않고 정확한 바이트 수로 표기했다.}
+\label{tab:c4sweep}
+\end{table}
+
+\begin{figure}[htbp]
+\centering
+\footnotesize
+\begin{tikzpicture}[x=1cm,y=1cm]
+\definecolor{cint}{RGB}{35,80,150}
+\fill[black!8] (6.645,0) rectangle (8.381,4.884);
+\node[black!50,font=\scriptsize,align=center,above] at (7.513,3.344) {전이 밴드\\$3.36\times \approx N_{\mathrm{cores}}$};
+\draw[black!35,dashed] (0,4.620) -- (10.997,4.620) node[right,black!50,font=\scriptsize] {이상적 $3\times$};
+\draw[black!35,dashed] (0,0.220) -- (10.997,0.220) node[right,black!50,font=\scriptsize] {이득 없음};
+\draw[black!45] (0,0) -- (0,4.884);
+\draw[black!45] (0,0.220) -- (-0.12,0.220);
+\node[left,black!55,font=\scriptsize] at (-0.12,0.220) {1.0$\times$};
+\draw[black!45] (0,1.320) -- (-0.12,1.320);
+\node[left,black!55,font=\scriptsize] at (-0.12,1.320) {1.5$\times$};
+\draw[black!45] (0,2.420) -- (-0.12,2.420);
+\node[left,black!55,font=\scriptsize] at (-0.12,2.420) {2.0$\times$};
+\draw[black!45] (0,3.520) -- (-0.12,3.520);
+\node[left,black!55,font=\scriptsize] at (-0.12,3.520) {2.5$\times$};
+\draw[black!45] (0,4.620) -- (-0.12,4.620);
+\node[left,black!55,font=\scriptsize] at (-0.12,4.620) {3.0$\times$};
+\node[rotate=90,black!55,font=\scriptsize] at (-1.05,2.442) {3코어 처리량 스케일링};
+\draw[black!45] (0,0) -- (10.997,0);
+\draw[black!45] (1.650,0) -- (1.650,-0.12);
+\node[below,black!55,font=\scriptsize] at (1.650,-0.12) {10\,kB};
+\draw[black!45] (4.950,0) -- (4.950,-0.12);
+\node[below,black!55,font=\scriptsize] at (4.950,-0.12) {100\,kB};
+\draw[black!45] (8.250,0) -- (8.250,-0.12);
+\node[below,black!55,font=\scriptsize] at (8.250,-0.12) {1\,MB};
+\node[below,black!55,font=\scriptsize] at (5.499,-0.52) {출력(D2H) 크기, 로그 스케일};
+\draw[cint,thick] (0.308,4.580) -- (2.295,4.543) -- (3.323,4.587) -- (4.317,4.591) -- (5.301,3.364) -- (6.299,2.387) -- (6.879,2.136) -- (7.290,1.529) -- (7.872,1.302) -- (8.251,0.684) -- (9.243,0.211) -- (10.237,0.220);
+\fill[cint] (0.308,4.580) circle (0.062);
+\fill[cint] (2.295,4.543) circle (0.062);
+\fill[cint] (3.323,4.587) circle (0.062);
+\fill[cint] (4.317,4.591) circle (0.062);
+\fill[cint] (5.301,3.364) circle (0.062);
+\fill[cint] (6.299,2.387) circle (0.062);
+\fill[cint] (6.879,2.136) circle (0.062);
+\fill[cint] (7.290,1.529) circle (0.062);
+\fill[cint] (7.872,1.302) circle (0.062);
+\fill[cint] (8.251,0.684) circle (0.062);
+\fill[cint] (9.243,0.211) circle (0.062);
+\fill[cint] (10.237,0.220) circle (0.062);
+\node[black!55,font=\scriptsize,below right] at (0.473,4.488) {연산 바운드 고원};
+\node[black!55,font=\scriptsize,above left] at (10.373,0.396) {D2H 바운드};
+\end{tikzpicture}
+\caption{NPU 연산을 고정한 상태에서의 연산 바운드 $\to$ D2H 바운드 전이. DEEPX DX-M1에서 측정한 12개 합성 스윕 지점 전부이며, 1코어 추론이 2.70\,ms로 일정한(편차 4.9\%) 조건에서 출력(D2H) 크기에 대한 3코어 처리량 스케일링을 그렸다. 출력이 약 63\,KB 아래인 동안 스케일링은 $2.97$--$2.99\times$ 고원을 유지하다가 $1.00\times$까지 하강한다. 음영 밴드는 링크 포화 개시(326{,}377\,B, D2H $=$ 연산$/N$)부터 단일 추론 교차점(1{,}095{,}949\,B, D2H $=$ 연산)까지이며, 그 폭 $3.36\times$는 코어 수 $N=3$과 같다. $N$개 코어가 하나의 D2H 링크를 공유하기 때문이다. 이 중 5개 지점의 수치가 표~\ref{tab:c4sweep}에 있다.}
+\label{fig:c4}
+\end{figure}
+
+\textbf{레짐 경계는 폭이 코어 수와 같은 밴드다.} 전이는 칼날 같은 한 점이 아니라 두 문턱으로 둘러싸인 밴드다. D2H가 연산$/N$에 도달하면(약 319\,KB --- 공유된 하나의 링크가 더 이상 $N$개 코어를 모두 먹일 수 없다) 멀티코어 스케일링이 깨지기 시작하고, D2H가 연산에 도달하면(약 1.05\,MB) \emph{단일} 추론이 D2H 바운드가 된다. 두 문턱의 비는 $N$이다. 3코어 디바이스에서 $3.36\times$ 폭의 밴드를 측정했는데, 이는 $N$개 코어가 하나의 D2H 링크를 공유하므로 집계 처리량이 단일 추론을 제약하는 코어당 D2H의 $1/N$에서 포화하기 때문이다. 여기서 닫힌 형태의 자원 산정 규칙이 나온다. 연산 시간과 링크 대역폭만으로, 버스 뒤에 붙은 $N$코어 가속기는 출력이 대략 $(\text{연산 시간} \times \text{링크 대역폭})/N$을 넘는 순간 확장을 멈춘다. 정성적인 ``데이터 이동 기준으로 산정하라''가 정량적 문턱으로 바뀐다. (문턱들은 2.456\,ms/MB의 선형 적합 외삽값이며 이 Gen2$\times$1 링크에 특유하다. 밴드 폭 $=N$ 관계는 대역폭에 무관하다. 10절 참조.)
+
+우리는 트랜스포머 검출기 DETR에서 세 번째 레짐을 관측한다. 여기서 DEEPX 컴파일러는 그래프를 자동 분할하고 트랜스포머를 호스트 CPU에 FP32로 남긴다. 종단 간 1036.34\,ms는 호스트 CPU 트랜스포머 FP32 910.6\,ms(87.9\%) $\gg$ D2H 57.28\,ms $\gg$ NPU INT8 41.11\,ms(4.0\%) $\gg$ H2D 6.97\,ms로 분해되는 \textbf{호스트 CPU 연산 바운드}다. (네 단계의 합은 1015.96\,ms로, 런타임 자체의 종단 간 p50 1017.53\,ms와 일치한다. 1036.34\,ms는 벤치마크 하네스의 wall-clock이므로 약 20\,ms 초과분은 설명되지 않은 디바이스 시간이 아니라 하네스 오버헤드다.) 따라서 하나의 가속기 위의 세 모델이 서로 다른 세 병목(NPU 연산, PCIe-D2H, 호스트 CPU 연산)을 보인다. 참고로 유리한(연산 바운드) 레짐에서 같은 NPU는 호스트 CPU를 크게 앞선다. 예컨대 YOLO26n 처리량은 A76의 8.01\,fps 대비 91.51\,fps($\times11.42$)이고 호스트 기준 와트당 성능은 $\times29.29$다. 그러나 모델의 출력이 D2H 바운드 레짐으로 밀어 넣는 순간 그 이득은 증발한다. 설계 규칙은 이렇다. 버스 뒤에 붙은 엣지 가속기는 TOPS가 아니라 데이터 이동을 기준으로 산정하고 분할하라.
+
+% ---------------------------------------------------------------------
+\section{INT8이 무너질 때: 트랜스포머와 입도 레버 (보조 결과)}
+
+C1--C3는 CNN을 사용하며, 거기서는 (커널이 허락하는 한) INT8이 거의 무손실이다. 트랜스포머는 스트레스 테스트이고, INT8 이식성이 깨지는 곳은 연산자가 아니라 \emph{활성값}이라는 C2의 논지를 강화한다.
+
+\subsection{붕괴, 그리고 그것을 설명하지 \emph{못하는} 것들}
+
+DETR의 INT8은 강하게, 그리고 재현 가능하게 붕괴한다. 외장 GPU에서 FP32 mAP $0.4207 \rightarrow$ INT8 $0.2402$($-42.9$\%)이며(ORT \texttt{quantize\_static}, QDQ 형식, per-channel \texttt{QInt8} 가중치와 \textbf{per-tensor} \texttt{QInt8} 활성값, 100장에 대한 MinMax 캘리브레이션, CUDA EP, COCO val2017 5{,}000장), Jetson에서 대칭 재양자화로 교차 확인했을 때도 동일하다($0.4237 \rightarrow 0.2383$, $-43.8$\%). 소객체 mAP는 $77$--$85$\% 하락한다.
+
+\textbf{연산자 선택은 레버가 아니다.} 36개 어텐션 스코어 matmul을 전부 FP로 남겨도 결과는 거의 움직이지 않는다($0.2402 \rightarrow 0.2438$, $\mathbf{+0.0036}$~mAP). 트랜스포머 PTQ에서 관례적으로 권장되는 네 가지 제외 패턴 중 셋은 이 그래프에서 사실상 무효다. DETR에는 GELU가 없고, ORT의 QDQ 양자화기는 애초에 Softmax와 LayerNorm을 건드리지 않는다. 적용 가능한 것은 어텐션 matmul 제외뿐이며, 그것이 회복시키는 양은 격차의 2\%다.
+
+\textbf{손상이 네트워크의 한쪽에만 있는 것도 아니다.} 각 절반만 양자화해 보면 양쪽 모두 단독으로 붕괴한다(표~\ref{tab:ablation}).
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{L{7.0cm} C{2.2cm} C{2.6cm}}
+\toprule
+\textbf{구성 (ORT, COCO val2017 5{,}000장)} & \textbf{mAP} & \textbf{FP32 대비 $\Delta$} \\
+\midrule
+FP32                                       & 0.4207 & --- \\
+백본만 INT8 (Conv 53개)                    & 0.2653 & $\mathbf{-36.9}$\% \\
+트랜스포머만 INT8 (노드 137개)             & 0.2391 & $-43.2$\% \\
+전체 INT8 (노드 190개)                     & 0.2402 & $-42.9$\% \\
+\bottomrule
+\end{tabular}
+\caption{양방향 절제 실험. DETR의 각 절반이 단독으로 붕괴하며 두 손실은 강하게 준가산적(sub-additive)이다. 손상은 국소화되어 있지 않고 분산되어 있다.}
+\label{tab:ablation}
+\end{table}
+
+두 절반의 손실은 강하게 \textbf{준가산적}이다. 어느 한쪽만으로도 전체 붕괴의 대부분이 재현되고, 각각의 손실을 더하면 전체보다 훨씬 커진다. 따라서 손상은 취약한 서브그래프에 국소화된 것이 아니라 네트워크 전반에 분산되어 있다. 두 절반이 공유하는 것은 연산자 종류가 아니라 양자화기의 \emph{활성값} 처리 방식, 즉 활성 텐서당 하나의 per-tensor MinMax 스케일이다. 그것이 8.3절이 분리해내는 축이다.
+
+활성값 입도 레버(SmoothQuant)는 torch fake-quant 환경에서는 격차의 59.9\%를 회복시키지만 온디바이스에서는 약 9\%만 회복시킨다. 온디바이스에서 빌드 가능한 유일한 INT8 경로가 Gemm만 양자화하고(어텐션/LayerNorm/Softmax는 FP16으로 남는다) 따라서 레버가 지배적인 잔차에 닿지 못하기 때문이다.
+
+\subsection{거부하는 툴체인: 회피에 의한 무붕괴}
+
+DEEPX 컴파일러는 같은 모델에서 트랜스포머 INT8 붕괴를 \emph{전혀} 만들지 않는다(mAP $0.4377 \rightarrow 0.4385$, $+0.0008$, 잡음 범위 내). 그 이유는 트랜스포머 양자화를 더 잘해서가 아니다. 컴파일러가 708노드 그래프를 자동 분할하여 CNN 백본과 첫 인코더 self-attention 블록만 INT8로 NPU에 할당하고, 나머지 인코더 층, 6개 디코더 층 전부, FFN과 헤드는 \textbf{호스트 CPU에 FP32로} 남기기 때문이다. 결정적 증거는 인계 텐서다. 프레임마다 23.99\,MB의 FP32 어텐션 상태가 호스트로 되돌아간다.
+
+따라서 ``무붕괴''와 ``붕괴''는 하나의 사실의 양면이다. 트랜스포머 활성값은 INT8을 견디지 못하며, 툴체인은 거부하거나(손실 없음, 속도 향상도 없음---7절이 보이듯 그 결과 파이프라인은 종단 간 1.04\,s의 호스트 CPU 바운드가 된다) 강제한다(속도 향상, 큰 손실). 이것은 정확도 차원에서 다시 나타난 이식성 논지다.
+
+\subsection{양자화기 역시 이식되지 않는다}
+
+8.2절은 우리가 활용할 수 있는 짝지어진 사례를 남긴다. 두 툴체인은 사실상 \emph{같은 명목 레시피}---CNN 백본은 INT8, 트랜스포머는 FP32 유지---를 요구받았고, 둘 다 트랜스포머를 FP32로 둔 FP32 기준값을 보고한다. 그런데 그 답이 상대 mAP로 37.1포인트나 다르다(표~\ref{tab:quantizer}).
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{L{3.0cm} L{4.6cm} L{5.4cm}}
+\toprule
+ & \textbf{ORT (8.1절, 외장 GPU)} & \textbf{DEEPX \texttt{dx\_com} 2.4.0 (DX-M1)} \\
+\midrule
+INT8 범위          & 백본 Conv $\times 53$ (\texttt{input\_projection} 제외) & 백본 \textbf{+ \texttt{input\_projection} + 첫 인코더 self-attn(해당 Softmax까지)} \\
+가중치             & per-channel \texttt{QInt8} & \texttt{wbit8} \\
+\textbf{활성값}    & \textbf{per-tensor \texttt{QInt8}, MinMax, 100장} & \textbf{\texttt{abit8}, EMA, 도메인 내 COCO 100장} \\
+캘리브 입력 형상   & 동적 축(이미지마다 다름) & 고정 $800\times1066$, 비트 동일 \texttt{.npy} \\
+평가               & COCO val2017 5{,}000장 & COCO val2017 앞 500장 \\
+FP32 $\rightarrow$ INT8 & $0.4207 \rightarrow 0.2653$ & $0.4377 \rightarrow 0.4385$ \\
+\textbf{상대 $\Delta$} & $\mathbf{-36.9}$\% & $\mathbf{+0.2}$\% (잡음 범위 내) \\
+\bottomrule
+\end{tabular}
+\caption{두 벤더의 양자화기 아래에서 같은 명목 레시피(``백본을 INT8로, 트랜스포머는 FP32 유지''). INT8 적용 범위는 결과와 \emph{반대} 방향으로 간다. DEEPX가 엄밀히 더 많이 양자화하고 엄밀히 덜 잃으며, 남는 차이는 활성값 캘리브레이터뿐이다.}
+\label{tab:quantizer}
+\end{table}
+
+명백해 보이는 설명들은 표의 각 행과 접촉하면 살아남지 못한다. INT8 \emph{범위}는 반대 방향이다. DEEPX는 그래프의 엄밀히 더 큰 부분을---ORT가 부동소수점으로 남겨 두는 입력 투영과 어텐션 블록 하나를 통째로 포함하여---양자화하면서 덜 잃는다. 평가 서브셋(5{,}000 대 500)과 고정 대 동적 해상도는 mAP를 수 퍼센트 단위로 움직이지, 37.1포인트를 움직이지 않는다.
+
+남는 것은 활성값 캘리브레이터다. per-tensor MinMax 스케일은 캘리브레이션 중 관측된 단 하나의 최대 활성값으로 정해지므로, 이상치 이미지 한 장이 범위를 부풀려 나머지 모든 활성값을 거칠게 양자화한다. EMA 캘리브레이터는 바로 그것을 감쇠시킨다. ORT 경로는 동적 입력 형상에 대해 캘리브레이션함으로써 효과를 한 번 더 증폭한다. 100장의 캘리브레이션 이미지가 공통의 활성값 기하 구조조차 공유하지 않기 때문이다. 이것이 8.1절의 레버---연산자 선택이 아니라 활성값 입도와 분산---이며, 이번에는 한 양자화기 \emph{안}이 아니라 \emph{두 벤더의 양자화기에 걸쳐} 관측된 것이다.
+
+배포 관점의 귀결은 네 번째 이식성 축이며, 실무에서는 가장 날카로운 축이다. C2(5절)는 스케일을 고정해도 \emph{출력}이 여전히 타깃 의존적임을 보인다. 8.3절은 스케일을 고정할 \emph{수 없을} 때---6절이 확립하듯 벤더 NPU에서는 그것이 정상적인 상황이다---명목상 동일한 레시피의 \emph{정확도}조차 당신의 모델이 아니라 벤더 캘리브레이터의 성질이 됨을 보인다. ``백본을 양자화했더니 괜찮았다''는 이전 가능한 진술이 아니다.
+
+\emph{(캐비앗. 두 열은 절대 mAP로 비교할 수 없다. 평가 서브셋, 해상도, 런타임이 다르다. 비교되는 것은 각 열 내부의 FP32$\rightarrow$INT8 상대 차이뿐이며, 바로 그 값이 37.1포인트 다르다. 각 열의 FP32 기준값은 자기 파이프라인에서 측정되었다.)}
+
+\emph{(가속기 주석. Jetson NVDLA v2에서 INT8은 단지 선호되는 것이 아니라 필수다. DLA는 INT8 전용 데이터패스이며(FP16은 $13.87\times$ 느리다) CNN에 대해 와트당 성능 선두다(51.29\,inf/s/W로, 대략 절반의 전력에서 iGPU의 약 $1.55\times$). 그러나 트랜스포머에서는 파편화된다. ResNet-50에 폴백 2개짜리 깔끔한 오프로드를 주는 동일한 \texttt{-{}-useDLACore=0 -{}-allowGPUFallback} 레시피가 DETR에는 DLA 층 326개, GPU 폴백 층 404개, ForeignNode 16개를 주며, 같은 모델을 iGPU에서 FP16으로 돌린 13.28\,ms 대비 398.64\,ms로 \textbf{$30\times$} 느리다(FP16 대 FP16). 가속기의 ``선호 정밀도'' 자체가 이식되지 않는, 모델 의존적 성질인 것이다.)}
+
+% ---------------------------------------------------------------------
+\section{방법론적 함정과 조용한 실패 (C8)}
+
+위의 측정들은 일반적인 파이프라인이라면 드러내지 못했을 일련의 조용한 오류를 제거한 뒤에야 신뢰할 수 있게 되었다. 이를 보고하는 이유는, 그것들이 단일 숫자로 제시되는 양자화 결과의 의미를 한정하기 때문이다.
+
+\begin{itemize}
+\item \textbf{서브셋 평가는 정확도를 부풀린다.} 1000장 ImageNet 서브셋은 50k 전체 val 대비 top-1을 \textbf{평균 +9.77\,\%p} 과대평가했다. 이는 8개 모델 구성에 대한 평균이며 $+8.41$에서 $+10.39$\,\%p까지 퍼져 있으므로, 모델 순위를 바꾸지 않고서는 상수 오프셋으로 보정할 수 없다. 또한 양자화 차이의 부호 3건과 유의성 판정 13건 중 5건을 뒤집었다. 본 논문의 정확도 주장은 전체 val 기준이거나, 서브셋 상대값임을 명시적으로 표시한 것이다.
+\item \textbf{전처리가 양자화 차이를 압도한다.} 리사이즈/크롭 방식의 선택(squash 대 torchvision)이 top-1을 \textbf{$-$1.07\,\%p} 바꿨는데, 이는 양자화 자체의 대가 $-0.12$\,\%p의 약 \textbf{9$\times$}다. 전처리를 고정하고 명시하지 않은 양자화 수치는 의미가 없다.
+\item \textbf{SQNR은 정확도를 예측하지 못한다.} 층별 SQNR은 top-1 차이와 사실상 순위 상관이 없었다(21개 층, 50k val에서 Spearman $\rho = -0.030$). SQNR로 층 순위를 매겨 혼합 정밀도를 결정하는 흔한 관행은 여기서 지지되지 않는다.
+\item \textbf{조용한 폴백은 도처에 있다.} 외부 QDQ가 조용히 CPU/FP32로 폴백하는 경우. \texttt{TensorrtExecutionProvider}가 사용 가능 목록에 뜨는데도 \texttt{libnvinfer.so.10}이 로더 경로 밖에 있어 조용히 CPU에서 도는 경우(p50 11.83\,ms, 즉 CPU급이며 수정 후 0.41\,ms). 무복사(zero-copy) 출력 버퍼 앨리어싱 버그가 오류 없이 top-1을 0.0014로 붕괴시킨 경우. opset 다운컨버트가 유효하지 않은 그래프를 내놓으면서 ``성공''(exit 0)하는 경우. pip TensorRT 휠이 튜토리얼들이 전제하는 \texttt{trtexec} 바이너리 없이 배포되는 경우. 각각은 그럴듯해 보이지만 틀린 숫자를 만들어낸다.
+\end{itemize}
+
+% ---------------------------------------------------------------------
+\section{타당성에 대한 위협}
+
+본 연구의 한계를 있는 그대로 밝힌다. 여러 항목은 측정 우선 프로젝트의 속성이며, 우리의 주장을 \emph{상대} 비교로 한정한다.
+
+\begin{itemize}
+\item \textbf{신뢰구간 없는 단일 실행 지연.} 대부분의 지연은 p50이거나 단일 실행이다. 수 퍼센트 미만의 차이는 주장하지 않는다. 핵심 결과들($1.6$--$2.1\times$의 부호 반전, $20\times$를 넘는 레짐 차이)은 실행 간 잡음의 범위를 훨씬 벗어나지만, 더 작은 값들은 방향성으로만 읽어야 한다.
+\item \textbf{서브셋 정확도.} 여러 정확도와 일치도 수치가 서브셋(200--1000장) 기준이다. 본 연구 자체가 그 위험을 정량화한다(9절, 평균 $+9.77$\,\%p 부풀림). 일치도 개수(958--1000/1000)는 고정된 1000장 번들 기준이라 내부적으로는 비교 가능하지만, 전체 val의 절대 정확도와는 비교할 수 없다.
+\item \textbf{하드웨어 클래스당 $n=1$.} 클래스당 1대다. 우리는 언제나 ``이 대표 디바이스''를 주장하며 ``모든 A76''이나 ``모든 x86''을 주장하지 않는다.
+\item \textbf{버전 교란과 그것을 한정하는 대조군.} 런타임 버전은 타깃마다 다르고 동일화할 수 없다. 4종 CPU는 ONNX Runtime 1.17.1(A53), 1.23.2(A78AE와 x86 i9), 1.28.0(Pi~5)에서 돌았으므로 C1과 C2의 \emph{모든} 크로스플랫폼 쌍은 동시에 크로스머신 비교이며, 네 CPU$\leftrightarrow$CPU 쌍 중 셋은 크로스버전이기도 하다. 두 대조군이 버전 차이가 설명할 수 있는 범위를 한정한다. (i)~FP32 예측은 세 ORT 버전 전부에 걸쳐 1000/1000이므로, 버전만으로는 이 그래프의 예측이 흔들리지 않는다. (ii)~완벽히 일치하는 유일한 INT8 쌍(A78AE$\leftrightarrow$Pi~5, 1000/1000)이 그 자체로 크로스버전(1.23.2 대 1.28.0)이고, 불일치하는 쌍(A53$\leftrightarrow$x86, 961/1000) 역시 크로스버전이다. 버전은 두 결과를 가르지 못하고 정수 커널이 가른다. C1에 대해서는 부호 반전이 단일 버전 안에서도 살아남는다. A78AE와 x86 i9은 둘 다 1.23.2였고, INT8이 한쪽은 $2.11\times$ 빠르게, 다른 쪽은 $1.76\times$ 느리게 만들었다. 그럼에도 우리는 각 타깃의 버전을 보고하고, 잔여 버전 효과는 부호나 일치도 불변이 아니라 절대 지연에 대한 한계로 취급한다.
+\item \textbf{절대값이 아니라 상대값.} 배치 크기, 입력 해상도, 평가 서브셋이 절마다 다르므로 절대 지연/정확도는 절 간 비교가 불가능하다. 모든 주장은 비교 내부의 상대 차이다.
+\item \textbf{전력 측정의 공백.} 일부 와트당 성능 수치는 호스트 측 전력 경계를 사용한다. 온보드/M.2 카드 전력(접근 가능한 레일보다 상류에 있음)이나 DLA 전력(GPU 사용률 카운터에 잡히지 않음)을 분리할 수 없었기 때문이다. 각 수치마다 측정 경계를 함께 보고한다.
+\item \textbf{초기 가중치 모델은 정확도에서 제외.} BEV 캡스톤 모델은 초기화 가중치로 실행되었으므로(공개 가중치 확보 불가) 그 mAP는 구조적으로 0에 가깝고 지연/엔진 크기 특성 분석에만 쓰였으며 정확도 주장에는 결코 쓰이지 않았다. 7절의 레짐 전이 스윕 역시 합성 난수 가중치 모델과 합성 입력을 사용하므로 지연/레짐에만 유효하고 정확도에는 유효하지 않다.
+\item \textbf{외삽된, 링크에 특유한 문턱(7절).} 두 전이 문턱(약 319\,KB, 약 1.05\,MB)은 선형 D2H 적합(2.456\,ms/MB)의 외삽값이지 직접 측정된 지점이 아니며, 그 \emph{절대} 위치는 이 호스트의 PCIe Gen2$\times$1 링크에 특유하다(더 넓은 링크는 이를 이동시킨다). 구조적 결과---폭 $=$ 코어 수인 전이 밴드---는 $N$개 코어가 하나의 D2H 링크를 공유한다는 사실만으로 따라 나오므로 링크 대역폭에 무관하다.
+\item \textbf{벤더 범위.} 벤더 NPU 결과는 Qualcomm과 DEEPX를 다룬다. 다른 차량용 NPU(TI, Renesas)는 확보하지 못했으며 향후 과제로 남긴다.
+\item \textbf{2의 거듭제곱 완화책 --- 음성 결과의 범위(5절).} 2의 거듭제곱 스케일 강제가 크로스 디바이스 비트 동일성을 복원하지 못하며 오히려 일치도를 악화시킨다는 결과는 하나의 모델(\texttt{resnet50\_int8\_qdq.onnx}), 두 반올림 모드(ceil, nearest), 하나의 물리적 경계(x86 VNNI 없음 $\leftrightarrow$ A76 SDOT, 양쪽 모두 MLAS)에서 측정되었다. 이는 커널 내부 계측이 아니라 입출력 측정이다. 메커니즘 귀속(격자 거칠어짐이 에필로그 발산을 확대하며 동률 처리는 원인이 아니다)은 커널 소스를 읽어서가 아니라 $|\Delta\mathrm{logit}|$ 크기, 가중치 포화 개수(ceil 0 대 nearest 41{,}447), 두 반올림 모드에 걸친 결정 여유 분포가 상호 일관되게 맞물리는 데 근거한다. 이 결과는 Chen의 단일 GPU 결과가 이 경계로 \emph{이식}되지 않음을 반증할 뿐, 그 결과 자체를 그 설정에서 반박하지 않는다. 다른 경계(CPU$\leftrightarrow$가속기, CPU$\leftrightarrow$벤더 NPU)나 $M=2^k$를 실제로 정확한 시프트로 구현하는 커널 쌍에서는 다르게 거동할 수 있다.
+\end{itemize}
+
+% ---------------------------------------------------------------------
+\section{결론}
+
+7개 하드웨어 클래스에 걸쳐, 현장 통념이 전제하는 세 축 어디에서도 INT8 양자화는 이식되지 않음을 확인했다. \emph{속도 향상}은 음수가 될 수 있고 그 부호는 CPU의 내적 ISA가 정한다. \emph{수치}는 이식되지 않는다. 동일한 스케일이 CPU$\leftrightarrow$CPU 및 CPU$\leftrightarrow$가속기 경계에서 서로 다른 예측을 낳는 반면 FP32는 비트 단위로 동일하게 남는다---정확도에는 보이지 않는 결정성의 상실이다. \emph{배포 가능성}은 타깃 벤더가 통제한다. 벤더가 양자화를 소유하며 사용자가 가져온 QDQ 그래프를 조용히(위험하게) 또는 시끄럽게 거부한다. 여기에 더해 엣지 NPU의 지연 레짐이 연산이 아니라 데이터 이동으로 지배됨을 보였다.
+
+실무적 권고는 구체적이다. INT8은 한 번이 아니라 타깃마다 재검증하라. 벤더 네이티브 양자화를 선택이 아니라 필수로 취급하라. 가속기는 출력/데이터 이동 크기를 기준으로 산정하라. 그리고 안전 관련 또는 이중화 차량용 컴퓨트에서는, 같은 INT8 모델을 돌리는 두 이종 유닛이 입력 단위로 일치한다고 가정하지 말라---FP32에서는 일치하지만 INT8에서는 그렇지 않을 수 있다. 입력 단위의 타깃 간 결정성이 필요한 경우, 양자화를 2의 거듭제곱 스케일로 제약하는 방법---단일 GPU LLM 환경에서 커널 간 비트 동일성을 복원한다고 보고된\citep{chen2026deterministic}---이 매력적인 완화책이다. 그러나 우리는 이를 \emph{물리적} 디바이스 경계에서 시험했고 이식되지 않았다. INT8 ResNet-50의 모든 스케일을 2의 거듭제곱으로 강제한 결과 x86$\leftrightarrow$A76 쌍은 수정하지 않은 기준선보다 \emph{더} 멀어졌다(ceil 반올림에서 958/1000 $\to$ 869/1000, nearest에서 919/1000). 이 두 MLAS 커널이 $M = 2^k$를 공유된 정확한 시프트로 구현하지 않고, 거칠어진 스케일 격자가 에필로그 발산을 제거하는 대신 확대하기 때문이다(5절). 다른 경계(CPU$\leftrightarrow$가속기, CPU$\leftrightarrow$벤더 NPU)나 정확한 2의 거듭제곱 시프트를 실제로 공유하는 커널 쌍에서 이식되는지는 열려 있다. 여기까지의 증거로는 스케일 제약이 아니라 타깃별 재검증이 믿을 수 있는 길이다. 이 결과들은 또한 이종 다중 모듈 차량용 컴퓨트 플랫폼을 특성화하는 후속 연구의 동기가 된다. 그 플랫폼에서는 모듈 간 데이터 이동 병목(7절의 한 단계 위)과 모듈 간 INT8 일관성(5절의 한 단계 위)이 일차적인 시스템 설계 제약이 된다.
+
+\paragraph{아티팩트 공개.} 측정 스크립트와 32건의 HTML 리포트를 본 논문과 함께 공개한다. 부록~\ref{app:map}이 번호가 매겨진 모든 주장을 그것을 산출한 리포트와 스크립트에 대응시킨다. 다음에서 이용할 수 있다: \url{https://github.com/yyshin-katech/embedded-ai-quantization-guide/tree/paper1-v1}.
+
+% ---------------------------------------------------------------------
+% 참고문헌 (영문 .bbl을 본 파일에 인라인 -- BibTeX 실행 불필요, 46건)
+% 서지 항목은 원문 표기를 유지한다(제목·저자·출처는 번역하지 않음).
+
+\begin{thebibliography}{46}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Chen(2026{\natexlab{a}})]{chen2026integeralibi}
+Teng-Ruei Chen.
+\newblock The integer alibi: Localizing cross-kernel divergence in int8-quantized {LLM} inference, 2026{\natexlab{a}}.
+\newblock arXiv:2608.13756; companion to arXiv:2608.11693. Concurrent work.
+
+\bibitem[Jacob et~al.(2018)Jacob, Kligys, Chen, Zhu, Tang, Howard, Adam, and Kalenichenko]{jacob2018}
+Benoit Jacob, Skirmantas Kligys, Bo~Chen, Menglong Zhu, Matthew Tang, Andrew Howard, Hartwig Adam, and Dmitry Kalenichenko.
+\newblock Quantization and training of neural networks for efficient integer-arithmetic-only inference.
+\newblock In \emph{IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)}, pages 2704--2713, 2018.
+\newblock arXiv:1712.05877.
+
+\bibitem[Krishnamoorthi(2018)]{krishnamoorthi2018}
+Raghuraman Krishnamoorthi.
+\newblock Quantizing deep convolutional networks for efficient inference: A whitepaper, 2018.
+\newblock arXiv:1806.08342.
+
+\bibitem[Nagel et~al.(2021)Nagel, Fournarakis, Amjad, Bondarenko, van Baalen, and Blankevoort]{nagel2021whitepaper}
+Markus Nagel, Marios Fournarakis, Rana~Ali Amjad, Yelysei Bondarenko, Mart van Baalen, and Tijmen Blankevoort.
+\newblock A white paper on neural network quantization, 2021.
+\newblock arXiv:2106.08295.
+
+\bibitem[Gholami et~al.(2021)Gholami, Kim, Dong, Yao, Mahoney, and Keutzer]{gholami2021survey}
+Amir Gholami, Sehoon Kim, Zhen Dong, Zhewei Yao, Michael~W. Mahoney, and Kurt Keutzer.
+\newblock A survey of quantization methods for efficient neural network inference, 2021.
+\newblock arXiv:2103.13630.
+
+\bibitem[Wu et~al.(2020)Wu, Judd, Zhang, Isaev, and Micikevicius]{wu2020}
+Hao Wu, Patrick Judd, Xiaojie Zhang, Mikhail Isaev, and Paulius Micikevicius.
+\newblock Integer quantization for deep learning inference: Principles and empirical evaluation, 2020.
+\newblock arXiv:2004.09602.
+
+\bibitem[Nagel et~al.(2020)Nagel, Amjad, van Baalen, Louizos, and Blankevoort]{nagel2020adaround}
+Markus Nagel, Rana~Ali Amjad, Mart van Baalen, Christos Louizos, and Tijmen Blankevoort.
+\newblock Up or down? adaptive rounding for post-training quantization.
+\newblock In \emph{International Conference on Machine Learning (ICML)}, 2020.
+\newblock arXiv:2004.10568.
+
+\bibitem[{Arm Ltd.}()]{armisa}
+{Arm Ltd.}
+\newblock \emph{Arm Architecture Reference Manual (ARMv8.2-A DotProd: SDOT/UDOT)}.
+\newblock ISA primary source.
+
+\bibitem[{Intel Corporation}()]{intelisa}
+{Intel Corporation}.
+\newblock \emph{Intel Architecture Instruction Set Extensions Programming Reference (AVX-512 VNNI)}.
+\newblock ISA primary source.
+
+\bibitem[{Google}({\natexlab{a}})]{gemmlowp}
+{Google}.
+\newblock {gemmlowp}: A small self-contained low-precision {GEMM} library.
+\newblock \url{https://github.com/google/gemmlowp}, {\natexlab{a}}.
+\newblock Accessed 2026.
+
+\bibitem[{Google}({\natexlab{b}})]{xnnpack}
+{Google}.
+\newblock {XNNPACK}: Optimized floating-point and quantized neural network inference operators.
+\newblock \url{https://github.com/google/XNNPACK}, {\natexlab{b}}.
+\newblock ARM DotProd (SDOT / i8mm) INT8 path; accessed 2026.
+
+\bibitem[Khudia et~al.(2021)Khudia, Huang, Basu, Deng, Liu, Park, and Smelyanskiy]{khudia2021fbgemm}
+Daya Khudia, Jianyu Huang, Protonu Basu, Summer Deng, Haixin Liu, Jongsoo Park, and Mikhail Smelyanskiy.
+\newblock Fbgemm: Enabling high-performance low-precision deep learning inference, 2021.
+\newblock arXiv:2101.05615.
+
+\bibitem[{Microsoft}()]{mlas}
+{Microsoft}.
+\newblock {MLAS}: Microsoft linear algebra subprograms ({ONNX} runtime cpu kernels).
+\newblock \url{https://github.com/microsoft/onnxruntime}.
+\newblock Accessed 2026.
+
+\bibitem[Park et~al.(2018)Park, Naumov, Basu, et~al.]{park2018facebook}
+Jongsoo Park, Maxim Naumov, Protonu Basu, et~al.
+\newblock Deep learning inference in facebook data centers: Characterization, performance optimizations and hardware implications, 2018.
+\newblock arXiv:1811.09886.
+
+\bibitem[Reddi et~al.(2020)Reddi, Cheng, Kanter, Mattson, Schmuelling, Wu, et~al.]{reddi2020mlperf}
+Vijay~Janapa Reddi, Christine Cheng, David Kanter, Peter Mattson, Guenther Schmuelling, Carole-Jean Wu, et~al.
+\newblock Mlperf inference benchmark.
+\newblock In \emph{ACM/IEEE International Symposium on Computer Architecture (ISCA)}, pages 446--459, 2020.
+\newblock arXiv:1911.02549; DOI:10.1109/ISCA45697.2020.00045.
+
+\bibitem[Banbury et~al.(2021)Banbury, Reddi, Torelli, et~al.]{banbury2021mlperftiny}
+Colby Banbury, Vijay~Janapa Reddi, Peter Torelli, et~al.
+\newblock Mlperf tiny benchmark.
+\newblock In \emph{NeurIPS Datasets and Benchmarks Track}, 2021.
+\newblock arXiv:2106.07597.
+
+\bibitem[Janapa~Reddi et~al.(2020)]{reddi2020mobile}
+Vijay Janapa~Reddi et~al.
+\newblock Mlperf mobile inference benchmark, 2020.
+\newblock arXiv:2012.02328.
+
+\bibitem[Ignatov et~al.(2018)Ignatov, Timofte, Chou, Wang, Wu, Hartley, and Van~Gool]{ignatov2018}
+Andrey Ignatov, Radu Timofte, William Chou, Ke~Wang, Max Wu, Tim Hartley, and Luc Van~Gool.
+\newblock Ai benchmark: Running deep neural networks on android smartphones.
+\newblock In \emph{ECCV Workshops}, 2018.
+\newblock arXiv:1810.01109.
+
+\bibitem[Ignatov et~al.(2019)Ignatov, Timofte, et~al.]{ignatov2019}
+Andrey Ignatov, Radu Timofte, et~al.
+\newblock Ai benchmark: All about deep learning on smartphones in 2019, 2019.
+\newblock arXiv:1910.06663.
+
+\bibitem[Alqahtani et~al.(2024)Alqahtani, Cheema, Rodriguez, and Toosi]{edgedetection2024}
+Daghash~K. Alqahtani, Muhammad~Aamir Cheema, Maria~A. Rodriguez, and Adel~N. Toosi.
+\newblock A comprehensive evaluation of deep learning object detection models on heterogeneous edge devices, 2024.
+\newblock arXiv:2409.16808.
+
+\bibitem[Millar et~al.(2025)Millar, Huang, Sethi, Haddadi, and Madhavapeddy]{millar2025}
+Josh Millar, Yushan Huang, Sarab Sethi, Hamed Haddadi, and Anil Madhavapeddy.
+\newblock Benchmarking ultra-low-power {$\mu$}npus, 2025.
+\newblock arXiv:2503.22567.
+
+\bibitem[Chen(2026{\natexlab{b}})]{chen2026deterministic}
+Teng-Ruei Chen.
+\newblock Deterministic {LLM} inference across {GPU} kernels: Power-of-two int8 quantization scales and the limits of tolerance-based conformance, 2026{\natexlab{b}}.
+\newblock arXiv:2609.00363. Concurrent work.
+
+\bibitem[Li et~al.(2021)Li, Shen, Ma, Ren, Zhao, Zhang, Gong, Yu, and Yan]{li2021mqbench}
+Yuhang Li, Mingzhu Shen, Jian Ma, Yan Ren, Mingxin Zhao, Qi~Zhang, Ruihao Gong, Fengwei Yu, and Junjie Yan.
+\newblock Mqbench: Towards reproducible and deployable model quantization benchmark.
+\newblock In \emph{NeurIPS Datasets and Benchmarks Track}, 2021.
+\newblock arXiv:2111.03759.
+
+\bibitem[Masoudian et~al.(2026)Masoudian, Shafaei, Swain, and Schedl]{masoudian2026}
+Shahed Masoudian, Passant Shafaei, Monorama Swain, and Markus Schedl.
+\newblock What we observe as {LLM} behavior can be a side-effect of inference backend, 2026.
+\newblock arXiv:2608.04714.
+
+\bibitem[Shanmugavelu et~al.(2024)Shanmugavelu, Taillefumier, Culver, Hernandez, Coletti, and Sedova]{fpnonassoc2024}
+Sanjif Shanmugavelu, Mathieu Taillefumier, Christopher Culver, Oscar Hernandez, Mark Coletti, and Ada Sedova.
+\newblock Impacts of floating-point non-associativity on reproducibility for {HPC} and deep learning applications, 2024.
+\newblock arXiv:2408.05148.
+
+\bibitem[Xie et~al.(2025)Xie, Zhang, and Chen]{repdl2025}
+Peichen Xie, Xian Zhang, and Shuo Chen.
+\newblock Repdl: Bit-level reproducible deep learning training and inference, 2025.
+\newblock arXiv:2510.09180 (originally drafted 2023).
+
+\bibitem[Dettmers et~al.(2022)Dettmers, Lewis, Belkada, and Zettlemoyer]{dettmers2022llmint8}
+Tim Dettmers, Mike Lewis, Younes Belkada, and Luke Zettlemoyer.
+\newblock {LLM.int8()}: 8-bit matrix multiplication for transformers at scale.
+\newblock In \emph{Advances in Neural Information Processing Systems (NeurIPS)}, 2022.
+\newblock arXiv:2208.07339.
+
+\bibitem[Bondarenko et~al.(2021)Bondarenko, Nagel, and Blankevoort]{bondarenko2021}
+Yelysei Bondarenko, Markus Nagel, and Tijmen Blankevoort.
+\newblock Understanding and overcoming the challenges of efficient transformer quantization.
+\newblock In \emph{Conference on Empirical Methods in Natural Language Processing (EMNLP)}, 2021.
+\newblock arXiv:2109.12948.
+
+\bibitem[Xiao et~al.(2023)Xiao, Lin, Seznec, Wu, Demouth, and Han]{xiao2022smoothquant}
+Guangxuan Xiao, Ji~Lin, Mickael Seznec, Hao Wu, Julien Demouth, and Song Han.
+\newblock Smoothquant: Accurate and efficient post-training quantization for large language models.
+\newblock In \emph{International Conference on Machine Learning (ICML)}, 2023.
+\newblock arXiv:2211.10438.
+
+\bibitem[Lin et~al.(2024)Lin, Tang, Tang, Yang, Chen, Wang, Xiao, Dang, Gan, and Han]{lin2023awq}
+Ji~Lin, Jiaming Tang, Haotian Tang, Shang Yang, Wei-Ming Chen, Wei-Chen Wang, Guangxuan Xiao, Xingyu Dang, Chuang Gan, and Song Han.
+\newblock {AWQ}: Activation-aware weight quantization for {LLM} compression and acceleration.
+\newblock In \emph{Conference on Machine Learning and Systems (MLSys)}, 2024.
+\newblock arXiv:2306.00978.
+
+\bibitem[Frantar et~al.(2023)Frantar, Ashkboos, Hoefler, and Alistarh]{frantar2022gptq}
+Elias Frantar, Saleh Ashkboos, Torsten Hoefler, and Dan Alistarh.
+\newblock {GPTQ}: Accurate post-training quantization for generative pre-trained transformers.
+\newblock In \emph{International Conference on Learning Representations (ICLR)}, 2023.
+\newblock arXiv:2210.17323.
+
+\bibitem[Yuan et~al.(2022)Yuan, Xue, Chen, Wu, and Sun]{yuan2022ptq4vit}
+Zhihang Yuan, Chenhao Xue, Yiqi Chen, Qiang Wu, and Guangyu Sun.
+\newblock Ptq4vit: Post-training quantization for vision transformers with twin uniform quantization.
+\newblock In \emph{European Conference on Computer Vision (ECCV)}, 2022.
+\newblock arXiv:2111.12293.
+
+\bibitem[Liu et~al.(2021)Liu, Wang, Han, Ma, and Gao]{liu2021ptqvit}
+Zhenhua Liu, Yunhe Wang, Kai Han, Siwei Ma, and Wen Gao.
+\newblock Post-training quantization for vision transformer.
+\newblock In \emph{Advances in Neural Information Processing Systems (NeurIPS)}, 2021.
+\newblock arXiv:2106.14156.
+
+\bibitem[Dhahri and Urban(2025)]{dhahri2025quanttrim}
+Rayen Dhahri and Steffen Urban.
+\newblock Quant-trim in practice: Improved cross-platform low-bit deployment on edge npus, 2025.
+\newblock arXiv:2511.15300; accepted to a EurIPS 2025 workshop (work in progress).
+
+\bibitem[{Qualcomm}()]{qualcomm_qnn}
+{Qualcomm}.
+\newblock Qualcomm ai engine direct ({QNN}) and {AI} hub.
+\newblock \url{https://app.aihub.qualcomm.com}.
+\newblock Vendor documentation; accessed 2026.
+
+\bibitem[{Apple}()]{coreml}
+{Apple}.
+\newblock Core ml tools ({coremltools}).
+\newblock \url{https://apple.github.io/coremltools}.
+\newblock Vendor documentation; accessed 2026.
+
+\bibitem[{Google}({\natexlab{c}})]{litert}
+{Google}.
+\newblock Litert (tensorflow lite) delegates and nnapi.
+\newblock \url{https://ai.google.dev/edge/litert}, {\natexlab{c}}.
+\newblock Vendor documentation; accessed 2026.
+
+\bibitem[Williams et~al.(2009)Williams, Waterman, and Patterson]{williams2009roofline}
+Samuel Williams, Andrew Waterman, and David Patterson.
+\newblock Roofline: An insightful visual performance model for multicore architectures.
+\newblock \emph{Communications of the ACM}, 52\penalty0 (4):\penalty0 65--76, 2009.
+\newblock DOI:10.1145/1498765.1498785.
+
+\bibitem[Chen et~al.(2016)Chen, Emer, and Sze]{chen2016eyeriss}
+Yu-Hsin Chen, Joel Emer, and Vivienne Sze.
+\newblock Eyeriss: A spatial architecture for energy-efficient dataflow for convolutional neural networks.
+\newblock In \emph{ACM/IEEE International Symposium on Computer Architecture (ISCA)}, 2016.
+\newblock DOI:10.1145/3007787.3001177.
+
+\bibitem[Sze et~al.(2017)Sze, Chen, Yang, and Emer]{sze2017efficient}
+Vivienne Sze, Yu-Hsin Chen, Tien-Ju Yang, and Joel~S. Emer.
+\newblock Efficient processing of deep neural networks: A tutorial and survey.
+\newblock \emph{Proceedings of the IEEE}, 105\penalty0 (12):\penalty0 2295--2329, 2017.
+\newblock arXiv:1703.09039; DOI:10.1109/JPROC.2017.2761740.
+
+\bibitem[Chakraborty et~al.(2025)Chakraborty, Tavernier, Kourtis, Pickavet, Oikonomakis, and Colle]{jetsonconcurrent2025}
+Abhinaba Chakraborty, Wouter Tavernier, Akis Kourtis, Mario Pickavet, Andreas Oikonomakis, and Didier Colle.
+\newblock Profiling concurrent vision inference workloads on {NVIDIA} jetson --- extended, 2025.
+\newblock arXiv:2508.08430.
+
+\bibitem[{NVIDIA}()]{nvdla}
+{NVIDIA}.
+\newblock {NVDLA}: {NVIDIA} deep learning accelerator (open architecture).
+\newblock \url{http://nvdla.org}.
+\newblock Accessed 2026.
+
+\bibitem[Farshchi et~al.(2019)Farshchi, Huang, and Yun]{farshchi2019nvdla}
+Farzad Farshchi, Qijing Huang, and Heechul Yun.
+\newblock Integrating {NVIDIA} deep learning accelerator ({NVDLA}) with {RISC-V} soc on firesim.
+\newblock In \emph{2nd Workshop on Energy Efficient Machine Learning and Cognitive Computing for Embedded Applications (EMC2)}, 2019.
+\newblock arXiv:1903.06495.
+
+\bibitem[{International Organization for Standardization}(2018)]{iso26262}
+{International Organization for Standardization}.
+\newblock \emph{ISO 26262: Road Vehicles --- Functional Safety}, 2018.
+
+\bibitem[{NVIDIA}(2018)]{nvidiadrive}
+{NVIDIA}.
+\newblock {NVIDIA} drive functional-safety architecture, 2018.
+\newblock Whitepaper.
+
+\bibitem[Amarnath et~al.(2022)Amarnath, Pal, Kassa, Vega, Buyuktosunoglu, Franke, Wellman, Dreslinski, and Bose]{hetsched2022}
+Aporva Amarnath, Subhankar Pal, Hiwot Kassa, Augusto Vega, Alper Buyuktosunoglu, Hubertus Franke, John-David Wellman, Ronald Dreslinski, and Pradip Bose.
+\newblock Hetsched: Quality-of-mission aware scheduling for autonomous vehicle socs, 2022.
+\newblock arXiv:2203.13396.
+
+\end{thebibliography}
+
+% ---------------------------------------------------------------------
+\appendix
+
+\section{주장-아티팩트 대응표}
+\label{app:map}
+
+본 논문의 번호 붙은 모든 주장은 \texttt{logs/}의 측정 리포트와, 그 수치를 산출한 \texttt{experiments/}의 스크립트·결과 파일로 뒷받침된다. 아래 리포트 이름은 \texttt{logs/} 기준 상대 경로이고, 아티팩트 경로는 \texttt{experiments/} 기준 상대 경로이며, 둘 다 위에 링크한 아티팩트 저장소 안에 있다. 한 아티팩트 셀 안에서 슬래시가 없는 항목은 그 셀 첫 항목과 같은 디렉터리에 있는 파일이다. 공개된 32건의 리포트 중 여기 인용된 24건이 본 논문의 주장이 의존하는 것들이며, 나머지 8건은 같은 코퍼스의 보조 작업(환경 설정, PTQ 심화 및 원시 실행 로그, QAT 회복, BEVFormer/BEVDet 캡스톤, CNN 검출기 정확도 축)을 다루므로 위 어떤 주장도 이들에 기대지 않는다. 여기서 주장은 축약되어 있고, 인용된 절대값(지연, top-1, mAP, 와트당 성능)은 배치 1·서브셋 기반이며 서로 다른 경로에서 측정되었으므로, 비교 내부의 \emph{상대적} 관계만 유효하다(10절).
+
+\begingroup
+\scriptsize
+\setlength{\LTcapwidth}{\textwidth}
+\begin{longtable}{L{1.2cm} L{3.9cm} L{4.3cm} L{5.0cm}}
+\caption{주장-아티팩트 대응표. 모든 경로는 아티팩트 저장소 기준 상대 경로이다.}\\
+\toprule
+\textbf{절} & \textbf{주장} & \textbf{리포트 (\texttt{logs/})} & \textbf{스크립트와 결과 (\texttt{experiments/})} \\
+\midrule
+\endfirsthead
+\multicolumn{4}{l}{\emph{표 \thetable, 이어서.}}\\
+\toprule
+\textbf{절} & \textbf{주장} & \textbf{리포트 (\texttt{logs/})} & \textbf{스크립트와 결과 (\texttt{experiments/})} \\
+\midrule
+\endhead
+\midrule
+\multicolumn{4}{r}{\emph{다음 쪽에 계속}}\\
+\endfoot
+\bottomrule
+\endlastfoot
+4절 (C1) & INT8 속도 향상의 부호를 내적 ISA가 결정 (CPU 4종, 모델 1종, 런타임 1종) & \texttt{stage4\_\allowbreak arm\_\allowbreak cpu\_\allowbreak fallback\_\allowbreak report.html} \newline \texttt{stage4\_\allowbreak imx8mn\_\allowbreak a53\_\allowbreak report.html} \newline \texttt{stage4\_\allowbreak jetson\_\allowbreak agx\_\allowbreak orin\_\allowbreak a78ae\_\allowbreak report.html} & \texttt{stage5\_\allowbreak infrastructure/\allowbreak cpu\_\allowbreak proxy/\allowbreak rpi\_\allowbreak bench.py} \newline \texttt{rpi\_\allowbreak bench\_\allowbreak lowmem.py} \newline \texttt{stage5\_\allowbreak infrastructure/\allowbreak cpu\_\allowbreak proxy/\allowbreak results/\allowbreak resnet50\_\allowbreak \_\allowbreak *.json} \\
+\addlinespace[2pt]
+5절 (C2) & FP32 1000/1000 대조군; CPU$\leftrightarrow$CPU INT8 일치도 1000 / 965 / 961 / 958 & \texttt{stage4\_\allowbreak arm\_\allowbreak cpu\_\allowbreak fallback\_\allowbreak report.html} \newline \texttt{stage4\_\allowbreak imx8mn\_\allowbreak a53\_\allowbreak report.html} \newline \texttt{stage4\_\allowbreak jetson\_\allowbreak agx\_\allowbreak orin\_\allowbreak a78ae\_\allowbreak report.html} & \texttt{stage5\_\allowbreak infrastructure/\allowbreak cpu\_\allowbreak proxy/\allowbreak README.md} \newline \emph{(일치도 행렬)} \newline \texttt{stage5\_\allowbreak infrastructure/\allowbreak cpu\_\allowbreak proxy/\allowbreak raw/\allowbreak } \\
+\addlinespace[2pt]
+5절 (C2) & 동일 QDQ 아티팩트에서 CPU$\leftrightarrow$가속기 961/1000; iGPU INT8 top-1 0.7620 & \texttt{stage3\_\allowbreak jetson\_\allowbreak orin\_\allowbreak accuracy\_\allowbreak report.html} & \texttt{stage3\_\allowbreak tensorrt/\allowbreak jetson\_\allowbreak ondevice/\allowbreak accuracy/\allowbreak scripts/\allowbreak orin\_\allowbreak accuracy.py} \newline \texttt{analyze\_\allowbreak accuracy.py} \\
+\addlinespace[2pt]
+5절 (C2\,$\ddagger$) & 벤더 NPU 939/1000, 스케일 고정 불가 (배포 관측치에 한함) & \texttt{stage4\_\allowbreak deepx\_\allowbreak dxm1\_\allowbreak accuracy\_\allowbreak report.html} & \texttt{stage4\_\allowbreak deepx\_\allowbreak dxm1/\allowbreak accuracy/\allowbreak scripts/\allowbreak npu\_\allowbreak infer.py} \newline \texttt{cpu\_\allowbreak infer.py} \newline \texttt{analyze\_\allowbreak dxm1\_\allowbreak acc.py} \\
+\addlinespace[2pt]
+5절, 11절 & 2의 거듭제곱 완화책이 x86$\leftrightarrow$A76 경계를 넘지 못함: 958 $\to$ 869(ceil) / 919(nearest), 게이트 NO-GO; 커널 간 $|\Delta\mathrm{logit}|$ $\times4.34$ / $\times2.35$, 동률 가설 반증; 30회 실행 비트 동일 & \texttt{stage5\_\allowbreak pot\_\allowbreak scales\_\allowbreak report.html} & \texttt{stage5\_\allowbreak infrastructure/\allowbreak pot\_\allowbreak scales/\allowbreak pot\_\allowbreak rewrite.py} \newline \texttt{pot\_\allowbreak bench.py} \newline \texttt{pot\_\allowbreak agree.py} \newline \texttt{pot\_\allowbreak mech.py} \newline \texttt{stage5\_\allowbreak infrastructure/\allowbreak pot\_\allowbreak scales/\allowbreak results/\allowbreak } \\
+\addlinespace[2pt]
+6절 (C3) & Qualcomm HTP의 조용한 BYO-QDQ 실패 0.75 $\to$ 0.005; 네이티브 경로가 0.735로 회복 & \texttt{stage4\_\allowbreak qualcomm\_\allowbreak aihub\_\allowbreak report.html} & \texttt{stage4\_\allowbreak qualcomm\_\allowbreak aihub/\allowbreak scripts/\allowbreak qaihub\_\allowbreak int8.py} \newline \texttt{qaihub\_\allowbreak native\_\allowbreak quant.py} \newline \texttt{qaihub\_\allowbreak acc.py} \\
+\addlinespace[2pt]
+6절 (C3) & DEEPX의 시끄러운 거부 (GraphStructureError, 엔진 미산출); 네이티브 경로 0.7660 & \texttt{stage4\_\allowbreak deepx\_\allowbreak dxm1\_\allowbreak accuracy\_\allowbreak report.html} & \texttt{stage4\_\allowbreak deepx\_\allowbreak dxm1/\allowbreak accuracy/\allowbreak scripts/\allowbreak probe\_\allowbreak extqdq.py} \newline \texttt{compile\_\allowbreak dxm1.py} \\
+\addlinespace[2pt]
+7절 (C4) & 한 디바이스 위 3모델, 2레짐; YOLOv5s가 ResNet-50보다 26.3$\times$ 느림 & \texttt{stage4\_\allowbreak deepx\_\allowbreak dxm1\_\allowbreak crossover\_\allowbreak report.html} & \texttt{stage4\_\allowbreak deepx\_\allowbreak dxm1/\allowbreak crossover/\allowbreak scripts/\allowbreak analyze\_\allowbreak profiler.py} \newline \texttt{build\_\allowbreak crossover\_\allowbreak summary.py} \\
+\addlinespace[2pt]
+7절 (C4) & 연산 고정 출력 스윕 12지점; 전이 밴드 폭 = 코어 수 & \texttt{stage4\_\allowbreak deepx\_\allowbreak dxm1\_\allowbreak transition\_\allowbreak report.html} & \texttt{stage4\_\allowbreak deepx\_\allowbreak dxm1/\allowbreak transition/\allowbreak scripts/\allowbreak build\_\allowbreak transition\_\allowbreak models.py} \newline \texttt{run\_\allowbreak transition\_\allowbreak bench.sh} \newline \texttt{build\_\allowbreak transition\_\allowbreak summary.py} \newline \texttt{stage4\_\allowbreak deepx\_\allowbreak dxm1/\allowbreak transition/\allowbreak results/\allowbreak transition\_\allowbreak summary.json} \\
+\addlinespace[2pt]
+7절 (C4) & 제3 레짐: DETR 호스트 CPU 연산 바운드 단계 분해 & \texttt{stage4\_\allowbreak deepx\_\allowbreak dxm1\_\allowbreak detr\_\allowbreak report.html} & \texttt{stage4\_\allowbreak deepx\_\allowbreak dxm1/\allowbreak detr/\allowbreak scripts/\allowbreak npu\_\allowbreak infer\_\allowbreak detr.py} \newline \texttt{analyze\_\allowbreak detr\_\allowbreak regime.py} \newline \texttt{stage4\_\allowbreak deepx\_\allowbreak dxm1/\allowbreak detr/\allowbreak results/\allowbreak detr\_\allowbreak dxm1\_\allowbreak summary.json} \\
+\addlinespace[2pt]
+7절 & 연산 바운드 레짐에서 NPU 대 호스트 CPU: 처리량 $\times$11.42, 와트당 성능 $\times$29.29 & \texttt{stage4\_\allowbreak deepx\_\allowbreak dxm1\_\allowbreak report.html} & \texttt{stage4\_\allowbreak deepx\_\allowbreak dxm1/\allowbreak scripts/\allowbreak cpu\_\allowbreak bench.py} \newline \texttt{analyze\_\allowbreak profiler.py} \newline \texttt{build\_\allowbreak summary.py} \\
+\addlinespace[2pt]
+8.1절 & DETR INT8 붕괴 $-$42.9\%; 연산자 선택은 무효; 양방향 절제 & \texttt{stage2\_\allowbreak detr\_\allowbreak quantization\_\allowbreak report.html} & \texttt{stage2\_\allowbreak detr/\allowbreak s2\_\allowbreak 04\_\allowbreak ptq.py} \newline \texttt{s2\_\allowbreak 07\_\allowbreak coco\_\allowbreak eval.py} \newline \texttt{s2\_\allowbreak 08\_\allowbreak quantize\_\allowbreak mixed.py} \newline \texttt{s2\_\allowbreak 09\_\allowbreak quantize\_\allowbreak ablation.py} \\
+\addlinespace[2pt]
+8.1절 & Jetson 대칭 재양자화 교차 확인 $-$43.8\% & \texttt{stage3\_\allowbreak jetson\_\allowbreak orin\_\allowbreak detr\_\allowbreak accuracy\_\allowbreak report.html} & \texttt{stage3\_\allowbreak tensorrt/\allowbreak jetson\_\allowbreak ondevice/\allowbreak detr\_\allowbreak accuracy/\allowbreak scripts/\allowbreak detr\_\allowbreak sym\_\allowbreak export.py} \newline \texttt{orin\_\allowbreak detr\_\allowbreak map.py} \\
+\addlinespace[2pt]
+8.1절 & SmoothQuant가 격차의 59.9\% 회복 (torch fake-quant 경로) & \texttt{stage2\_\allowbreak smoothquant\_\allowbreak report.html} & \texttt{stage2\_\allowbreak smoothquant/\allowbreak sq\_\allowbreak 01\_\allowbreak modelopt\_\allowbreak api.py} \newline \texttt{sq\_\allowbreak 03\_\allowbreak absmax\_\allowbreak smooth.py} \newline \texttt{sq\_\allowbreak 04\_\allowbreak alpha\_\allowbreak sweep.py} \\
+\addlinespace[2pt]
+8.1절 & SmoothQuant가 온디바이스에서는 ${\sim}$9\%만 회복 (Gemm 전용 INT8 커버리지) & \texttt{stage3\_\allowbreak jetson\_\allowbreak orin\_\allowbreak detr\_\allowbreak smoothquant\_\allowbreak report.html} & \texttt{stage3\_\allowbreak tensorrt/\allowbreak jetson\_\allowbreak ondevice/\allowbreak detr\_\allowbreak smoothquant/\allowbreak scripts/\allowbreak detr\_\allowbreak sq\_\allowbreak export.py} \newline \texttt{orin\_\allowbreak detr\_\allowbreak sq\_\allowbreak map.py} \\
+\addlinespace[2pt]
+8.2--8.3절 & DEEPX 자동 분할 (붕괴 없음), 23.99~MB 인계; 두 양자화기 비교 & \texttt{stage4\_\allowbreak deepx\_\allowbreak dxm1\_\allowbreak detr\_\allowbreak report.html} & \texttt{stage4\_\allowbreak deepx\_\allowbreak dxm1/\allowbreak detr/\allowbreak scripts/\allowbreak analyze\_\allowbreak detr\_\allowbreak map.py} \newline \texttt{build\_\allowbreak detr\_\allowbreak summary.py} \\
+\addlinespace[2pt]
+8절 (주석) & NVDLA INT8 전용 데이터패스, 51.29~inf/s/W; DETR DLA 파편화 (ForeignNode 16개) & \texttt{stage3\_\allowbreak jetson\_\allowbreak orin\_\allowbreak ondevice\_\allowbreak report.html} \newline \texttt{stage3\_\allowbreak jetson\_\allowbreak orin\_\allowbreak concurrent\_\allowbreak power\_\allowbreak report.html} \newline \texttt{stage3\_\allowbreak jetson\_\allowbreak orin\_\allowbreak detr\_\allowbreak report.html} & \texttt{stage3\_\allowbreak tensorrt/\allowbreak jetson\_\allowbreak ondevice/\allowbreak scripts/\allowbreak ppw.py} \newline \texttt{concurrent.py} \newline \texttt{power\_\allowbreak sweep.py} \newline \texttt{stage3\_\allowbreak tensorrt/\allowbreak jetson\_\allowbreak ondevice/\allowbreak detr/\allowbreak scripts/\allowbreak detr\_\allowbreak bench.py} \\
+\addlinespace[2pt]
+9절 (C8) & 서브셋 부풀림 +9.77~\%p (8개 구성 평균); 전처리 $-$1.07~\%p & \texttt{stage1\_\allowbreak 50k\_\allowbreak rerun\_\allowbreak reproduction\_\allowbreak report.html} \newline \texttt{stage1\_\allowbreak real\_\allowbreak imagenet\_\allowbreak report.html} & \emph{(별도 스크립트 디렉터리 없음. 절차는 리포트와 study\_guide/03, /10에 있음)} \\
+\addlinespace[2pt]
+9절 (C8) & 층별 SQNR이 $\Delta$top-1을 예측하지 못함 (Spearman $\rho$ = $-$0.030, 21개 층) & \texttt{stage1\_\allowbreak 50k\_\allowbreak rerun\_\allowbreak reproduction\_\allowbreak report.html} & \emph{(별도 스크립트 디렉터리 없음. 절차는 리포트와 study\_guide/03에 있음)} \\
+\addlinespace[2pt]
+9절 (C8) & TensorRT EP가 목록에는 뜨지만 조용히 CPU에서 실행, 수정 후 p50 11.83 $\to$ 0.41~ms & \texttt{stage0.5\_\allowbreak ladder\_\allowbreak log.html} & \emph{(별도 스크립트 디렉터리 없음. 수정과 프로브는 study\_guide/01에 있음)} \\
+\addlinespace[2pt]
+9절 (C8) & 무복사 출력 버퍼 앨리어싱이 오류 없이 top-1을 0.0014로 붕괴시킴 & \texttt{stage5\_\allowbreak infrastructure\_\allowbreak report.html} & \texttt{stage5\_\allowbreak infrastructure/\allowbreak bench/\allowbreak run\_\allowbreak bench.py} \newline \texttt{stage5\_\allowbreak infrastructure/\allowbreak bench/\allowbreak report/\allowbreak generate.py} \newline \texttt{stage5\_\allowbreak infrastructure/\allowbreak bench/\allowbreak tests/\allowbreak test\_\allowbreak regression.py} \\
+\addlinespace[2pt]
+9절 (C8) & Opset 다운컨버트가 유효하지 않은 그래프를 내놓으며 ``성공''(exit 0) & \texttt{stage1\_\allowbreak quantization\_\allowbreak log.html} & \emph{(별도 스크립트 디렉터리 없음. 절차는 리포트에 있음)} \\
+\addlinespace[2pt]
+9절 (C8) & pip TensorRT 휠에 튜토리얼이 전제하는 `trtexec' 바이너리가 없음 & \texttt{stage3\_\allowbreak tensorrt\_\allowbreak report.html} & \texttt{stage3\_\allowbreak tensorrt/\allowbreak t01\_\allowbreak env.py} \newline \texttt{t02\_\allowbreak latency\_\allowbreak 3point.py} \\
+\end{longtable}
+\endgroup
+
+\end{document}
